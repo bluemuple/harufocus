@@ -400,12 +400,12 @@
         (placed?'<span class="t-time">'+fmtTime(t.scheduledStart)+'</span>':'')+
         '<button class="send'+(placed?' placed':'')+'">'+(placed?'✓ 오늘':'→ 타임라인')+'</button>'+
         '<span class="star'+(t.isStarred?' on':'')+'">'+(t.isStarred?'★':'☆')+'</span>';
-      row.querySelector('.check').addEventListener('click',function(){t.isDone=!t.isDone;renderTodo();});
-      row.querySelector('.star').addEventListener('click',function(){t.isStarred=!t.isStarred;renderTodo();});
+      row.querySelector('.check').addEventListener('click',function(){t.isDone=!t.isDone;renderTodo();pushSnapshot();});
+      row.querySelector('.star').addEventListener('click',function(){t.isStarred=!t.isStarred;renderTodo();pushSnapshot();});
       row.querySelector('.send').addEventListener('click',function(){
         if(placed)return;
         var slot=nextSlotToday();t.scheduledStart=todayAt(Math.floor(slot),(slot%1)*60);if(!t.durationMin)t.durationMin=50;
-        renderTodo();renderBig();renderMosaic();
+        renderTodo();renderBig();renderMosaic();pushSnapshot();
         if(window.matchMedia('(max-width:860px)').matches)setTab('timeline');
       });
       list.appendChild(row);
@@ -518,11 +518,35 @@
   var session=null;try{session=JSON.parse(localStorage.getItem(AUTH_KEY)||'null');}catch(e){}
   function updateAcct(){var b=document.getElementById('accountBtn');if(session&&session.user){b.textContent=session.user.email;b.classList.add('signed');}else{b.textContent='로그인';b.classList.remove('signed');}}
   function normalize(s){return {tasks:s.tasks||[],habits:s.habits||[],settings:s.settings||{focusGoalMinutes:240}};}
+
+  /* 서버 스냅샷을 통째로 보관 (schemaVersion·sessions 등 앱 전용 필드 보존).
+     DATA.tasks는 serverSnap.tasks와 같은 참조라 편집이 그대로 반영된다. */
+  var serverSnap=null;
   function fetchSnapshot(){if(!session)return;
     fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=snapshot',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+session.access_token}})
     .then(function(r){if(r.status===401){signOut();throw 0;}return r.json();})
-    .then(function(rows){DATA=(rows&&rows.length&&rows[0].snapshot)?normalize(rows[0].snapshot):{tasks:[],habits:[],settings:{}};renderAll();})
+    .then(function(rows){
+      serverSnap=(rows&&rows.length&&rows[0].snapshot)||{schemaVersion:1,tasks:[],habits:[],sessions:[],settings:null};
+      DATA=normalize(serverSnap);renderAll();
+    })
     .catch(function(){});
+  }
+
+  /* ---------- 양방향: 웹 편집을 서버로 올리기 (요청) ---------- */
+  var WEB_DEV_KEY='harufocusWebDevice';
+  function webDeviceId(){var d=localStorage.getItem(WEB_DEV_KEY);
+    if(!d){d='web-'+((window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(16).slice(2)));localStorage.setItem(WEB_DEV_KEY,d);}
+    return d;}
+  function currentSnap(){
+    serverSnap=serverSnap||{schemaVersion:1,tasks:[],habits:[],sessions:[],settings:null};
+    serverSnap.tasks=DATA.tasks;serverSnap.habits=DATA.habits;if(DATA.settings)serverSnap.settings=DATA.settings;
+    return serverSnap;}
+  var pushTimer=null;
+  function pushSnapshot(){if(!session)return;clearTimeout(pushTimer);pushTimer=setTimeout(doPush,1200);}
+  function doPush(){if(!session)return;
+    var body=[{user_id:session.user.id,snapshot:currentSnap(),device_id:webDeviceId(),updated_at:new Date().toISOString()}];
+    fetch(SUPA_URL+'/rest/v1/sundial_state',{method:'POST',headers:{apikey:SUPA_KEY,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)})
+    .then(function(r){if(r.status===401)signOut();}).catch(function(){});
   }
   function saveSession(j){session={access_token:j.access_token,user:{id:j.user.id,email:j.user.email}};localStorage.setItem(AUTH_KEY,JSON.stringify(session));updateAcct();}
   function signOut(){session=null;localStorage.removeItem(AUTH_KEY);updateAcct();DATA=DEMO;renderAll();}
