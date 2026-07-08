@@ -656,6 +656,8 @@
   function finishFocus(){if(!fTask)return;clearInterval(fTimer);var el=focusElapsed();
     fTask.actualFocusedSec=(fTask.actualFocusedSec||0)+el;fTask.cumulativeFocusedSec=(fTask.cumulativeFocusedSec||0)+el;fTask.lastFocusedAt=new Date().toISOString();
     if(!fTask.durationMin){var mins=Math.max(1,Math.round(el/60));fTask.durationMin=mins;fTask.scheduledStart=new Date(Date.now()-mins*60000).toISOString();}
+    // 세션 기록 (요청: 물통·통계·동기화에 반영되도록 앱과 같은 FocusSession).
+    if(el>=5){if(!DATA.sessions)DATA.sessions=[];DATA.sessions.push({id:uuid(),taskID:fTask.id,taskTitle:fTask.title||'',categoryID:fTask.categoryID||'focus',start:new Date(fStart).toISOString(),end:new Date().toISOString(),focusedSec:el});}
     document.getElementById('focusScrim').classList.remove('open');fTask=null;renderAll();pushSnapshot();}
 
   /* ---------- 설정 (요청: 웹 이식) ---------- */
@@ -791,11 +793,16 @@
   function allSessions(){return (DATA.sessions&&DATA.sessions.length)?DATA.sessions:((serverSnap&&serverSnap.sessions)||[]);}
   function bucketSessions(){var d=bucketDate(),k=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
     return allSessions().filter(function(s){var sd=new Date(s.start);return sd.getFullYear()+'-'+(sd.getMonth()+1)+'-'+sd.getDate()===k;});}
-  // 그날 카테고리별 집중 → 물 높이(0~10). 세션이 없으면(DEMO) 오늘만 하드코딩 표시.
+  function sameDayISO(iso,d){var s=new Date(iso);return s.getFullYear()===d.getFullYear()&&s.getMonth()===d.getMonth()&&s.getDate()===d.getDate();}
+  // 그날 카테고리별 집중 → 물 높이(0~10). 앱과 동일 공식: focusSec/1800*1.5 +
+  // 그날 완료한 작업수*1.5. 세션·완료가 전혀 없으면(DEMO) 오늘만 하드코딩.
   function sideLevel(id){
-    if(!allSessions().length){var sd=SIDES.filter(function(x){return x.id===id;})[0];return (bucketDay===0&&sd)?sd.demo:0;}
-    var secs=bucketSessions().filter(function(s){return s.categoryID===id;}).reduce(function(a,s){return a+(s.focusedSec||0);},0);
-    return Math.max(0,Math.min(10,Math.round(secs/1800*1.5*10)/10));
+    var d=bucketDate(),ss=allSessions();
+    var secs=ss.length?bucketSessions().filter(function(s){return s.categoryID===id;}).reduce(function(a,s){return a+(s.focusedSec||0);},0):0;
+    var doneTasks=(DATA.tasks||[]).filter(function(t){return t.categoryID===id&&t.isDone&&t.completedAt&&sameDayISO(t.completedAt,d);}).length;
+    var lv=secs/1800*1.5+doneTasks*1.5;
+    if(!ss.length&&lv===0){var sd=SIDES.filter(function(x){return x.id===id;})[0];if(bucketDay===0&&sd)lv=sd.demo;}
+    return Math.max(0,Math.min(10,Math.round(lv*10)/10));
   }
   function bucketDaySec(){
     if(!allSessions().length)return bucketDay===0?SIDES.reduce(function(a,x){return a+Math.round(x.demo/1.5*1800);},0):0;
@@ -834,7 +841,7 @@
   function applyTub(){
     var tub=document.getElementById('tub'),badge=document.getElementById('bBadge');if(!tub)return;
     tub.style.transform=bSel<0
-      ? 'rotateX(26deg) rotateY(0deg)'   // 미선택: 위에서 보기 26도 (요청)
+      ? 'rotateX(-16deg) rotateY(0deg)'   // 미선택: 아래에서 보기(below) (요청)
       : 'rotateX(8deg) rotateY('+(-bSel*60)+'deg)';
     tub.querySelectorAll('.wall').forEach(function(w){var i=+w.dataset.i,sel=(i===bSel);w.classList.toggle('sel',sel);w.classList.toggle('dim',bSel>=0&&!sel);});
     if(bSel>=0){badge.classList.add('on');badge.textContent=Math.round(sideLevel(SIDES[bSel].id))+' / 10';badge.style.background=catColor(SIDES[bSel].id);}
@@ -908,11 +915,13 @@
     return d;}
   function currentSnap(){
     serverSnap=serverSnap||{schemaVersion:1,tasks:[],habits:[],sessions:[],settings:null};
-    serverSnap.tasks=DATA.tasks;serverSnap.habits=DATA.habits;if(DATA.settings)serverSnap.settings=DATA.settings;
+    serverSnap.tasks=DATA.tasks;serverSnap.habits=DATA.habits;
+    serverSnap.sessions=(DATA.sessions&&DATA.sessions.length)?DATA.sessions:(serverSnap.sessions||[]);
+    if(DATA.settings)serverSnap.settings=DATA.settings;
     return serverSnap;}
   var pushTimer=null;
   function pushSnapshot(){if(!session)return;clearTimeout(pushTimer);pushTimer=setTimeout(doPush,1200);}
-  function doPush(){if(!session)return;
+  function doPush(){pushTimer=null;if(!session)return;
     var body=[{user_id:session.user.id,snapshot:currentSnap(),device_id:webDeviceId(),updated_at:new Date().toISOString()}];
     fetch(SUPA_URL+'/rest/v1/sundial_state',{method:'POST',headers:{apikey:SUPA_KEY,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)})
     .then(function(r){if(r.status===401)signOut();}).catch(function(){});
@@ -968,6 +977,12 @@
   document.getElementById('statsBtn').addEventListener('click',openStats);
   document.getElementById('statsClose').addEventListener('click',function(){document.getElementById('statsScrim').classList.remove('open');});
   document.getElementById('statsScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+
+  // 탭이 다시 보이면 서버에서 새로 받아 앱 변경을 반영 (요청: 동기화). 단,
+  // 아직 안 올린 웹 편집(디바운스 대기)이 있으면 덮어쓰지 않고 건너뛴다.
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden && session && !pushTimer) fetchSnapshot();
+  });
 
   /* ---------- boot ---------- */
   updateAcct();setTab('todo');renderAll();if(session)fetchSnapshot();
