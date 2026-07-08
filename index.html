@@ -52,6 +52,8 @@
     font-weight:600;font-size:13.5px;box-shadow:0 6px 15px rgba(20,30,60,.22);display:flex;align-items:center;gap:8px;
     border:1px solid rgba(255,255,255,.4)}
   .block small{margin-left:auto;font-weight:600;opacity:.8;font-size:11px}
+  .block-resize{position:absolute;left:0;right:0;bottom:0;height:12px;cursor:ns-resize;border-radius:0 0 12px 12px}
+  .block-resize::after{content:"";position:absolute;left:50%;bottom:3px;transform:translateX(-50%);width:26px;height:3px;border-radius:3px;background:rgba(255,255,255,.6)}
   .tl-empty{position:absolute;left:0;right:0;top:46%;text-align:center;color:#fff;opacity:.9;font-size:14px;padding:0 20px}
   .tl-tree{position:absolute;bottom:0;right:12px;width:88px;z-index:2;pointer-events:none;filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))}
   .tl-hills{position:absolute;left:0;right:0;bottom:0;height:150px;width:100%;object-fit:cover;object-position:center bottom;mix-blend-mode:soft-light;opacity:.9;z-index:1;pointer-events:none}
@@ -231,6 +233,10 @@
   .subt.done{text-decoration:line-through;color:var(--ink-soft)}
   .subdel{border:0;background:transparent;color:var(--ink-soft);font-size:16px;cursor:pointer;opacity:.5}
   .subdel:hover{opacity:1;color:#e0564e}
+  .stat-big{font-size:16px;margin-bottom:2px}.stat-big b{font-size:19px}
+  .stat-prog{height:11px;border-radius:6px;background:var(--line);overflow:hidden;margin-top:6px}
+  .stat-prog>div{height:100%;background:var(--sky-blue);border-radius:6px}
+  .stat-note{font-size:12px;color:var(--ink-soft);margin-top:8px}
   /* 집중 모드 (요청) */
   .focusScrim{position:fixed;inset:0;z-index:40;background:linear-gradient(180deg,#1a2340,#0d1326);color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px}
   .focusScrim.open{display:flex}
@@ -250,7 +256,9 @@
       <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="54" r="28" fill="none" stroke="#f2c14e" stroke-width="7"/><circle cx="50" cy="20" r="6.5" fill="#f2c14e"/></svg>
       harufocus
     </div>
-    <button class="acct" id="accountBtn">로그인</button>
+    <button class="acct" id="statsBtn" title="통계" style="margin-left:auto">📊</button>
+    <button class="acct" id="settingsBtn" title="설정" style="margin-left:8px">⚙</button>
+    <button class="acct" id="accountBtn" style="margin-left:8px">로그인</button>
   </header>
 
   <div class="layout">
@@ -369,6 +377,28 @@
   <div class="ft-btns"><button class="ft-pause" id="ftPause">일시정지</button><button class="ft-finish" id="ftFinish">끝내기</button></div>
 </div>
 
+<!-- 설정 (요청: 웹 이식) -->
+<div class="scrim" id="settingsScrim">
+  <div class="modal">
+    <button class="mclose" id="settingsClose">✕</button>
+    <h3>설정</h3>
+    <div class="elabel">하루 집중 목표 (분)</div><input type="number" id="setGoal" min="0" step="30">
+    <div class="elabel">기상 시각</div><input type="time" id="setWake">
+    <div class="elabel">취침 시각</div><input type="time" id="setBed">
+    <div class="msub" style="margin-top:10px">기상·취침 시각이 타임라인에 보이는 시간대를 정해요.</div>
+    <button class="go" id="setSave">저장</button>
+  </div>
+</div>
+
+<!-- 통계 (요청: 웹 이식) -->
+<div class="scrim" id="statsScrim">
+  <div class="modal wide">
+    <button class="mclose" id="statsClose">✕</button>
+    <h3>통계</h3>
+    <div id="statsBody"></div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
@@ -422,6 +452,11 @@
   function selDate(){var d=new Date();d.setDate(d.getDate()+dayOffset);return d;}
   function selKey(){var d=selDate();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
   function renderBig(){
+    // 기상·취침 설정이 타임라인 시간대를 정한다 (요청).
+    var sset=DATA.settings||{};
+    TS=Math.max(0,Math.floor((sset.wakeMinutes!=null?sset.wakeMinutes:360)/60));
+    TE=Math.min(24,Math.ceil((sset.bedMinutes!=null?sset.bedMinutes:1440)/60));
+    if(TE<=TS+2)TE=24;
     var sc=document.getElementById('tlScroll');sc.innerHTML='';
     var html='';for(var h=TS;h<=TE;h++){html+='<div class="hour"><span class="lbl">'+(h%24).toString().padStart(2,'0')+':00</span><span class="rule"></span></div>';}
     sc.insertAdjacentHTML('beforeend',html);
@@ -435,8 +470,9 @@
       el.style.top=yFor(hf)+'px';el.style.height=Math.max(28,(t.durationMin/60)*PPH-6)+'px';
       el.style.background=hexA(col,.9);el.style.borderColor=hexA(col,.5);
       el.innerHTML='<span>'+catIcon(t.categoryID)+'</span>'+esc(t.title)+'<small>'+t.durationMin+'m</small>';
-      el.style.cursor='grab';el.title='드래그로 이동 · 클릭으로 수정';
-      dragBlock(el,t);
+      el.style.cursor='grab';el.title='드래그로 이동 · 아래끝으로 길이 · 클릭으로 수정';
+      var rz=document.createElement('div');rz.className='block-resize';el.appendChild(rz);
+      dragBlock(el,t);resizeBlock(rz,el,t);
       sc.appendChild(el);
     });
     var nf=TS+1.5;
@@ -539,6 +575,15 @@
     el.addEventListener('pointerup',done);
     el.addEventListener('pointercancel',function(){base=null;el.style.cursor='grab';});
   }
+  // 타임라인 블록 아래끝 드래그로 길이(분) 조절 (요청): 5분 스냅, 양방향 sync.
+  function resizeBlock(handle,el,t){
+    var sy=0,baseDur=0,active=false,pending=0;
+    handle.addEventListener('pointerdown',function(e){e.stopPropagation();sy=e.clientY;baseDur=t.durationMin||50;active=true;pending=baseDur;try{handle.setPointerCapture(e.pointerId);}catch(_){}});
+    handle.addEventListener('pointermove',function(e){if(!active)return;e.stopPropagation();
+      var dMin=Math.round(((e.clientY-sy)/PPH*60)/5)*5;pending=Math.max(5,baseDur+dMin);
+      el.style.height=Math.max(28,(pending/60)*PPH-6)+'px';el.querySelector('small').textContent=pending+'m';});
+    handle.addEventListener('pointerup',function(e){if(!active)return;e.stopPropagation();active=false;if(pending&&pending!==baseDur){t.durationMin=pending;renderBig();renderMosaic();pushSnapshot();}});
+  }
 
   /* ---------- 작업 편집 모달 (요청: 앱처럼 편집) ---------- */
   var editTask=null,eCat='focus',eDur=0,eQuad=0;
@@ -612,6 +657,51 @@
     fTask.actualFocusedSec=(fTask.actualFocusedSec||0)+el;fTask.cumulativeFocusedSec=(fTask.cumulativeFocusedSec||0)+el;fTask.lastFocusedAt=new Date().toISOString();
     if(!fTask.durationMin){var mins=Math.max(1,Math.round(el/60));fTask.durationMin=mins;fTask.scheduledStart=new Date(Date.now()-mins*60000).toISOString();}
     document.getElementById('focusScrim').classList.remove('open');fTask=null;renderAll();pushSnapshot();}
+
+  /* ---------- 설정 (요청: 웹 이식) ---------- */
+  function minToHHMM(m){m=((m%1440)+1440)%1440;return ('0'+Math.floor(m/60)).slice(-2)+':'+('0'+(m%60)).slice(-2);}
+  function hhmmToMin(v){var p=(v||'').split(':');return p.length===2?(+p[0]*60+ +p[1]):0;}
+  function openSettings(){var s=DATA.settings||{};
+    document.getElementById('setGoal').value=s.focusGoalMinutes!=null?s.focusGoalMinutes:240;
+    document.getElementById('setWake').value=minToHHMM(s.wakeMinutes!=null?s.wakeMinutes:420);
+    document.getElementById('setBed').value=minToHHMM(s.bedMinutes!=null?s.bedMinutes:1380);
+    document.getElementById('settingsScrim').classList.add('open');}
+  function saveSettings(){if(!DATA.settings)DATA.settings={};
+    DATA.settings.focusGoalMinutes=parseInt(document.getElementById('setGoal').value,10)||0;
+    DATA.settings.wakeMinutes=hhmmToMin(document.getElementById('setWake').value);
+    DATA.settings.bedMinutes=hhmmToMin(document.getElementById('setBed').value);
+    document.getElementById('settingsScrim').classList.remove('open');renderAll();pushSnapshot();}
+
+  /* ---------- 통계 (요청: 웹 이식) ---------- */
+  function focusStats(){
+    var ss=allSessions();
+    if(ss.length){var cutoff=new Date();cutoff.setDate(cutoff.getDate()-6);cutoff.setHours(0,0,0,0);
+      var byCat={},total=0,today=0,tk=todayKey();
+      ss.forEach(function(s){var d=new Date(s.start),sec=s.focusedSec||0;
+        if(d>=cutoff){byCat[s.categoryID]=(byCat[s.categoryID]||0)+sec;total+=sec;}
+        if(dateKey(s.start)===tk)today+=sec;});
+      return {byCat:byCat,total:total,today:today,demo:false};}
+    // 세션 없으면(DEMO/미로그인) 작업 누적 집중으로 근사.
+    var byCat={},total=0;(DATA.tasks||[]).forEach(function(t){var sec=t.actualFocusedSec||0;if(sec){byCat[t.categoryID]=(byCat[t.categoryID]||0)+sec;total+=sec;}});
+    return {byCat:byCat,total:total,today:0,demo:true};
+  }
+  function hm(sec){var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);return (h>0?h+'시간 ':'')+m+'분';}
+  function openStats(){
+    var st=focusStats(),goal=((DATA.settings&&DATA.settings.focusGoalMinutes)||240)*60;
+    var maxCat=Math.max(1,Object.keys(st.byCat).reduce(function(m,k){return Math.max(m,st.byCat[k]);},0));
+    var streak=(DATA.habits||[]).reduce(function(m,h){return Math.max(m,habitStreak(h));},0);
+    var bars=Object.keys(st.byCat).sort(function(a,b){return st.byCat[b]-st.byCat[a];}).map(function(k){
+      return '<div class="bi-side"><span class="nm">'+esc(catName(k))+'</span><div class="bar"><div class="fill" style="width:'+Math.round(st.byCat[k]/maxCat*100)+'%;background:'+catColor(k)+'"></div></div><span class="v">'+hm(st.byCat[k])+'</span></div>';}).join('')
+      ||'<div class="stat-note">아직 집중 기록이 없어요.</div>';
+    var body=document.getElementById('statsBody');
+    body.innerHTML=
+      '<div class="stat-big">'+(st.demo?'누적':'지난 7일')+' · <b>'+hm(st.total)+'</b> 집중</div>'+
+      '<div class="elabel">카테고리별</div><div class="bi-sides">'+bars+'</div>'+
+      (st.demo?'':'<div class="elabel">오늘 · 목표</div><div>'+hm(st.today)+' / '+hm(goal)+'</div><div class="stat-prog"><div style="width:'+Math.min(100,Math.round(st.today/Math.max(1,goal)*100))+'%"></div></div>')+
+      '<div class="elabel">최고 연속</div><div class="stat-big">🔥 '+streak+'일</div>'+
+      (st.demo?'<div class="stat-note">로그인하면 날짜별 집중 세션 통계가 보여요.</div>':'');
+    document.getElementById('statsScrim').classList.add('open');
+  }
 
   function renderTodo(){
     var list=document.getElementById('todoList');list.innerHTML='';
@@ -871,6 +961,13 @@
   document.getElementById('ftFinish').addEventListener('click',finishFocus);
   document.getElementById('bPrev').addEventListener('click',function(){shiftBucketDay(-1);});
   document.getElementById('bNext').addEventListener('click',function(){shiftBucketDay(1);});
+  document.getElementById('settingsBtn').addEventListener('click',openSettings);
+  document.getElementById('settingsClose').addEventListener('click',function(){document.getElementById('settingsScrim').classList.remove('open');});
+  document.getElementById('settingsScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+  document.getElementById('setSave').addEventListener('click',saveSettings);
+  document.getElementById('statsBtn').addEventListener('click',openStats);
+  document.getElementById('statsClose').addEventListener('click',function(){document.getElementById('statsScrim').classList.remove('open');});
+  document.getElementById('statsScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 
   /* ---------- boot ---------- */
   updateAcct();setTab('todo');renderAll();if(session)fetchSnapshot();
