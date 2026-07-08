@@ -172,17 +172,17 @@
   .bcloud{position:absolute;top:0;right:0;display:flex;align-items:center;gap:6px;z-index:2}
   .bcloud-ico{font-size:26px}
   .bcloud-label{font-size:11px;font-weight:700;color:var(--ink-soft);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 9px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,.06)}
-  .bucket-scene{position:relative;width:290px;height:300px;perspective:780px;flex:0 0 auto;margin:6px auto 0}
-  .tub{position:absolute;left:50%;top:54%;width:0;height:0;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.34,0,.2,1)}
+  .bucket-scene{position:relative;width:460px;max-width:100%;height:480px;perspective:1250px;flex:0 0 auto;margin:6px auto 0;cursor:grab;touch-action:none;user-select:none}
+  .bucket-scene:active{cursor:grabbing}
+  .tub{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.34,0,.2,1)}
   .tub>*{position:absolute;left:0;top:0}
-  .wall{cursor:pointer;transition:opacity .45s,box-shadow .35s}
-  .wall.dim{opacity:.32}
-  .wall.sel{box-shadow:0 0 0 2px rgba(255,255,255,.85),0 12px 26px rgba(0,0,0,.28)}
-  .wlabel{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding-top:16px;pointer-events:none;color:#3a3f4c;text-shadow:0 1px 1px rgba(255,255,255,.4)}
-  .wlabel .wn{font-weight:800;font-size:13.5px;letter-spacing:-.02em}
-  .wlabel .ws{font-size:9.5px;font-weight:600;opacity:.72;margin-top:2px}
-  .wlabel .wlv{position:absolute;top:9px;right:12px;font-size:10.5px;font-weight:800;opacity:.75}
-  .cap{backface-visibility:hidden}
+  .wall{transition:background .35s}
+  .wall.back .wlabel{opacity:0}
+  .wlabel{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding-top:22px;pointer-events:none;color:#3a3f4c;text-shadow:0 1px 1px rgba(255,255,255,.4);transition:opacity .35s,color .35s}
+  .wlabel .wn{font-weight:800;font-size:16px;letter-spacing:-.02em}
+  .wlabel .ws{font-size:11px;font-weight:600;opacity:.72;margin-top:3px}
+  .wlabel .wlv{position:absolute;top:12px;right:16px;font-size:12px;font-weight:800;opacity:.8}
+  .cap{backface-visibility:visible}
   .bbadge{position:absolute;left:50%;top:2px;transform:translateX(-50%);color:#fff;font-weight:800;font-size:15px;padding:5px 13px;border-radius:999px;box-shadow:0 7px 16px rgba(0,0,0,.28);opacity:0;transition:opacity .3s}
   .bbadge.on{opacity:1}
   .bucket-info{flex:1;min-width:230px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 16px 14px}
@@ -408,10 +408,10 @@
 
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function hexA(h,a){var n=parseInt(h.slice(1),16);return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';}
-  var CATS={focus:{name:'공부/일',color:'#4585D6'},study:{name:'성장',color:'#27AFC1'},health:{name:'몸',color:'#F0863D'},mind:{name:'마음',color:'#E85A8A'},life:{name:'돈',color:'#43B96B'},rest:{name:'기쁨',color:'#EAB81E'}};
+  var CATS={focus:{name:'공부/일',color:'#4585D6'},study:{name:'성장',color:'#27AFC1'},health:{name:'몸',color:'#F0863D'},mind:{name:'마음',color:'#E85A8A'},life:{name:'돈',color:'#43B96B'},rest:{name:'기쁨',color:'#EAB81E'},people:{name:'사람',color:'#9A5BD8'}};
   function catColor(id){return (CATS[id]||CATS.focus).color;}
   function catName(id){return (CATS[id]||CATS.focus).name;}
-  function catIcon(id){return {focus:'📘',study:'🌱',health:'🏃',mind:'🧘',life:'💰',rest:'🎉'}[id]||'•';}
+  function catIcon(id){return {focus:'📘',study:'🌱',health:'🏃',mind:'🧘',life:'💰',rest:'🎉',people:'👥'}[id]||'•';}
   function fmtTime(iso){if(!iso)return '—';var d=new Date(iso);return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
   function dateKey(iso){var d=new Date(iso);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
   function todayKey(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
@@ -778,17 +778,20 @@
       w.appendChild(c);
     });
   }
-  /* ---------- bucket (육각 물통; 날짜별 집중=물이 차오름, 요청) ---------- */
+  /* ---------- bucket (7기둥 물통; 날짜별 집중=물이 차오름, 요청) ---------- */
   var SIDES=[
     {id:'focus',name:'공부/일',sub:'탄력 붙음',msg:'동기도 성과도 좋아요 — 이 흐름을 타요.',demo:10},
     {id:'study',name:'성장',sub:'복리 성장',msg:'성장은 복리예요. 매일 조금씩 쌓여요.',demo:6},
-    {id:'mind',name:'마음',sub:'차오름',msg:'마음이 차오르고 있어요. 잠깐의 쉼도 채움이에요.',demo:7},
-    {id:'health',name:'몸',sub:'움직임',msg:'몸을 움직인 만큼 하루가 가벼워져요.',demo:5},
+    {id:'mind',name:'마음',sub:'맑고 안정',msg:'마음이 차오르고 있어요. 잠깐의 쉼도 채움이에요.',demo:7},
+    {id:'health',name:'몸',sub:'든든함',msg:'몸을 움직인 만큼 하루가 가벼워져요.',demo:5},
     {id:'life',name:'돈',sub:'꾸준함',msg:'작은 습관이 통장을 바꿔요.',demo:8},
-    {id:'rest',name:'기쁨',sub:'여유',msg:'기쁨도 계획이에요. 오늘 한 조각.',demo:4}
+    {id:'rest',name:'기쁨',sub:'여유',msg:'기쁨도 계획이에요. 오늘 한 조각.',demo:4},
+    {id:'people',name:'사람',sub:'연결됨',msg:'가까운 사람에게 건넨 한마디가 오래 남아요.',demo:3}
   ];
-  var bSel=-1,bucketDay=0,tubBuilt=false;
-  var TUB={N:6,R:92,H:150};TUB.a=TUB.R*Math.cos(Math.PI/TUB.N);TUB.s=2*TUB.R*Math.sin(Math.PI/TUB.N);
+  var bSel=-1,bucketDay=0,tubBuilt=false,bView=0,bManual={},bIntroTimer=null;
+  var TUB={N:7,R:142,H:232};TUB.a=TUB.R*Math.cos(Math.PI/TUB.N);TUB.s=2*TUB.R*Math.sin(Math.PI/TUB.N);TUB.step=360/TUB.N;
+  TUB.wood=0.14;                 // 아래 나무 바닥 비율(높이 0 지점)
+  TUB.waterMax=TUB.H*(1-TUB.wood-0.04);  // 물이 찰 수 있는 최대 높이
   function bucketDate(){var d=new Date();d.setDate(d.getDate()+bucketDay);d.setHours(0,0,0,0);return d;}
   function allSessions(){return (DATA.sessions&&DATA.sessions.length)?DATA.sessions:((serverSnap&&serverSnap.sessions)||[]);}
   function bucketSessions(){var d=bucketDate(),k=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
@@ -797,6 +800,7 @@
   // 그날 카테고리별 집중 → 물 높이(0~10). 앱과 동일 공식: focusSec/1800*1.5 +
   // 그날 완료한 작업수*1.5. 세션·완료가 전혀 없으면(DEMO) 오늘만 하드코딩.
   function sideLevel(id){
+    if(bManual[id]!=null)return bManual[id];   // 마우스로 내린 수동 조절 (요청)
     var d=bucketDate(),ss=allSessions();
     var secs=ss.length?bucketSessions().filter(function(s){return s.categoryID===id;}).reduce(function(a,s){return a+(s.focusedSec||0);},0):0;
     var doneTasks=(DATA.tasks||[]).filter(function(t){return t.categoryID===id&&t.isDone&&t.completedAt&&sameDayISO(t.completedAt,d);}).length;
@@ -808,62 +812,103 @@
     if(!allSessions().length)return bucketDay===0?SIDES.reduce(function(a,x){return a+Math.round(x.demo/1.5*1800);},0):0;
     return bucketSessions().reduce(function(a,s){return a+(s.focusedSec||0);},0);
   }
+  function box(w,h){var e=document.createElement('div');e.style.width=w+'px';e.style.height=h+'px';e.style.marginLeft=(-w/2)+'px';e.style.marginTop=(-h/2)+'px';return e;}
   function buildTub(){
     var tub=document.getElementById('tub');if(!tub)return;tub.innerHTML='';
-    var N=TUB.N,R=TUB.R,H=TUB.H,a=TUB.a,s=TUB.s;
-    function box(w,h){var e=document.createElement('div');e.style.width=w+'px';e.style.height=h+'px';e.style.marginLeft=(-w/2)+'px';e.style.marginTop=(-h/2)+'px';return e;}
-    var pts=[];for(var j=0;j<N;j++){var ang=(30+j*60)*Math.PI/180;pts.push((50+50*Math.cos(ang)).toFixed(1)+'% '+(50+50*Math.sin(ang)).toFixed(1)+'%');}
-    var hex='polygon('+pts.join(',')+')';
-    var fl=box(2*R,2*R);fl.className='cap';fl.style.background='repeating-linear-gradient(90deg,#ddb87a,#ddb87a 15px,#d3ac6a 15px,#d3ac6a 30px)';fl.style.clipPath=hex;fl.style.transform='translateY('+(H/2)+'px) rotateX(90deg)';tub.appendChild(fl);
+    var N=TUB.N,R=TUB.R,H=TUB.H,a=TUB.a,s=TUB.s,step=TUB.step,woodPx=TUB.wood*H;
+    // 나무 바닥 캡 — 꼭짓점을 옆면 경계에 맞춰 정렬 (요청: 아랫면 rotate로 맞춤).
+    var pts=[];for(var j=0;j<N;j++){var dd=((j+0.5)*step)*Math.PI/180;pts.push((50+50*Math.sin(dd)).toFixed(2)+'% '+(50+50*Math.cos(dd)).toFixed(2)+'%');}
+    var fl=box(2*R,2*R);fl.className='cap';fl.style.background='repeating-linear-gradient(46deg,#d9b477,#d9b477 15px,#c9a25c 15px,#c9a25c 30px)';fl.style.clipPath='polygon('+pts.join(',')+')';fl.style.transform='translateY('+(H/2-woodPx)+'px) rotateX(90deg)';tub.appendChild(fl);
     SIDES.forEach(function(side,i){
       var col=catColor(side.id),wall=box(s,H);wall.className='wall';wall.dataset.i=i;
-      wall.style.background=hexA(col,.30);wall.style.border='1px solid rgba(255,255,255,.55)';
-      wall.style.transform='rotateY('+(i*60)+'deg) translateZ('+a+'px)';
-      var wood=document.createElement('div');wood.style.cssText='position:absolute;left:0;right:0;bottom:0;height:24%;background:repeating-linear-gradient(90deg,#d9b477,#d9b477 13px,#cea75f 13px,#cea75f 26px)';wall.appendChild(wood);
-      // 물: 처음 0 → 그날 집중량으로 차오르는 애니메이션 (요청: 구름에서 물이 참).
-      var water=document.createElement('div');water.className='water';water.style.cssText='position:absolute;left:0;right:0;bottom:24%;height:0px;transition:height .85s cubic-bezier(.4,0,.2,1);background:linear-gradient(180deg,'+hexA(col,.5)+','+hexA(col,.72)+')';wall.appendChild(water);
+      wall.style.border='1px solid rgba(255,255,255,.4)';wall.style.background='transparent';
+      wall.style.transform='rotateY('+(i*step)+'deg) translateZ('+a+'px)';
+      var wood=document.createElement('div');wood.style.cssText='position:absolute;left:0;right:0;bottom:0;height:'+(TUB.wood*100)+'%;background:repeating-linear-gradient(90deg,#d9b477,#d9b477 12px,#cea75f 12px,#cea75f 24px)';wall.appendChild(wood);
+      // 물만 (요청: 연한 바탕색 제거). 처음 0 → 그날 집중량으로 차오름.
+      var water=document.createElement('div');water.className='water';water.style.cssText='position:absolute;left:0;right:0;bottom:'+(TUB.wood*100)+'%;height:0px;transition:height .8s cubic-bezier(.4,0,.2,1)';wall.appendChild(water);
+      var rim=document.createElement('div');rim.style.cssText='position:absolute;left:0;right:0;top:0;height:5px;background:'+hexA(col,.9);wall.appendChild(rim);
       var lab=document.createElement('div');lab.className='wlabel';
       lab.innerHTML='<div class="wn">'+esc(side.name)+'</div><div class="ws">'+esc(side.sub)+'</div><div class="wlv"></div>';
       wall.appendChild(lab);
-      wall.addEventListener('click',function(){selectSide(+this.dataset.i);});
       tub.appendChild(wall);
     });
-    tubBuilt=true;
+    tubBuilt=true;setupBucketDrag();
   }
   function updateWater(){
     var tub=document.getElementById('tub');if(!tub)return;
     tub.querySelectorAll('.wall').forEach(function(w){
       var lv=sideLevel(SIDES[+w.dataset.i].id);
-      var wt=w.querySelector('.water');if(wt)wt.style.height=(lv/10)*(TUB.H*0.76)+'px';
+      var wt=w.querySelector('.water');if(wt)wt.style.height=(lv/10)*TUB.waterMax+'px';
       var lvl=w.querySelector('.wlv');if(lvl)lvl.textContent=Math.round(lv);
     });
   }
   function applyTub(){
     var tub=document.getElementById('tub'),badge=document.getElementById('bBadge');if(!tub)return;
-    tub.style.transform=bSel<0
-      ? 'rotateX(-16deg) rotateY(0deg)'   // 미선택: 아래에서 보기(below) (요청)
-      : 'rotateX(8deg) rotateY('+(-bSel*60)+'deg)';
-    tub.querySelectorAll('.wall').forEach(function(w){var i=+w.dataset.i,sel=(i===bSel);w.classList.toggle('sel',sel);w.classList.toggle('dim',bSel>=0&&!sel);});
+    var tilt=bSel<0?-15:-6;
+    tub.style.transform='rotateX('+tilt+'deg) rotateY('+bView+'deg)';
+    tub.querySelectorAll('.wall').forEach(function(w){
+      var i=+w.dataset.i,side=SIDES[i],col=catColor(side.id),sel=(i===bSel);
+      var facing=Math.cos((i*TUB.step+bView)*Math.PI/180);   // 1=정면, -1=뒤
+      w.classList.toggle('back',facing<0.2);                 // 뒷면 라벨 숨김 (요청)
+      w.style.zIndex=String(200+Math.round(facing*100));
+      // 선택=불투명, 나머지=이전 그대로(투명 유리) (요청).
+      w.style.background=sel?hexA(col,.92):'transparent';
+      var wt=w.querySelector('.water');
+      if(wt)wt.style.background=sel?('linear-gradient(180deg,'+hexA(col,.96)+','+col+')'):('linear-gradient(180deg,'+hexA(col,.4)+','+hexA(col,.6)+')');
+      var lab=w.querySelector('.wlabel');if(lab)lab.style.color=sel?'#fff':'#3a3f4c';
+    });
     if(bSel>=0){badge.classList.add('on');badge.textContent=Math.round(sideLevel(SIDES[bSel].id))+' / 10';badge.style.background=catColor(SIDES[bSel].id);}
     else badge.classList.remove('on');
   }
-  function selectSide(i){bSel=(bSel===i?-1:i);applyTub();renderBInfo();}
+  function selectSide(i){if(bSel===i){bSel=-1;}else{bSel=i;bView=-i*TUB.step;}applyTub();renderBInfo();}
+  // 물통 좌우 드래그로 회전 + 선택면 세로 드래그로 물 조절 (요청).
+  function tubNoTransition(on){var tub=document.getElementById('tub');if(tub)tub.style.transition=on?'none':'';}
+  function setupBucketDrag(){
+    var scene=document.querySelector('.bucket-scene');if(!scene||scene._dragSet)return;scene._dragSet=true;
+    var sx=0,sy=0,down=false,moved=false,wallEl=null,startView=0,startLv=0;
+    scene.addEventListener('pointerdown',function(e){
+      down=true;moved=false;sx=e.clientX;sy=e.clientY;startView=bView;
+      wallEl=e.target.closest('.wall');
+      if(wallEl)startLv=sideLevel(SIDES[+wallEl.dataset.i].id);
+      try{scene.setPointerCapture(e.pointerId);}catch(_){}
+    });
+    scene.addEventListener('pointermove',function(e){
+      if(!down)return;var dx=e.clientX-sx,dy=e.clientY-sy;
+      if(Math.abs(dx)>3||Math.abs(dy)>3)moved=true;
+      if(wallEl && +wallEl.dataset.i===bSel && Math.abs(dy)>Math.abs(dx)){
+        var id=SIDES[bSel].id;bManual[id]=Math.max(0,Math.min(10,Math.round((startLv - dy/TUB.waterMax*10)*10)/10));
+        tubNoTransition(true);updateWater();applyTub();
+      }else{
+        if(bSel>=0 && Math.abs(dx)>6){bSel=-1;renderBInfo();}
+        bView=startView+dx*0.45;tubNoTransition(true);applyTub();
+      }
+    });
+    function end(){down=false;tubNoTransition(false);if(!moved&&wallEl)selectSide(+wallEl.dataset.i);}
+    scene.addEventListener('pointerup',end);
+    scene.addEventListener('pointercancel',function(){down=false;tubNoTransition(false);});
+  }
+  // 처음 열면 2초 뒤 살짝 돌았다 되돌아와 "돌릴 수 있음"을 알림 (요청).
+  function bucketIntro(){
+    if(bIntroTimer)return;bIntroTimer=setTimeout(function(){
+      if(bSel>=0)return;var base=bView;bView=base+24;applyTub();
+      setTimeout(function(){bView=base;applyTub();},680);
+    },2000);
+  }
   function updateCloud(){
     var d=bucketDate(),sec=bucketDaySec(),h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);
     var t=h>0?(h+'시간 '+(m>0?m+'분 ':'')):(m+'분 ');
     var lab=document.getElementById('bCloudLabel');if(lab)lab.textContent=(d.getMonth()+1)+'월 '+d.getDate()+'일 · '+t+'집중';
     var dt=document.getElementById('bDate');if(dt){var lbl=bucketDay===0?'오늘':bucketDay===-1?'어제':'';dt.textContent=(d.getMonth()+1)+'월 '+d.getDate()+'일'+(lbl?' · '+lbl:'');}
   }
-  function shiftBucketDay(n){bucketDay=Math.min(0,bucketDay+n);renderBucket();}   // 미래는 없음
+  function shiftBucketDay(n){bucketDay=Math.min(0,bucketDay+n);bManual={};renderBucket();}   // 미래 없음, 수동조절 초기화
   function renderBInfo(){
     var info=document.getElementById('bInfo');if(!info)return;
     var side=SIDES[bSel<0?0:bSel],col=catColor(side.id),lv=Math.round(sideLevel(side.id));
+    // 오른쪽 막대그래프 제거 (요청): 이름·레벨·메시지만.
     info.innerHTML=
       '<div class="bi-top"><span class="bi-dot" style="background:'+col+'"></span><div><div class="bi-name">'+esc(side.name)+'</div><div class="bi-sub">'+esc(side.sub)+'</div></div><span class="bi-lv" style="background:'+col+'">'+lv+' / 10</span></div>'+
       '<div class="bi-msg">↗ '+esc(side.msg)+'</div>'+
-      '<div class="bi-hint">'+(bSel<0?'옆면을 눌러 자세히 보세요.':'이 면을 다시 누르면 전체 보기로 돌아가요.')+'</div>'+
-      '<div class="bi-sides">'+SIDES.map(function(sd,k){var v=Math.round(sideLevel(sd.id));return '<div class="bi-side'+(k===bSel?' sel':'')+'" data-i="'+k+'"><span class="nm">'+esc(sd.name)+'</span><div class="bar"><div class="fill" style="width:'+(v*10)+'%;background:'+catColor(sd.id)+'"></div></div><span class="v">'+v+' / 10</span></div>';}).join('')+'</div>';
-    info.querySelectorAll('.bi-side').forEach(function(el){el.addEventListener('click',function(){selectSide(+el.dataset.i);});});
+      '<div class="bi-hint">'+(bSel<0?'물통을 좌우로 드래그해 돌려보세요. 옆면을 누르면 자세히 보여요.':'선택한 면을 아래로 끌면 물이 줄어요. 다시 누르면 전체 보기.')+'</div>';
   }
   function renderBucket(){if(!tubBuilt)buildTub();applyTub();updateWater();updateCloud();renderBInfo();}
 
@@ -878,6 +923,7 @@
       document.querySelectorAll('.tabrow button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===name);});
       document.querySelectorAll('.tabbody .view').forEach(function(v){v.classList.toggle('on',v.id==='view-'+name);});
     }
+    if(name==='bucket')bucketIntro();   // 처음 열면 살짝 돌려 보여줌 (요청)
   }
   document.querySelectorAll('.tabrow button,.mbtn').forEach(function(b){b.addEventListener('click',function(){setTab(b.dataset.tab);});});
   function setMode(m){
@@ -983,6 +1029,19 @@
   document.addEventListener('visibilitychange',function(){
     if(!document.hidden && session && !pushTimer) fetchSnapshot();
   });
+  // 몇 초마다 아주 가벼운 updated_at만 조회(≈100바이트)해서, 다른 기기가
+  // 바꿨을 때만 전체 스냅샷을 받아온다 (요청: 몇 초 뒤 반영 + egress 최소화).
+  var lastSeenUpdated=null;
+  function pollSync(){
+    if(document.hidden||!session||pushTimer)return;
+    fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=updated_at,device_id',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+session.access_token}})
+    .then(function(r){return r.json();}).then(function(rows){
+      if(!rows||!rows.length)return;var u=rows[0].updated_at,dev=rows[0].device_id;
+      if(lastSeenUpdated===null){lastSeenUpdated=u;return;}
+      if(u!==lastSeenUpdated){lastSeenUpdated=u;if(dev!==webDeviceId())fetchSnapshot();}
+    }).catch(function(){});
+  }
+  setInterval(pollSync,6000);
 
   /* ---------- boot ---------- */
   updateAcct();setTab('todo');renderAll();if(session)fetchSnapshot();
