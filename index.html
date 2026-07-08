@@ -116,6 +116,16 @@
   .day{width:27px;height:27px;border-radius:8px;display:grid;place-items:center;font-size:11.5px;font-weight:700;background:var(--card-2);color:var(--ink-soft);border:1px solid var(--line)}
   .day.on{background:#4bb6bd;color:#fff;border-color:#4bb6bd}
   .empty{color:var(--ink-soft);font-size:14px;text-align:center;padding:26px 10px}
+  /* 작업 추가/삭제 (요청: 웹 기능) */
+  .addrow{display:flex;gap:8px;margin:10px 0}
+  .addrow input{flex:1;font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+  .addrow button{font-family:inherit;font-weight:700;font-size:13.5px;border:0;border-radius:10px;padding:0 16px;background:var(--accent);color:#3a2c05;cursor:pointer}
+  .task .del{margin-left:6px;border:0;background:transparent;color:var(--ink-soft);font-size:18px;line-height:1;cursor:pointer;opacity:.55;padding:0 2px}
+  .task .del:hover{opacity:1;color:#e0564e}
+  .quad .qadd{margin-top:8px;width:100%;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--ink-soft);background:transparent;border:1px dashed var(--line);border-radius:9px;padding:8px 0;cursor:pointer}
+  .quad .mtask{display:flex;align-items:center;gap:6px}
+  .quad .mtask .del{margin-left:auto;border:0;background:transparent;color:var(--ink-soft);font-size:16px;line-height:1;cursor:pointer;opacity:.5}
+  .quad .mtask .del:hover{opacity:1;color:#e0564e}
 
   /* ---------- mobile bottom bar ---------- */
   .mbar{display:none;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-top:1px solid var(--line);
@@ -150,7 +160,9 @@
   .bucket-scene{position:relative;width:290px;height:300px;perspective:780px;flex:0 0 auto;margin:6px auto 0}
   .tub{position:absolute;left:50%;top:54%;width:0;height:0;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.34,0,.2,1)}
   .tub>*{position:absolute;left:0;top:0}
-  .wall{cursor:pointer}
+  .wall{cursor:pointer;transition:opacity .45s,box-shadow .35s}
+  .wall.dim{opacity:.32}
+  .wall.sel{box-shadow:0 0 0 2px rgba(255,255,255,.85),0 12px 26px rgba(0,0,0,.28)}
   .wlabel{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding-top:16px;pointer-events:none;color:#3a3f4c;text-shadow:0 1px 1px rgba(255,255,255,.4)}
   .wlabel .wn{font-weight:800;font-size:13.5px;letter-spacing:-.02em}
   .wlabel .ws{font-size:9.5px;font-weight:600;opacity:.72;margin-top:2px}
@@ -234,6 +246,7 @@
       <div class="tabbody">
         <section class="view on" id="view-todo">
           <h2>할 일</h2><div class="sub">별표로 위로 · 체크로 완료 · <b>→ 타임라인</b>으로 오늘 일정에 배치.</div>
+          <div class="addrow"><input id="todoAdd" placeholder="할 일 추가…" maxlength="120"><button id="todoAddBtn">추가</button></div>
           <div class="todo" id="todoList"></div>
         </section>
         <section class="view" id="view-matrix">
@@ -343,6 +356,8 @@
       el.style.top=yFor(hf)+'px';el.style.height=Math.max(28,(t.durationMin/60)*PPH-6)+'px';
       el.style.background=hexA(col,.9);el.style.borderColor=hexA(col,.5);
       el.innerHTML='<span>'+catIcon(t.categoryID)+'</span>'+esc(t.title)+'<small>'+t.durationMin+'m</small>';
+      el.style.cursor='pointer';el.title='클릭하여 수정';
+      el.addEventListener('click',function(){editBlock(t);});
       sc.appendChild(el);
     });
     var nf=TS+1.5;
@@ -386,6 +401,39 @@
     for(var i=0;i<used.length;i++){if(t+0.75<=used[i][0])break;if(t<used[i][0]+used[i][1])t=used[i][0]+used[i][1];}
     return Math.min(t,23);
   }
+  /* ---------- 작업 추가/삭제 (요청: 웹에서도 앱 기능) ---------- */
+  function uuid(){
+    var u=(window.crypto&&crypto.randomUUID)?crypto.randomUUID()
+      :'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16);});
+    return u.toUpperCase();  // Swift UUID 관례
+  }
+  // 앱 TaskDTO의 모든 필수 필드를 채운 새 작업 (누락 시 앱 디코딩 실패 방지).
+  function newTask(o){return Object.assign({
+    id:uuid(),title:'',categoryID:'focus',colorKey:'',iconName:null,repeatDaysMask:0,
+    scheduledStart:null,durationMin:0,isDone:false,isStarred:false,notes:'',dueDate:null,
+    matrixQuadrant:0,countTarget:0,countDone:0,subtasksJSON:'[]',recurrenceRaw:'',
+    reminderOffsets:[0],nudgeEnabled:false,deferredUntil:null,deferCount:0,verificationCount:0,
+    focusLockUsed:false,actualFocusedSec:0,cumulativeFocusedSec:0,lastFocusedAt:null,
+    createdAt:new Date().toISOString(),restSpansJSON:'[]',completedAt:null
+  },o||{});}
+  function addTask(o){if(!DATA.tasks)DATA.tasks=[];var t=newTask(o);DATA.tasks.push(t);renderAll();pushSnapshot();return t;}
+  function deleteTask(t){DATA.tasks=(DATA.tasks||[]).filter(function(x){return x!==t;});renderAll();pushSnapshot();}
+  function doTodoAdd(){var el=document.getElementById('todoAdd');var v=(el.value||'').trim();if(!v)return;addTask({title:v});el.value='';}
+  // 타임라인 블록 수정 (요청): 제목·시작·길이 변경 또는 삭제. 앱과 양방향 sync.
+  function editBlock(t){
+    var title=prompt('제목 (비우면 삭제)',t.title);
+    if(title===null)return;
+    if(!title.trim()){deleteTask(t);return;}
+    t.title=title.trim();
+    var d=new Date(t.scheduledStart);
+    var cur=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+    var tm=prompt('시작 시각 (HH:MM)',cur);
+    if(tm){var m=tm.match(/^(\d{1,2}):(\d{2})$/);if(m){var nd=new Date(t.scheduledStart);nd.setHours(+m[1],+m[2],0,0);t.scheduledStart=nd.toISOString();}}
+    var dur=prompt('길이(분)',String(t.durationMin||50));
+    if(dur){var dv=parseInt(dur,10);if(dv>0)t.durationMin=dv;}
+    renderAll();pushSnapshot();
+  }
+
   function renderTodo(){
     var list=document.getElementById('todoList');list.innerHTML='';
     var tasks=DATA.tasks||[];
@@ -399,7 +447,9 @@
         '<span class="t-title">'+esc(t.title)+'</span>'+
         (placed?'<span class="t-time">'+fmtTime(t.scheduledStart)+'</span>':'')+
         '<button class="send'+(placed?' placed':'')+'">'+(placed?'✓ 오늘':'→ 타임라인')+'</button>'+
-        '<span class="star'+(t.isStarred?' on':'')+'">'+(t.isStarred?'★':'☆')+'</span>';
+        '<span class="star'+(t.isStarred?' on':'')+'">'+(t.isStarred?'★':'☆')+'</span>'+
+        '<button class="del" title="삭제">×</button>';
+      row.querySelector('.del').addEventListener('click',function(){deleteTask(t);});
       row.querySelector('.check').addEventListener('click',function(){t.isDone=!t.isDone;renderTodo();pushSnapshot();});
       row.querySelector('.star').addEventListener('click',function(){t.isStarred=!t.isStarred;renderTodo();pushSnapshot();});
       row.querySelector('.send').addEventListener('click',function(){
@@ -419,7 +469,11 @@
       var items=(DATA.tasks||[]).filter(function(t){return t.matrixQuadrant===qd.q;});
       cnt[qd.q]=items.length;
       var b=document.createElement('div');b.className='quad '+qd.cls;
-      b.innerHTML='<h3>'+qd.h+'</h3>'+items.map(function(t){return '<div class="mtask">'+esc(t.title)+'</div>';}).join('');
+      b.innerHTML='<h3>'+qd.h+'</h3>'+
+        items.map(function(t){return '<div class="mtask"><span>'+esc(t.title)+'</span><button class="del" title="삭제">×</button></div>';}).join('')+
+        '<button class="qadd" data-q="'+qd.q+'">+ 추가</button>';
+      b.querySelectorAll('.mtask').forEach(function(el,k){el.querySelector('.del').addEventListener('click',function(){deleteTask(items[k]);});});
+      b.querySelector('.qadd').addEventListener('click',function(){var v=prompt('작업 추가');if(v&&v.trim())addTask({title:v.trim(),matrixQuadrant:qd.q});});
       g.appendChild(b);
     });
     // rows grow with their content (max of the two cells in the row); page never
@@ -474,7 +528,17 @@
   }
   function applyTub(){
     var tub=document.getElementById('tub'),badge=document.getElementById('bBadge');
-    tub.style.transform=bSel<0?'rotateX(43deg) rotateY(0deg)':'rotateX(14deg) rotateY('+(-bSel*60)+'deg)';
+    // 미선택: 육각 프리즘을 비스듬히 — 여러 면이 보이는 원근 (첨부1).
+    // 선택: 그 면을 정면으로, 살짝만 기울여 크게 (첨부2 Side-Pour).
+    tub.style.transform=bSel<0
+      ? 'rotateX(24deg) rotateY(-18deg)'
+      : 'rotateX(8deg) rotateY('+(-bSel*60)+'deg)';
+    // 선택된 면 강조, 나머지 흐리게 (요청).
+    tub.querySelectorAll('.wall').forEach(function(w){
+      var i=+w.dataset.i, sel=(i===bSel);
+      w.classList.toggle('sel', sel);
+      w.classList.toggle('dim', bSel>=0 && !sel);
+    });
     if(bSel>=0){badge.classList.add('on');badge.textContent=SIDES[bSel].lv+' / 10';badge.style.background=catColor(SIDES[bSel].id);}
     else badge.classList.remove('on');
   }
@@ -571,6 +635,10 @@
       if(res.j.access_token){saveSession(res.j);scrim.classList.remove('open');fetchSnapshot();}else{err.textContent='확인 메일을 보냈어요. 인증 후 로그인해 주세요.';setLMode('signIn');}
     }).catch(function(){go.disabled=false;go.textContent=mode==='signIn'?'로그인':'회원가입';err.textContent='네트워크 오류예요.';});
   }
+
+  /* ---------- 작업 추가 입력 배선 (요청) ---------- */
+  document.getElementById('todoAddBtn').addEventListener('click',doTodoAdd);
+  document.getElementById('todoAdd').addEventListener('keydown',function(e){if(e.key==='Enter')doTodoAdd();});
 
   /* ---------- boot ---------- */
   updateAcct();setTab('todo');renderAll();if(session)fetchSnapshot();
