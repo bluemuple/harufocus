@@ -553,7 +553,7 @@
     reminderOffsets:[0],nudgeEnabled:false,deferredUntil:null,deferCount:0,verificationCount:0,
     focusLockUsed:false,actualFocusedSec:0,cumulativeFocusedSec:0,lastFocusedAt:null,
     createdAt:new Date().toISOString(),restSpansJSON:'[]',completedAt:null,
-    rewardText:'',rewardMoney:0,rewardToQ4:false,isRewardItem:false,rewardGranted:false
+    rewardText:'',rewardMoney:0,rewardToQ4:false,isRewardItem:false,rewardGranted:false,matrixSort:0
   },o||{});}
   function addTask(o){if(!DATA.tasks)DATA.tasks=[];var t=newTask(o);DATA.tasks.push(t);renderAll();pushSnapshot();return t;}
   function deleteTask(t){DATA.tasks=(DATA.tasks||[]).filter(function(x){return x!==t;});renderAll();pushSnapshot();}
