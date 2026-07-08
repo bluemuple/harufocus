@@ -247,6 +247,22 @@
   .focusScrim .ft-btns button{font-family:inherit;font-size:15px;font-weight:700;border:0;border-radius:999px;padding:12px 26px;cursor:pointer}
   .focusScrim .ft-pause{background:rgba(255,255,255,.16);color:#fff}
   .focusScrim .ft-finish{background:#fff;color:#1a2340}
+  /* 보상 (요청) */
+  .rewardrow{align-items:center;gap:8px}
+  .chip.rmoney{min-width:34px;font-weight:800}
+  .chip.rmoney.on{background:#f7c948;color:#5a4600;border-color:#f0b400}
+  .rmoneylbl{font-size:12px;font-weight:800;color:#b8860b}
+  .rq4{display:flex;align-items:center;gap:4px;font-size:12.5px;white-space:nowrap;color:var(--ink-soft)}
+  .t-reward{font-size:11px;font-weight:800;color:#b8860b;background:rgba(247,201,72,.22);border-radius:999px;padding:2px 8px}
+  .bmoney{font-size:14px;font-weight:800;color:#b8860b;vertical-align:middle}
+  .reward-tip{position:absolute;z-index:5000;width:220px;background:rgba(20,22,30,.92);color:#fff;font-size:12px;line-height:1.45;padding:9px 11px;border-radius:10px;display:flex;gap:6px;align-items:flex-start;box-shadow:0 8px 22px rgba(0,0,0,.3)}
+  .reward-tip .rt-x{margin-left:auto;background:none;border:0;color:#fff;opacity:.8;font-size:12px;cursor:pointer;padding:0 2px}
+  .reward-pop{position:fixed;inset:0;z-index:6000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.34)}
+  .reward-card{background:#fff;border-radius:22px;padding:26px 24px;width:min(340px,86vw);text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+  .reward-emoji{font-size:48px;line-height:1}
+  .reward-title{font-size:19px;font-weight:800;margin-top:8px;color:#1a2340}
+  .reward-sub{font-size:14px;color:#4a556e;margin-top:8px;line-height:1.5}
+  .reward-ok{margin-top:16px;font-family:inherit;font-size:15px;font-weight:800;border:0;border-radius:999px;padding:11px 30px;background:#f7c948;color:#5a4600;cursor:pointer}
 </style>
 </head>
 <body data-m="todo">
@@ -311,7 +327,7 @@
           <div class="routines" id="routineList"></div>
         </section>
         <section class="view" id="view-bucket">
-          <h2>물통</h2><div class="sub">집중한 시간이 물통을 채워요. 옆면을 누르면 그 영역이 앞으로 돌아와요.</div>
+          <h2>물통 <span id="bMoney" class="bmoney"></span></h2><div class="sub">집중한 시간이 물통을 채워요. 옆면을 누르면 그 영역이 앞으로 돌아와요.</div>
           <div class="bucket-wrap">
             <div class="bucket-col">
               <div class="bucket-nav"><button id="bPrev">‹</button><span id="bDate">오늘</span><button id="bNext">›</button></div>
@@ -362,6 +378,13 @@
     <div class="erow"><input type="date" id="eDate"><input type="time" id="eTime"><button class="chip" id="eClearTime">빼기</button></div>
     <div class="elabel">매트릭스</div><div class="chips" id="eQuads"></div>
     <div class="etoggles"><label><input type="checkbox" id="eStar">별표</label><label><input type="checkbox" id="eDone">완료</label></div>
+    <div class="elabel">보상 <span style="font-weight:400;color:var(--muted)">· 끝내면 나에게 주는 선물</span></div>
+    <div class="erow rewardrow">
+      <button class="chip rmoney" id="eRewardMoney" title="가상 돈 보상">₩</button>
+      <input id="eRewardText" placeholder="" style="flex:1">
+      <span id="eRewardMoneyLbl" class="rmoneylbl"></span>
+      <label class="rq4"><input type="checkbox" id="eRewardQ4">Q4 추가</label>
+    </div>
     <div class="elabel">하위 작업</div>
     <div id="eSubs"></div>
     <div class="erow"><input id="eSubAdd" placeholder="하위 작업 추가…" maxlength="80"><button class="chip" id="eSubAddBtn">추가</button></div>
@@ -529,7 +552,8 @@
     matrixQuadrant:0,countTarget:0,countDone:0,subtasksJSON:'[]',recurrenceRaw:'',
     reminderOffsets:[0],nudgeEnabled:false,deferredUntil:null,deferCount:0,verificationCount:0,
     focusLockUsed:false,actualFocusedSec:0,cumulativeFocusedSec:0,lastFocusedAt:null,
-    createdAt:new Date().toISOString(),restSpansJSON:'[]',completedAt:null
+    createdAt:new Date().toISOString(),restSpansJSON:'[]',completedAt:null,
+    rewardText:'',rewardMoney:0,rewardToQ4:false,isRewardItem:false,rewardGranted:false
   },o||{});}
   function addTask(o){if(!DATA.tasks)DATA.tasks=[];var t=newTask(o);DATA.tasks.push(t);renderAll();pushSnapshot();return t;}
   function deleteTask(t){DATA.tasks=(DATA.tasks||[]).filter(function(x){return x!==t;});renderAll();pushSnapshot();}
@@ -612,8 +636,65 @@
     }else{document.getElementById('eDate').value='';document.getElementById('eTime').value='';}
     document.getElementById('eStar').checked=!!t.isStarred;
     document.getElementById('eDone').checked=!!t.isDone;
+    eRewardIsMoney=(t.rewardMoney||0)>0;
+    document.getElementById('eRewardText').value=eRewardIsMoney?String(t.rewardMoney):(t.rewardText||'');
+    document.getElementById('eRewardQ4').checked=!!t.rewardToQ4;
+    paintReward();
     paintEditChips();renderSubs();
     document.getElementById('editScrim').classList.add('open');
+  }
+  var eRewardIsMoney=false,eRewardPlaceholder='';
+  var REWARD_EXAMPLES=['좋아하는 카페 가기','치킨 시켜 먹기','영화 한 편','낮잠 30분','달콤한 디저트','게임 한 판','산책 다녀오기','웹툰 정주행'];
+  function paintReward(){
+    var btn=document.getElementById('eRewardMoney'),inp=document.getElementById('eRewardText'),lbl=document.getElementById('eRewardMoneyLbl');
+    btn.classList.toggle('on',eRewardIsMoney);
+    if(!eRewardPlaceholder)eRewardPlaceholder=REWARD_EXAMPLES[Math.floor(bRand()*REWARD_EXAMPLES.length)];
+    inp.placeholder=eRewardIsMoney?'금액 (숫자만)':eRewardPlaceholder;
+    inp.inputMode=eRewardIsMoney?'numeric':'text';
+    if(eRewardIsMoney){var n=parseInt((inp.value||'').replace(/[^0-9]/g,''),10);lbl.textContent=(n>0)?moneyStr(n):'';}
+    else lbl.textContent='';
+  }
+  // Math.random 회피용(워크플로 재현성 무관, 웹은 그냥 Math.random 사용).
+  function bRand(){return Math.random();}
+  function moneyStr(n){return (n||0).toLocaleString('ko-KR')+'원';}
+  // 보상 지급 (요청): 완료 시 한 번만. 돈이면 물통에 쌓고, 이름이면 Q4에 담고 축하.
+  function grantReward(t){
+    if(!t||!t.isDone||t.rewardGranted||t.isRewardItem)return;
+    if(!(t.rewardText||(t.rewardMoney||0)>0))return;
+    t.rewardGranted=true;
+    if((t.rewardMoney||0)>0){
+      if(!DATA.settings)DATA.settings={};
+      DATA.settings.rewardMoneyTotal=(DATA.settings.rewardMoneyTotal||0)+t.rewardMoney;
+      try{updateCloud();}catch(e){}
+      showCelebration('축하해요! 🎉','‘'+t.title+'’을(를) 끝내고 '+moneyStr(t.rewardMoney)+'을(를) 받았어요.');
+    }else if(t.rewardText){
+      if(t.rewardToQ4)addTask({title:t.rewardText,matrixQuadrant:4,isRewardItem:true,durationMin:0,iconName:'gift'});
+      showCelebration('축하해요! 🎉','이제 ‘'+t.rewardText+'’, 마음껏 즐겨요!');
+    }
+    pushSnapshot();
+  }
+  function showCelebration(title,sub){
+    var old=document.getElementById('rewardPop');if(old)old.remove();
+    var d=document.createElement('div');d.id='rewardPop';d.className='reward-pop';
+    d.innerHTML='<div class="reward-card"><div class="reward-emoji">🎉</div><div class="reward-title"></div><div class="reward-sub"></div><button class="reward-ok">좋아요!</button></div>';
+    d.querySelector('.reward-title').textContent=title;d.querySelector('.reward-sub').textContent=sub;
+    function close(){d.remove();}
+    d.addEventListener('click',function(e){if(e.target===d)close();});
+    d.querySelector('.reward-ok').addEventListener('click',close);
+    document.body.appendChild(d);setTimeout(close,5000);
+  }
+  // 체크 시 뜨는 설명 말풍선 (요청): X 닫기 + 3초 뒤 자동 사라짐.
+  function showRewardTip(anchor,text){
+    var old=document.getElementById('rewardTip');if(old)old.remove();
+    var b=document.createElement('div');b.id='rewardTip';b.className='reward-tip';
+    b.innerHTML='<span></span><button class="rt-x">✕</button>';
+    b.querySelector('span').textContent=text;
+    b.querySelector('.rt-x').addEventListener('click',function(){b.remove();});
+    document.body.appendChild(b);
+    var r=anchor.getBoundingClientRect();
+    b.style.left=Math.max(8,Math.min(window.innerWidth-232,r.left))+'px';
+    b.style.top=(r.top-b.offsetHeight-8+window.scrollY)+'px';
+    setTimeout(function(){if(b.parentNode)b.remove();},3000);
   }
   function closeEditor(){document.getElementById('editScrim').classList.remove('open');editTask=null;}
   // 하위 작업 (요청: 서브태스크 이식) — 체크/추가/삭제 즉시 반영, 저장 시 push.
@@ -633,8 +714,13 @@
     var tt=(document.getElementById('eTitle').value||'').trim();if(tt)editTask.title=tt;
     editTask.categoryID=eCat;editTask.durationMin=eDur;editTask.matrixQuadrant=eQuad;
     editTask.isStarred=document.getElementById('eStar').checked;
-    var done=document.getElementById('eDone').checked;
+    // 보상 저장 (요청).
+    var rt=(document.getElementById('eRewardText').value||'').trim();
+    if(eRewardIsMoney){editTask.rewardMoney=parseInt(rt.replace(/[^0-9]/g,''),10)||0;editTask.rewardText='';editTask.rewardToQ4=false;}
+    else{editTask.rewardText=rt;editTask.rewardMoney=0;editTask.rewardToQ4=document.getElementById('eRewardQ4').checked&&!!rt;}
+    var done=document.getElementById('eDone').checked,wasDone=editTask.isDone;
     if(done!==editTask.isDone){editTask.isDone=done;editTask.completedAt=done?new Date().toISOString():null;}
+    if(done&&!wasDone)grantReward(editTask);
     var dv=document.getElementById('eDate').value,tv=document.getElementById('eTime').value;
     if(dv&&tv){editTask.scheduledStart=new Date(dv+'T'+tv).toISOString();if(!editTask.durationMin)editTask.durationMin=50;}
     else if(!dv&&!tv){editTask.scheduledStart=null;}
@@ -716,13 +802,14 @@
       row.innerHTML='<span class="check'+(t.isDone?' done':'')+'"></span>'+
         '<span class="swatch" style="background:'+catColor(t.categoryID)+'"></span>'+
         '<span class="t-title">'+esc(t.title)+'</span>'+
+        (t.isRewardItem?'<span class="t-reward">보상</span>':'')+
         (placed?'<span class="t-time">'+fmtTime(t.scheduledStart)+'</span>':'')+
         '<button class="send'+(placed?' placed':'')+'">'+(placed?'✓ 오늘':'→ 타임라인')+'</button>'+
         '<span class="star'+(t.isStarred?' on':'')+'">'+(t.isStarred?'★':'☆')+'</span>'+
         '<button class="del" title="삭제">×</button>';
       row.querySelector('.del').addEventListener('click',function(){deleteTask(t);});
       var tl=row.querySelector('.t-title');tl.style.cursor='pointer';tl.addEventListener('click',function(){openEditor(t);});
-      row.querySelector('.check').addEventListener('click',function(){t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;renderTodo();pushSnapshot();});
+      row.querySelector('.check').addEventListener('click',function(){t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;if(t.isDone)grantReward(t);renderTodo();pushSnapshot();});
       row.querySelector('.star').addEventListener('click',function(){t.isStarred=!t.isStarred;renderTodo();pushSnapshot();});
       row.querySelector('.send').addEventListener('click',function(){
         if(placed)return;
@@ -737,7 +824,7 @@
   function renderMatrix(){
     var g=document.getElementById('matrixGrid');g.innerHTML='';g.classList.add('fit');
     var cnt={1:0,2:0,3:0,4:0};
-    [{q:1,cls:'q1',h:'🔥 급하고 중요'},{q:2,cls:'q2',h:'🌱 안 급하지만 중요'},{q:3,cls:'q3',h:'⚡ 급하지만 덜 중요'},{q:4,cls:'q4',h:'💤 안 급하고 덜 중요'}].forEach(function(qd){
+    [{q:1,cls:'q1',h:'🔥 급하고 중요'},{q:2,cls:'q2',h:'🌱 안 급하지만 중요'},{q:3,cls:'q3',h:'⚡ 급하지만 덜 중요'},{q:4,cls:'q4',h:'💤 사소 · 여유 · 보상'}].forEach(function(qd){
       var items=(DATA.tasks||[]).filter(function(t){return t.matrixQuadrant===qd.q;});
       cnt[qd.q]=items.length;
       var b=document.createElement('div');b.className='quad '+qd.cls;
@@ -905,6 +992,7 @@
     var t=h>0?(h+'시간 '+(m>0?m+'분 ':'')):(m+'분 ');
     var lab=document.getElementById('bCloudLabel');if(lab)lab.textContent=(d.getMonth()+1)+'월 '+d.getDate()+'일 · '+t+'집중';
     var dt=document.getElementById('bDate');if(dt){var lbl=bucketDay===0?'오늘':bucketDay===-1?'어제':'';dt.textContent=(d.getMonth()+1)+'월 '+d.getDate()+'일'+(lbl?' · '+lbl:'');}
+    var mn=document.getElementById('bMoney');if(mn){var tot=(DATA.settings&&DATA.settings.rewardMoneyTotal)||0;mn.textContent=tot>0?('💰 '+moneyStr(tot)):'';}
   }
   function shiftBucketDay(n){bucketDay=Math.min(0,bucketDay+n);bManual={};renderBucket();}   // 미래 없음, 수동조절 초기화
   function renderBInfo(){
@@ -1019,6 +1107,21 @@
   document.getElementById('eClearTime').addEventListener('click',function(){document.getElementById('eDate').value='';document.getElementById('eTime').value='';});
   document.getElementById('eSubAddBtn').addEventListener('click',addSub);
   document.getElementById('eSubAdd').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();addSub();}});
+  // 보상: 돈 토글 · Q4 체크 · 숫자만 (요청) + 설명 말풍선.
+  document.getElementById('eRewardMoney').addEventListener('click',function(){
+    eRewardIsMoney=!eRewardIsMoney;
+    var inp=document.getElementById('eRewardText');
+    if(eRewardIsMoney){inp.value=(inp.value||'').replace(/[^0-9]/g,'');document.getElementById('eRewardQ4').checked=false;
+      showRewardTip(this,'앱에만 있는 가상의 돈이에요. 끝내면 이만큼 ‘번’ 걸로 쳐서, 뇌가 보상을 느끼도록 살짝 속이는 장치예요.');}
+    paintReward();
+  });
+  document.getElementById('eRewardText').addEventListener('input',function(){
+    if(eRewardIsMoney){var d=this.value.replace(/[^0-9]/g,'');if(d!==this.value)this.value=d;}
+    paintReward();
+  });
+  document.getElementById('eRewardQ4').addEventListener('change',function(){
+    if(this.checked)showRewardTip(this,'이 일을 끝내면 이 보상이 매트릭스 ‘사소·여유·보상’ 칸에 자동으로 담겨요. 스스로에게 주는 즐길 거리 목록이 돼요.');
+  });
   document.getElementById('ftPause').addEventListener('click',togglePauseFocus);
   document.getElementById('ftFinish').addEventListener('click',finishFocus);
   document.getElementById('bPrev').addEventListener('click',function(){shiftBucketDay(-1);});
