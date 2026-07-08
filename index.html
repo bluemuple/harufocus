@@ -970,7 +970,8 @@
   function doPush(){pushTimer=null;if(!session)return;
     var body=[{user_id:session.user.id,snapshot:currentSnap(),device_id:webDeviceId(),updated_at:new Date().toISOString()}];
     fetch(SUPA_URL+'/rest/v1/sundial_state',{method:'POST',headers:{apikey:SUPA_KEY,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)})
-    .then(function(r){if(r.status===401)signOut();}).catch(function(){});
+    .then(function(r){if(r.status===401)signOut();else if(!r.ok)r.text().then(function(t){console.warn('[harufocus] 저장 실패',r.status,t);});})
+    .catch(function(e){console.warn('[harufocus] 저장 네트워크 오류',e);});
   }
   function saveSession(j){session={access_token:j.access_token,user:{id:j.user.id,email:j.user.email}};localStorage.setItem(AUTH_KEY,JSON.stringify(session));updateAcct();}
   function signOut(){session=null;localStorage.removeItem(AUTH_KEY);updateAcct();DATA=DEMO;renderAll();}
