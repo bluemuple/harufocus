@@ -843,6 +843,12 @@
     // scrolls — an overloaded cell scrolls internally (요청).
     var r1=Math.max(cnt[1],cnt[2]),r2=Math.max(cnt[3],cnt[4]);
     g.style.gridTemplateRows=(1+r1*0.7)+'fr '+(1+r2*0.7)+'fr';
+    // 시나리오1 (요청, 앱 파리티): 열 너비도 내용(가장 긴 제목)에 따라 —
+    // 같은 열(q1/q3, q2/q4)은 너비 공유, 극단 클램프.
+    function wNeed(q){var m=0;(DATA.tasks||[]).forEach(function(t){if(t.matrixQuadrant===q)m=Math.max(m,(t.title||'').length);});return Math.min(24,Math.max(8,m));}
+    var wl=Math.max(wNeed(1),wNeed(3)),wr=Math.max(wNeed(2),wNeed(4));
+    var lf=Math.min(.62,Math.max(.38,wl/(wl+wr)));
+    g.style.gridTemplateColumns=lf+'fr '+(1-lf)+'fr';
   }
   function renderRoutine(){
     var w=document.getElementById('routineList');w.innerHTML='';
