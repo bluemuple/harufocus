@@ -149,6 +149,11 @@
   .routine .play{margin-left:8px;opacity:0;transition:opacity .15s}
   .routine:hover .play{opacity:.9}
   @media(hover:none){.routine .play,.routine .del{opacity:.85}}
+  /* 삭제(×)도 호버 전엔 숨김 (요청: 버튼은 호버 시 노출) — 위의 기본
+     opacity 규칙들이 이 아래에 있어 !important 없이 마지막 규칙으로 이긴다. */
+  @media(hover:hover){
+    .task:not(:hover) .del,.quad .mtask:not(:hover) .del,.routine:not(:hover) .del{opacity:0}
+  }
   .empty{color:var(--ink-soft);font-size:14px;text-align:center;padding:26px 10px}
   /* 작업 추가/삭제 (요청: 웹 기능) */
   .addrow{display:flex;gap:8px;margin:10px 0}
