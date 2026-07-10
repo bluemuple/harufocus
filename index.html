@@ -14,7 +14,8 @@
   }
   *{box-sizing:border-box;margin:0;padding:0}
   *{overscroll-behavior-x:none}
-  html,body{height:100%;overflow-x:hidden}
+  html,body{height:100%;overflow-x:hidden;touch-action:pan-y}
+  .tabbody,.tl-scroll,.tl-body,.matrix.fit .quad,.routines,.todo{touch-action:pan-y}
   body{font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
   /* Safari 주소바가 하단 바를 덮지 않게 (요청): 화면을 고정 프레임으로. */
   html,body{height:100%}
@@ -37,6 +38,13 @@
   .pane-tl{flex:0 0 42%;max-width:520px;display:flex;flex-direction:column;border-right:1px solid var(--line);min-height:0}
   .tl-top{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border-bottom:1px solid var(--line)}
   .tladd{margin-left:8px;border:0;background:var(--sky-blue);color:#fff;font-family:inherit;font-weight:700;font-size:13px;border-radius:9px;padding:7px 13px;cursor:pointer}
+  .tledit{margin-left:8px;border:1px solid var(--line);background:var(--card-2);color:var(--ink-soft);font-family:inherit;font-weight:700;font-size:13px;border-radius:9px;padding:7px 13px;cursor:pointer}
+  .tledit.on{background:var(--sky-blue);color:#fff;border-color:var(--sky-blue)}
+  /* 편집 모드: 모든 블록의 삭제·재생 버튼이 항상 보인다 (요청: 폰서도 삭제·이동) */
+  #tlScroll.editing .block{cursor:move}
+  #tlScroll.editing .block .bplay,#tlScroll.editing .block .bx{opacity:1}
+  #tlScroll.editing .block-resize::after{background:rgba(255,255,255,.95)}
+  #tlScroll.editing .block{box-shadow:0 0 0 2px rgba(255,255,255,.6),0 6px 15px rgba(20,30,60,.22)}
   .tladd:hover{filter:brightness(1.05)}
   .tl-date{font-weight:700;font-size:14px}
   .seg{margin-left:auto;display:flex;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:2px}
@@ -148,7 +156,8 @@
 
   /* routine */
   .routines{display:flex;flex-direction:column;gap:11px}
-  .routine{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 14px}
+  .routine{background:rgba(255,255,255,.96);border:1px solid rgba(255,255,255,.7);border-radius:14px;padding:12px 14px;box-shadow:0 4px 14px rgba(20,40,80,.10);max-width:100%;overflow:hidden}
+  .routine .days{flex-wrap:wrap}
   .r-top{display:flex;align-items:center;gap:10px}
   .r-emoji{font-size:19px}.r-name{font-weight:700}.r-meta{margin-left:auto;font-size:12px;color:var(--ink-soft)}
   .play{width:31px;height:31px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:11px;margin-left:6px;cursor:pointer}
@@ -197,7 +206,11 @@
 
   /* ---------- responsive ---------- */
   @media(max-width:860px){
-    .layout{display:block;position:relative}
+    .layout{display:block;position:relative;padding-bottom:64px}
+    /* 하단 바를 뷰포트 바닥에 고정 (요청: 항상 보이게, 내부 스크롤·주소바 무관) */
+    .mbar{position:fixed;left:0;right:0;bottom:0}
+    .tabbody{padding-bottom:76px}
+    .pane-tl .tl-body{padding-bottom:64px}
     .pane-tl,.pane-tabs{position:absolute;inset:0;max-width:none;flex:none;border-right:none;display:none}
     body[data-m="timeline"] .pane-tl{display:flex}
     body[data-m="todo"] .pane-tabs,body[data-m="matrix"] .pane-tabs,body[data-m="routine"] .pane-tabs,body[data-m="bucket"] .pane-tabs{display:flex}
@@ -365,6 +378,7 @@
           <button id="segBig" class="on" data-mode="big">큰 타임라인</button>
           <button id="segMo" data-mode="mosaic">모자이카</button>
         </div>
+        <button id="tlEdit" class="tledit">편집</button>
         <button id="tlAdd" class="tladd">+ 작업</button>
       </div>
       <div class="tl-body">
@@ -653,6 +667,12 @@
     var slot=nextSlotToday(),base=selDate();base.setHours(Math.floor(slot),Math.round((slot%1)*60),0,0);
     var nt=addTask({title:'새 작업',scheduledStart:base.toISOString(),durationMin:50});
     openEditor(nt);
+  });
+  // 타임라인 편집 모드 (요청): 켜면 블록 삭제(×)·재생(▶)이 항상 보이고,
+  // 드래그로 이동·아래끝으로 길이·탭으로 수정은 그대로 동작한다.
+  document.getElementById('tlEdit').addEventListener('click',function(){
+    var on=document.getElementById('tlScroll').classList.toggle('editing');
+    this.classList.toggle('on',on);this.textContent=on?'완료':'편집';
   });
 
   /* ---------- mosaic (last 7 days) ---------- */
