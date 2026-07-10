@@ -15,6 +15,9 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{font-family:var(--sans);color:var(--ink);background:var(--card-2);-webkit-font-smoothing:antialiased}
+  /* Safari 주소바가 하단 바를 덮지 않게 (요청): 화면을 고정 프레임으로. */
+  html,body{height:100%}
+  body{position:fixed;inset:0;width:100%;overflow:hidden;overscroll-behavior:none}
   .app{height:100vh;height:100dvh;display:flex;flex-direction:column}
 
   header.bar{display:flex;align-items:center;justify-content:space-between;padding:11px 18px;
@@ -105,7 +108,8 @@
   .t-meta{display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap}
   .t-dur{font-size:11px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
   .t-hint{font-size:10.5px;font-weight:700;color:var(--ink-soft);background:var(--card-2);border-radius:999px;padding:1px 7px}
-  .t-memo{border:0;background:transparent;font-size:15px;cursor:pointer;opacity:.6;padding:0 2px}
+  .ic{width:1.06em;height:1.06em;vertical-align:-0.16em;display:inline-block}
+  .t-memo{border:0;background:transparent;font-size:15px;cursor:pointer;opacity:.6;padding:0 2px;color:var(--ink-soft)}
   .t-memo:hover{opacity:1}
   .t-time{font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
   /* 스와이프 대신 호버로 액션 버튼 노출 (요청): 데스크톱은 호버 시, 모바일은 항상. */
@@ -174,7 +178,7 @@
 
   /* ---------- mobile bottom bar ---------- */
   .mbar{display:none;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-top:1px solid var(--line);
-    padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+    padding:6px 4px calc(12px + env(safe-area-inset-bottom))}
   .mbtn{flex:1;border:none;background:transparent;font-family:inherit;cursor:pointer;padding:5px 2px;
     display:flex;flex-direction:column;align-items:center;gap:3px;color:#9aa3b2;font-size:10.5px;font-weight:600}
   .mbtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -213,7 +217,9 @@
   .rain-drop{position:absolute;top:78px;width:3px;height:15px;border-radius:2px;background:rgba(96,168,236,.85);z-index:5;opacity:0;animation:hfDrop 1s linear infinite}
   @keyframes hfDrop{0%{transform:translateY(0);opacity:0}12%{opacity:1}90%{opacity:.9}100%{transform:translateY(280px);opacity:0}}
   .bcloud-ico{font-size:26px}
-  .bcloud-label{font-size:11px;font-weight:700;color:var(--ink-soft);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 9px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,.06)}
+  .bcloud-label{position:relative;overflow:hidden;font-size:11px;font-weight:700;color:var(--ink-soft);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 9px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,.06)}
+  .bcloud-label .bfill{position:absolute;left:0;top:0;bottom:0;background:rgba(125,195,255,.5);transition:width 1.4s cubic-bezier(.4,0,.2,1)}
+  .bcloud-label .btxt{position:relative;z-index:1}
   .bucket-scene{position:relative;width:460px;max-width:100%;height:480px;perspective:1250px;flex:0 0 auto;margin:6px auto 0;cursor:grab;touch-action:none;user-select:none}
   .bucket-scene:active{cursor:grabbing}
   .tub{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d;transition:transform .3s cubic-bezier(.22,1,.36,1);will-change:transform}
@@ -281,19 +287,24 @@
   .stat-note{font-size:12px;color:var(--ink-soft);margin-top:8px}
   /* 집중 모드 (요청) */
   /* 포커스 페이지 — 앱과 같은 하늘 배경 + 타이머 링 (요청 첨부1) */
-  .focusScrim{position:fixed;inset:0;z-index:40;background:linear-gradient(180deg,#7ba3d4 0%,#a9c0dd 58%,#97a3ae 84%,#8d9aa5 100%);color:#fff;display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:60px;overflow:hidden}
+  .focusScrim{position:fixed;inset:0;z-index:40;background:linear-gradient(180deg,#7ba3d4 0%,#a9c0dd 58%,#97a3ae 84%,#8d9aa5 100%);color:#fff;display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:calc(12px + env(safe-area-inset-top));overflow:hidden;touch-action:manipulation}
   .focusScrim.night{background:linear-gradient(180deg,#2a3654 0%,#1a2340 62%,#141a2b 100%)}
   .focusScrim.open{display:flex}
   .focusScrim .fx{position:absolute;top:16px;right:16px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(0,0,0,.18);color:#fff;font-size:16px;cursor:pointer;z-index:3}
-  .ft-title{font-size:24px;font-weight:800;max-width:84%;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.3)}
+  .focusScrim .fm{position:absolute;top:16px;left:16px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(0,0,0,.18);color:#fff;font-size:16px;cursor:pointer;z-index:3;display:grid;place-items:center}
+  .fm-chips{position:absolute;top:64px;left:12px;right:12px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;z-index:3}
+  .fm-chip{font-family:inherit;font-size:13px;font-weight:700;border:0;border-radius:999px;padding:9px 14px;cursor:pointer;background:rgba(0,0,0,.3);color:#fff;display:flex;align-items:center;gap:5px}
+  .fm-chip.on{background:rgba(255,255,255,.32);color:#ffd76a}
+  .ft-title{margin-top:44px;font-size:24px;font-weight:800;max-width:84%;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.3)}
+  @media(max-height:760px){.ft-ringwrap{width:262px;height:262px}.ft-timer{font-size:42px}.ft-title{margin-top:40px;font-size:20px}}
   .ft-stats{font-size:13.5px;opacity:.92;margin-top:8px;text-shadow:0 1px 2px rgba(0,0,0,.25)}
-  .ft-ringwrap{position:relative;width:320px;height:320px;margin-top:30px;max-width:88vw;max-height:88vw}
+  .ft-ringwrap{position:relative;width:320px;height:320px;margin-top:18px;max-width:86vw;max-height:86vw}
   .ft-ringwrap svg{width:100%;height:100%}
   .ft-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
   .ft-timer{font-size:50px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.02em;text-shadow:0 1px 3px rgba(0,0,0,.3)}
   .ft-pausebtn{width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.16);color:#fff;font-size:16px;cursor:pointer}
   .ft-sub{font-size:13px;opacity:.9;margin-top:10px;min-height:18px;text-shadow:0 1px 2px rgba(0,0,0,.2)}
-  .ft-bottom{position:absolute;bottom:24px;left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:2}
+  .ft-bottom{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom));left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:2}
   .ft-chip{font-family:inherit;font-size:14px;font-weight:700;border:0;border-radius:999px;padding:11px 20px;cursor:pointer;background:rgba(255,255,255,.14);color:#fff}
   .ft-chip.on{color:#ffd76a;background:rgba(255,255,255,.26)}
   .ft-tree{position:absolute;bottom:0;left:5%;height:165px;pointer-events:none;z-index:1}
@@ -327,8 +338,8 @@
       <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="54" r="28" fill="none" stroke="#f2c14e" stroke-width="7"/><circle cx="50" cy="20" r="6.5" fill="#f2c14e"/></svg>
       harufocus
     </div>
-    <button class="acct" id="statsBtn" title="통계" style="margin-left:auto">📊</button>
-    <button class="acct" id="settingsBtn" title="설정" style="margin-left:8px">⚙</button>
+    <button class="acct" id="statsBtn" title="통계" style="margin-left:auto"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 20V11M11 20V4M17 20v-6"/><path d="M3 20h18"/></svg></button>
+    <button class="acct" id="settingsBtn" title="설정" style="margin-left:8px"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="3.1"/><path d="M12 3v2.5M12 18.5V21M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M3 12h2.5M18.5 12H21M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></svg></button>
     <button class="acct" id="accountBtn" style="margin-left:8px">로그인</button>
   </header>
 
@@ -352,7 +363,7 @@
           <img class="tl-tree" src="assets/tree.png" alt="">
         </div>
         <div id="view-mosaic">
-          <div class="mo-sub">최근 7일을 한눈에. 색은 영역, 칸은 시간(6시–24시).</div>
+          
           <div id="moGrid"></div>
           <div class="mo-legend" id="moLegend"></div>
         </div>
@@ -369,21 +380,21 @@
       </div>
       <div class="tabbody">
         <section class="view on" id="view-todo">
-          <h2>할 일</h2><div class="sub">별표로 위로 · 체크로 완료 · <b>→ 타임라인</b>으로 오늘 일정에 배치.</div>
+          <h2>할 일</h2>
           <div class="addrow"><input id="todoAdd" placeholder="할 일 추가…" maxlength="120"><button id="todoAddBtn">추가</button></div>
           <div class="todo" id="todoList"></div>
         </section>
         <section class="view" id="view-matrix">
-          <h2>매트릭스</h2><div class="sub">중요도와 급함으로 네 칸에 나눠 담아요.</div>
+          <h2>매트릭스</h2>
           <div class="matrix" id="matrixGrid"></div>
         </section>
         <section class="view" id="view-routine">
-          <h2>루틴</h2><div class="sub">요일마다 반복되는 일 · 왼쪽 원으로 오늘 체크 · 요일 칩으로 반복 요일 편집.</div>
+          <h2>루틴</h2>
           <div class="addrow"><input id="habitAdd" placeholder="루틴 추가…" maxlength="80"><button id="habitAddBtn">추가</button></div>
           <div class="routines" id="routineList"></div>
         </section>
         <section class="view" id="view-bucket">
-          <h2>물통 <span id="bMoney" class="bmoney"></span></h2><div class="sub">집중한 시간이 물통을 채워요. 옆면을 누르면 그 영역이 앞으로 돌아와요.</div>
+          <h2>물통 <span id="bMoney" class="bmoney"></span></h2>
           <div class="bucket-wrap">
             <div class="bucket-col">
               <div class="bucket-nav"><button id="bPrev">‹</button><span id="bDate">오늘</span><button id="bNext">›</button></div>
@@ -446,13 +457,15 @@
     <div class="elabel">하위 작업</div>
     <div id="eSubs"></div>
     <div class="erow"><input id="eSubAdd" placeholder="하위 작업 추가…" maxlength="80"><button class="chip" id="eSubAddBtn">추가</button></div>
-    <div class="ebtns"><button class="del" id="eDelete">삭제</button><button class="play" id="ePlay">▶ 집중</button><button class="go" id="eSave">저장</button></div>
+    <div class="ebtns"><button class="del" id="eDelete">삭제</button><button class="play" id="ePlay">집중 ▶</button><button class="go" id="eSave">저장</button></div>
   </div>
 </div>
 
 <!-- 집중 모드 (요청) -->
 <div class="focusScrim" id="focusScrim">
   <button class="fx" id="ftClose" title="끝내기">✕</button>
+  <button class="fm" id="fmBtn" title="Focus music"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v11"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="15" r="2.5"/></svg></button>
+  <div class="fm-chips" id="fmChips" style="display:none"></div>
   <div class="ft-title" id="ftTitle"></div>
   <div class="ft-stats" id="ftStats"></div>
   <div class="ft-ringwrap">
@@ -504,7 +517,32 @@
   var CATS={focus:{name:'공부/일',color:'#4585D6'},study:{name:'성장',color:'#27AFC1'},health:{name:'몸',color:'#F0863D'},mind:{name:'마음',color:'#E85A8A'},life:{name:'돈',color:'#43B96B'},rest:{name:'기쁨',color:'#EAB81E'},people:{name:'사람',color:'#9A5BD8'}};
   function catColor(id){return (CATS[id]||CATS.focus).color;}
   function catName(id){return (CATS[id]||CATS.focus).name;}
-  function catIcon(id){return {focus:'📘',study:'🌱',health:'🏃',mind:'🧘',life:'💰',rest:'🎉',people:'👥'}[id]||'•';}
+  // 앱(SF Symbol) 스타일 라인 아이콘 (요청: 웹 아이콘을 앱과 동일 톤으로).
+  function svgI(p,fill){return '<svg class="ic" viewBox="0 0 24 24" fill="'+(fill||'none')+'" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';}
+  var CAT_IC={
+    focus:'<path d="M4 19V6a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v13"/><path d="M4 19a2 2 0 0 0 2 2h13"/><path d="M12 4v17"/>',
+    study:'<path d="M12 21V10"/><path d="M12 13c0-4.4 3-7.4 8-7.4 0 4.4-3 7.4-8 7.4z"/><path d="M12 16c0-3.1-2.4-5.2-6-5.2 0 3.1 2.4 5.2 6 5.2z"/>',
+    health:'<path d="M12 20s-7-4.4-7-9.7A4 4 0 0 1 12 7.6 4 4 0 0 1 19 10.3C19 15.6 12 20 12 20z"/>',
+    mind:'<circle cx="12" cy="12" r="8"/><path d="M9 10h.01M15 10h.01"/><path d="M8.6 14c1 1.2 2.1 1.8 3.4 1.8s2.4-.6 3.4-1.8"/>',
+    life:'<circle cx="12" cy="12" r="8"/><path d="M8.6 9l1.8 5 1.6-4 1.6 4 1.8-5"/><path d="M8.6 12.6h6.8"/>',
+    rest:'<path d="M12 3.5l1.5 4.3 4.3 1.5-4.3 1.5L12 15l-1.5-4.2-4.3-1.5 4.3-1.5z"/><path d="M18.3 14.6l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',
+    people:'<circle cx="9" cy="8" r="3"/><path d="M3.6 20c.6-3.3 2.6-4.9 5.4-4.9s4.8 1.6 5.4 4.9"/><circle cx="17" cy="9" r="2.4"/><path d="M15.6 14.7c2.6.3 4.2 1.7 4.8 4.2"/>'};
+  var IC={
+    play:'<svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.4v13.2L19 12z"/></svg>',
+    pause:svgI('<path d="M9 5v14M15 5v14"/>'),
+    gift:svgI('<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M12 9v11M4 13.5h16"/><path d="M12 9c-3.8 0-4.9-1.9-3.9-3.3C9.2 4.2 11 4.8 12 7c1-2.2 2.8-2.8 3.9-1.3C16.9 7.1 15.8 9 12 9z"/>'),
+    note:svgI('<rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/>'),
+    cloud:svgI('<path d="M7 18a4 4 0 0 1-.6-7.95A5.5 5.5 0 0 1 17 8.6 4.2 4.2 0 0 1 16.8 18z"/>'),
+    timer:svgI('<circle cx="12" cy="13.2" r="7"/><path d="M12 10.4v3l2 1.4"/><path d="M10 3h4"/>'),
+    chart:svgI('<path d="M5 20V11M11 20V4M17 20v-6"/><path d="M3 20h18"/>'),
+    gear:svgI('<circle cx="12" cy="12" r="3.1"/><path d="M12 3v2.5M12 18.5V21M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M3 12h2.5M18.5 12H21M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/>'),
+    flame:svgI('<path d="M12 21c-3.6 0-5.9-2.2-5.9-5.3 0-2.5 1.6-4.2 2.9-5.8.4 1.1 1 1.9 2 2.4-.1-2.4.5-5.6 3-7.6-.3 2.1.6 3.4 1.9 4.9 1.1 1.3 2 2.6 2 4.3 0 3.1-2.3 5.1-5.9 5.1z"/>'),
+    coin:svgI('<circle cx="12" cy="12" r="8"/><path d="M8.6 9l1.8 5 1.6-4 1.6 4 1.8-5"/>'),
+    rain:svgI('<path d="M7 15a4 4 0 0 1-.6-7.95A5.5 5.5 0 0 1 17 5.6 4.2 4.2 0 0 1 16.8 15z"/><path d="M8 18l-1 2.5M12 18l-1 2.5M16 18l-1 2.5"/>'),
+    waves:svgI('<path d="M3 9.5c2 0 2 1.6 4 1.6s2-1.6 4-1.6 2 1.6 4 1.6 2-1.6 4-1.6M3 15c2 0 2 1.6 4 1.6s2-1.6 4-1.6 2 1.6 4 1.6 2-1.6 4-1.6"/>'),
+    plane:svgI('<path d="M21 3.5L3.3 10.8l5.9 2.3L12 20.7l3.4-6.2L21 3.5z"/><path d="M9.2 13.1L21 3.5"/>'),
+    none:svgI('<circle cx="12" cy="12" r="8"/><path d="M6.5 6.5l11 11"/>')};
+  function catIcon(id){return svgI(CAT_IC[id]||CAT_IC.focus);}
   // 매트릭스 사분면 힌트 (앱 파리티, 요청).
   function quadHint(q){return ['','지금 바로','계획','빨리 처리','나중에'][q]||'';}
   // 작업 메타 칩(요청: duration · 매트릭스 힌트 · 보상) — 할일/매트릭스/타임라인 공용.
@@ -513,13 +551,13 @@
     var dur=t.durationMin||0;
     out+='<span class="t-dur">'+(dur>0?(dur>=60?(Math.floor(dur/60)+'시간'+(dur%60?(' '+(dur%60)+'분'):'')):(dur+'분')):'실시간')+'</span>';
     if(t.matrixQuadrant&&!t.isRewardItem)out+='<span class="t-hint">'+quadHint(t.matrixQuadrant)+'</span>';
-    if(t.isRewardItem)out+='<span class="t-reward">🎁<span class="rtext"> 보상</span></span>';
-    else if((t.rewardMoney||0)>0)out+='<span class="t-reward">🎁<span class="rtext"> '+moneyStr(t.rewardMoney)+'</span></span>';
-    else if(t.rewardText)out+='<span class="t-reward">🎁<span class="rtext"> '+esc(t.rewardText)+'</span></span>';
+    if(t.isRewardItem)out+='<span class="t-reward">'+IC.gift+'<span class="rtext"> 보상</span></span>';
+    else if((t.rewardMoney||0)>0)out+='<span class="t-reward">'+IC.gift+'<span class="rtext"> '+moneyStr(t.rewardMoney)+'</span></span>';
+    else if(t.rewardText)out+='<span class="t-reward">'+IC.gift+'<span class="rtext"> '+esc(t.rewardText)+'</span></span>';
     return out;
   }
   // 메모가 있으면 메모 아이콘 (요청). 클릭 시 편집 모달의 메모로.
-  function memoIconHTML(t){return (t.notes&&t.notes.trim())?'<button class="t-memo" title="메모 보기">🗒</button>':'';}
+  function memoIconHTML(t){return (t.notes&&t.notes.trim())?'<button class="t-memo" title="메모 보기">'+IC.note+'</button>':'';}
   function fmtTime(iso){if(!iso)return '—';var d=new Date(iso);return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
   function dateKey(iso){var d=new Date(iso);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
   function todayKey(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
@@ -578,7 +616,7 @@
       el.style.top=yFor(hf)+'px';el.style.height=Math.max(28,(t.durationMin/60)*PPH-6)+'px';
       el.style.background=hexA(col,.9);el.style.borderColor=hexA(col,.5);
       el.innerHTML='<span>'+catIcon(t.categoryID)+'</span>'+esc(t.title)+'<small>'+t.durationMin+'m</small>'+
-        '<button class="bplay" title="집중 시작">▶</button><button class="bx" title="삭제">×</button>';
+        '<button class="bplay" title="집중 시작">'+IC.play+'</button><button class="bx" title="삭제">×</button>';
       el.style.cursor='grab';el.title='드래그로 이동 · 아래끝으로 길이 · 클릭으로 수정';
       var rz=document.createElement('div');rz.className='block-resize';el.appendChild(rz);
       dragBlock(el,t);resizeBlock(rz,el,t);
@@ -830,6 +868,49 @@
   var fTask=null,fStart=0,fPausedAcc=0,fPauseAt=0,fPaused=false,fTimer=null;
   function fmtMS(s){var m=Math.floor(s/60);return ('0'+m).slice(-2)+':'+('0'+(s%60)).slice(-2);}
   function focusElapsed(){var base=fPaused?fPauseAt:Date.now();return Math.max(0,Math.floor((base-fStart-fPausedAcc)/1000));}
+  /* ---------- Focus music (요청: 앱의 집중 사운드 이식) ----------
+     원본 음원(각 35~64MB)은 웹에 못 싣는다 — WebAudio로 같은 씬(비·파도·
+     장작불·비행)을 합성한다: 용량 0, 즉시 재생, 완벽 루프. */
+  var fmCtx=null,fmNodes=[],fmTimer=null;
+  function fmScene(){return localStorage.getItem('hfScene')||'none';}
+  function fmStop(){if(fmTimer){clearTimeout(fmTimer);fmTimer=null;}
+    fmNodes.forEach(function(n){try{n.stop&&n.stop();}catch(e){}});fmNodes=[];
+    if(fmCtx){try{fmCtx.close();}catch(e){}fmCtx=null;}}
+  function fmBuf(ctx,sec,brown){var b=ctx.createBuffer(1,ctx.sampleRate*sec,ctx.sampleRate),d=b.getChannelData(0),last=0;
+    for(var i=0;i<d.length;i++){var w=Math.random()*2-1;
+      if(brown){last=(last+0.02*w)/1.02;d[i]=last*3.5;}else d[i]=w;}return b;}
+  function fmStart(id){
+    fmStop();localStorage.setItem('hfScene',id);paintFm();
+    if(id==='none')return;
+    var C=window.AudioContext||window.webkitAudioContext;if(!C)return;
+    fmCtx=new C();var ctx=fmCtx,out=ctx.createGain();out.gain.value=0.5;out.connect(ctx.destination);
+    function src(buf){var x=ctx.createBufferSource();x.buffer=buf;x.loop=true;return x;}
+    if(id==='rain'){var s1=src(fmBuf(ctx,2,false)),f=ctx.createBiquadFilter(),f2=ctx.createBiquadFilter();
+      f.type='bandpass';f.frequency.value=2300;f.Q.value=0.55;f2.type='lowpass';f2.frequency.value=6500;
+      s1.connect(f);f.connect(f2);f2.connect(out);s1.start();fmNodes.push(s1);}
+    else if(id==='waves'){var s2=src(fmBuf(ctx,4,true)),lp=ctx.createBiquadFilter(),g=ctx.createGain(),lfo=ctx.createOscillator(),la=ctx.createGain();
+      lp.type='lowpass';lp.frequency.value=520;g.gain.value=0.45;lfo.frequency.value=0.085;la.gain.value=0.33;
+      lfo.connect(la);la.connect(g.gain);s2.connect(lp);lp.connect(g);g.connect(out);s2.start();lfo.start();fmNodes.push(s2,lfo);}
+    else if(id==='fire'){var s3=src(fmBuf(ctx,3,true)),lp3=ctx.createBiquadFilter();
+      lp3.type='lowpass';lp3.frequency.value=330;s3.connect(lp3);lp3.connect(out);s3.start();fmNodes.push(s3);
+      var s4=src(fmBuf(ctx,2,false)),hp=ctx.createBiquadFilter(),cg=ctx.createGain();
+      hp.type='highpass';hp.frequency.value=2600;cg.gain.value=0;s4.connect(hp);hp.connect(cg);cg.connect(out);s4.start();fmNodes.push(s4);
+      (function crack(){if(!fmCtx||fmScene()!=='fire')return;var t=fmCtx.currentTime;
+        cg.gain.setValueAtTime(0,t);cg.gain.linearRampToValueAtTime(0.18+Math.random()*0.5,t+0.008);
+        cg.gain.exponentialRampToValueAtTime(0.001,t+0.05+Math.random()*0.08);
+        fmTimer=setTimeout(crack,120+Math.random()*550);})();}
+    else if(id==='plane'){var s5=src(fmBuf(ctx,4,true)),lp5=ctx.createBiquadFilter(),g5=ctx.createGain();
+      lp5.type='lowpass';lp5.frequency.value=240;g5.gain.value=0.95;
+      s5.connect(lp5);lp5.connect(g5);g5.connect(out);s5.start();fmNodes.push(s5);}
+  }
+  var FM_LIST=[['rain','비'],['waves','파도'],['fire','장작불'],['plane','비행'],['none','없음']];
+  function paintFm(){
+    var wrap=document.getElementById('fmChips');if(!wrap)return;
+    wrap.innerHTML=FM_LIST.map(function(p){return '<button class="fm-chip'+(fmScene()===p[0]?' on':'')+'" data-s="'+p[0]+'">'+IC[p[0]]+' '+p[1]+'</button>';}).join('');
+    wrap.querySelectorAll('.fm-chip').forEach(function(el){el.addEventListener('click',function(){
+      fmStart(el.dataset.s);wrap.style.display='none';});});
+  }
+
   // 포모도로 (앱 파리티): 켜면 25·5 리듬, 실시간(0분)도 25분 카운트다운.
   function pomoOn(){return localStorage.getItem('hfPomo')==='1';}
   function focusPhase(el){
@@ -868,7 +949,7 @@
     document.getElementById('ftTimer').textContent=fmtMS(ph.countdown?ph.left:el);
     document.getElementById('ftSub').textContent=ph.rest?'쉬는 시간 — 잠깐 쉬어가요':(fPaused?'일시정지 중':'');
   }
-  function paintPomoChip(){var b=document.getElementById('ftPomo');if(b){b.classList.toggle('on',pomoOn());b.textContent=pomoOn()?'⏱ 포모도로 켜짐':'⏱ 포모도로';}}
+  function paintPomoChip(){var b=document.getElementById('ftPomo');if(b){b.classList.toggle('on',pomoOn());b.innerHTML=IC.timer+(pomoOn()?' 포모도로 켜짐':' 포모도로');}}
   function startFocus(t){closeEditor();fTask=t;fStart=Date.now();fPausedAcc=0;fPauseAt=0;fPaused=false;ftKey='';
     document.getElementById('ftTitle').innerHTML='<span style="opacity:.9">○</span> '+catIcon(t.categoryID)+' '+esc(t.title||'집중');
     // 오늘 통계 (앱 파리티): ⏳ 오늘 N분 · ✨ n번째 집중.
@@ -876,16 +957,17 @@
     document.getElementById('ftStats').textContent='⏳ 오늘 '+mins+'분 · '+(cnt===0?'✨ 첫 집중':'✨ '+(cnt+1)+'번째 집중');
     var h=new Date().getHours();
     document.getElementById('focusScrim').classList.toggle('night',h<6||h>=18);
-    document.getElementById('ftPause').textContent='⏸';paintPomoChip();
+    document.getElementById('ftPause').innerHTML=IC.pause;paintPomoChip();paintFm();
+    if(fmScene()!=='none')fmStart(fmScene());   // 저장된 focus music 이어서 (클릭 제스처라 자동재생 허용)
     document.getElementById('focusScrim').classList.add('open');tickFocus();fTimer=setInterval(tickFocus,250);}
-  function togglePauseFocus(){if(fPaused){fPausedAcc+=Date.now()-fPauseAt;fPaused=false;document.getElementById('ftPause').textContent='⏸';}
-    else{fPauseAt=Date.now();fPaused=true;document.getElementById('ftPause').textContent='▶';}}
+  function togglePauseFocus(){if(fPaused){fPausedAcc+=Date.now()-fPauseAt;fPaused=false;document.getElementById('ftPause').innerHTML=IC.pause;if(fmCtx)fmCtx.resume();}
+    else{fPauseAt=Date.now();fPaused=true;document.getElementById('ftPause').innerHTML=IC.play;if(fmCtx)fmCtx.suspend();}}
   function finishFocus(){if(!fTask)return;clearInterval(fTimer);var el=focusElapsed();
     fTask.actualFocusedSec=(fTask.actualFocusedSec||0)+el;fTask.cumulativeFocusedSec=(fTask.cumulativeFocusedSec||0)+el;fTask.lastFocusedAt=new Date().toISOString();
     if(!fTask.durationMin){var mins=Math.max(1,Math.round(el/60));fTask.durationMin=mins;fTask.scheduledStart=new Date(Date.now()-mins*60000).toISOString();}
     // 세션 기록 (요청: 물통·통계·동기화에 반영되도록 앱과 같은 FocusSession).
     if(el>=5){if(!DATA.sessions)DATA.sessions=[];DATA.sessions.push({id:uuid(),taskID:fTask.id,taskTitle:fTask.title||'',categoryID:fTask.categoryID||'focus',start:new Date(fStart).toISOString(),end:new Date().toISOString(),focusedSec:el});}
-    document.getElementById('focusScrim').classList.remove('open');fTask=null;renderAll();pushSnapshot();}
+    document.getElementById('focusScrim').classList.remove('open');fTask=null;fmStop();renderAll();pushSnapshot();}
 
   /* ---------- 설정 (요청: 웹 이식) ---------- */
   function minToHHMM(m){m=((m%1440)+1440)%1440;return ('0'+Math.floor(m/60)).slice(-2)+':'+('0'+(m%60)).slice(-2);}
@@ -946,7 +1028,7 @@
           '<div class="t-meta">'+taskMetaHTML(t)+(placed?'<span class="t-time">'+fmtTime(t.scheduledStart)+'</span>':'')+'</div></div>'+
         memoIconHTML(t)+
         '<span class="star'+(t.isStarred?' on':'')+'">'+(t.isStarred?'★':'☆')+'</span>'+
-        '<button class="play" title="집중 시작">▶</button>';
+        '<button class="play" title="집중 시작">'+IC.play+'</button>';
       var tl=row.querySelector('.t-title');tl.style.cursor='pointer';tl.addEventListener('click',function(){openEditor(t);});
       row.querySelector('.play').addEventListener('click',function(){startFocus(t);});
       var mi=row.querySelector('.t-memo');if(mi)mi.addEventListener('click',function(){openEditor(t);});
@@ -959,7 +1041,7 @@
   function renderMatrix(){
     var g=document.getElementById('matrixGrid');g.innerHTML='';g.classList.add('fit');
     var cnt={1:0,2:0,3:0,4:0};
-    [{q:1,cls:'q1',h:'🔥 급하고 중요'},{q:2,cls:'q2',h:'🌱 안 급하지만 중요'},{q:3,cls:'q3',h:'⚡ 급하지만 덜 중요'},{q:4,cls:'q4',h:'💤 사소 · 여유 · 보상'}].forEach(function(qd){
+    [{q:1,cls:'q1',h:'중요 · 긴급'},{q:2,cls:'q2',h:'중요 · 여유'},{q:3,cls:'q3',h:'긴급 · 사소'},{q:4,cls:'q4',h:'사소 · 여유 · 보상'}].forEach(function(qd){
       var items=(DATA.tasks||[]).filter(function(t){return t.matrixQuadrant===qd.q;});
       cnt[qd.q]=items.length;
       var b=document.createElement('div');b.className='quad '+qd.cls;
@@ -969,7 +1051,7 @@
           '<div class="mt-main"><div class="mt-title">'+esc(t.title)+'</div>'+
             '<div class="t-meta">'+taskMetaHTML(t)+'</div></div>'+
           memoIconHTML(t)+
-          '<button class="play" title="집중 시작">▶</button>'+
+          '<button class="play" title="집중 시작">'+IC.play+'</button>'+
           '<button class="del" title="삭제">×</button></div>';}).join('')+
         '<button class="qadd" data-q="'+qd.q+'">+ 추가</button>';
       b.querySelectorAll('.mtask').forEach(function(el,k){
@@ -1006,8 +1088,8 @@
         '<span class="r-check'+(doneToday?' done':'')+'" title="오늘 체크">'+(doneToday?'✓':'')+'</span>'+
         '<span class="r-emoji">'+catIcon(h.categoryID)+'</span>'+
         '<span class="r-name">'+esc(h.title)+'</span>'+
-        (streak>0?'<span class="r-streak">🔥 '+streak+'</span>':'<span class="r-streak" style="color:var(--ink-soft)">'+esc(catName(h.categoryID))+'</span>')+
-        '<button class="play" title="집중 시작">▶</button>'+
+        (streak>0?'<span class="r-streak">'+IC.flame+' '+streak+'</span>':'<span class="r-streak" style="color:var(--ink-soft)">'+esc(catName(h.categoryID))+'</span>')+
+        '<button class="play" title="집중 시작">'+IC.play+'</button>'+
         '<button class="del" title="삭제">×</button>'+
       '</div><div class="days">'+days+'</div>';
       c.querySelector('.r-check').addEventListener('click',function(){toggleHabitToday(h);});
@@ -1059,9 +1141,19 @@
     // 나무 바닥 캡 — 꼭짓점을 옆면 경계에 맞춰 정렬 (요청: 아랫면 rotate로 맞춤).
     var pts=[];for(var j=0;j<N;j++){var dd=((j+0.5)*step)*Math.PI/180;pts.push((50+50*Math.sin(dd)).toFixed(2)+'% '+(50+50*Math.cos(dd)).toFixed(2)+'%');}
     var fl=box(2*R,2*R);fl.className='cap';fl.style.background='repeating-linear-gradient(46deg,#d9b477,#d9b477 15px,#c9a25c 15px,#c9a25c 30px)';fl.style.clipPath='polygon('+pts.join(',')+')';fl.style.transform='translateY('+(H/2-woodPx)+'px) rotateX(90deg)';tub.appendChild(fl);
+    // 물통 '속' 수면 (요청): 비가 오면 이 면이 차오른다 — 평균 수위의 물 원반.
+    var wp=box(2*R,2*R);wp.id='waterPlane';wp.className='cap';
+    wp.style.clipPath='polygon('+pts.join(',')+')';
+    wp.style.background='radial-gradient(circle at 50% 42%,rgba(150,205,255,.92),rgba(80,155,235,.88))';
+    wp.style.transform='translateY('+(H/2-woodPx)+'px) rotateX(90deg)';
+    wp.style.transition='transform .8s cubic-bezier(.4,0,.2,1)';
+    tub.appendChild(wp);
     SIDES.forEach(function(side,i){
       var col=catColor(side.id),wall=box(s,H);wall.className='wall';wall.dataset.i=i;
-      wall.style.border='1px solid rgba(255,255,255,.4)';wall.style.background='transparent';
+      // 뼈대(테두리) 없이 단단한 옆면 재질 (요청): 프로스트 판 + 안쪽 음영.
+      wall.style.border='none';
+      wall.style.background='linear-gradient(180deg,rgba(255,255,255,.46),rgba(240,245,252,.30) 55%,rgba(226,233,244,.42))';
+      wall.style.boxShadow='inset 0 0 14px rgba(255,255,255,.35), inset 0 -2px 6px rgba(160,175,200,.25)';
       wall.style.transform='rotateY('+(i*step)+'deg) translateZ('+a+'px)';
       var wood=document.createElement('div');wood.style.cssText='position:absolute;left:0;right:0;bottom:0;height:'+(TUB.wood*100)+'%;background:repeating-linear-gradient(90deg,#d9b477,#d9b477 12px,#cea75f 12px,#cea75f 24px)';wall.appendChild(wood);
       // 물만 (요청: 연한 바탕색 제거). 처음 0 → 그날 집중량으로 차오름.
@@ -1075,11 +1167,15 @@
   }
   function updateWater(){
     var tub=document.getElementById('tub');if(!tub)return;
+    var sum=0;
     tub.querySelectorAll('.wall').forEach(function(w){
-      var lv=sideLevel(SIDES[+w.dataset.i].id);
+      var lv=sideLevel(SIDES[+w.dataset.i].id);sum+=lv;
       var wt=w.querySelector('.water');if(wt)wt.style.height=(lv/10)*TUB.waterMax+'px';
       var lvl=w.querySelector('.wlv');if(lvl)lvl.textContent=Math.round(lv);
     });
+    var wp=document.getElementById('waterPlane');
+    if(wp){var avg=sum/SIDES.length;
+      wp.style.transform='translateY('+(TUB.H/2-TUB.wood*TUB.H-(avg/10)*TUB.waterMax)+'px) rotateX(90deg)';}
   }
   function applyTub(){
     var tub=document.getElementById('tub'),badge=document.getElementById('bBadge');if(!tub)return;
@@ -1090,8 +1186,7 @@
       var facing=Math.cos((i*TUB.step+bView)*Math.PI/180);   // 1=정면, -1=뒤
       w.classList.toggle('back',facing<0.2);                 // 뒷면 라벨 숨김 (요청)
       w.style.zIndex=String(200+Math.round(facing*100));
-      // 선택해도 벽 전체를 칠하지 않는다 (요청) — 물 색만 진해지고 뱃지로 표시.
-      w.style.background='transparent';
+      // 선택해도 벽 재질은 그대로 (요청) — 물 색만 진해지고 뱃지로 표시.
       var wt=w.querySelector('.water');
       if(wt)wt.style.background=sel?('linear-gradient(180deg,'+hexA(col,.85)+','+col+')'):('linear-gradient(180deg,'+hexA(col,.4)+','+hexA(col,.6)+')');
       var lab=w.querySelector('.wlabel');if(lab)lab.style.color='#3a3f4c';
@@ -1105,7 +1200,9 @@
   // 손가락을 즉시 따라오고, 윗변에서 물이 끊기며 떨어지는 렉이 사라진다 (요청).
   function tubNoTransition(on){var tub=document.getElementById('tub');if(!tub)return;
     tub.style.transition=on?'none':'';
-    tub.querySelectorAll('.water').forEach(function(wt){wt.style.transition=on?'none':'height .8s cubic-bezier(.4,0,.2,1)';});}
+    tub.querySelectorAll('.water').forEach(function(wt){wt.style.transition=on?'none':'height .8s cubic-bezier(.4,0,.2,1)';});
+    var wp=document.getElementById('waterPlane');
+    if(wp)wp.style.transition=on?'none':'transform .8s cubic-bezier(.4,0,.2,1)';}
   function setupBucketDrag(){
     var scene=document.querySelector('.bucket-scene');if(!scene||scene._dragSet)return;scene._dragSet=true;
     var sx=0,sy=0,down=false,moved=false,wallEl=null,startView=0,startLv=0;
@@ -1143,34 +1240,47 @@
   }
   // 구름 탭 → 물통 위 구름 + 비 + 물이 0에서 차오름 (요청, 앱 메커니즘).
   var bRaining=false;
+  function rainedKey(){var d=bucketDate();return 'hfRained_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
   function rainBucket(){
     if(bRaining)return;var scene=document.querySelector('.bucket-scene'),tub=document.getElementById('tub');
     if(!scene||!tub)return;bRaining=true;
-    var mins=Math.floor(bucketDaySec()/60);
+    var sec=bucketDaySec(),rained=+localStorage.getItem(rainedKey())||0;
+    var avail=Math.max(0,sec-rained),mins=Math.floor(avail/60);
     var cl=document.createElement('div');cl.className='rain-cloud';cl.textContent='☁️';scene.appendChild(cl);
-    var drops=[],n=Math.max(5,Math.min(18,Math.round(mins/8)+5));   // 집중한 만큼 비가 많이 (요청)
+    var drops=[],n=Math.max(4,Math.min(18,Math.round(mins/8)+4));   // 구름에 모인 만큼 비가 많이 (요청)
     for(var i=0;i<n;i++){var d=document.createElement('span');d.className='rain-drop';
       d.style.left=(28+Math.random()*44)+'%';
       d.style.animationDelay=(Math.random()*0.9)+'s';
       scene.appendChild(d);drops.push(d);}
-    // 물을 0으로 비웠다가(즉시) 비가 내리는 동안 다시 차오른다.
-    tubNoTransition(true);
-    tub.querySelectorAll('.water').forEach(function(wt){wt.style.height='0px';});
-    void tub.offsetHeight;   // reflow로 0 높이 확정
-    setTimeout(function(){tubNoTransition(false);
-      tub.querySelectorAll('.water').forEach(function(wt){wt.style.transition='height 1.6s cubic-bezier(.4,0,.2,1)';});
+    // 구름의 물이 그만큼 줄어든다 (요청): 게이지를 비운다.
+    localStorage.setItem(rainedKey(),String(sec));
+    var bf=document.querySelector('.bcloud-label .bfill');if(bf)bf.style.width='0%';
+    // 옆면 기둥이 '올라오는' 게 아니라 물통 '속' 물이 차오른다 (요청):
+    // 기둥은 잠깐 사라졌다 페이드로 복귀, 수면(plane)이 바닥에서 상승.
+    var wp=document.getElementById('waterPlane');
+    tub.querySelectorAll('.water').forEach(function(wt){wt.style.transition='opacity .25s';wt.style.opacity='0';});
+    if(wp){wp.style.transition='none';
+      wp.style.transform='translateY('+(TUB.H/2-TUB.wood*TUB.H)+'px) rotateX(90deg)';}
+    void tub.offsetHeight;
+    setTimeout(function(){
+      if(wp)wp.style.transition='transform 1.6s cubic-bezier(.4,0,.2,1)';
       updateWater();},350);
     setTimeout(function(){
       cl.remove();drops.forEach(function(d){d.remove();});
-      tub.querySelectorAll('.water').forEach(function(wt){wt.style.transition='height .8s cubic-bezier(.4,0,.2,1)';});
+      tub.querySelectorAll('.water').forEach(function(wt){wt.style.transition='opacity .8s';wt.style.opacity='1';});
+      if(wp)wp.style.transition='transform .8s cubic-bezier(.4,0,.2,1)';
       bRaining=false;},2400);
   }
   function updateCloud(){
     var d=bucketDate(),sec=bucketDaySec(),h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);
     var t=h>0?(h+'시간 '+(m>0?m+'분 ':'')):(m+'분 ');
-    var lab=document.getElementById('bCloudLabel');if(lab)lab.textContent=(d.getMonth()+1)+'월 '+d.getDate()+'일 · '+t+'집중';
+    var lab=document.getElementById('bCloudLabel');
+    if(lab){var goal=((DATA.settings&&DATA.settings.focusGoalMinutes)||240)*60;
+      var rained=+localStorage.getItem('hfRained_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate())||0;
+      var avail=Math.max(0,sec-rained),pct=goal>0?Math.min(100,Math.round(avail/goal*100)):0;
+      lab.innerHTML='<span class="bfill" style="width:'+pct+'%"></span><span class="btxt">'+(d.getMonth()+1)+'월 '+d.getDate()+'일 · '+t+'집중</span>';}
     var dt=document.getElementById('bDate');if(dt){var lbl=bucketDay===0?'오늘':bucketDay===-1?'어제':'';dt.textContent=(d.getMonth()+1)+'월 '+d.getDate()+'일'+(lbl?' · '+lbl:'');}
-    var mn=document.getElementById('bMoney');if(mn){var tot=(DATA.settings&&DATA.settings.rewardMoneyTotal)||0;mn.textContent=tot>0?('💰 '+moneyStr(tot)):'';}
+    var mn=document.getElementById('bMoney');if(mn){var tot=(DATA.settings&&DATA.settings.rewardMoneyTotal)||0;mn.innerHTML=tot>0?(IC.coin+' '+moneyStr(tot)):'';}
   }
   function shiftBucketDay(n){bucketDay=Math.min(0,bucketDay+n);bManual={};renderBucket();}   // 미래 없음, 수동조절 초기화
   function renderBInfo(){
@@ -1303,6 +1413,8 @@
   document.getElementById('ftPause').addEventListener('click',togglePauseFocus);
   document.getElementById('ftFinish').addEventListener('click',finishFocus);
   document.getElementById('ftClose').addEventListener('click',finishFocus);
+  document.getElementById('fmBtn').addEventListener('click',function(){
+    var w=document.getElementById('fmChips');w.style.display=w.style.display==='none'?'flex':'none';});
   document.querySelector('.bcloud').addEventListener('click',rainBucket);
   document.getElementById('ftPomo').addEventListener('click',function(){
     localStorage.setItem('hfPomo',pomoOn()?'0':'1');ftKey='';paintPomoChip();if(fTask)tickFocus();});
