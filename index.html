@@ -201,12 +201,17 @@
   .matrix.fit .quad{min-height:0;overflow-y:auto}
 
   /* ---------- bucket ---------- */
-  .bucket-wrap{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
-  .bucket-col{flex:0 0 auto;margin:0 auto}
+  /* 물통 가운데 (요청): 세로 스택 + 중앙 정렬, 패널은 아래로. */
+  .bucket-wrap{display:flex;flex-direction:column;gap:18px;align-items:center;overscroll-behavior:contain}
+  .bucket-col{flex:0 0 auto;width:100%;max-width:480px}
   .bucket-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:2px}
   .bucket-nav button{border:0;background:transparent;font-size:22px;color:var(--ink-soft);cursor:pointer;padding:0 8px;line-height:1}
   .bucket-nav span{font-weight:800;font-size:15px;min-width:130px;text-align:center}
-  .bcloud{position:absolute;top:0;right:0;display:flex;align-items:center;gap:6px;z-index:2}
+  .bcloud{position:absolute;top:0;right:0;display:flex;align-items:center;gap:6px;z-index:2;cursor:pointer}
+  .rain-cloud{position:absolute;top:6px;left:50%;transform:translateX(-50%);font-size:64px;z-index:6;filter:drop-shadow(0 4px 10px rgba(0,0,0,.15));animation:hfCloudIn .4s ease-out}
+  @keyframes hfCloudIn{from{opacity:0;transform:translateX(-50%) translateY(-14px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+  .rain-drop{position:absolute;top:78px;width:3px;height:15px;border-radius:2px;background:rgba(96,168,236,.85);z-index:5;opacity:0;animation:hfDrop 1s linear infinite}
+  @keyframes hfDrop{0%{transform:translateY(0);opacity:0}12%{opacity:1}90%{opacity:.9}100%{transform:translateY(280px);opacity:0}}
   .bcloud-ico{font-size:26px}
   .bcloud-label{font-size:11px;font-weight:700;color:var(--ink-soft);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 9px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,.06)}
   .bucket-scene{position:relative;width:460px;max-width:100%;height:480px;perspective:1250px;flex:0 0 auto;margin:6px auto 0;cursor:grab;touch-action:none;user-select:none}
@@ -222,7 +227,7 @@
   .cap{backface-visibility:visible}
   .bbadge{position:absolute;left:50%;top:2px;transform:translateX(-50%);color:#fff;font-weight:800;font-size:15px;padding:5px 13px;border-radius:999px;box-shadow:0 7px 16px rgba(0,0,0,.28);opacity:0;transition:opacity .3s}
   .bbadge.on{opacity:1}
-  .bucket-info{flex:1;min-width:230px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 16px 14px}
+  .bucket-info{width:100%;max-width:460px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 16px 14px}
   .bi-top{display:flex;align-items:center;gap:9px}
   .bi-dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto}
   .bi-name{font-weight:800;font-size:16px}.bi-sub{font-size:12px;color:var(--ink-soft)}
@@ -275,22 +280,35 @@
   .stat-prog>div{height:100%;background:var(--sky-blue);border-radius:6px}
   .stat-note{font-size:12px;color:var(--ink-soft);margin-top:8px}
   /* 집중 모드 (요청) */
-  .focusScrim{position:fixed;inset:0;z-index:40;background:linear-gradient(180deg,#1a2340,#0d1326);color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+  /* 포커스 페이지 — 앱과 같은 하늘 배경 + 타이머 링 (요청 첨부1) */
+  .focusScrim{position:fixed;inset:0;z-index:40;background:linear-gradient(180deg,#7ba3d4 0%,#a9c0dd 58%,#97a3ae 84%,#8d9aa5 100%);color:#fff;display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:60px;overflow:hidden}
+  .focusScrim.night{background:linear-gradient(180deg,#2a3654 0%,#1a2340 62%,#141a2b 100%)}
   .focusScrim.open{display:flex}
-  .focusScrim .ft-title{font-size:22px;font-weight:800;max-width:80%;text-align:center}
-  .focusScrim .ft-timer{font-size:64px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.02em}
-  .focusScrim .ft-sub{font-size:13px;opacity:.7}
-  .focusScrim .ft-btns{display:flex;gap:12px;margin-top:20px}
-  .focusScrim .ft-btns button{font-family:inherit;font-size:15px;font-weight:700;border:0;border-radius:999px;padding:12px 26px;cursor:pointer}
-  .focusScrim .ft-pause{background:rgba(255,255,255,.16);color:#fff}
-  .focusScrim .ft-finish{background:#fff;color:#1a2340}
+  .focusScrim .fx{position:absolute;top:16px;right:16px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(0,0,0,.18);color:#fff;font-size:16px;cursor:pointer;z-index:3}
+  .ft-title{font-size:24px;font-weight:800;max-width:84%;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.3)}
+  .ft-stats{font-size:13.5px;opacity:.92;margin-top:8px;text-shadow:0 1px 2px rgba(0,0,0,.25)}
+  .ft-ringwrap{position:relative;width:320px;height:320px;margin-top:30px;max-width:88vw;max-height:88vw}
+  .ft-ringwrap svg{width:100%;height:100%}
+  .ft-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+  .ft-timer{font-size:50px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.02em;text-shadow:0 1px 3px rgba(0,0,0,.3)}
+  .ft-pausebtn{width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.16);color:#fff;font-size:16px;cursor:pointer}
+  .ft-sub{font-size:13px;opacity:.9;margin-top:10px;min-height:18px;text-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .ft-bottom{position:absolute;bottom:24px;left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:2}
+  .ft-chip{font-family:inherit;font-size:14px;font-weight:700;border:0;border-radius:999px;padding:11px 20px;cursor:pointer;background:rgba(255,255,255,.14);color:#fff}
+  .ft-chip.on{color:#ffd76a;background:rgba(255,255,255,.26)}
+  .ft-tree{position:absolute;bottom:0;left:5%;height:165px;pointer-events:none;z-index:1}
+  .ftick{stroke:rgba(255,255,255,.5)}
+  .ftlabel{fill:rgba(255,255,255,.78);font-size:13px;font-weight:700}
   /* 보상 (요청) */
   .rewardrow{align-items:center;gap:8px}
   .chip.rmoney{min-width:34px;font-weight:800}
   .chip.rmoney.on{background:#f7c948;color:#5a4600;border-color:#f0b400}
   .rmoneylbl{font-size:12px;font-weight:800;color:#b8860b}
   .rq4{display:flex;align-items:center;gap:4px;font-size:12.5px;white-space:nowrap;color:var(--ink-soft)}
-  .t-reward{font-size:11px;font-weight:800;color:#b8860b;background:rgba(247,201,72,.22);border-radius:999px;padding:2px 8px}
+  .t-reward{font-size:11px;font-weight:800;color:#b8860b;background:rgba(247,201,72,.22);border-radius:999px;padding:2px 8px;
+    white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle}
+  /* 폰에선 긴 텍스트 칩이 2줄로 깨지므로 심볼만 (요청). */
+  @media(max-width:860px){.t-reward .rtext{display:none}.t-reward{max-width:none}}
   .bmoney{font-size:14px;font-weight:800;color:#b8860b;vertical-align:middle}
   .reward-tip{position:absolute;z-index:5000;width:220px;background:rgba(20,22,30,.92);color:#fff;font-size:12px;line-height:1.45;padding:9px 11px;border-radius:10px;display:flex;gap:6px;align-items:flex-start;box-shadow:0 8px 22px rgba(0,0,0,.3)}
   .reward-tip .rt-x{margin-left:auto;background:none;border:0;color:#fff;opacity:.8;font-size:12px;cursor:pointer;padding:0 2px}
@@ -434,10 +452,22 @@
 
 <!-- 집중 모드 (요청) -->
 <div class="focusScrim" id="focusScrim">
+  <button class="fx" id="ftClose" title="끝내기">✕</button>
   <div class="ft-title" id="ftTitle"></div>
-  <div class="ft-timer" id="ftTimer">00:00</div>
+  <div class="ft-stats" id="ftStats"></div>
+  <div class="ft-ringwrap">
+    <svg id="ftRing" viewBox="0 0 320 320"></svg>
+    <div class="ft-center">
+      <div class="ft-timer" id="ftTimer">00:00</div>
+      <button class="ft-pausebtn" id="ftPause" title="일시정지">⏸</button>
+    </div>
+  </div>
   <div class="ft-sub" id="ftSub"></div>
-  <div class="ft-btns"><button class="ft-pause" id="ftPause">일시정지</button><button class="ft-finish" id="ftFinish">끝내기</button></div>
+  <div class="ft-bottom">
+    <button class="ft-chip" id="ftPomo">⏱ 포모도로</button>
+    <button class="ft-chip" id="ftFinish">■ 끝내기</button>
+  </div>
+  <img class="ft-tree" src="assets/tree.png" alt="">
 </div>
 
 <!-- 설정 (요청: 웹 이식) -->
@@ -483,9 +513,9 @@
     var dur=t.durationMin||0;
     out+='<span class="t-dur">'+(dur>0?(dur>=60?(Math.floor(dur/60)+'시간'+(dur%60?(' '+(dur%60)+'분'):'')):(dur+'분')):'실시간')+'</span>';
     if(t.matrixQuadrant&&!t.isRewardItem)out+='<span class="t-hint">'+quadHint(t.matrixQuadrant)+'</span>';
-    if(t.isRewardItem)out+='<span class="t-reward">보상</span>';
-    else if((t.rewardMoney||0)>0)out+='<span class="t-reward">🎁 '+moneyStr(t.rewardMoney)+'</span>';
-    else if(t.rewardText)out+='<span class="t-reward">🎁 '+esc(t.rewardText)+'</span>';
+    if(t.isRewardItem)out+='<span class="t-reward">🎁<span class="rtext"> 보상</span></span>';
+    else if((t.rewardMoney||0)>0)out+='<span class="t-reward">🎁<span class="rtext"> '+moneyStr(t.rewardMoney)+'</span></span>';
+    else if(t.rewardText)out+='<span class="t-reward">🎁<span class="rtext"> '+esc(t.rewardText)+'</span></span>';
     return out;
   }
   // 메모가 있으면 메모 아이콘 (요청). 클릭 시 편집 모달의 메모로.
@@ -800,14 +830,56 @@
   var fTask=null,fStart=0,fPausedAcc=0,fPauseAt=0,fPaused=false,fTimer=null;
   function fmtMS(s){var m=Math.floor(s/60);return ('0'+m).slice(-2)+':'+('0'+(s%60)).slice(-2);}
   function focusElapsed(){var base=fPaused?fPauseAt:Date.now();return Math.max(0,Math.floor((base-fStart-fPausedAcc)/1000));}
-  function tickFocus(){if(!fTask)return;var el=focusElapsed(),plan=(fTask.durationMin||0)*60;
-    document.getElementById('ftTimer').textContent=fmtMS(plan>0?Math.max(0,plan-el):el);
-    document.getElementById('ftSub').textContent=plan>0?((plan/60)+'분 중 '+Math.floor(el/60)+'분'):'실시간 집중 · '+Math.floor(el/60)+'분';}
-  function startFocus(t){closeEditor();fTask=t;fStart=Date.now();fPausedAcc=0;fPauseAt=0;fPaused=false;
-    document.getElementById('ftTitle').textContent=t.title||'집중';document.getElementById('ftPause').textContent='일시정지';
+  // 포모도로 (앱 파리티): 켜면 25·5 리듬, 실시간(0분)도 25분 카운트다운.
+  function pomoOn(){return localStorage.getItem('hfPomo')==='1';}
+  function focusPhase(el){
+    if(pomoOn()){var p=el%1800;return p<1500?{total:1500,left:1500-p,rest:false,countdown:true}:{total:300,left:1800-p,rest:true,countdown:true};}
+    var plan=(fTask.durationMin||0)*60;
+    if(plan>0&&el<plan)return{total:plan,left:plan-el,rest:false,countdown:true};
+    return{total:3600,left:0,rest:false,countdown:false};   // 딥포커스: 한 바퀴 = 60분 (앱 파리티)
+  }
+  var ftKey='';
+  // 앱 타이머 링 (요청 첨부1): 눈금 + 분 라벨 + 진행 아크 + 노브.
+  function buildRing(total,color,countdown){
+    var svg=document.getElementById('ftRing');if(!svg)return;
+    var mins=Math.max(1,Math.round(total/60)),cx=160,cy=160,html='';
+    var n=Math.min(60,mins),labEvery=mins<=30?5:10;
+    for(var k=0;k<n;k++){var frac=k/n,a=frac*2*Math.PI-Math.PI/2;
+      var mv=Math.round(frac*mins),major=(mv%labEvery===0);
+      var r1=major?130:134,r2=140;
+      html+='<line class="ftick" x1="'+(cx+Math.cos(a)*r1).toFixed(1)+'" y1="'+(cy+Math.sin(a)*r1).toFixed(1)+'" x2="'+(cx+Math.cos(a)*r2).toFixed(1)+'" y2="'+(cy+Math.sin(a)*r2).toFixed(1)+'" stroke-width="'+(major?2:1)+'"/>';
+      if(major){var lr=152;html+='<text class="ftlabel" x="'+(cx+Math.cos(a)*lr).toFixed(1)+'" y="'+(cy+Math.sin(a)*lr+4.5).toFixed(1)+'" text-anchor="middle">'+mv+'</text>';}
+    }
+    html+='<circle cx="160" cy="160" r="118" fill="none" stroke="'+hexA(color,countdown?0.28:0.16)+'" stroke-width="13"/>';
+    html+='<circle id="ftArc" cx="160" cy="160" r="118" fill="none" stroke="'+color+'" stroke-width="13" stroke-linecap="round" transform="rotate(-90 160 160)"/>';
+    html+='<g id="ftKnob"><circle cx="160" cy="42" r="10" fill="'+color+'" stroke="#fff" stroke-width="3.5"/></g>';
+    svg.innerHTML=html;
+  }
+  function tickFocus(){
+    if(!fTask)return;var el=focusElapsed(),ph=focusPhase(el);
+    var col=ph.rest?'#6BC1F9':catColor(fTask.categoryID);
+    var key=ph.total+'|'+col+'|'+ph.countdown;
+    if(key!==ftKey){ftKey=key;buildRing(ph.total,col,ph.countdown);}
+    var prog=ph.countdown?1-(ph.left/ph.total):((el%3600)/3600);
+    var C=2*Math.PI*118,arc=document.getElementById('ftArc');
+    if(arc){if(ph.countdown){arc.setAttribute('stroke-dasharray',((1-prog)*C)+' '+C);arc.setAttribute('stroke-dashoffset',String(-prog*C));}
+      else{arc.setAttribute('stroke-dasharray',(Math.max(0.001,prog)*C)+' '+C);arc.setAttribute('stroke-dashoffset','0');}}
+    var kn=document.getElementById('ftKnob');if(kn)kn.setAttribute('transform','rotate('+(prog*360)+' 160 160)');
+    document.getElementById('ftTimer').textContent=fmtMS(ph.countdown?ph.left:el);
+    document.getElementById('ftSub').textContent=ph.rest?'쉬는 시간 — 잠깐 쉬어가요':(fPaused?'일시정지 중':'');
+  }
+  function paintPomoChip(){var b=document.getElementById('ftPomo');if(b){b.classList.toggle('on',pomoOn());b.textContent=pomoOn()?'⏱ 포모도로 켜짐':'⏱ 포모도로';}}
+  function startFocus(t){closeEditor();fTask=t;fStart=Date.now();fPausedAcc=0;fPauseAt=0;fPaused=false;ftKey='';
+    document.getElementById('ftTitle').innerHTML='<span style="opacity:.9">○</span> '+catIcon(t.categoryID)+' '+esc(t.title||'집중');
+    // 오늘 통계 (앱 파리티): ⏳ 오늘 N분 · ✨ n번째 집중.
+    var mins=0,cnt=0;(DATA.sessions||[]).forEach(function(x){if(dateKey(x.start)===todayKey()){mins+=Math.floor((x.focusedSec||0)/60);cnt++;}});
+    document.getElementById('ftStats').textContent='⏳ 오늘 '+mins+'분 · '+(cnt===0?'✨ 첫 집중':'✨ '+(cnt+1)+'번째 집중');
+    var h=new Date().getHours();
+    document.getElementById('focusScrim').classList.toggle('night',h<6||h>=18);
+    document.getElementById('ftPause').textContent='⏸';paintPomoChip();
     document.getElementById('focusScrim').classList.add('open');tickFocus();fTimer=setInterval(tickFocus,250);}
-  function togglePauseFocus(){if(fPaused){fPausedAcc+=Date.now()-fPauseAt;fPaused=false;document.getElementById('ftPause').textContent='일시정지';}
-    else{fPauseAt=Date.now();fPaused=true;document.getElementById('ftPause').textContent='재개';}}
+  function togglePauseFocus(){if(fPaused){fPausedAcc+=Date.now()-fPauseAt;fPaused=false;document.getElementById('ftPause').textContent='⏸';}
+    else{fPauseAt=Date.now();fPaused=true;document.getElementById('ftPause').textContent='▶';}}
   function finishFocus(){if(!fTask)return;clearInterval(fTimer);var el=focusElapsed();
     fTask.actualFocusedSec=(fTask.actualFocusedSec||0)+el;fTask.cumulativeFocusedSec=(fTask.cumulativeFocusedSec||0)+el;fTask.lastFocusedAt=new Date().toISOString();
     if(!fTask.durationMin){var mins=Math.max(1,Math.round(el/60));fTask.durationMin=mins;fTask.scheduledStart=new Date(Date.now()-mins*60000).toISOString();}
@@ -873,22 +945,13 @@
         '<div class="t-main"><div class="t-title">'+esc(t.title)+'</div>'+
           '<div class="t-meta">'+taskMetaHTML(t)+(placed?'<span class="t-time">'+fmtTime(t.scheduledStart)+'</span>':'')+'</div></div>'+
         memoIconHTML(t)+
-        '<button class="send'+(placed?' placed':'')+'">'+(placed?'✓ 오늘':'→ 타임라인')+'</button>'+
         '<span class="star'+(t.isStarred?' on':'')+'">'+(t.isStarred?'★':'☆')+'</span>'+
-        '<button class="play" title="집중 시작">▶</button>'+
-        '<button class="del" title="삭제">×</button>';
-      row.querySelector('.del').addEventListener('click',function(){deleteTask(t);});
+        '<button class="play" title="집중 시작">▶</button>';
       var tl=row.querySelector('.t-title');tl.style.cursor='pointer';tl.addEventListener('click',function(){openEditor(t);});
       row.querySelector('.play').addEventListener('click',function(){startFocus(t);});
       var mi=row.querySelector('.t-memo');if(mi)mi.addEventListener('click',function(){openEditor(t);});
       row.querySelector('.check').addEventListener('click',function(){t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;if(t.isDone)grantReward(t);renderTodo();pushSnapshot();});
       row.querySelector('.star').addEventListener('click',function(){t.isStarred=!t.isStarred;renderTodo();pushSnapshot();});
-      row.querySelector('.send').addEventListener('click',function(){
-        if(placed)return;
-        var slot=nextSlotToday();t.scheduledStart=todayAt(Math.floor(slot),(slot%1)*60);if(!t.durationMin)t.durationMin=50;
-        renderTodo();renderBig();renderMosaic();pushSnapshot();
-        if(window.matchMedia('(max-width:860px)').matches)setTab('timeline');
-      });
       list.appendChild(row);
     });
   }
@@ -1003,7 +1066,6 @@
       var wood=document.createElement('div');wood.style.cssText='position:absolute;left:0;right:0;bottom:0;height:'+(TUB.wood*100)+'%;background:repeating-linear-gradient(90deg,#d9b477,#d9b477 12px,#cea75f 12px,#cea75f 24px)';wall.appendChild(wood);
       // 물만 (요청: 연한 바탕색 제거). 처음 0 → 그날 집중량으로 차오름.
       var water=document.createElement('div');water.className='water';water.style.cssText='position:absolute;left:0;right:0;bottom:'+(TUB.wood*100)+'%;height:0px;transition:height .8s cubic-bezier(.4,0,.2,1);will-change:height';wall.appendChild(water);
-      var rim=document.createElement('div');rim.style.cssText='position:absolute;left:0;right:0;top:0;height:5px;background:'+hexA(col,.9);wall.appendChild(rim);
       var lab=document.createElement('div');lab.className='wlabel';
       lab.innerHTML='<div class="wn">'+esc(side.name)+'</div><div class="ws">'+esc(side.sub)+'</div><div class="wlv"></div>';
       wall.appendChild(lab);
@@ -1028,11 +1090,11 @@
       var facing=Math.cos((i*TUB.step+bView)*Math.PI/180);   // 1=정면, -1=뒤
       w.classList.toggle('back',facing<0.2);                 // 뒷면 라벨 숨김 (요청)
       w.style.zIndex=String(200+Math.round(facing*100));
-      // 선택=불투명, 나머지=이전 그대로(투명 유리) (요청).
-      w.style.background=sel?hexA(col,.92):'transparent';
+      // 선택해도 벽 전체를 칠하지 않는다 (요청) — 물 색만 진해지고 뱃지로 표시.
+      w.style.background='transparent';
       var wt=w.querySelector('.water');
-      if(wt)wt.style.background=sel?('linear-gradient(180deg,'+hexA(col,.96)+','+col+')'):('linear-gradient(180deg,'+hexA(col,.4)+','+hexA(col,.6)+')');
-      var lab=w.querySelector('.wlabel');if(lab)lab.style.color=sel?'#fff':'#3a3f4c';
+      if(wt)wt.style.background=sel?('linear-gradient(180deg,'+hexA(col,.85)+','+col+')'):('linear-gradient(180deg,'+hexA(col,.4)+','+hexA(col,.6)+')');
+      var lab=w.querySelector('.wlabel');if(lab)lab.style.color='#3a3f4c';
     });
     if(bSel>=0){badge.classList.add('on');badge.textContent=Math.round(sideLevel(SIDES[bSel].id))+' / 10';badge.style.background=catColor(SIDES[bSel].id);}
     else badge.classList.remove('on');
@@ -1053,8 +1115,10 @@
       if(wallEl)startLv=sideLevel(SIDES[+wallEl.dataset.i].id);
       try{scene.setPointerCapture(e.pointerId);}catch(_){}
     });
+    // 드래그 중 페이지 스크롤 방지 (요청): touch-action:none + touchmove 차단.
+    scene.addEventListener('touchmove',function(e){if(down&&e.cancelable)e.preventDefault();},{passive:false});
     scene.addEventListener('pointermove',function(e){
-      if(!down)return;var dx=e.clientX-sx,dy=e.clientY-sy;
+      if(!down)return;if(e.cancelable)e.preventDefault();var dx=e.clientX-sx,dy=e.clientY-sy;
       if(Math.abs(dx)>3||Math.abs(dy)>3)moved=true;
       if(wallEl && +wallEl.dataset.i===bSel && Math.abs(dy)>Math.abs(dx)){
         // 물 높이만 바뀐다 — 회전(applyTub) 없이 물높이·뱃지만 갱신해 매끄럽게 (요청).
@@ -1076,6 +1140,30 @@
       if(bSel>=0)return;var base=bView;bView=base+24;applyTub();
       setTimeout(function(){bView=base;applyTub();},680);
     },2000);
+  }
+  // 구름 탭 → 물통 위 구름 + 비 + 물이 0에서 차오름 (요청, 앱 메커니즘).
+  var bRaining=false;
+  function rainBucket(){
+    if(bRaining)return;var scene=document.querySelector('.bucket-scene'),tub=document.getElementById('tub');
+    if(!scene||!tub)return;bRaining=true;
+    var mins=Math.floor(bucketDaySec()/60);
+    var cl=document.createElement('div');cl.className='rain-cloud';cl.textContent='☁️';scene.appendChild(cl);
+    var drops=[],n=Math.max(5,Math.min(18,Math.round(mins/8)+5));   // 집중한 만큼 비가 많이 (요청)
+    for(var i=0;i<n;i++){var d=document.createElement('span');d.className='rain-drop';
+      d.style.left=(28+Math.random()*44)+'%';
+      d.style.animationDelay=(Math.random()*0.9)+'s';
+      scene.appendChild(d);drops.push(d);}
+    // 물을 0으로 비웠다가(즉시) 비가 내리는 동안 다시 차오른다.
+    tubNoTransition(true);
+    tub.querySelectorAll('.water').forEach(function(wt){wt.style.height='0px';});
+    void tub.offsetHeight;   // reflow로 0 높이 확정
+    setTimeout(function(){tubNoTransition(false);
+      tub.querySelectorAll('.water').forEach(function(wt){wt.style.transition='height 1.6s cubic-bezier(.4,0,.2,1)';});
+      updateWater();},350);
+    setTimeout(function(){
+      cl.remove();drops.forEach(function(d){d.remove();});
+      tub.querySelectorAll('.water').forEach(function(wt){wt.style.transition='height .8s cubic-bezier(.4,0,.2,1)';});
+      bRaining=false;},2400);
   }
   function updateCloud(){
     var d=bucketDate(),sec=bucketDaySec(),h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);
@@ -1214,6 +1302,10 @@
   });
   document.getElementById('ftPause').addEventListener('click',togglePauseFocus);
   document.getElementById('ftFinish').addEventListener('click',finishFocus);
+  document.getElementById('ftClose').addEventListener('click',finishFocus);
+  document.querySelector('.bcloud').addEventListener('click',rainBucket);
+  document.getElementById('ftPomo').addEventListener('click',function(){
+    localStorage.setItem('hfPomo',pomoOn()?'0':'1');ftKey='';paintPomoChip();if(fTask)tickFocus();});
   document.getElementById('bPrev').addEventListener('click',function(){shiftBucketDay(-1);});
   document.getElementById('bNext').addEventListener('click',function(){shiftBucketDay(1);});
   document.getElementById('settingsBtn').addEventListener('click',openSettings);
