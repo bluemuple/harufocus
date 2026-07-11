@@ -368,7 +368,7 @@
   /* ---------- 공용 캡처바 (앱 CaptureBar 파리티, 요청) ---------- */
   .cap-wrap{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--card-2);
     border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(20,40,80,.12);display:none;
-    padding:8px 10px calc(6px + env(safe-area-inset-bottom));touch-action:none}
+    padding:8px 10px calc(6px + env(safe-area-inset-bottom));touch-action:manipulation}
   .cap-wrap.open{display:block}
   @media(min-width:861px){.cap-wrap{left:auto;right:24px;bottom:24px;width:420px;border-radius:16px;border:1px solid var(--line)}}
   .cap-icons{display:flex;justify-content:space-between;gap:4px;padding:8px 2px 6px}
@@ -2349,7 +2349,9 @@
     var wrap=document.getElementById('capWrap');wrap.classList.add('open');
     var mb=document.querySelector('.mbar');if(mb)mb.style.display='none';
     paintCap();
-    setTimeout(function(){document.getElementById('capText').focus();positionCap();},50);
+    // iOS: 키보드는 사용자 제스처 안에서 동기 focus여야 뜬다 (요청 버그fix).
+    document.getElementById('capText').focus();
+    setTimeout(positionCap,60);
   }
   function closeCapture(){
     cap.open=false;
