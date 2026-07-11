@@ -59,6 +59,18 @@
   .seg button{font-family:inherit;font-size:12.5px;font-weight:600;border:none;background:transparent;color:var(--ink-soft);
     padding:6px 12px;border-radius:8px;cursor:pointer}
   .seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  /* 루틴 편집 시트 (요청). */
+  .hseg{margin-left:0;width:100%;margin:6px 0}
+  .hseg button{flex:1}
+  .hcolors{display:flex;gap:12px;justify-content:space-between;margin:10px 0 4px;flex-wrap:wrap}
+  .hcol{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+  .hcol .sw{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff}
+  .hcol .nm{font-size:11px;color:var(--ink-soft)}
+  .hdays{display:flex;gap:6px;margin:6px 0;justify-content:space-between}
+  .hday{flex:1;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--card-2);color:var(--ink-soft);font-weight:800;font-size:13px;cursor:pointer}
+  .hday.on{background:var(--sky-blue);color:#fff;border-color:var(--sky-blue)}
+  .hinterval{display:flex;align-items:center;justify-content:space-between;margin:6px 0;font-size:14px;font-weight:600}
+  .hrow{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line)}
   .tl-body{flex:1;position:relative;min-height:0}
 
   /* big timeline (sky) */
@@ -171,31 +183,46 @@
 
   /* matrix */
   .matrix{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .quad{border-radius:14px;padding:12px;min-height:120px;border:1px solid var(--line)}
-  .quad h3{font-size:12.5px;font-weight:700;margin-bottom:8px}
-  .mtask{background:rgba(255,255,255,.8);border-radius:9px;padding:7px 9px;font-size:12.5px;margin-bottom:6px}
-  .q1{background:#fce9ec}.q2{background:#e5f6ea}.q3{background:#fdf1dd}.q4{background:#eef1f6}
+  /* 매트릭스 셀 — 앱처럼 하늘 위 반투명 카드 (요청). */
+  .quad{border-radius:16px;padding:12px;min-height:120px;border:1px solid rgba(255,255,255,.55);
+    background:rgba(255,255,255,.18)!important;backdrop-filter:blur(2px)}
+  .quad h3{font-size:12.5px;font-weight:800;margin-bottom:8px;color:#fff;text-shadow:0 1px 3px rgba(20,40,80,.4)}
+  .mtask{background:rgba(255,255,255,.96);border-radius:11px;padding:8px 10px;font-size:12.5px;margin-bottom:6px;box-shadow:0 3px 10px rgba(20,40,80,.12)}
+  .q1,.q2,.q3,.q4{background:rgba(255,255,255,.18)}
   .q1 h3{color:#c0455f}.q2 h3{color:#3f9a58}.q3 h3{color:#c58a1e}.q4 h3{color:#6b7688}
 
   /* routine */
   .routines{display:flex;flex-direction:column;gap:11px}
-  .routine{background:rgba(255,255,255,.96);border:1px solid rgba(255,255,255,.7);border-radius:14px;padding:12px 14px;box-shadow:0 4px 14px rgba(20,40,80,.10);max-width:100%;overflow:hidden}
-  .routine .days{flex-wrap:wrap}
-  .r-top{display:flex;align-items:center;gap:10px}
-  .r-emoji{font-size:19px}.r-name{font-weight:700}.r-meta{margin-left:auto;font-size:12px;color:var(--ink-soft)}
+  /* 루틴 — 앱 카드형(요청): 색점+이름+매일+재생+streak, 큰 요일원, 메시지. */
+  .r-weekbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+  .r-weeklabel{font-weight:800;font-size:15px;color:#fff;text-shadow:0 1px 3px rgba(20,40,80,.4)}
+  .seg.r-wm{margin-left:auto}
+  .routine{background:rgba(255,255,255,.42);border:1px solid rgba(255,255,255,.5);border-radius:18px;padding:16px 16px 14px;box-shadow:0 6px 18px rgba(20,40,80,.12);max-width:100%;overflow:hidden;backdrop-filter:blur(3px)}
+  .routine+.routine{margin-top:14px}
+  .routine .days{margin-top:12px;display:flex;gap:6px;justify-content:space-between}
+  .r-top{display:flex;align-items:center;gap:11px}
+  .r-dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
+  .r-emoji{font-size:19px}
+  .r-nk{flex:1;min-width:0}
+  .r-name{font-weight:800;font-size:17px;color:#20304a}
+  .r-sched{font-size:12.5px;color:var(--ink-soft);margin-top:1px}
+  .r-play{width:44px;height:38px;border-radius:12px;border:0;background:rgba(255,255,255,.5);color:var(--sky-blue);cursor:pointer;display:grid;place-items:center}
+  .r-play svg{width:18px;height:18px}
+  .r-streakbox{display:flex;align-items:center;gap:4px;font-size:15px;font-weight:800;color:#e8912a}
+  .r-streakbox svg{width:16px;height:16px}
   .play{width:31px;height:31px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:11px;margin-left:6px;cursor:pointer}
-  .days{display:flex;gap:5px;margin-top:10px}
-  .day{width:27px;height:27px;border-radius:8px;display:grid;place-items:center;font-size:11.5px;font-weight:700;background:var(--card-2);color:var(--ink-soft);border:1px solid var(--line)}
-  .day.on{background:#4bb6bd;color:#fff;border-color:#4bb6bd}
-  .day{cursor:pointer}
-  .r-check{width:28px;height:28px;flex:0 0 auto;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:14px;font-weight:800;cursor:pointer;color:#fff}
-  .r-check.done{background:#4bb6bd;border-color:#4bb6bd}
-  .r-streak{margin-left:auto;font-size:13px;font-weight:800;color:#e8912a}
-  .routine .del{border:0;background:transparent;color:var(--ink-soft);font-size:18px;line-height:1;cursor:pointer;opacity:.5;margin-left:8px}
-  .routine .del:hover{opacity:1;color:#e0564e}
-  .routine .play{margin-left:8px;opacity:0;transition:opacity .15s}
-  .routine:hover .play{opacity:.9}
-  @media(hover:none){.routine .play,.routine .del{opacity:.85}}
+  .r-daycol{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+  .r-daycol .wl{font-size:12px;font-weight:700;color:var(--ink-soft)}
+  .rday{width:100%;max-width:44px;aspect-ratio:1;border-radius:50%;border:2px solid var(--rc,#7fc6cc);
+    background:rgba(255,255,255,.35);cursor:pointer;display:grid;place-items:center;color:#fff;font-size:15px;font-weight:800;padding:0}
+  .rday.on{background:var(--rc,#4bb6bd);border-color:var(--rc,#4bb6bd)}
+  .rday.today{box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+  .rday .dot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.6}
+  .r-msg{margin-top:11px;font-size:13px;color:var(--ink-soft)}
+  .r-del{border:0;background:transparent;color:var(--ink-soft);font-size:18px;line-height:1;cursor:pointer;opacity:.5}
+  .r-del:hover{opacity:1;color:#e0564e}
+  .routine:hover .r-del{opacity:.8}
+  @media(hover:none){.r-del{opacity:.6}}
   /* 삭제(×)도 호버 전엔 숨김 (요청: 버튼은 호버 시 노출) — 위의 기본
      opacity 규칙들이 이 아래에 있어 !important 없이 마지막 규칙으로 이긴다. */
   @media(hover:hover){
@@ -208,7 +235,7 @@
   .addrow button{font-family:inherit;font-weight:700;font-size:13.5px;border:0;border-radius:10px;padding:0 16px;background:var(--accent);color:#3a2c05;cursor:pointer}
   .task .del{margin-left:6px;border:0;background:transparent;color:var(--ink-soft);font-size:18px;line-height:1;cursor:pointer;opacity:.55;padding:0 2px}
   .task .del:hover{opacity:1;color:#e0564e}
-  .quad .qadd{margin-top:8px;width:100%;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--ink-soft);background:transparent;border:1px dashed var(--line);border-radius:9px;padding:8px 0;cursor:pointer}
+  .quad .qadd{margin-top:8px;width:100%;font-family:inherit;font-size:12.5px;font-weight:700;color:#fff;background:rgba(255,255,255,.14);border:1px dashed rgba(255,255,255,.6);border-radius:9px;padding:8px 0;cursor:pointer}
   .quad .mtask{display:flex;align-items:center;gap:7px}
   .mck{width:18px;height:18px;border-radius:50%;border:2px solid var(--ink-soft);flex:0 0 auto;cursor:pointer;display:grid;place-items:center;font-size:11px;color:#fff}
   .mck.on{background:#6bbf7a;border-color:#6bbf7a}
@@ -494,8 +521,14 @@
         </section>
         <section class="view" id="view-routine">
           <h2>루틴</h2>
-          <div class="addrow"><input id="habitAdd" placeholder="루틴 추가…" maxlength="80"><button id="habitAddBtn">추가</button></div>
+          <div class="r-weekbar">
+            <button class="daynav" id="rwPrev">‹</button>
+            <span class="r-weeklabel" id="rwLabel"></span>
+            <button class="daynav" id="rwNext">›</button>
+            <div class="seg r-wm"><button id="rwWeek" class="on" data-wm="week">주</button><button id="rwMonth" data-wm="month">월</button></div>
+          </div>
           <div class="routines" id="routineList"></div>
+          <button class="page-fab" id="habitFab" title="루틴 추가"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         </section>
         <section class="view" id="view-bucket">
           <h2>물통 <span id="bMoney" class="bmoney"></span></h2>
@@ -610,6 +643,28 @@
     <div class="elabel">취침 시각</div><input type="time" id="setBed">
     <div class="msub" style="margin-top:10px">기상·취침 시각이 타임라인에 보이는 시간대를 정해요.</div>
     <button class="go" id="setSave">저장</button>
+  </div>
+</div>
+
+<!-- 루틴 편집 시트 (앱 파리티, 요청) -->
+<div class="scrim" id="habitScrim">
+  <div class="modal">
+    <button class="mclose" id="habitClose">✕</button>
+    <h3 id="habitTitle">새 루틴</h3>
+    <input id="hName" placeholder="루틴 이름">
+    <div class="seg hseg" id="hAvoid"><button class="on" data-a="0">만들기</button><button data-a="1">끊기</button></div>
+    <div class="hcolors" id="hColors"></div>
+    <div class="elabel">반복</div>
+    <div class="seg hseg" id="hRepeat"><button class="on" data-r="everyday">매일</button><button data-r="weekdays">요일 선택</button><button data-r="interval">며칠마다</button></div>
+    <div class="hdays" id="hDays" style="display:none"></div>
+    <div class="hinterval" id="hInterval" style="display:none">
+      <span><b id="hIntNum">2</b>일마다 반복</span>
+      <span><button class="chip" id="hIntMinus">−</button> <button class="chip" id="hIntPlus">+</button></span>
+    </div>
+    <div class="elabel">기간</div>
+    <div class="hrow"><span>시작</span><input type="date" id="hStart"></div>
+    <div class="hrow"><label><input type="checkbox" id="hEndOn"> 종료일 정하기</label><input type="date" id="hEnd" style="display:none"></div>
+    <div class="ebtns"><button class="del" id="hDelete">삭제</button><button class="go" id="hSave">저장</button></div>
   </div>
 </div>
 
@@ -1329,27 +1384,103 @@
     var lf=Math.min(.62,Math.max(.38,wl/(wl+wr)));
     g.style.gridTemplateColumns=lf+'fr '+(1-lf)+'fr';
   }
+  // ── 루틴 편집 시트 (앱 파리티, 요청) ──
+  var hEdit=null,hAvoid=0,hColor='study',hRepeat='everyday',hMask=127,hInterval=2;
+  var HCAT=['mind','health','rest','life','study','focus','people'];
+  function openHabitSheet(h){
+    hEdit=h||null;
+    var isNew=!h;
+    document.getElementById('habitTitle').textContent=isNew?'새 루틴':'루틴 편집';
+    document.getElementById('hName').value=h?h.title:'';
+    hAvoid=h&&h.isAvoid?1:0;
+    hColor=h?h.categoryID:'study';
+    hRepeat=h?(h.scheduleKindRaw==='interval'?'interval':(h.weekdaysMask&&h.weekdaysMask!==127?'weekdays':'everyday')):'everyday';
+    hMask=h?(h.weekdaysMask||127):127;
+    hInterval=h?(h.intervalDays||2):2;
+    document.getElementById('hStart').value=(h&&h.startDate)?h.startDate.slice(0,10):new Date().toISOString().slice(0,10);
+    document.getElementById('hEndOn').checked=!!(h&&h.endDate);
+    document.getElementById('hEnd').style.display=(h&&h.endDate)?'':'none';
+    document.getElementById('hEnd').value=(h&&h.endDate)?h.endDate.slice(0,10):'';
+    document.getElementById('hDelete').style.display=isNew?'none':'';
+    paintHabitSheet();
+    document.getElementById('habitScrim').classList.add('open');
+  }
+  function paintHabitSheet(){
+    document.querySelectorAll('#hAvoid button').forEach(function(b){b.classList.toggle('on',+b.dataset.a===hAvoid);});
+    document.getElementById('hColors').innerHTML=HCAT.map(function(c){
+      return '<div class="hcol" data-c="'+c+'"><span class="sw" style="background:'+catColor(c)+'">'+(hColor===c?'✓':'')+'</span><span class="nm">'+esc(CATS[c].name)+'</span></div>';
+    }).join('');
+    document.querySelectorAll('#hColors .hcol').forEach(function(el){el.addEventListener('click',function(){hColor=el.dataset.c;paintHabitSheet();});});
+    document.querySelectorAll('#hRepeat button').forEach(function(b){b.classList.toggle('on',b.dataset.r===hRepeat);});
+    document.getElementById('hDays').style.display=hRepeat==='weekdays'?'flex':'none';
+    document.getElementById('hInterval').style.display=hRepeat==='interval'?'flex':'none';
+    var L=['일','월','화','수','목','금','토'];
+    document.getElementById('hDays').innerHTML=L.map(function(l,i){return '<button class="hday'+((hMask&(1<<i))?' on':'')+'" data-wd="'+i+'">'+l+'</button>';}).join('');
+    document.querySelectorAll('#hDays .hday').forEach(function(b){b.addEventListener('click',function(){hMask^=(1<<+b.dataset.wd);paintHabitSheet();});});
+    document.getElementById('hIntNum').textContent=hInterval;
+  }
+  function saveHabitSheet(){
+    var name=(document.getElementById('hName').value||'').trim();if(!name)return;
+    var o={title:name,isAvoid:!!hAvoid,categoryID:hColor,
+      scheduleKindRaw:hRepeat==='interval'?'interval':'weekly',
+      weekdaysMask:hRepeat==='everyday'?127:(hRepeat==='weekdays'?hMask:127),
+      intervalDays:hInterval,
+      startDate:new Date(document.getElementById('hStart').value||new Date().toISOString().slice(0,10)).toISOString(),
+      endDate:document.getElementById('hEndOn').checked&&document.getElementById('hEnd').value?new Date(document.getElementById('hEnd').value).toISOString():null};
+    if(hEdit){Object.assign(hEdit,o);}else{addHabit(o);}
+    document.getElementById('habitScrim').classList.remove('open');
+    renderRoutine();pushSnapshot();
+  }
+
+  // 보고 있는 주 (0=이번주, -1=지난주 …)
+  var rWeekOffset=0;
+  function rWeekDays(){
+    var base=new Date();base.setHours(0,0,0,0);
+    base.setDate(base.getDate()-base.getDay()+rWeekOffset*7);   // 일요일 시작
+    var arr=[];for(var i=0;i<7;i++){var d=new Date(base);d.setDate(base.getDate()+i);arr.push(d);}
+    return arr;
+  }
+  function schedLabel(h){
+    if(h.scheduleKindRaw==='interval')return (h.intervalDays||2)+'일마다';
+    if(h.weekdaysMask&&h.weekdaysMask!==127){var L=['일','월','화','수','목','금','토'],out=[];
+      for(var i=0;i<7;i++)if(h.weekdaysMask&(1<<i))out.push(L[i]);return out.join('·');}
+    return '매일';
+  }
   function renderRoutine(){
+    // 주 라벨 갱신
+    var wd=rWeekDays();
+    var lab=document.getElementById('rwLabel');
+    if(lab)lab.textContent=(wd[0].getMonth()+1)+'월 '+wd[0].getDate()+'일 – '+(wd[6].getMonth()+1)+'월 '+wd[6].getDate()+'일';
     var w=document.getElementById('routineList');w.innerHTML='';
-    var labels=['일','월','화','수','목','금','토']; // getDay 0..6
-    if(!(DATA.habits||[]).length){w.innerHTML='<div class="empty">루틴이 없어요. 아래에서 추가하세요.</div>';return;}
+    var labels=['S','M','T','W','T','F','S'];
+    if(!(DATA.habits||[]).length){w.innerHTML='<div class="empty" style="color:#fff;text-shadow:0 1px 2px rgba(20,40,80,.4)">루틴이 없어요. + 로 추가하세요.</div>';return;}
+    var todayKeyStr=habitKey();
     DATA.habits.forEach(function(h){
-      var log=habitLog(h),doneToday=log[habitKey()]===1,streak=habitStreak(h);
-      var days=labels.map(function(lb,wd){return '<span class="day'+(habitDayOn(h,wd)?' on':'')+'" data-wd="'+wd+'">'+lb+'</span>';}).join('');
+      var log=habitLog(h),streak=habitStreak(h),col=catColor(h.categoryID);
+      var days=wd.map(function(d,i){
+        var k=habitKey(d),on=log[k]===1,isToday=k===todayKeyStr,sched=habitDayOn(h,d.getDay());
+        return '<div class="r-daycol"><span class="wl">'+labels[i]+'</span>'+
+          '<button class="rday'+(on?' on':'')+(isToday?' today':'')+'" data-k="'+k+'" style="--rc:'+col+'">'+
+          (on?'✓':(sched?'<span class="dot"></span>':''))+'</button></div>';
+      }).join('');
       var c=document.createElement('div');c.className='routine';
       c.innerHTML='<div class="r-top">'+
-        '<span class="r-check'+(doneToday?' done':'')+'" title="오늘 체크">'+(doneToday?'✓':'')+'</span>'+
-        '<span class="r-emoji">'+catIcon(h.categoryID)+'</span>'+
-        '<span class="r-name">'+esc(h.title)+'</span>'+
-        (streak>0?'<span class="r-streak">'+IC.flame+' '+streak+'</span>':'<span class="r-streak" style="color:var(--ink-soft)">'+esc(catName(h.categoryID))+'</span>')+
-        '<button class="play" title="집중 시작">'+IC.play+'</button>'+
-        '<button class="del" title="삭제">×</button>'+
-      '</div><div class="days">'+days+'</div>';
-      c.querySelector('.r-check').addEventListener('click',function(){toggleHabitToday(h);});
-      // 루틴 집중 (요청): 습관을 오염시키지 않게 합성 객체로 세션만 기록.
-      c.querySelector('.play').addEventListener('click',function(){startFocus({id:uuid(),title:h.title,categoryID:h.categoryID,durationMin:0});});
-      c.querySelector('.del').addEventListener('click',function(){deleteHabit(h);});
-      c.querySelectorAll('.day').forEach(function(el){el.addEventListener('click',function(){toggleHabitDay(h,+el.dataset.wd);});});
+        '<span class="r-dot" style="background:'+col+'"></span>'+
+        '<div class="r-nk"><div class="r-name">'+esc(h.title)+'</div><div class="r-sched">'+esc(schedLabel(h))+'</div></div>'+
+        '<button class="r-play" title="집중 시작">'+IC.play+'</button>'+
+        '<span class="r-streakbox">'+IC.flame+' '+streak+'</span>'+
+        '<button class="r-del" title="삭제">×</button>'+
+      '</div><div class="days">'+days+'</div>'+
+      (streak===0?'<div class="r-msg">오늘부터 다시 시작해요</div>':'');
+      c.querySelector('.r-play').addEventListener('click',function(){startFocus({id:uuid(),title:h.title,categoryID:h.categoryID,durationMin:0});});
+      c.querySelector('.r-del').addEventListener('click',function(){deleteHabit(h);});
+      // 요일 원 탭 = 그 날 체크 토글 (요청: 앱처럼 날짜별 완료).
+      c.querySelectorAll('.rday').forEach(function(el){el.addEventListener('click',function(){
+        var k=el.dataset.k,lg=habitLog(h);if(lg[k]===1)delete lg[k];else lg[k]=1;
+        h.logJSON=JSON.stringify(lg);renderRoutine();pushSnapshot();});});
+      // 이름 탭 = 편집 시트 (요청).
+      c.querySelector('.r-name').style.cursor='pointer';
+      c.querySelector('.r-name').addEventListener('click',function(){openHabitSheet(h);});
       w.appendChild(c);
     });
   }
@@ -1651,8 +1782,18 @@
 
   /* ---------- 작업 추가 입력 배선 (요청) ---------- */
   document.getElementById('todoFab').addEventListener('click',function(){openCapture('todo');});
-  document.getElementById('habitAddBtn').addEventListener('click',doHabitAdd);
-  document.getElementById('habitAdd').addEventListener('keydown',function(e){if(e.key==='Enter')doHabitAdd();});
+  document.getElementById('habitFab').addEventListener('click',function(){openHabitSheet(null);});
+  document.getElementById('habitClose').addEventListener('click',function(){document.getElementById('habitScrim').classList.remove('open');});
+  document.getElementById('habitScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+  document.getElementById('hSave').addEventListener('click',saveHabitSheet);
+  document.getElementById('hDelete').addEventListener('click',function(){if(hEdit){deleteHabit(hEdit);}document.getElementById('habitScrim').classList.remove('open');});
+  document.querySelectorAll('#hAvoid button').forEach(function(b){b.addEventListener('click',function(){hAvoid=+b.dataset.a;paintHabitSheet();});});
+  document.querySelectorAll('#hRepeat button').forEach(function(b){b.addEventListener('click',function(){hRepeat=b.dataset.r;paintHabitSheet();});});
+  document.getElementById('hIntMinus').addEventListener('click',function(){hInterval=Math.max(1,hInterval-1);paintHabitSheet();});
+  document.getElementById('hIntPlus').addEventListener('click',function(){hInterval=Math.min(30,hInterval+1);paintHabitSheet();});
+  document.getElementById('hEndOn').addEventListener('change',function(){document.getElementById('hEnd').style.display=this.checked?'':'none';});
+  document.getElementById('rwPrev').addEventListener('click',function(){rWeekOffset--;renderRoutine();});
+  document.getElementById('rwNext').addEventListener('click',function(){rWeekOffset=Math.min(0,rWeekOffset+1);renderRoutine();});
 
   /* ---------- 편집 모달 · 집중 모드 배선 (요청) ---------- */
   buildEditChips();
