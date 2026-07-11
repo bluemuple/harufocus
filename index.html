@@ -36,7 +36,14 @@
 
   /* ---------- LEFT: timeline pane ---------- */
   .pane-tl{flex:0 0 42%;max-width:520px;display:flex;flex-direction:column;border-right:1px solid var(--line);min-height:0}
-  .tl-top{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border-bottom:1px solid var(--line)}
+  .tl-top{display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top)) 12px 8px;background:var(--card);border-bottom:1px solid var(--line)}
+  /* 첨부5: 날짜 선택 박스 (달력 아이콘 + ‹ 날짜 ›). */
+  .tl-datebox{display:flex;align-items:center;gap:2px;background:var(--card-2);border:1px solid var(--line);
+    border-radius:12px;padding:5px 8px;margin-right:auto}
+  .tl-datebox>.ic{width:17px;height:17px;color:var(--ink-soft);margin-right:2px}
+  .tl-datebox .tl-date{font-weight:800;font-size:14px;color:var(--ink);padding:0 2px}
+  .tl-seg{margin-left:0}
+  @media(max-width:860px){.tl-seg{display:none}}
   .tladd{margin-left:8px;border:0;background:var(--sky-blue);color:#fff;font-family:inherit;font-weight:700;font-size:13px;border-radius:9px;padding:7px 13px;cursor:pointer}
   .tledit{margin-left:8px;border:1px solid var(--line);background:var(--card-2);color:var(--ink-soft);font-family:inherit;font-weight:700;font-size:13px;border-radius:9px;padding:7px 13px;cursor:pointer}
   .tledit.on{background:var(--sky-blue);color:#fff;border-color:var(--sky-blue)}
@@ -137,20 +144,20 @@
 
   /* to-do */
   .todo{display:flex;flex-direction:column;gap:9px}
-  .task{position:relative;display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.96);border:1px solid rgba(255,255,255,.7);border-radius:14px;padding:11px 13px;box-shadow:0 4px 14px rgba(20,40,80,.10);overflow:hidden}
+  .task{position:relative;display:flex;align-items:stretch;background:rgba(255,255,255,.96);border:1px solid rgba(255,255,255,.7);border-radius:16px;box-shadow:0 4px 14px rgba(20,40,80,.10);overflow:hidden}
   .check{width:22px;height:22px;border-radius:50%;border:2px solid var(--ink-soft);flex:0 0 auto;cursor:pointer;display:grid;place-items:center}
   .check.done{background:#6bbf7a;border-color:#6bbf7a}
   .check.done::after{content:"✓";color:#fff;font-size:13px;font-weight:800}
   .swatch{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
-  .task-inner{display:flex;align-items:center;gap:11px;flex:1;min-width:0;background:rgba(255,255,255,.99);position:relative;z-index:1;touch-action:pan-y;border-radius:14px}
+  .task-inner{display:flex;align-items:center;gap:11px;flex:1;min-width:0;padding:11px 13px;background:#fff;position:relative;z-index:1;touch-action:pan-y;border-radius:16px}
   /* 스와이프 4버튼 (앱 파리티): 좌우 그룹, 각 그룹 2버튼. 색·아이콘 앱과 동일. */
-  .swipe-grp{position:absolute;top:0;bottom:0;display:flex;z-index:0;opacity:0;transition:opacity .1s}
+  .swipe-grp{position:absolute;top:0;bottom:0;width:128px;display:flex;gap:6px;padding:6px;z-index:0;visibility:hidden}
   .swipe-grp.lead{left:0}.swipe-grp.trail{right:0}
-  .task.sw-left .swipe-grp.lead,.task.sw-right .swipe-grp.trail{opacity:1}
-  .sa{width:64px;border:0;color:#fff;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;
+  .task.sw-left .swipe-grp.lead,.task.sw-right .swipe-grp.trail{visibility:visible}
+  .sa{flex:1;height:100%;border:0;border-radius:12px;color:#fff;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:3px}
   .sa b{font-size:10px;font-weight:800}
-  .sa svg{width:20px;height:20px}
+  .sa svg{width:19px;height:19px}
   .sa-tomorrow{background:#9A5BD8}.sa-matrix{background:#17808F}
   .sa-timeline{background:var(--sky-blue)}.sa-delete{background:#E0453A}
   .mx-pick{position:absolute;inset:0;z-index:3;display:none;grid-template-columns:repeat(4,1fr)}
@@ -247,7 +254,21 @@
   .quad .mtask .del:hover{opacity:1;color:#e0564e}
 
   /* 주간/월간 캘린더 스트립 (앱 CalendarHeader 파리티, 요청). */
-  .calstrip{margin:0 0 12px;color:#fff}
+  /* 우상단 플로팅 유틸 (요청). */
+  .util{position:fixed;top:calc(8px + env(safe-area-inset-top));right:10px;z-index:40;display:flex;gap:6px}
+  .util .acct{background:rgba(255,255,255,.82);backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(20,40,80,.18)}
+  body[data-m="timeline"] .util{display:none}
+  .util .acct{padding:7px 9px;font-size:12px;max-width:none}
+  .util #statsBtn,.util #settingsBtn{width:34px;height:34px;display:grid;place-items:center;padding:0}
+  .util .acct .ic{width:17px;height:17px}
+  /* 요일 칩 — 누르면 캘린더 스트립 펼침 (요청: 평소 숨김, 내용 최대화). */
+  .dow-toggle{font-family:inherit;font-size:13px;font-weight:600;color:rgba(255,255,255,.9);
+    background:rgba(255,255,255,.18);border:0;border-radius:999px;padding:3px 11px;margin-left:6px;cursor:pointer;
+    vertical-align:middle;text-shadow:0 1px 2px rgba(20,40,80,.3)}
+  .dow-toggle::after{content:" ⌄";font-size:11px}
+  .dow-toggle.open::after{content:" ⌃"}
+  .calstrip{margin:2px 0 12px;color:#fff;display:none}
+  .calstrip.open{display:block}
   .sec-h{font-size:13px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(20,40,80,.4);margin:14px 2px 8px}
   .sec-h:first-child{margin-top:0}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}
@@ -419,8 +440,14 @@
   .ebtns .go{margin-top:0;flex:1}
   .ebtns .del{flex:0 0 auto;white-space:nowrap;border:1px solid var(--line);background:var(--card-2);color:#d5495f;border-radius:12px;padding:11px 16px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
   .ebtns .play{flex:0 0 auto;min-width:84px;white-space:nowrap;border:0;background:var(--sky-blue);color:#fff;border-radius:12px;padding:11px 12px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
-  .etoggles{display:flex;gap:14px;margin-top:12px;font-size:13px;color:var(--ink)}
-  .etoggles label{display:flex;align-items:center;gap:6px;cursor:pointer}
+  .chip.ico{display:inline-flex;align-items:center;gap:5px}
+  .chip.ico .ic{width:15px;height:15px}
+  .etoggles{display:flex;gap:10px;margin-top:12px;font-size:13.5px;color:var(--ink)}
+  .tpill{flex:1;display:flex;align-items:center;justify-content:space-between;cursor:pointer;
+    border:1px solid var(--line);border-radius:12px;padding:11px 14px;background:var(--card-2)}
+  .tpill .tp-l{display:flex;align-items:center;gap:7px;font-weight:600}
+  .tpill .ic{width:17px;height:17px;color:var(--ink-soft)}
+  .tpill input{width:20px;height:20px;accent-color:var(--sky-blue)}
   .subrow{display:flex;align-items:center;gap:8px;padding:4px 0}
   .subck{width:20px;height:20px;flex:0 0 auto;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff;cursor:pointer}
   .subck.on{background:var(--sky-blue);border-color:var(--sky-blue)}
@@ -480,24 +507,24 @@
 </head>
 <body data-m="todo">
 <div class="app">
-  <header class="bar">
-    <div class="brand">
-      <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="54" r="28" fill="none" stroke="#f2c14e" stroke-width="7"/><circle cx="50" cy="20" r="6.5" fill="#f2c14e"/></svg>
-      harufocus
-    </div>
-    <button class="acct" id="statsBtn" title="통계" style="margin-left:auto"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 20V11M11 20V4M17 20v-6"/><path d="M3 20h18"/></svg></button>
-    <button class="acct" id="settingsBtn" title="설정" style="margin-left:8px"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="3.1"/><path d="M12 3v2.5M12 18.5V21M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M3 12h2.5M18.5 12H21M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></svg></button>
-    <button class="acct" id="accountBtn" style="margin-left:8px">로그인</button>
-  </header>
+  <!-- 우상단 플로팅 유틸 (요청: harufocus 맨위 바 제거, 내용 최대화). 타임라인 제외. -->
+  <div class="util" id="utilCluster">
+    <button class="acct" id="statsBtn" title="통계"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 20V11M11 20V4M17 20v-6"/><path d="M3 20h18"/></svg></button>
+    <button class="acct" id="settingsBtn" title="설정"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="3.1"/><path d="M12 3v2.5M12 18.5V21M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M3 12h2.5M18.5 12H21M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></svg></button>
+    <button class="acct" id="accountBtn">로그인</button>
+  </div>
 
   <div class="layout">
     <!-- LEFT: timeline -->
     <section class="pane-tl">
       <div class="tl-top">
-        <button class="daynav" id="dayPrev" aria-label="이전 날">‹</button>
-        <span class="tl-date" id="tlDate">오늘</span>
-        <button class="daynav" id="dayNext" aria-label="다음 날">›</button>
-        <div class="seg">
+        <div class="tl-datebox">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="5" width="16" height="16" rx="2.5"/><path d="M4 9h16M8 3v4M16 3v4"/></svg>
+          <button class="daynav" id="dayPrev" aria-label="이전 날">‹</button>
+          <span class="tl-date" id="tlDate">오늘</span>
+          <button class="daynav" id="dayNext" aria-label="다음 날">›</button>
+        </div>
+        <div class="seg tl-seg">
           <button id="segBig" class="on" data-mode="big">큰 타임라인</button>
           <button id="segMo" data-mode="mosaic">모자이카</button>
         </div>
@@ -528,13 +555,13 @@
       </div>
       <div class="tabbody">
         <section class="view on" id="view-todo">
-          <h2>할 일 <span class="h2-sub" id="todoDow"></span></h2>
+          <h2>할 일 <button class="dow-toggle" id="todoDow" data-cal="todo"></button></h2>
           <div class="calstrip" data-cal="todo"></div>
           <div class="todo" id="todoList"></div>
           <button class="page-fab" id="todoFab" title="할 일 추가"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         </section>
         <section class="view" id="view-matrix">
-          <h2>매트릭스</h2>
+          <h2>매트릭스 <button class="dow-toggle" id="matrixDow" data-cal="matrix"></button></h2>
           <div class="calstrip" data-cal="matrix"></div>
           <div class="matrix" id="matrixGrid"></div>
         </section>
@@ -600,7 +627,10 @@
     <div class="elabel">타임라인 배치 (날짜 · 시각)</div>
     <div class="erow"><input type="date" id="eDate"><input type="time" id="eTime"><button class="chip" id="eClearTime">빼기</button></div>
     <div class="elabel">매트릭스</div><div class="chips" id="eQuads"></div>
-    <div class="etoggles"><label><input type="checkbox" id="eStar">별표</label><label><input type="checkbox" id="eDone">완료</label></div>
+    <div class="etoggles">
+      <label class="tpill"><span class="tp-l"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.5l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/></svg> 별표</span><input type="checkbox" id="eStar"></label>
+      <label class="tpill"><span class="tp-l"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M9 12.3l2 2 4-4.2"/></svg> 완료</span><input type="checkbox" id="eDone"></label>
+    </div>
     <div class="elabel">보상 <span style="font-weight:400;color:var(--muted)">· 끝내면 나에게 주는 선물</span></div>
     <div class="erow rewardrow">
       <button class="chip rmoney" id="eRewardMoney" title="가상 돈 보상">₩</button>
@@ -749,7 +779,11 @@
     numbered:svgI('<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 5v3M3 8h2M3.5 12h2l-2 2.5h2M4 14.5V17"/>'),
     indent:svgI('<path d="M4 5h16M4 19h16M4 12h9"/><path d="M17 9l3 3-3 3"/>'),
     outdent:svgI('<path d="M4 5h16M4 19h16M4 12h9"/><path d="M20 9l-3 3 3 3"/>'),
-    link:svgI('<path d="M9 15l6-6"/><path d="M10.5 6.5l1-1a3.5 3.5 0 0 1 5 5l-1 1M13.5 17.5l-1 1a3.5 3.5 0 0 1-5-5l1-1"/>')};
+    link:svgI('<path d="M9 15l6-6"/><path d="M10.5 6.5l1-1a3.5 3.5 0 0 1 5 5l-1 1M13.5 17.5l-1 1a3.5 3.5 0 0 1-5-5l1-1"/>'),
+    bolt:svgI('<path d="M13 3L5 13h5l-1 8 8-11h-5z"/>'),
+    clock:svgI('<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>'),
+    dots9:svgI('<circle cx="6" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="18" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="6" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="6" cy="18" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="18" r="1.3" fill="currentColor" stroke="none"/><circle cx="18" cy="18" r="1.3" fill="currentColor" stroke="none"/>'),
+    circleO:svgI('<circle cx="12" cy="12" r="7.5"/>')};
   function catIcon(id){return svgI(CAT_IC[id]||CAT_IC.focus);}
   // 매트릭스 사분면 힌트 (앱 파리티, 요청).
   function quadHint(q){return ['','지금 바로','계획','빨리 처리','나중에'][q]||'';}
@@ -821,6 +855,13 @@
   function renderCalStrips(){
     document.querySelectorAll('.calstrip').forEach(function(el){el.innerHTML=buildCalHTML();wireCalStrip(el);});
   }
+  // 요일 칩 탭 → 해당 페이지 캘린더 스트립 펼치기/접기 (요청).
+  document.addEventListener('click',function(e){
+    var t=e.target.closest('.dow-toggle');if(!t)return;
+    var page=t.dataset.cal,strip=document.querySelector('.calstrip[data-cal="'+page+'"]');
+    if(!strip)return;
+    var open=strip.classList.toggle('open');t.classList.toggle('open',open);
+  });
   function buildCalHTML(){
     var wl=['일','월','화','수','목','금','토'],today=new Date();today.setHours(0,0,0,0);
     var html='<div class="cal-grid">';
@@ -1060,10 +1101,11 @@
     cc.innerHTML=Object.keys(CATS).map(function(id){return '<button class="chip" data-c="'+id+'">'+catIcon(id)+' '+esc(CATS[id].name)+'</button>';}).join('');
     cc.querySelectorAll('.chip').forEach(function(el){el.addEventListener('click',function(){eCat=el.dataset.c;paintEditChips();});});
     var dc=document.getElementById('eDurs');
-    dc.innerHTML=[['실시간',0],['25분',25],['50분',50],['90분',90]].map(function(d){return '<button class="chip" data-d="'+d[1]+'">'+d[0]+'</button>';}).join('');
+    dc.innerHTML=[['실시간',0],['25분',25],['50분',50],['90분',90]].map(function(d){return '<button class="chip ico" data-d="'+d[1]+'">'+IC.clock+' '+d[0]+'</button>';}).join('');
     dc.querySelectorAll('.chip').forEach(function(el){el.addEventListener('click',function(){eDur=+el.dataset.d;paintEditChips();});});
     var qc=document.getElementById('eQuads');
-    qc.innerHTML=[['없음',0],['급·중요',1],['중요',2],['급함',3],['나중',4]].map(function(q){return '<button class="chip" data-q="'+q[1]+'">'+q[0]+'</button>';}).join('');
+    var QIC=[IC.circleO,IC.dots9,IC.star,IC.bolt,IC.clock];
+    qc.innerHTML=[['없음',0],['급·중요',1],['중요',2],['급함',3],['나중',4]].map(function(q){return '<button class="chip ico" data-q="'+q[1]+'">'+QIC[q[1]]+' '+q[0]+'</button>';}).join('');
     qc.querySelectorAll('.chip').forEach(function(el){el.addEventListener('click',function(){eQuad=+el.dataset.q;paintEditChips();});});
   }
   function paintEditChips(){
@@ -1398,7 +1440,7 @@
   }
   function renderTodo(){
     var dow=document.getElementById('todoDow');
-    if(dow)dow.textContent=new Date().toLocaleDateString('en-US',{weekday:'long'});
+    if(dow)dow.textContent=calSel.toLocaleDateString('en-US',{weekday:'short'});
     var list=document.getElementById('todoList');list.innerHTML='';
     var todayMid=new Date();todayMid.setHours(0,0,0,0);
     // 내일로 미룬 일은 그날이 되기 전엔 숨긴다 (앱 파리티, 요청).
@@ -1423,6 +1465,8 @@
   }
 
   function renderMatrix(){
+    var mdow=document.getElementById('matrixDow');
+    if(mdow)mdow.textContent=calSel.toLocaleDateString('en-US',{weekday:'short'});
     var g=document.getElementById('matrixGrid');g.innerHTML='';g.classList.add('fit');
     var cnt={1:0,2:0,3:0,4:0};
     [{q:1,cls:'q1',h:'중요 · 긴급'},{q:2,cls:'q2',h:'중요 · 여유'},{q:3,cls:'q3',h:'긴급 · 사소'},{q:4,cls:'q4',h:'사소 · 여유 · 보상'}].forEach(function(qd){
