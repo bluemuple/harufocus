@@ -400,7 +400,10 @@
     vertical-align:3px;text-shadow:0 1px 2px rgba(20,40,80,.3);line-height:1}
   .dow-toggle::after{content:" ⌄";font-size:11px}
   .dow-toggle.open::after{content:" ⌃"}
-  .calstrip{margin:2px 0 12px;color:#fff;display:none}
+  .calstrip{margin:12px 0 10px;color:#fff;display:none}
+  .cal-wrap{overflow:hidden;touch-action:pan-y}
+  .cal-slider{display:flex;width:300%;transform:translateX(-33.3333%)}
+  .cal-pane{width:33.3333%;flex:0 0 33.3333%}
   .calstrip.open{display:block}
   .sec-h{font-size:13px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(20,40,80,.4);margin:14px 2px 8px}
   .sec-h:first-child{margin-top:8px}
@@ -416,7 +419,7 @@
   .cal-cell.today .cal-num{color:#0d2a52;background:#bfe0ff}
   .cal-dots{display:flex;gap:2px;justify-content:center;height:5px;margin-top:1px}
   .cal-dots i{width:4px;height:4px;border-radius:50%}
-  .cal-toggle{display:block;margin:2px auto 0;border:0;background:none;color:#fff;opacity:.75;cursor:pointer;font-size:16px;line-height:1}
+  .cal-toggle{display:block;margin:-2px auto 0;padding:0;border:0;background:none;color:#fff;opacity:.75;cursor:pointer;font-size:15px;line-height:1;height:16px}
 
   /* ---------- 공용 캡처바 (앱 CaptureBar 파리티, 요청) ---------- */
   .cap-wrap{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--card-2);
@@ -1104,48 +1107,73 @@
     if(!strip)return;
     var open=strip.classList.toggle('open');t.classList.toggle('open',open);
   });
+  function calCellHTML(d,dim,today){
+    var cls='cal-cell'+(dim?' dim':'')+(calSameDay(d,calSel)?' sel':'')+(calSameDay(d,today)?' today':'');
+    var dots=calDayDots(d).map(function(c){return '<i style="background:'+c+'"></i>';}).join('');
+    return '<div class="'+cls+'" data-t="'+d.getTime()+'"><div class="cal-num">'+d.getDate()+'</div><div class="cal-dots">'+dots+'</div></div>';
+  }
   function buildCalHTML(){
     var wl=['일','월','화','수','목','금','토'],today=new Date();today.setHours(0,0,0,0);
-    var html='<div class="cal-grid">';
-    for(var i=0;i<7;i++)html+='<div class="cal-wd'+(i===0?' sun':i===6?' sat':'')+'">'+wl[i]+'</div>';
-    var days=[];
+    var head='<div class="cal-grid cal-headrow">';
+    for(var i=0;i<7;i++)head+='<div class="cal-wd'+(i===0?' sun':i===6?' sat':'')+'">'+wl[i]+'</div>';
+    head+='</div>';
     if(calMonthly){
       var first=new Date(calSel.getFullYear(),calSel.getMonth(),1);
       var gridStart=new Date(first);gridStart.setDate(1-first.getDay());
-      for(var k=0;k<42;k++){var d=new Date(gridStart);d.setDate(gridStart.getDate()+k);days.push(d);}
-    }else{
-      var ws=calWeekStart(calSel);
-      for(var j=0;j<7;j++){var d2=new Date(ws);d2.setDate(ws.getDate()+j);days.push(d2);}
+      var html='<div class="cal-grid">';
+      for(var k=0;k<42;k++){var d=new Date(gridStart);d.setDate(gridStart.getDate()+k);
+        html+=calCellHTML(d,d.getMonth()!==calSel.getMonth(),today);}
+      html+='</div>';
+      return head+html+'<button class="cal-toggle">⌃</button>';
     }
-    days.forEach(function(d){
-      var dim=calMonthly&&d.getMonth()!==calSel.getMonth();
-      var cls='cal-cell'+(dim?' dim':'')+(calSameDay(d,calSel)?' sel':'')+(calSameDay(d,today)?' today':'');
-      var dots=calDayDots(d).map(function(c){return '<i style="background:'+c+'"></i>';}).join('');
-      html+='<div class="'+cls+'" data-t="'+d.getTime()+'"><div class="cal-num">'+d.getDate()+'</div><div class="cal-dots">'+dots+'</div></div>';
-    });
-    html+='</div><button class="cal-toggle">'+(calMonthly?'⌃':'⌄')+'</button>';
-    return html;
+    // 주간 = 3-pane 슬라이더 (요청: 손가락 1:1 추종 드래그).
+    function pane(base){
+      var ws=calWeekStart(base),cells='';
+      for(var j=0;j<7;j++){var d2=new Date(ws);d2.setDate(ws.getDate()+j);cells+=calCellHTML(d2,false,today);}
+      return '<div class="cal-pane"><div class="cal-grid">'+cells+'</div></div>';
+    }
+    var prev=new Date(calSel);prev.setDate(prev.getDate()-7);
+    var next=new Date(calSel);next.setDate(next.getDate()+7);
+    return head+'<div class="cal-wrap"><div class="cal-slider">'+pane(prev)+pane(calSel)+pane(next)+'</div></div>'+
+      '<button class="cal-toggle">⌄</button>';
   }
   function wireCalStrip(el){
     el.querySelectorAll('.cal-cell').forEach(function(c){c.addEventListener('click',function(){
       calSel=new Date(+c.dataset.t);calSel.setHours(0,0,0,0);renderCalStrips();renderTodo();renderMatrix();});});
     el.querySelector('.cal-toggle').addEventListener('click',function(){calMonthly=!calMonthly;renderCalStrips();});
-    // 좌우 스와이프로 주(월간이면 달) 이동 (요청).
-    var sx=0,sy=0,swiping=false;
-    el.addEventListener('pointerdown',function(e){sx=e.clientX;sy=e.clientY;swiping=true;});
-    el.addEventListener('pointerup',function(e){
-      if(!swiping)return;swiping=false;
-      var dx=e.clientX-sx,dy=e.clientY-sy;
-      if(Math.abs(dx)<40||Math.abs(dx)<Math.abs(dy)*1.5)return;
-      var dir=dx<0?1:-1;                                  // 왼쪽으로 밀면 다음
-      if(calMonthly)calSel.setMonth(calSel.getMonth()+dir);
-      else calSel.setDate(calSel.getDate()+dir*7);
-      calSel.setHours(0,0,0,0);
-      renderCalStrips();renderTodo();renderMatrix();
-      var g=el.querySelector('.cal-grid');
-      if(g){g.style.transition='none';g.style.transform='translateX('+(dir*24)+'px)';g.style.opacity='.4';
-        requestAnimationFrame(function(){g.style.transition='transform .25s ease,opacity .25s ease';g.style.transform='';g.style.opacity='1';});}
-    });
+    // 주간: 슬라이더가 손가락을 1:1 따라오고, 놓으면 스냅 (요청).
+    var wrap=el.querySelector('.cal-wrap');
+    if(wrap){
+      var slider=el.querySelector('.cal-slider');
+      var sx=0,sy=0,drag=false,lock='',w=0,lastDx=0;
+      wrap.addEventListener('pointerdown',function(e){
+        sx=e.clientX;sy=e.clientY;drag=true;lock='';lastDx=0;w=wrap.offsetWidth;slider.style.transition='none';});
+      wrap.addEventListener('pointermove',function(e){
+        if(!drag)return;var dx=e.clientX-sx,dy=e.clientY-sy;
+        if(!lock){if(Math.abs(dx)<6&&Math.abs(dy)<6)return;lock=Math.abs(dx)>Math.abs(dy)?'x':'y';}
+        if(lock!=='x')return;e.preventDefault();lastDx=dx;
+        slider.style.transform='translateX(calc(-33.3333% + '+dx+'px))';});
+      function calEnd(){
+        if(!drag)return;drag=false;if(lock!=='x')return;
+        var dir=lastDx<-w*0.2?1:(lastDx>w*0.2?-1:0);
+        slider.style.transition='transform .2s ease-out';
+        slider.style.transform='translateX('+(dir===1?'-66.6666%':dir===-1?'0%':'-33.3333%')+')';
+        if(dir!==0)setTimeout(function(){
+          calSel.setDate(calSel.getDate()+dir*7);calSel.setHours(0,0,0,0);
+          renderCalStrips();renderTodo();renderMatrix();},210);
+      }
+      wrap.addEventListener('pointerup',calEnd);wrap.addEventListener('pointercancel',calEnd);
+    }else{
+      // 월간: 릴리즈 스와이프로 달 이동.
+      var msx=0,msy=0,mswiping=false;
+      el.addEventListener('pointerdown',function(e){msx=e.clientX;msy=e.clientY;mswiping=true;});
+      el.addEventListener('pointerup',function(e){
+        if(!mswiping)return;mswiping=false;
+        var dx=e.clientX-msx,dy=e.clientY-msy;
+        if(Math.abs(dx)<40||Math.abs(dx)<Math.abs(dy)*1.5)return;
+        calSel.setMonth(calSel.getMonth()+(dx<0?1:-1));calSel.setHours(0,0,0,0);
+        renderCalStrips();renderTodo();renderMatrix();});
+    }
   }
 
   // ── 타임라인 천체 (요청: 스크롤 시 해·달 위치 + 달 위상 + 하늘색 동적) ──
