@@ -260,13 +260,40 @@
 
   /* 주간/월간 캘린더 스트립 (앱 CalendarHeader 파리티, 요청). */
   /* 우상단 플로팅 유틸 (요청). */
+  /* 우상단 회전 캡슐 (요청). */
+  .topcap{position:fixed;top:calc(10px + env(safe-area-inset-top));right:12px;z-index:40;display:flex;align-items:center;gap:7px;
+    max-width:62vw;border:0;background:rgba(255,255,255,.82);backdrop-filter:blur(5px);box-shadow:0 2px 10px rgba(20,40,80,.16);
+    border-radius:999px;padding:8px 14px;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--ink);cursor:pointer;overflow:hidden}
+  .topcap .tc-ic{flex:0 0 auto;display:grid;place-items:center;color:var(--ink-soft)}
+  .topcap .tc-ic svg{width:15px;height:15px}
+  .topcap .tc-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topcap .tc-txt.slidedown{animation:tcDown .32s ease}
+  @keyframes tcDown{0%{transform:translateY(-90%);opacity:0}100%{transform:translateY(0);opacity:1}}
   .util{position:fixed;top:calc(8px + env(safe-area-inset-top));right:10px;z-index:40;display:flex;gap:6px}
   .util .acct{background:rgba(255,255,255,.82);backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(20,40,80,.18)}
-  body[data-m="timeline"] .util{display:none}
+  body[data-m="timeline"] .topcap{display:none}
   .util .acct{padding:7px 9px;font-size:12px;max-width:none}
   .util #statsBtn,.util #settingsBtn{width:34px;height:34px;display:grid;place-items:center;padding:0}
   .util .acct .ic{width:17px;height:17px}
   /* 요일 칩 — 누르면 캘린더 스트립 펼침 (요청: 평소 숨김, 내용 최대화). */
+  /* 설정 섹션 헤더 + 토글 목록 (요청). */
+  .set-sec{font-size:12px;font-weight:800;color:var(--sky-blue);margin:18px 0 4px;letter-spacing:.02em}
+  .set-toggles{display:flex;flex-direction:column;gap:2px}
+  .set-toggles label{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--ink);padding:7px 2px;cursor:pointer}
+  .set-toggles input{width:18px;height:18px;accent-color:var(--sky-blue);margin:0}
+  /* 더보기 바텀시트 (요청: 아래에서 위로). */
+  .sheet-scrim{position:fixed;inset:0;z-index:55;background:rgba(15,20,40,.42);backdrop-filter:blur(3px);
+    display:none;align-items:flex-end}
+  .sheet-scrim.open{display:flex}
+  .sheet{width:100%;background:var(--card);border-radius:22px 22px 0 0;padding:8px 18px calc(20px + env(safe-area-inset-bottom));
+    box-shadow:0 -12px 40px rgba(0,0,0,.3);transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.7,.2,1)}
+  .sheet-scrim.open .sheet{transform:translateY(0)}
+  .sheet-grip{width:38px;height:4px;border-radius:2px;background:var(--line);margin:6px auto 10px}
+  .sheet-head{font-size:17px;font-weight:800;margin:2px 4px 14px}
+  .sheet-grid{display:flex;gap:12px;padding-bottom:6px}
+  .sheet-grid button{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;border:0;background:var(--card-2);
+    border-radius:16px;padding:16px 6px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;color:var(--ink)}
+  .sheet-grid .ic{width:26px;height:26px;color:var(--ink-soft)}
   .dow-toggle{font-family:inherit;font-size:13px;font-weight:600;color:rgba(255,255,255,.9);
     background:rgba(255,255,255,.18);border:0;border-radius:999px;padding:3px 11px;margin-left:6px;cursor:pointer;
     vertical-align:middle;text-shadow:0 1px 2px rgba(20,40,80,.3)}
@@ -517,12 +544,8 @@
 </head>
 <body data-m="todo">
 <div class="app">
-  <!-- 우상단 플로팅 유틸 (요청: harufocus 맨위 바 제거, 내용 최대화). 타임라인 제외. -->
-  <div class="util" id="utilCluster">
-    <button class="acct" id="statsBtn" title="통계"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 20V11M11 20V4M17 20v-6"/><path d="M3 20h18"/></svg></button>
-    <button class="acct" id="settingsBtn" title="설정"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="3.1"/><path d="M12 3v2.5M12 18.5V21M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M3 12h2.5M18.5 12H21M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></svg></button>
-    <button class="acct" id="accountBtn">로그인</button>
-  </div>
+  <!-- 우상단 회전 캡슐 (요청: 다짐·집중합계·해질녘·해돋이·D-day 번갈아, 아래로 전환). -->
+  <button class="topcap" id="topCap"><span class="tc-ic" id="tcIc"></span><span class="tc-txt" id="tcTxt"></span></button>
 
   <div class="layout">
     <!-- LEFT: timeline -->
@@ -604,11 +627,12 @@
   </div>
 
   <nav class="mbar">
-    <button class="mbtn" data-tab="timeline"><svg viewBox="0 0 24 24"><path d="M3 20h18M6.5 20a5.5 5.5 0 0 1 11 0M12 3v4M4.4 8.4l1.6 1.6M19.6 8.4l-1.6 1.6M3 14h2M19 14h2"/></svg>타임라인</button>
-    <button class="mbtn on" data-tab="todo"><svg viewBox="0 0 24 24"><circle cx="5" cy="7" r="2"/><circle cx="5" cy="17" r="2"/><path d="M10 7h10M10 17h10"/></svg>할일</button>
-    <button class="mbtn" data-tab="bucket"><svg viewBox="0 0 24 24"><path d="M12 3.5s6 6.4 6 10.8a6 6 0 0 1-12 0c0-4.4 6-10.8 6-10.8z"/></svg>물통</button>
+    <button class="mbtn" data-tab="timeline"><svg viewBox="0 0 24 24"><path d="M3 18h18M7.5 18a4.5 4.5 0 0 1 9 0M12 6v2.2M5.6 11l1.5 1.5M18.4 11l-1.5 1.5M3.4 15.4h1.9M18.7 15.4h1.9"/></svg>타임라인</button>
+    <button class="mbtn on" data-tab="todo"><svg viewBox="0 0 24 24"><path d="M3.3 6.8l1.4 1.4 2.5-2.7"/><circle cx="5" cy="16.6" r="2.1"/><path d="M10.5 7h9.5M10.5 16.6h9.5"/></svg>할일</button>
+    <button class="mbtn" data-tab="bucket"><svg viewBox="0 0 24 24"><path d="M12 3.4s6.2 6.5 6.2 11a6.2 6.2 0 0 1-12.4 0c0-4.5 6.2-11 6.2-11z" fill="currentColor" stroke="none"/></svg>물통</button>
     <button class="mbtn" data-tab="matrix"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>매트릭스</button>
-    <button class="mbtn" data-tab="routine"><svg viewBox="0 0 24 24"><path d="M4 8h11a4 4 0 0 1 4 4M20 16H9a4 4 0 0 1-4-4M15 4.5L18.5 8 15 11.5M9 19.5L5.5 16 9 12.5"/></svg>루틴</button>
+    <button class="mbtn" data-tab="routine"><svg viewBox="0 0 24 24"><path d="M17 3.5l3 3-3 3"/><path d="M20 6.5H8.5A4.5 4.5 0 0 0 4 11v.5"/><path d="M7 20.5l-3-3 3-3"/><path d="M4 17.5h11.5A4.5 4.5 0 0 0 20 13v-.5"/></svg>루틴</button>
+    <button class="mbtn" id="moreBtn"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.7" fill="currentColor" stroke="none"/></svg>더보기</button>
   </nav>
 </div>
 
@@ -704,11 +728,44 @@
   <div class="modal">
     <button class="mclose" id="settingsClose">✕</button>
     <h3>설정</h3>
-    <div class="elabel">하루 집중 목표 (분)</div><input type="number" id="setGoal" min="0" step="30">
+
+    <div class="set-sec">상단 바</div>
+    <div class="elabel">오늘 다짐</div><input id="setVow" placeholder="예: 오늘도 한 걸음" maxlength="40">
+    <div class="elabel">D-day 이름</div><input id="setDdayLabel" placeholder="예: 시험" maxlength="20">
+    <div class="elabel">D-day 날짜</div><input type="date" id="setDdayDate">
+    <div class="elabel">표시 항목</div>
+    <div class="set-toggles" id="setBarItems">
+      <label><input type="checkbox" data-k="vow"> 오늘 다짐</label>
+      <label><input type="checkbox" data-k="focusSum"> 오늘 집중 합계</label>
+      <label><input type="checkbox" data-k="sunset"> 해질녘</label>
+      <label><input type="checkbox" data-k="sunrise"> 해돋이까지</label>
+      <label><input type="checkbox" data-k="dday"> D-day</label>
+    </div>
+    <div class="elabel">전환 주기 (초)</div><input type="number" id="setBarPeriod" min="2" max="60" step="1">
+
+    <div class="set-sec">하루</div>
     <div class="elabel">기상 시각</div><input type="time" id="setWake">
     <div class="elabel">취침 시각</div><input type="time" id="setBed">
-    <div class="msub" style="margin-top:10px">기상·취침 시각이 타임라인에 보이는 시간대를 정해요.</div>
+    <div class="elabel">하루 집중 목표 (분)</div><input type="number" id="setGoal" min="0" step="30">
+    <div class="msub" style="margin-top:4px">기상·취침 시각이 타임라인에 보이는 시간대를 정해요.</div>
+
+    <div class="set-sec">작업 추가</div>
+    <div class="elabel">추가할 때 기본 길이 (분)</div><input type="number" id="setDefDur" min="0" step="5">
+
     <button class="go" id="setSave">저장</button>
+  </div>
+</div>
+
+<!-- 더보기 바텀시트 (요청: 앱 파리티) -->
+<div class="sheet-scrim" id="moreScrim">
+  <div class="sheet" id="moreSheet">
+    <div class="sheet-grip"></div>
+    <div class="sheet-head"><b>더보기</b></div>
+    <div class="sheet-grid">
+      <button id="moreStats"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 20V11M11 20V4M17 20v-6"/><path d="M3 20h18"/></svg><span>통계</span></button>
+      <button id="moreSettings"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3.1"/><path d="M12 3v2.5M12 18.5V21M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M3 12h2.5M18.5 12H21M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></svg><span>설정</span></button>
+      <button id="moreAccount"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c1-4 4-5.5 7-5.5s6 1.5 7 5.5"/></svg><span id="moreAccountLbl">로그인</span></button>
+    </div>
   </div>
 </div>
 
@@ -798,6 +855,7 @@
     outdent:svgI('<path d="M4 5h16M4 19h16M4 12h9"/><path d="M20 9l-3 3 3 3"/>'),
     link:svgI('<path d="M9 15l6-6"/><path d="M10.5 6.5l1-1a3.5 3.5 0 0 1 5 5l-1 1M13.5 17.5l-1 1a3.5 3.5 0 0 1-5-5l1-1"/>'),
     bolt:svgI('<path d="M13 3L5 13h5l-1 8 8-11h-5z"/>'),
+    sunset:svgI('<path d="M3 18h18M7.5 18a4.5 4.5 0 0 1 9 0M12 12.5v-2M5.6 13l1.5 1.5M18.4 13l-1.5 1.5"/><path d="M9.5 7l2.5 2.5L14.5 7"/>'),
     clock:svgI('<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>'),
     dots9:svgI('<circle cx="6" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="18" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="6" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="6" cy="18" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="18" r="1.3" fill="currentColor" stroke="none"/><circle cx="18" cy="18" r="1.3" fill="currentColor" stroke="none"/>'),
     circleO:svgI('<circle cx="12" cy="12" r="7.5"/>')};
@@ -877,7 +935,9 @@
       {title:'영어 단어',categoryID:'study',weekdaysMask:42,reminderMinutesJSON:'[1260]'},
       {title:'저녁 명상',categoryID:'mind',weekdaysMask:127,reminderMinutesJSON:'[1350]'}
     ],
-    settings:{focusGoalMinutes:240}
+    settings:{focusGoalMinutes:240,defaultDurationMin:50,barPeriodSec:6,
+      barItems:{vow:true,focusSum:true,sunset:true,sunrise:true,dday:false},
+      todayVow:'',ddayLabel:'',ddayDate:null,lat:-43.53,lng:172.63}
   };
 
   var DATA=DEMO;
@@ -1369,12 +1429,26 @@
     document.getElementById('setGoal').value=s.focusGoalMinutes!=null?s.focusGoalMinutes:240;
     document.getElementById('setWake').value=minToHHMM(s.wakeMinutes!=null?s.wakeMinutes:420);
     document.getElementById('setBed').value=minToHHMM(s.bedMinutes!=null?s.bedMinutes:1380);
+    document.getElementById('setDefDur').value=s.defaultDurationMin!=null?s.defaultDurationMin:50;
+    document.getElementById('setVow').value=s.todayVow||'';
+    document.getElementById('setDdayLabel').value=s.ddayLabel||'';
+    document.getElementById('setDdayDate').value=s.ddayDate?s.ddayDate.slice(0,10):'';
+    document.getElementById('setBarPeriod').value=s.barPeriodSec!=null?s.barPeriodSec:6;
+    var bi=s.barItems||{};
+    document.querySelectorAll('#setBarItems input').forEach(function(cb){cb.checked=bi[cb.dataset.k]!==false&&bi[cb.dataset.k]!==undefined?!!bi[cb.dataset.k]:!!bi[cb.dataset.k];});
     document.getElementById('settingsScrim').classList.add('open');}
-  function saveSettings(){if(!DATA.settings)DATA.settings={};
-    DATA.settings.focusGoalMinutes=parseInt(document.getElementById('setGoal').value,10)||0;
-    DATA.settings.wakeMinutes=hhmmToMin(document.getElementById('setWake').value);
-    DATA.settings.bedMinutes=hhmmToMin(document.getElementById('setBed').value);
-    document.getElementById('settingsScrim').classList.remove('open');renderAll();pushSnapshot();}
+  function saveSettings(){if(!DATA.settings)DATA.settings={};var S=DATA.settings;
+    S.focusGoalMinutes=parseInt(document.getElementById('setGoal').value,10)||0;
+    S.wakeMinutes=hhmmToMin(document.getElementById('setWake').value);
+    S.bedMinutes=hhmmToMin(document.getElementById('setBed').value);
+    S.defaultDurationMin=parseInt(document.getElementById('setDefDur').value,10)||0;
+    S.todayVow=document.getElementById('setVow').value||'';
+    S.ddayLabel=document.getElementById('setDdayLabel').value||'';
+    var dd=document.getElementById('setDdayDate').value;S.ddayDate=dd?new Date(dd).toISOString():null;
+    S.barPeriodSec=Math.max(2,parseInt(document.getElementById('setBarPeriod').value,10)||6);
+    S.barItems=S.barItems||{};
+    document.querySelectorAll('#setBarItems input').forEach(function(cb){S.barItems[cb.dataset.k]=cb.checked;});
+    document.getElementById('settingsScrim').classList.remove('open');renderAll();startBarRotation();pushSnapshot();}
 
   /* ---------- 통계 (요청: 웹 이식) ---------- */
   function focusStats(){
@@ -1886,7 +1960,7 @@
 
   /* ---------- auth + snapshot ---------- */
   var session=null;try{session=JSON.parse(localStorage.getItem(AUTH_KEY)||'null');}catch(e){}
-  function updateAcct(){var b=document.getElementById('accountBtn');if(session&&session.user){b.textContent=session.user.email;b.classList.add('signed');}else{b.textContent='로그인';b.classList.remove('signed');}}
+  function updateAcct(){var b=document.getElementById('moreAccountLbl');if(!b)return;b.textContent=(session&&session.user)?'로그아웃':'로그인';}
   function normalize(s){return {tasks:s.tasks||[],habits:s.habits||[],sessions:s.sessions||[],settings:s.settings||{focusGoalMinutes:240}};}
 
   /* 서버 스냅샷을 통째로 보관 (schemaVersion·sessions 등 앱 전용 필드 보존).
@@ -1929,7 +2003,7 @@
   function setLMode(m){mode=m;document.getElementById('loginTitle').textContent=m==='signIn'?'로그인':'회원가입';document.getElementById('loginGo').textContent=m==='signIn'?'로그인':'회원가입';
     document.getElementById('loginSwitch').innerHTML=m==='signIn'?'계정이 없나요? <a id="loginToggle">회원가입</a>':'이미 계정이 있나요? <a id="loginToggle">로그인</a>';
     document.getElementById('loginToggle').addEventListener('click',function(){setLMode(m==='signIn'?'signUp':'signIn');});}
-  document.getElementById('accountBtn').addEventListener('click',function(){if(session){if(confirm('로그아웃할까요?'))signOut();}else{document.getElementById('loginErr').textContent='';setLMode('signIn');scrim.classList.add('open');document.getElementById('loginEmail').focus();}});
+  document.getElementById('moreAccount').addEventListener('click',function(){closeMore();if(session){if(confirm('로그아웃할까요?'))signOut();}else{document.getElementById('loginErr').textContent='';setLMode('signIn');scrim.classList.add('open');document.getElementById('loginEmail').focus();}});
   document.getElementById('loginClose').addEventListener('click',function(){scrim.classList.remove('open');});
   scrim.addEventListener('click',function(e){if(e.target===scrim)scrim.classList.remove('open');});
   document.getElementById('loginToggle').addEventListener('click',function(){setLMode('signUp');});
@@ -2001,11 +2075,14 @@
     localStorage.setItem('hfPomo',pomoOn()?'0':'1');ftKey='';paintPomoChip();if(fTask)tickFocus();});
   document.getElementById('bPrev').addEventListener('click',function(){shiftBucketDay(-1);});
   document.getElementById('bNext').addEventListener('click',function(){shiftBucketDay(1);});
-  document.getElementById('settingsBtn').addEventListener('click',openSettings);
+  document.getElementById('moreSettings').addEventListener('click',function(){closeMore();openSettings();});
   document.getElementById('settingsClose').addEventListener('click',function(){document.getElementById('settingsScrim').classList.remove('open');});
   document.getElementById('settingsScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
   document.getElementById('setSave').addEventListener('click',saveSettings);
-  document.getElementById('statsBtn').addEventListener('click',openStats);
+  document.getElementById('moreStats').addEventListener('click',function(){closeMore();openStats();});
+  document.getElementById('moreBtn').addEventListener('click',openMore);
+  document.getElementById('moreScrim').addEventListener('click',function(e){if(e.target===this)closeMore();});
+  document.getElementById('topCap').addEventListener('click',barAdvance);
   document.getElementById('statsClose').addEventListener('click',function(){document.getElementById('statsScrim').classList.remove('open');});
   document.getElementById('statsScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 
@@ -2418,8 +2495,82 @@
 
   document.getElementById('capWrap').addEventListener('click',function(e){if(e.target===this)closeCapture();});
 
+  // ── 더보기 바텀시트 (요청) ──
+  function openMore(){document.getElementById('moreScrim').classList.add('open');}
+  function closeMore(){document.getElementById('moreScrim').classList.remove('open');}
+
+  // ── 일출·일몰 계산 (SunCalc 축약 포팅) ──
+  function sunTimes(date,lat,lng){
+    var rad=Math.PI/180,J1970=2440588,J2000=2451545,dayMs=86400000,J0=0.0009;
+    function toDays(d){return d.getTime()/dayMs-0.5+J1970-J2000;}
+    var e=rad*23.4397;
+    function M(d){return rad*(357.5291+0.98560028*d);}
+    function eclLng(m){var C=rad*(1.9148*Math.sin(m)+0.02*Math.sin(2*m)+0.0003*Math.sin(3*m));return m+C+rad*102.9372+Math.PI;}
+    function dec(l){return Math.asin(Math.sin(0)*Math.cos(e)+Math.cos(0)*Math.sin(e)*Math.sin(l));}
+    function julianCycle(d,lw){return Math.round(d-J0-lw/(2*Math.PI));}
+    function approx(ht,lw,n){return J0+(ht+lw)/(2*Math.PI)+n;}
+    function solarTransitJ(ds,m,l){return J2000+ds+0.0053*Math.sin(m)-0.0069*Math.sin(2*l);}
+    function hourAngle(h,phi,d){return Math.acos((Math.sin(h)-Math.sin(phi)*Math.sin(d))/(Math.cos(phi)*Math.cos(d)));}
+    var lw=rad*-lng,phi=rad*lat,d=toDays(date),n=julianCycle(d,lw),ds=approx(0,lw,n);
+    var m=M(ds),l=eclLng(m),dec2=dec(l),Jnoon=solarTransitJ(ds,m,l);
+    var h0=rad*-0.833,w0=hourAngle(h0,phi,dec2),a=approx(w0,lw,n);
+    var Jset=solarTransitJ(a,m,l),Jrise=Jnoon-(Jset-Jnoon);
+    function fromJ(j){return new Date((j+0.5-J1970)*dayMs);}
+    return {sunrise:fromJ(Jrise),sunset:fromJ(Jset)};
+  }
+  function fmtClock(d){try{return d.toLocaleTimeString('ko-KR',{hour:'numeric',minute:'2-digit'});}catch(e){return '';}}
+
+  // ── 상단 캡슐 회전 (요청) ──
+  var barIdx=0,barTimer=null;
+  function barEnabledKeys(){
+    var bi=(DATA.settings&&DATA.settings.barItems)||{};
+    var order=['vow','focusSum','sunset','sunrise','dday'];
+    return order.filter(function(k){return bi[k];});
+  }
+  function barContent(k){
+    var S=DATA.settings||{};
+    if(k==='vow')return {ic:IC.note,txt:(S.todayVow&&S.todayVow.trim())?('“'+S.todayVow+'”'):'오늘의 다짐을 적어보세요'};
+    if(k==='focusSum'){var st=focusStats();var sec=st?st.today:0;var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);
+      return {ic:IC.timer,txt:'오늘 집중 '+(h?h+'시간 ':'')+m+'분'};}
+    if(k==='sunset'||k==='sunrise'){
+      var lat=S.lat!=null?S.lat:-43.53,lng=S.lng!=null?S.lng:172.63;
+      var t=sunTimes(new Date(),lat,lng);
+      if(k==='sunset')return {ic:IC.sunset||IC.note,txt:'해질녘 '+fmtClock(t.sunset)};
+      var now=new Date(),sr=t.sunrise;if(sr<now)sr=sunTimes(new Date(Date.now()+86400000),lat,lng).sunrise;
+      var mins=Math.max(0,Math.round((sr-now)/60000)),hh=Math.floor(mins/60);
+      return {ic:IC.sunrise,txt:'해돋이까지 '+(hh?hh+'시간 ':'')+(mins%60)+'분'};
+    }
+    if(k==='dday'){
+      if(!S.ddayDate)return {ic:IC.flag,txt:'D-day 미설정'};
+      var dd=new Date(S.ddayDate);dd.setHours(0,0,0,0);var td=new Date();td.setHours(0,0,0,0);
+      var diff=Math.round((dd-td)/86400000);
+      var lab=(S.ddayLabel||'').trim();
+      var dtxt=diff===0?'D-day':(diff>0?'D-'+diff:'D+'+(-diff));
+      return {ic:IC.flag,txt:dtxt+(lab?' '+lab:'')};
+    }
+    return {ic:IC.note,txt:''};
+  }
+  function paintBar(anim){
+    var keys=barEnabledKeys(),cap=document.getElementById('topCap');
+    if(!keys.length){cap.style.display='none';return;}
+    cap.style.display='';
+    if(barIdx>=keys.length)barIdx=0;
+    var c=barContent(keys[barIdx]);
+    document.getElementById('tcIc').innerHTML=c.ic;
+    var txt=document.getElementById('tcTxt');txt.textContent=c.txt;
+    if(anim){txt.classList.remove('slidedown');void txt.offsetWidth;txt.classList.add('slidedown');}
+  }
+  function barAdvance(){var keys=barEnabledKeys();if(!keys.length)return;barIdx=(barIdx+1)%keys.length;paintBar(true);}
+  function startBarRotation(){
+    if(barTimer)clearInterval(barTimer);
+    barIdx=0;paintBar(false);
+    var keys=barEnabledKeys();if(keys.length<2)return;
+    var per=Math.max(2,(DATA.settings&&DATA.settings.barPeriodSec)||6)*1000;
+    barTimer=setInterval(barAdvance,per);
+  }
+
   /* ---------- boot ---------- */
-  updateAcct();setTab('todo');renderAll();if(session)fetchSnapshot();
+  updateAcct();setTab('todo');renderAll();startBarRotation();if(session)fetchSnapshot();
 })();
 </script>
 </body>
