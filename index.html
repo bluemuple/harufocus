@@ -349,15 +349,16 @@
   .nav-ghost{position:fixed;z-index:90;pointer-events:none;opacity:.92;background:var(--card);border-radius:14px;
     box-shadow:0 10px 28px rgba(0,0,0,.28);color:var(--sky-blue)}
   .nav-dragsrc{opacity:.25}
-  .dow-toggle{font-family:inherit;font-size:13px;font-weight:600;color:rgba(255,255,255,.9);
-    background:rgba(255,255,255,.18);border:0;border-radius:999px;padding:3px 11px;margin-left:6px;cursor:pointer;
-    vertical-align:middle;text-shadow:0 1px 2px rgba(20,40,80,.3)}
+  .dow-toggle{font-family:inherit;font-size:14px;font-weight:700;color:rgba(255,255,255,.95);
+    background:rgba(255,255,255,.18);border:0;border-radius:999px;padding:5px 13px;margin-left:8px;cursor:pointer;
+    vertical-align:3px;text-shadow:0 1px 2px rgba(20,40,80,.3);line-height:1}
   .dow-toggle::after{content:" ⌄";font-size:11px}
   .dow-toggle.open::after{content:" ⌃"}
   .calstrip{margin:2px 0 12px;color:#fff;display:none}
   .calstrip.open{display:block}
   .sec-h{font-size:13px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(20,40,80,.4);margin:14px 2px 8px}
-  .sec-h:first-child{margin-top:0}
+  .sec-h:first-child{margin-top:8px}
+  .sec-h{margin-bottom:10px}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}
   .cal-wd{font-size:11px;font-weight:700;opacity:.8;padding-bottom:4px}
   .cal-wd.sun{color:#ffb4b4}.cal-wd.sat{color:#bcd4ff}
@@ -735,6 +736,16 @@
     <div id="memoView" class="memo-view"></div>
     <textarea id="memoEdit" class="memo-edit" style="display:none" placeholder="메모…"></textarea>
     <div class="ebtns"><button class="chip" id="memoEditBtn">편집</button><button class="go" id="memoSave" style="display:none">완료</button></div>
+  </div>
+</div>
+
+<!-- 오늘 다짐 팝업 (요청: 캡슐 탭 → 위쪽 고정, 키보드와 안 겹침) -->
+<div class="scrim" id="vowScrim">
+  <div class="modal" style="margin-top:calc(10px + env(safe-area-inset-top))">
+    <button class="mclose" id="vowClose">✕</button>
+    <h3>오늘의 다짐</h3>
+    <input id="vowInput" placeholder="예: 오늘도 한 걸음" maxlength="40">
+    <button class="go" id="vowSave">저장</button>
   </div>
 </div>
 
@@ -1587,7 +1598,7 @@
   // 할일 한 줄 (스와이프 4버튼 포함) — 여러 섹션이 공유한다 (요청 리팩터).
   function buildTodoRow(t){
     var placed=t.scheduledStart&&t.durationMin;
-    var row=document.createElement('div');row.className='task'+(t.isDone?' done':'');
+    var row=document.createElement('div');row.className='task'+(t.isDone?' done':'');row.dataset.id=t.id;
     row.innerHTML=
       '<div class="swipe-grp lead">'+
         '<button class="sa sa-tomorrow">'+IC.curve+'<b>내일로</b></button>'+
@@ -1617,28 +1628,48 @@
   }
   function renderTodo(){
     var dow=document.getElementById('todoDow');
-    if(dow)dow.textContent=calSel.toLocaleDateString('en-US',{weekday:'short'});
-    var list=document.getElementById('todoList');list.innerHTML='';
+    if(dow)dow.textContent=calSel.toLocaleDateString('ko-KR',{weekday:'short'});
+    var list=document.getElementById('todoList');
+    // FLIP: 재정렬 전 각 행의 위치를 기억해 이동을 애니메이션한다 (요청:
+    // 완료 → 아래로, 별표 → 위로 움직이는 게 보이도록).
+    var oldPos={};
+    list.querySelectorAll('.task[data-id]').forEach(function(el){oldPos[el.dataset.id]=el.getBoundingClientRect().top;});
+    list.innerHTML='';
     var todayMid=new Date();todayMid.setHours(0,0,0,0);
     // 내일로 미룬 일은 그날이 되기 전엔 숨긴다 (앱 파리티, 요청).
     var visible=(DATA.tasks||[]).filter(function(t){
       if(!t.deferredUntil)return true;return new Date(t.deferredUntil)<=todayMid;});
-    // 선택 날짜에 배치된 일정 (캘린더 스트립과 연동, 요청).
+    // 선택 날짜에 배치된 일정 — 완료된 건 섹션 맨 아래로 (요청).
     var scheduled=visible.filter(function(t){return t.scheduledStart&&calSameDay(new Date(t.scheduledStart),calSel);})
-      .sort(function(a,b){return new Date(a.scheduledStart)-new Date(b.scheduledStart);});
-    // 담아둔 일: 배치 안 됐고 완료 안 된 것 (별표 우선).
-    var backlog=visible.filter(function(t){return !t.scheduledStart&&!t.isDone;})
-      .sort(function(a,b){return (b.isStarred?1:0)-(a.isStarred?1:0);});
+      .sort(function(a,b){var d=(a.isDone?1:0)-(b.isDone?1:0);if(d)return d;
+        return new Date(a.scheduledStart)-new Date(b.scheduledStart);});
+    // 담아둔 일 — 별표 위로, 완료는 맨 아래로 (요청).
+    var backlog=visible.filter(function(t){return !t.scheduledStart;})
+      .sort(function(a,b){var d=(a.isDone?1:0)-(b.isDone?1:0);if(d)return d;
+        return (b.isStarred?1:0)-(a.isStarred?1:0);});
     if(!scheduled.length&&!backlog.length){list.innerHTML='<div class="empty" style="color:#fff;text-shadow:0 1px 2px rgba(20,40,80,.4)">할 일이 없어요.</div>';return;}
     if(scheduled.length){
       var mon=(calSel.getMonth()+1),day=calSel.getDate();
       list.insertAdjacentHTML('beforeend','<div class="sec-h">'+mon+'월 '+day+'일 일정</div>');
       scheduled.forEach(function(t){list.appendChild(buildTodoRow(t));});
     }
+    var bkOpen=backlog.filter(function(t){return !t.isDone;}).length;
     if(backlog.length){
-      list.insertAdjacentHTML('beforeend','<div class="sec-h">담아둔 일 '+backlog.length+'</div>');
+      list.insertAdjacentHTML('beforeend','<div class="sec-h">담아둔 일 '+bkOpen+'</div>');
       backlog.forEach(function(t){list.appendChild(buildTodoRow(t));});
     }
+    // FLIP 적용: 이전 위치→새 위치로 부드럽게.
+    list.querySelectorAll('.task[data-id]').forEach(function(el){
+      var o=oldPos[el.dataset.id];if(o==null)return;
+      var d=o-el.getBoundingClientRect().top;
+      if(Math.abs(d)>2){
+        el.style.transition='none';el.style.transform='translateY('+d+'px)';
+        requestAnimationFrame(function(){
+          el.style.transition='transform .38s cubic-bezier(.3,.7,.3,1)';el.style.transform='';
+          setTimeout(function(){el.style.transition='';},420);
+        });
+      }
+    });
   }
 
   // 매트릭스 행 스와이프 (요청: 할일처럼, 버튼 폭 최소). 오른쪽=내일로+타임라인, 왼쪽=삭제.
@@ -1665,6 +1696,8 @@
   }
   // 매트릭스 롱프레스 드래그 (요청): 고스트 + 목적지 가로선, 드롭하면 그 위치로 즉시 이동.
   var mxDragging=false;
+  // 드래그 중 페이지 스크롤 정지 (요청: task bar 이동이 원활하게).
+  document.addEventListener('touchmove',function(e){if(mxDragging)e.preventDefault();},{passive:false});
   function attachMxDrag(el,t){
     var timer=null,ghost=null,line=null,dropQuad=null,dropIndex=0;
     var inner=el.querySelector('.mtask-inner');
@@ -1726,7 +1759,7 @@
 
   function renderMatrix(){
     var mdow=document.getElementById('matrixDow');
-    if(mdow)mdow.textContent=calSel.toLocaleDateString('en-US',{weekday:'short'});
+    if(mdow)mdow.textContent=calSel.toLocaleDateString('ko-KR',{weekday:'short'});
     var g=document.getElementById('matrixGrid');g.innerHTML='';g.classList.add('fit');
     var cnt={1:0,2:0,3:0,4:0};
     [{q:1,cls:'q1',h:'중요 · 긴급'},{q:2,cls:'q2',h:'중요 · 여유'},{q:3,cls:'q3',h:'긴급 · 사소'},{q:4,cls:'q4',h:'사소 · 여유 · 보상'}].forEach(function(qd){
@@ -2226,7 +2259,24 @@
   document.getElementById('setAccountBtn').addEventListener('click',accountAction);
   document.getElementById('moreScrim').addEventListener('click',function(e){if(e.target===this){navEditMode=false;closeMore();}});
   document.getElementById('navEditBtn').addEventListener('click',toggleNavEdit);
-  document.getElementById('topCap').addEventListener('click',barAdvance);
+  document.getElementById('topCap').addEventListener('click',function(){
+    var keys=barEnabledKeys();
+    if(keys[barIdx]==='vow'){openVow();return;}     // 다짐이면 작성 팝업 (요청)
+    barAdvance();
+  });
+  function openVow(){
+    document.getElementById('vowInput').value=(DATA.settings&&DATA.settings.todayVow)||'';
+    document.getElementById('vowScrim').classList.add('open');
+    document.getElementById('vowInput').focus();
+  }
+  document.getElementById('vowClose').addEventListener('click',function(){document.getElementById('vowScrim').classList.remove('open');});
+  document.getElementById('vowScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+  document.getElementById('vowSave').addEventListener('click',function(){
+    if(!DATA.settings)DATA.settings={};
+    DATA.settings.todayVow=document.getElementById('vowInput').value||'';
+    document.getElementById('vowScrim').classList.remove('open');
+    paintBar(false);pushSnapshot();
+  });
   document.getElementById('statsClose').addEventListener('click',function(){document.getElementById('statsScrim').classList.remove('open');});
   document.getElementById('statsScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 
@@ -2849,10 +2899,16 @@
     var c=barContent(keys[barIdx]);
     document.getElementById('tcIc').innerHTML=c.ic;
     var txt=document.getElementById('tcTxt');
-    var before=cap.offsetWidth;                          // 전환 전 폭
+    // 전환 중 재측정으로 점점 줄어드는 버그 방지: 트랜지션 끄고 자연폭 측정.
+    cap.style.transition='none';
+    var before=cap.offsetWidth;
     cap.style.width='auto';txt.textContent=c.txt;
-    var after=cap.offsetWidth;                           // 새 내용 폭
-    if(anim&&before!==after){cap.style.width=before+'px';void cap.offsetWidth;cap.style.width=after+'px';}
+    var after=cap.offsetWidth;
+    if(anim&&before!==after){
+      cap.style.width=before+'px';void cap.offsetWidth;
+      cap.style.transition='';cap.style.width=after+'px';
+      setTimeout(function(){cap.style.width='auto';cap.style.transition='none';},500);
+    }else{cap.style.width='auto';}
     if(anim){txt.classList.remove('slidedown');void txt.offsetWidth;txt.classList.add('slidedown');}
   }
   function barAdvance(){var keys=barEnabledKeys();if(!keys.length)return;barIdx=(barIdx+1)%keys.length;paintBar(true);}
