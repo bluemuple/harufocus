@@ -151,15 +151,15 @@
   .swatch{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
   .task-inner{display:flex;align-items:center;gap:11px;flex:1;min-width:0;padding:11px 13px;background:#fff;position:relative;z-index:1;touch-action:pan-y;border-radius:16px}
   /* 스와이프 4버튼 (앱 파리티): 좌우 그룹, 각 그룹 2버튼. 색·아이콘 앱과 동일. */
-  .swipe-grp{position:absolute;top:0;bottom:0;width:128px;display:flex;gap:6px;padding:6px;z-index:0;visibility:hidden}
+  .swipe-grp{position:absolute;top:0;bottom:0;width:128px;display:flex;z-index:0;visibility:hidden}
   .swipe-grp.lead{left:0}.swipe-grp.trail{right:0}
   .task.sw-left .swipe-grp.lead,.task.sw-right .swipe-grp.trail{visibility:visible}
-  .sa{flex:1;height:100%;border:0;border-radius:12px;color:#fff;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;
+  .sa{flex:1;height:100%;border:0;color:#fff;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:3px}
   .sa b{font-size:10px;font-weight:800}
-  .sa svg{width:19px;height:19px}
-  .sa-tomorrow{background:#9A5BD8}.sa-matrix{background:#17808F}
-  .sa-timeline{background:var(--sky-blue)}.sa-delete{background:#E0453A}
+  .sa svg{width:22px;height:22px}
+  .sa-tomorrow{background:#9B4DDB}.sa-matrix{background:#0E90A6}
+  .sa-timeline{background:#2E7DF6}.sa-delete{background:#F5352B}
   .mx-pick{position:absolute;inset:0;z-index:3;display:none;grid-template-columns:repeat(4,1fr)}
   .task.mx-open .mx-pick{display:grid}
   .mx-pick button{border:0;color:#fff;font-family:inherit;font-size:11px;font-weight:800;cursor:pointer;line-height:1.2}
@@ -788,8 +788,8 @@
     starFill:svgI('<path d="M12 3.5l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/>','currentColor'),
     trash:svgI('<path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/>'),
     grid:svgI('<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'),
-    sunrise:svgI('<path d="M12 3v4"/><circle cx="12" cy="14" r="4"/><path d="M3 21h18M5 18l1.5-1.5M19 18l-1.5-1.5"/>'),
-    curve:svgI('<path d="M4 12h11a4 4 0 0 0 0-8h-2M9 8l4-4-4-4" transform="translate(0,4)"/>'),
+    sunrise:svgI('<path d="M3 20h18M6.5 20a5.5 5.5 0 0 1 11 0M12 3v4M4.4 8.4l1.6 1.6M19.6 8.4l-1.6 1.6M3 14h2M19 14h2"/>'),
+    curve:svgI('<path d="M7 18a10 10 0 0 1 10-10"/><path d="M13 4l4 4-4 4"/>'),
     bold:svgI('<path d="M7 5h6a3.2 3.2 0 0 1 0 6.4H7zM7 11.4h7a3.4 3.4 0 0 1 0 6.8H7z"/>'),
     italic:svgI('<path d="M11 5h6M7 19h6M14 5l-4 14"/>'),
     bullet:svgI('<circle cx="5" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="18" r="1.2" fill="currentColor" stroke="none"/><path d="M9 6h11M9 12h11M9 18h11"/>'),
@@ -1409,24 +1409,27 @@
 
   // 작업 막대 좌우 스와이프 → 뒤에 숨은 액션 버튼 노출 (요청: 폰).
   var swipeOpen=null;
-  function closeSwipe(){if(swipeOpen){swipeOpen.style.transform='';swipeOpen=null;}}
+  function closeSwipe(){
+    if(!swipeOpen)return;var innerEl=swipeOpen,rowEl=innerEl.closest('.task');
+    innerEl.style.transition='transform .2s cubic-bezier(.3,0,.2,1)';innerEl.style.transform='translateX(0)';
+    if(rowEl)rowEl.classList.remove('sw-left','sw-right','mx-open');swipeOpen=null;}
   function attachSwipe(row,t,placed){
-    var inner=row.querySelector('.task-inner'),sx=0,sy=0,cur=0,drag=false,lock='';
+    var inner=row.querySelector('.task-inner'),sx=0,sy=0,cur=0,startCur=0,drag=false,lock='';
     var LW=128,RW=128;   // 오른쪽 스와이프(내일로+매트릭스) · 왼쪽 스와이프(타임라인+삭제)
     function set(x){cur=x;inner.style.transform='translateX('+x+'px)';
       row.classList.toggle('sw-left',x>6);row.classList.toggle('sw-right',x<-6);}
     inner.addEventListener('pointerdown',function(e){if(e.pointerType==='mouse')return;
       if(swipeOpen&&swipeOpen!==inner)closeSwipe();
-      sx=e.clientX;sy=e.clientY;drag=true;lock='';inner.style.transition='none';});
+      sx=e.clientX;sy=e.clientY;startCur=cur;drag=true;lock='';inner.style.transition='none';});
     inner.addEventListener('pointermove',function(e){if(!drag)return;
       var dx=e.clientX-sx,dy=e.clientY-sy;
       if(!lock){if(Math.abs(dx)<6&&Math.abs(dy)<6)return;lock=Math.abs(dx)>Math.abs(dy)?'x':'y';}
       if(lock!=='x')return;e.preventDefault();
-      var base=(swipeOpen===inner?cur:0)+dx;
-      set(Math.max(-RW-30,Math.min(LW+30,base)));});
+      // 손 움직임 1:1 추종 (startCur 기준). 오버슈트 없이 딱 버튼 폭까지만.
+      set(Math.max(-RW,Math.min(LW,startCur+dx)));});
     function end(){if(!drag)return;drag=false;inner.style.transition='transform .22s cubic-bezier(.3,0,.2,1)';
-      if(cur>LW*0.5){set(LW);swipeOpen=inner;}
-      else if(cur<-RW*0.5){set(-RW);swipeOpen=inner;}
+      if(cur>LW*0.4){set(LW);swipeOpen=inner;}
+      else if(cur<-RW*0.4){set(-RW);swipeOpen=inner;}
       else{set(0);if(swipeOpen===inner)swipeOpen=null;}}
     inner.addEventListener('pointerup',end);inner.addEventListener('pointercancel',end);
     // 4버튼 탭
@@ -1467,7 +1470,7 @@
         '<span class="check'+(t.isDone?' done':'')+'"></span>'+
         '<span class="swatch" style="background:'+catColor(t.categoryID)+'"></span>'+
         '<div class="t-main"><div class="t-title">'+esc(t.title)+'</div>'+
-          '<div class="t-meta">'+taskMetaHTML(t)+(placed?'<span class="t-time">'+fmtTime(t.scheduledStart)+'</span>':'')+'</div></div>'+
+          '<div class="t-meta">'+(placed?'<span class="t-time">'+fmtTime(t.scheduledStart)+'</span>':'')+taskMetaHTML(t)+'</div></div>'+
         memoIconHTML(t)+
         '<span class="star'+(t.isStarred?' on':'')+'">'+(t.isStarred?'★':'☆')+'</span>'+
         '<button class="play" title="집중 시작">'+IC.play+'</button>'+
@@ -2110,6 +2113,12 @@
     if(e.target.closest('#capWrap'))return;                 // 패널 내부는 유지
     if(e.target.closest('#todoFab,#habitFab,.qadd,#tlAdd'))return;  // 여는 버튼은 제외
     closeCapture();
+  },true);
+  // 스와이프 열림 상태에서 버튼 이외를 누르면 원위치로 (요청).
+  document.addEventListener('pointerdown',function(e){
+    if(!swipeOpen)return;
+    if(e.target.closest('.sa')||e.target.closest('.mx-pick'))return;   // 스와이프 버튼은 동작
+    closeSwipe();
   },true);
   function setCapDetail(d){cap.detail=(cap.detail===d?'options':d);paintCap();}
   function submitCapture(){
