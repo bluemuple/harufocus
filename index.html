@@ -321,19 +321,21 @@
   .set-toggles label{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--ink);padding:7px 2px;cursor:pointer}
   .set-toggles input{width:18px;height:18px;accent-color:var(--sky-blue);margin:0}
   /* 더보기 바텀시트 (요청: 아래에서 위로). */
-  .sheet-scrim{position:fixed;inset:0;z-index:55;background:rgba(15,20,40,.42);backdrop-filter:blur(3px);
-    display:none;align-items:flex-end;padding-bottom:calc(60px + env(safe-area-inset-bottom))}
+  /* 스크림이 하단 바를 덮지 않아 바가 절대 블러되지 않는다 (요청 버그fix). */
+  .sheet-scrim{position:fixed;left:0;right:0;top:0;bottom:calc(58px + env(safe-area-inset-bottom));z-index:55;
+    background:rgba(15,20,40,.42);backdrop-filter:blur(3px);display:none;align-items:flex-end}
+  @media(min-width:861px){.sheet-scrim{bottom:0}}
   .sheet-scrim.open{display:flex}
-  body.more-open .mbar{z-index:58;background:#fff;box-shadow:0 -6px 20px rgba(20,40,80,.16)}
-  .sheet{width:100%;background:var(--card);border-radius:22px 22px 0 0;padding:6px 18px calc(14px + env(safe-area-inset-bottom));
+  body.more-open .mbar{background:#fff;box-shadow:0 -6px 20px rgba(20,40,80,.16)}
+  .sheet{width:100%;background:var(--card);border-radius:18px 18px 0 0;padding:4px 14px 10px;
     box-shadow:0 -12px 40px rgba(0,0,0,.3);transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.7,.2,1)}
   .sheet-scrim.open .sheet{transform:translateY(0)}
-  .sheet-grip{width:38px;height:4px;border-radius:2px;background:var(--line);margin:6px auto 10px}
-  .sheet-head{font-size:16px;font-weight:800;margin:2px 4px 10px}
+  .sheet-grip{width:36px;height:4px;border-radius:2px;background:var(--line);margin:5px auto 7px}
+  .sheet-head{font-size:15px;font-weight:800;margin:0 4px 6px}
   .sheet-grid{display:flex;gap:12px;padding-bottom:6px}
-  .sheet-grid button,.sheet-item{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:var(--card-2);
-    border-radius:15px;padding:13px 6px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;color:var(--ink)}
-  .sheet-grid .ic{width:26px;height:26px;color:var(--ink-soft)}
+  .sheet-grid button,.sheet-item{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:transparent;
+    border-radius:12px;padding:5px 2px 7px;cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:600;color:var(--ink-soft)}
+  .sheet-grid .ic,.sheet-item svg{width:22px;height:22px}
   .sheet-grid svg,.sheet-item svg{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   .sheet-head{display:flex;align-items:center}
   .sheet-edit{margin-left:auto;border:0;background:none;color:var(--sky-blue);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
@@ -741,10 +743,10 @@
 
 <!-- 오늘 다짐 팝업 (요청: 캡슐 탭 → 위쪽 고정, 키보드와 안 겹침) -->
 <div class="scrim" id="vowScrim">
-  <div class="modal" style="margin-top:calc(10px + env(safe-area-inset-top))">
-    <button class="mclose" id="vowClose">✕</button>
-    <h3>오늘의 다짐</h3>
-    <input id="vowInput" placeholder="예: 오늘도 한 걸음" maxlength="40">
+  <div class="modal" style="margin-top:13vh">
+    <button class="mclose" id="vowClose" style="margin-top:-10px">✕</button>
+    <h3>나의 다짐</h3>
+    <input id="vowInput" placeholder="예: 지금 이 순간, 하나에만 집중" maxlength="40">
     <button class="go" id="vowSave">저장</button>
   </div>
 </div>
@@ -795,12 +797,12 @@
     <div class="setpage-body">
 
     <div class="set-sec">상단 바</div>
-    <div class="elabel">오늘 다짐</div><input id="setVow" placeholder="예: 오늘도 한 걸음" maxlength="40">
+    <div class="elabel">다짐</div><input id="setVow" placeholder="예: 지금 이 순간, 하나에만 집중" maxlength="40">
     <div class="elabel">D-day 이름</div><input id="setDdayLabel" placeholder="예: 시험" maxlength="20">
     <div class="elabel">D-day 날짜</div><input type="date" id="setDdayDate">
     <div class="elabel">표시 항목</div>
     <div class="set-toggles" id="setBarItems">
-      <label><input type="checkbox" data-k="vow"> 오늘 다짐</label>
+      <label><input type="checkbox" data-k="vow"> 다짐</label>
       <label><input type="checkbox" data-k="focusSum"> 오늘 집중 합계</label>
       <label><input type="checkbox" data-k="sunset"> 해질녘</label>
       <label><input type="checkbox" data-k="sunrise"> 해돋이까지</label>
@@ -1060,8 +1062,24 @@
   }
   function wireCalStrip(el){
     el.querySelectorAll('.cal-cell').forEach(function(c){c.addEventListener('click',function(){
-      calSel=new Date(+c.dataset.t);calSel.setHours(0,0,0,0);renderCalStrips();renderTodo();});});
+      calSel=new Date(+c.dataset.t);calSel.setHours(0,0,0,0);renderCalStrips();renderTodo();renderMatrix();});});
     el.querySelector('.cal-toggle').addEventListener('click',function(){calMonthly=!calMonthly;renderCalStrips();});
+    // 좌우 스와이프로 주(월간이면 달) 이동 (요청).
+    var sx=0,sy=0,swiping=false;
+    el.addEventListener('pointerdown',function(e){sx=e.clientX;sy=e.clientY;swiping=true;});
+    el.addEventListener('pointerup',function(e){
+      if(!swiping)return;swiping=false;
+      var dx=e.clientX-sx,dy=e.clientY-sy;
+      if(Math.abs(dx)<40||Math.abs(dx)<Math.abs(dy)*1.5)return;
+      var dir=dx<0?1:-1;                                  // 왼쪽으로 밀면 다음
+      if(calMonthly)calSel.setMonth(calSel.getMonth()+dir);
+      else calSel.setDate(calSel.getDate()+dir*7);
+      calSel.setHours(0,0,0,0);
+      renderCalStrips();renderTodo();renderMatrix();
+      var g=el.querySelector('.cal-grid');
+      if(g){g.style.transition='none';g.style.transform='translateX('+(dir*24)+'px)';g.style.opacity='.4';
+        requestAnimationFrame(function(){g.style.transition='transform .25s ease,opacity .25s ease';g.style.transform='';g.style.opacity='1';});}
+    });
   }
 
   // ── 타임라인 천체 (요청: 스크롤 시 해·달 위치 + 달 위상 + 하늘색 동적) ──
@@ -1647,6 +1665,15 @@
     var backlog=visible.filter(function(t){return !t.scheduledStart;})
       .sort(function(a,b){var d=(a.isDone?1:0)-(b.isDone?1:0);if(d)return d;
         return (b.isStarred?1:0)-(a.isStarred?1:0);});
+    // 과거 날짜 선택 = 그날 완료한 작업만 보여준다 (앱 파리티, 요청).
+    if(calSel<todayMid){
+      var doneThat=(DATA.tasks||[]).filter(function(t){return t.completedAt&&calSameDay(new Date(t.completedAt),calSel);});
+      var mon0=(calSel.getMonth()+1),day0=calSel.getDate();
+      list.insertAdjacentHTML('beforeend','<div class="sec-h">'+mon0+'월 '+day0+'일 완료 '+doneThat.length+'</div>');
+      if(!doneThat.length)list.insertAdjacentHTML('beforeend','<div class="empty" style="color:#fff;text-shadow:0 1px 2px rgba(20,40,80,.4)">이 날 완료한 일이 없어요.</div>');
+      doneThat.forEach(function(t){list.appendChild(buildTodoRow(t));});
+      return;
+    }
     if(!scheduled.length&&!backlog.length){list.innerHTML='<div class="empty" style="color:#fff;text-shadow:0 1px 2px rgba(20,40,80,.4)">할 일이 없어요.</div>';return;}
     if(scheduled.length){
       var mon=(calSel.getMonth()+1),day=calSel.getDate();
@@ -2762,7 +2789,7 @@
     matrix:{label:'매트릭스',svg:'<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',type:'tab'},
     routine:{label:'루틴',svg:'<path d="M17 3.5l3 3-3 3"/><path d="M20 6.5H8.5A4.5 4.5 0 0 0 4 11v.5"/><path d="M7 20.5l-3-3 3-3"/><path d="M4 17.5h11.5A4.5 4.5 0 0 0 20 13v-.5"/>',type:'tab'},
     friends:{label:'함께',svg:'<circle cx="9" cy="8" r="3"/><path d="M3.6 20c.6-3.3 2.6-4.9 5.4-4.9s4.8 1.6 5.4 4.9"/><circle cx="17" cy="9" r="2.4"/><path d="M15.6 14.7c2.6.3 4.2 1.7 4.8 4.2"/>',type:'action'},
-    settings:{label:'설정',svg:'<circle cx="12" cy="12" r="3.1"/><path d="M12 3v2.5M12 18.5V21M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M3 12h2.5M18.5 12H21M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/>',type:'action'}
+    settings:{label:'설정',svg:'<path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58z"/><circle cx="12" cy="12" r="3.2"/>',type:'action'}
   };
   var NAV_ALL=['timeline','todo','bucket','matrix','routine','friends','settings'];
   var NAV_MAX=5,navEditMode=false,navPopKey=null;
@@ -2870,7 +2897,7 @@
   }
   function barContent(k){
     var S=DATA.settings||{};
-    if(k==='vow')return {ic:IC.note,txt:(S.todayVow&&S.todayVow.trim())?('“'+S.todayVow+'”'):'오늘의 다짐을 적어보세요'};
+    if(k==='vow')return {ic:IC.note,txt:(S.todayVow&&S.todayVow.trim())?('“'+S.todayVow+'”'):'다짐을 적어보세요'};
     if(k==='focusSum'){var st=focusStats();var sec=st?st.today:0;var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);
       return {ic:IC.timer,txt:'오늘 집중 '+(h?h+'시간 ':'')+m+'분'};}
     if(k==='sunset'||k==='sunrise'){
