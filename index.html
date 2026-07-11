@@ -2361,6 +2361,7 @@
   }
   function closeCapture(){
     cap.open=false;
+    document.getElementById('capText').blur();
     var wrap=document.getElementById('capWrap');wrap.classList.remove('open');wrap.style.bottom='';
     var mb=document.querySelector('.mbar');if(mb)mb.style.display='';
   }
@@ -2691,6 +2692,13 @@
   }
 
   document.getElementById('capWrap').addEventListener('click',function(e){if(e.target===this)closeCapture();});
+  // 캡처바 안 버튼을 눌러도 키보드가 안 내려가게 (요청): 입력란이 아닌 요소가
+  // 포커스를 뺏지 못하도록 pointerdown 기본동작을 막는다. 스크롤·클릭·슬라이더는
+  // 그대로 동작한다 (input/textarea는 제외해 이동 포커스 허용).
+  document.getElementById('capWrap').addEventListener('pointerdown',function(e){
+    if(e.target.closest('input,textarea'))return;
+    e.preventDefault();
+  });
 
   // ── 더보기 바텀시트 (요청) ──
   function openMore(){document.getElementById('moreScrim').classList.add('open');document.body.classList.add('more-open');}
