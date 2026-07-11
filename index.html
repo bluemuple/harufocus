@@ -246,6 +246,23 @@
   .quad .mtask .del{margin-left:auto;border:0;background:transparent;color:var(--ink-soft);font-size:16px;line-height:1;cursor:pointer;opacity:.5}
   .quad .mtask .del:hover{opacity:1;color:#e0564e}
 
+  /* 주간/월간 캘린더 스트립 (앱 CalendarHeader 파리티, 요청). */
+  .calstrip{margin:0 0 12px;color:#fff}
+  .sec-h{font-size:13px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(20,40,80,.4);margin:14px 2px 8px}
+  .sec-h:first-child{margin-top:0}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}
+  .cal-wd{font-size:11px;font-weight:700;opacity:.8;padding-bottom:4px}
+  .cal-wd.sun{color:#ffb4b4}.cal-wd.sat{color:#bcd4ff}
+  .cal-cell{padding:3px 0;cursor:pointer;position:relative}
+  .cal-num{width:34px;height:34px;line-height:34px;margin:0 auto;border-radius:50%;font-size:15px;font-weight:600;
+    text-shadow:0 1px 2px rgba(20,40,80,.35)}
+  .cal-cell.dim .cal-num{opacity:.35}
+  .cal-cell.sel .cal-num{background:rgba(255,255,255,.32);font-weight:800}
+  .cal-cell.today .cal-num{color:#0d2a52;background:#bfe0ff}
+  .cal-dots{display:flex;gap:2px;justify-content:center;height:5px;margin-top:1px}
+  .cal-dots i{width:4px;height:4px;border-radius:50%}
+  .cal-toggle{display:block;margin:2px auto 0;border:0;background:none;color:#fff;opacity:.75;cursor:pointer;font-size:16px;line-height:1}
+
   /* ---------- 공용 캡처바 (앱 CaptureBar 파리티, 요청) ---------- */
   .cap-wrap{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--card-2);
     border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(20,40,80,.12);display:none;
@@ -512,11 +529,13 @@
       <div class="tabbody">
         <section class="view on" id="view-todo">
           <h2>할 일 <span class="h2-sub" id="todoDow"></span></h2>
+          <div class="calstrip" data-cal="todo"></div>
           <div class="todo" id="todoList"></div>
           <button class="page-fab" id="todoFab" title="할 일 추가"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         </section>
         <section class="view" id="view-matrix">
           <h2>매트릭스</h2>
+          <div class="calstrip" data-cal="matrix"></div>
           <div class="matrix" id="matrixGrid"></div>
         </section>
         <section class="view" id="view-routine">
@@ -786,6 +805,50 @@
   function yFor(h){return 14+(h-TS)*PPH;}
   function selDate(){var d=new Date();d.setDate(d.getDate()+dayOffset);return d;}
   function selKey(){var d=selDate();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+  // ── 주간/월간 캘린더 스트립 (앱 CalendarHeader 파리티, 요청) ──
+  var calSel=new Date();calSel.setHours(0,0,0,0);
+  var calMonthly=false;
+  function calSameDay(a,b){return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();}
+  function calDayDots(d){
+    var seen={},out=[];
+    (DATA.tasks||[]).forEach(function(t){
+      if(!t.scheduledStart)return;var sd=new Date(t.scheduledStart);
+      if(calSameDay(sd,d)){var c=catColor(t.categoryID);if(!seen[c]){seen[c]=1;out.push(c);}}
+    });
+    return out.slice(0,4);
+  }
+  function calWeekStart(d){var s=new Date(d);s.setDate(s.getDate()-s.getDay());s.setHours(0,0,0,0);return s;}
+  function renderCalStrips(){
+    document.querySelectorAll('.calstrip').forEach(function(el){el.innerHTML=buildCalHTML();wireCalStrip(el);});
+  }
+  function buildCalHTML(){
+    var wl=['일','월','화','수','목','금','토'],today=new Date();today.setHours(0,0,0,0);
+    var html='<div class="cal-grid">';
+    for(var i=0;i<7;i++)html+='<div class="cal-wd'+(i===0?' sun':i===6?' sat':'')+'">'+wl[i]+'</div>';
+    var days=[];
+    if(calMonthly){
+      var first=new Date(calSel.getFullYear(),calSel.getMonth(),1);
+      var gridStart=new Date(first);gridStart.setDate(1-first.getDay());
+      for(var k=0;k<42;k++){var d=new Date(gridStart);d.setDate(gridStart.getDate()+k);days.push(d);}
+    }else{
+      var ws=calWeekStart(calSel);
+      for(var j=0;j<7;j++){var d2=new Date(ws);d2.setDate(ws.getDate()+j);days.push(d2);}
+    }
+    days.forEach(function(d){
+      var dim=calMonthly&&d.getMonth()!==calSel.getMonth();
+      var cls='cal-cell'+(dim?' dim':'')+(calSameDay(d,calSel)?' sel':'')+(calSameDay(d,today)?' today':'');
+      var dots=calDayDots(d).map(function(c){return '<i style="background:'+c+'"></i>';}).join('');
+      html+='<div class="'+cls+'" data-t="'+d.getTime()+'"><div class="cal-num">'+d.getDate()+'</div><div class="cal-dots">'+dots+'</div></div>';
+    });
+    html+='</div><button class="cal-toggle">'+(calMonthly?'⌃':'⌄')+'</button>';
+    return html;
+  }
+  function wireCalStrip(el){
+    el.querySelectorAll('.cal-cell').forEach(function(c){c.addEventListener('click',function(){
+      calSel=new Date(+c.dataset.t);calSel.setHours(0,0,0,0);renderCalStrips();renderTodo();});});
+    el.querySelector('.cal-toggle').addEventListener('click',function(){calMonthly=!calMonthly;renderCalStrips();});
+  }
+
   // ── 타임라인 천체 (요청: 스크롤 시 해·달 위치 + 달 위상 + 하늘색 동적) ──
   // 태양의 남중(가장 높음)은 정오, 달은 위상에 따라 남중 시각이 밀린다.
   var SYNODIC=29.530588853, NEW_MOON=Date.UTC(2000,0,6,18,14)/86400000;
@@ -1304,46 +1367,59 @@
       t.matrixQuadrant=+b.dataset.q;row.classList.remove('mx-open');closeSwipe();renderAll();pushSnapshot();});});
   }
 
+  // 할일 한 줄 (스와이프 4버튼 포함) — 여러 섹션이 공유한다 (요청 리팩터).
+  function buildTodoRow(t){
+    var placed=t.scheduledStart&&t.durationMin;
+    var row=document.createElement('div');row.className='task'+(t.isDone?' done':'');
+    row.innerHTML=
+      '<div class="swipe-grp lead">'+
+        '<button class="sa sa-tomorrow">'+IC.curve+'<b>내일로</b></button>'+
+        '<button class="sa sa-matrix">'+IC.grid+'<b>매트릭스</b></button></div>'+
+      '<div class="swipe-grp trail">'+
+        '<button class="sa sa-timeline">'+IC.sunrise+'<b>타임라인</b></button>'+
+        '<button class="sa sa-delete">'+IC.trash+'<b>삭제</b></button></div>'+
+      '<div class="mx-pick"></div>'+
+      '<div class="task-inner">'+
+        '<span class="check'+(t.isDone?' done':'')+'"></span>'+
+        '<span class="swatch" style="background:'+catColor(t.categoryID)+'"></span>'+
+        '<div class="t-main"><div class="t-title">'+esc(t.title)+'</div>'+
+          '<div class="t-meta">'+taskMetaHTML(t)+(placed?'<span class="t-time">'+fmtTime(t.scheduledStart)+'</span>':'')+'</div></div>'+
+        memoIconHTML(t)+
+        '<span class="star'+(t.isStarred?' on':'')+'">'+(t.isStarred?'★':'☆')+'</span>'+
+        '<button class="play" title="집중 시작">'+IC.play+'</button>'+
+      '</div>';
+    var tl=row.querySelector('.t-title');tl.style.cursor='pointer';tl.addEventListener('click',function(){openEditor(t);});
+    row.querySelector('.play').addEventListener('click',function(){startFocus(t);});
+    var mi=row.querySelector('.t-memo');if(mi)mi.addEventListener('click',function(){openEditor(t);});
+    row.querySelector('.check').addEventListener('click',function(){t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;if(t.isDone)grantReward(t);renderTodo();pushSnapshot();});
+    row.querySelector('.star').addEventListener('click',function(){t.isStarred=!t.isStarred;renderTodo();pushSnapshot();});
+    attachSwipe(row,t,!!placed);
+    return row;
+  }
   function renderTodo(){
     var dow=document.getElementById('todoDow');
     if(dow)dow.textContent=new Date().toLocaleDateString('en-US',{weekday:'long'});
     var list=document.getElementById('todoList');list.innerHTML='';
-    // 내일로 미룬 일은 그날이 되기 전엔 숨긴다 (앱 파리티, 요청).
     var todayMid=new Date();todayMid.setHours(0,0,0,0);
-    var tasks=(DATA.tasks||[]).filter(function(t){
+    // 내일로 미룬 일은 그날이 되기 전엔 숨긴다 (앱 파리티, 요청).
+    var visible=(DATA.tasks||[]).filter(function(t){
       if(!t.deferredUntil)return true;return new Date(t.deferredUntil)<=todayMid;});
-    if(!tasks.length){list.innerHTML='<div class="empty">할 일이 없어요.</div>';return;}
-    var order=tasks.map(function(t,i){return i;}).sort(function(a,b){return (tasks[b].isStarred?1:0)-(tasks[a].isStarred?1:0);});
-    order.forEach(function(i){
-      var t=tasks[i];var placed=t.scheduledStart&&t.durationMin&&dateKey(t.scheduledStart)===todayKey();
-      var row=document.createElement('div');row.className='task'+(t.isDone?' done':'');
-      // 스와이프 4버튼 (앱 파리티, 요청): 오른쪽으로 밀면 내일로(보라)+매트릭스(청록),
-      // 왼쪽으로 밀면 타임라인(파랑)+삭제(빨강). 버튼 색·아이콘·슬라이드 동일.
-      row.innerHTML=
-        '<div class="swipe-grp lead">'+
-          '<button class="sa sa-tomorrow">'+IC.curve+'<b>내일로</b></button>'+
-          '<button class="sa sa-matrix">'+IC.grid+'<b>매트릭스</b></button></div>'+
-        '<div class="swipe-grp trail">'+
-          '<button class="sa sa-timeline">'+IC.sunrise+'<b>타임라인</b></button>'+
-          '<button class="sa sa-delete">'+IC.trash+'<b>삭제</b></button></div>'+
-        '<div class="mx-pick"></div>'+
-        '<div class="task-inner">'+
-          '<span class="check'+(t.isDone?' done':'')+'"></span>'+
-          '<span class="swatch" style="background:'+catColor(t.categoryID)+'"></span>'+
-          '<div class="t-main"><div class="t-title">'+esc(t.title)+'</div>'+
-            '<div class="t-meta">'+taskMetaHTML(t)+(placed?'<span class="t-time">'+fmtTime(t.scheduledStart)+'</span>':'')+'</div></div>'+
-          memoIconHTML(t)+
-          '<span class="star'+(t.isStarred?' on':'')+'">'+(t.isStarred?'★':'☆')+'</span>'+
-          '<button class="play" title="집중 시작">'+IC.play+'</button>'+
-        '</div>';
-      var tl=row.querySelector('.t-title');tl.style.cursor='pointer';tl.addEventListener('click',function(){openEditor(t);});
-      row.querySelector('.play').addEventListener('click',function(){startFocus(t);});
-      var mi=row.querySelector('.t-memo');if(mi)mi.addEventListener('click',function(){openEditor(t);});
-      row.querySelector('.check').addEventListener('click',function(){t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;if(t.isDone)grantReward(t);renderTodo();pushSnapshot();});
-      row.querySelector('.star').addEventListener('click',function(){t.isStarred=!t.isStarred;renderTodo();pushSnapshot();});
-      attachSwipe(row,t,placed);
-      list.appendChild(row);
-    });
+    // 선택 날짜에 배치된 일정 (캘린더 스트립과 연동, 요청).
+    var scheduled=visible.filter(function(t){return t.scheduledStart&&calSameDay(new Date(t.scheduledStart),calSel);})
+      .sort(function(a,b){return new Date(a.scheduledStart)-new Date(b.scheduledStart);});
+    // 담아둔 일: 배치 안 됐고 완료 안 된 것 (별표 우선).
+    var backlog=visible.filter(function(t){return !t.scheduledStart&&!t.isDone;})
+      .sort(function(a,b){return (b.isStarred?1:0)-(a.isStarred?1:0);});
+    if(!scheduled.length&&!backlog.length){list.innerHTML='<div class="empty" style="color:#fff;text-shadow:0 1px 2px rgba(20,40,80,.4)">할 일이 없어요.</div>';return;}
+    if(scheduled.length){
+      var mon=(calSel.getMonth()+1),day=calSel.getDate();
+      list.insertAdjacentHTML('beforeend','<div class="sec-h">'+mon+'월 '+day+'일 일정</div>');
+      scheduled.forEach(function(t){list.appendChild(buildTodoRow(t));});
+    }
+    if(backlog.length){
+      list.insertAdjacentHTML('beforeend','<div class="sec-h">담아둔 일 '+backlog.length+'</div>');
+      backlog.forEach(function(t){list.appendChild(buildTodoRow(t));});
+    }
   }
 
   function renderMatrix(){
@@ -1695,7 +1771,7 @@
   }
   applySky();setInterval(applySky,60000);
 
-  function renderAll(){renderBig();renderMosaic();renderTodo();renderMatrix();renderRoutine();renderBucket();}
+  function renderAll(){renderCalStrips();renderBig();renderMosaic();renderTodo();renderMatrix();renderRoutine();renderBucket();}
 
   /* ---------- tab + mode switching ---------- */
   function setTab(name){
