@@ -134,9 +134,13 @@
   .now .pill{background:var(--accent);color:#3a2c05;font-weight:800;font-size:11px;padding:3px 8px;border-radius:8px}
   .now .wire{flex:1;height:2px;background:var(--accent);border-radius:2px}
   .block{position:absolute;left:52px;right:14px;border-radius:12px;padding:8px 12px;z-index:3;color:#fff;
-    font-weight:600;font-size:13.5px;box-shadow:0 6px 15px rgba(20,30,60,.22);display:flex;align-items:center;gap:8px;
-    border:1px solid rgba(255,255,255,.4)}
-  .block small{margin-left:auto;font-weight:600;opacity:.8;font-size:11px}
+    font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px;overflow:hidden;
+    border:1px solid rgba(255,255,255,.32)}
+  .block .belapsed{position:absolute;left:0;right:0;top:0;z-index:0;pointer-events:none;border-radius:11px 11px 0 0}
+  .block>.bic,.block>.btitle,.block>.bplay,.block>.bx,.block>small{position:relative;z-index:1}
+  .block .btitle{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .block>small{margin-left:6px;order:9}
+  .block small{font-weight:700;opacity:.95;font-size:11.5px}
   /* 블록 액션 (요청: 이동·삭제·재생) — 호버 시 노출, 모바일은 항상. */
   .block .bplay,.block .bx{border:0;background:rgba(255,255,255,.28);color:#fff;width:22px;height:22px;border-radius:50%;
     font-size:11px;line-height:1;cursor:pointer;flex:0 0 auto;opacity:0;transition:opacity .15s;display:grid;place-items:center}
@@ -144,8 +148,8 @@
   .block .bx{font-size:15px}
   .block .bplay:hover,.block .bx:hover{background:rgba(255,255,255,.5)}
   /* 요청: 평소엔 ✕·핸들 안 보임 — 꾹 눌러 armed 되면 표시. */
-  .block .bx{opacity:0;pointer-events:none}
-  .block.armed .bx{opacity:1!important;pointer-events:auto}
+  .block .bx{display:none}
+  .block.armed .bx{display:grid}
   .block.armed{box-shadow:0 0 0 2px rgba(255,255,255,.75),0 8px 20px rgba(10,20,50,.35)}
   .block-resize{position:absolute;left:0;right:0;bottom:0;height:14px;cursor:ns-resize;border-radius:0 0 12px 12px;
     pointer-events:none;touch-action:none}
@@ -1320,11 +1324,17 @@
       var d=new Date(t.scheduledStart),hf=d.getHours()+d.getMinutes()/60;if(hf<TS||hf>TE)return;
       any=true;var col=catColor(t.categoryID);
       var el=document.createElement('div');el.className='block';
-      el.style.top=yFor(hf)+'px';el.style.height=Math.max(28,(t.durationMin/60)*PPH-6)+'px';
-      el.style.background=hexA(col,.9);el.style.borderColor=hexA(col,.5);
+      el.style.top=yFor(hf)+'px';el.style.height=Math.max(24,(t.durationMin/60)*PPH-1)+'px';
+      // 미시작=연한색, 지금 라인이 지난 부분은 진한색 (요청: 실시간 컬러코딩).
+      var started=(t.actualFocusedSec||0)>0||!!t.lastFocusedAt||(fTask&&fTask.id===t.id);
+      el.style.background=hexA(col,started?0.55:0.26);el.style.borderColor=hexA(col,0.45);
+      var bStart=d.getTime(),bEnd=bStart+t.durationMin*60000,nowMs=Date.now();
+      var efrac=(dayOffset===0&&nowMs>bStart)?Math.min(1,(nowMs-bStart)/(bEnd-bStart)):0;
       if(batchIds&&batchIds.indexOf(t.id)>=0)el.classList.add('pending');
-      el.innerHTML='<span>'+catIcon(t.categoryID)+'</span>'+esc(t.title)+'<small>'+durLabel(t.durationMin)+'</small>'+
-        '<button class="bplay" title="집중 시작">'+IC.play+'</button><button class="bx" title="삭제">×</button>';
+      el.innerHTML=(efrac>0?'<div class="belapsed" style="height:'+(efrac*100)+'%;background:'+hexA(col,0.92)+'"></div>':'')+
+        '<span class="bic">'+catIcon(t.categoryID)+'</span><span class="btitle">'+esc(t.title)+'</span>'+
+        '<button class="bplay" title="집중 시작">'+IC.play+'</button><button class="bx" title="삭제">×</button>'+
+        '<small>'+durLabel(t.durationMin)+'</small>';
       el.style.cursor='grab';el.title='드래그로 이동 · 아래끝으로 길이 · 클릭으로 수정';
       var rz=document.createElement('div');rz.className='block-resize';el.appendChild(rz);
       dragBlock(el,t);resizeBlock(rz,el,t);
@@ -3032,8 +3042,9 @@
     mbar.querySelectorAll('.mbtn[data-nav]').forEach(function(b){
       var key=b.dataset.nav,badge=b.querySelector('.nav-badge');
       if(badge)badge.addEventListener('click',function(e){e.stopPropagation();navMoveToOverflow(key);});
-      b.addEventListener('click',function(){if(!navEditMode)runNavItem(key);});
+      b.addEventListener('click',function(){if(!navEditMode&&!b._reordered)runNavItem(key);b._reordered=false;});
       if(navEditMode)attachNavDrag(b,key);
+      else attachNavLongPress(b,key);        // 평소: 꾹 눌러 순서 변경 (요청)
     });
     mbar.querySelector('#moreBtn').addEventListener('click',function(){if(navEditMode){navEditMode=false;renderNav();closeMore();}else openMore();});
     renderMoreSheet();
@@ -3080,6 +3091,40 @@
       document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
     });
   }
+  // 평소 모드: 하단 바 버튼을 꾹(360ms) 눌러 좌우 순서 변경 — 고스트가 손을 따라온다.
+  function attachNavLongPress(btn,key){
+    btn.addEventListener('pointerdown',function(e){
+      if(navEditMode)return;
+      var sx=e.clientX,sy=e.clientY,timer=null,ghost=null,dragging=false,dropIdx=null;
+      timer=setTimeout(function(){
+        dragging=true;btn._reordered=true;
+        var r=btn.getBoundingClientRect();ghost=btn.cloneNode(true);ghost.classList.add('nav-ghost');
+        ghost.style.width=r.width+'px';ghost.style.height=r.height+'px';ghost.style.left=r.left+'px';ghost.style.top=r.top+'px';
+        document.body.appendChild(ghost);btn.classList.add('nav-dragsrc');
+        if(navigator.vibrate)try{navigator.vibrate(10);}catch(_){}
+      },360);
+      function move(ev){
+        if(!dragging){if(Math.abs(ev.clientX-sx)+Math.abs(ev.clientY-sy)>8&&timer){clearTimeout(timer);timer=null;cleanup();}return;}
+        ev.preventDefault();
+        ghost.style.transform='translate('+(ev.clientX-sx)+'px,'+(ev.clientY-sy)+'px)';
+        var btns=[].slice.call(document.getElementById('mbar').querySelectorAll('.mbtn[data-nav]'));
+        var idx2=btns.length;for(var i=0;i<btns.length;i++){var rr=btns[i].getBoundingClientRect();if(ev.clientX<rr.left+rr.width/2){idx2=i;break;}}
+        dropIdx=idx2;
+      }
+      function up(){
+        if(timer){clearTimeout(timer);timer=null;}
+        cleanup();
+        if(dragging){
+          if(ghost){ghost.remove();ghost=null;}btn.classList.remove('nav-dragsrc');
+          if(dropIdx!=null){var bar=navBarKeys(),from=bar.indexOf(key),to=dropIdx;
+            if(from>=0){bar.splice(from,1);if(to>from)to--;to=Math.max(0,Math.min(bar.length,to));bar.splice(to,0,key);saveNav(bar);renderNav();}}
+        }
+      }
+      function cleanup(){document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);}
+      document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
+    });
+  }
+
 
 
   // ── 일출·일몰 계산 (SunCalc 축약 포팅) ──
