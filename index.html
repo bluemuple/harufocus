@@ -125,10 +125,19 @@
   .check.done::after{content:"✓";color:#fff;font-size:13px;font-weight:800}
   .swatch{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
   .task-inner{display:flex;align-items:center;gap:11px;flex:1;min-width:0;background:rgba(255,255,255,.99);position:relative;z-index:1;touch-action:pan-y;border-radius:14px}
-  .swipe-act{position:absolute;top:0;bottom:0;display:flex;align-items:center;padding:0 16px;font-size:13px;font-weight:800;color:#fff;z-index:0;opacity:0;transition:opacity .12s}
-  .swipe-act.left{left:0;background:var(--sky-blue)}
-  .swipe-act.right{right:0;background:#e0564e}
-  .task.sw-left .swipe-act.left,.task.sw-right .swipe-act.right{opacity:1}
+  /* 스와이프 4버튼 (앱 파리티): 좌우 그룹, 각 그룹 2버튼. 색·아이콘 앱과 동일. */
+  .swipe-grp{position:absolute;top:0;bottom:0;display:flex;z-index:0;opacity:0;transition:opacity .1s}
+  .swipe-grp.lead{left:0}.swipe-grp.trail{right:0}
+  .task.sw-left .swipe-grp.lead,.task.sw-right .swipe-grp.trail{opacity:1}
+  .sa{width:64px;border:0;color:#fff;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:3px}
+  .sa b{font-size:10px;font-weight:800}
+  .sa svg{width:20px;height:20px}
+  .sa-tomorrow{background:#9A5BD8}.sa-matrix{background:#17808F}
+  .sa-timeline{background:var(--sky-blue)}.sa-delete{background:#E0453A}
+  .mx-pick{position:absolute;inset:0;z-index:3;display:none;grid-template-columns:repeat(4,1fr)}
+  .task.mx-open .mx-pick{display:grid}
+  .mx-pick button{border:0;color:#fff;font-family:inherit;font-size:11px;font-weight:800;cursor:pointer;line-height:1.2}
   .t-main{flex:1;min-width:0}
   .t-title{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .task.done .t-title{text-decoration:line-through;color:var(--ink-soft)}
@@ -1140,7 +1149,7 @@
   function closeSwipe(){if(swipeOpen){swipeOpen.style.transform='';swipeOpen=null;}}
   function attachSwipe(row,t,placed){
     var inner=row.querySelector('.task-inner'),sx=0,sy=0,cur=0,drag=false,lock='';
-    var LW=120,RW=88;   // 왼쪽(타임라인)·오른쪽(삭제) 노출 폭
+    var LW=128,RW=128;   // 오른쪽 스와이프(내일로+매트릭스) · 왼쪽 스와이프(타임라인+삭제)
     function set(x){cur=x;inner.style.transform='translateX('+x+'px)';
       row.classList.toggle('sw-left',x>6);row.classList.toggle('sw-right',x<-6);}
     inner.addEventListener('pointerdown',function(e){if(e.pointerType==='mouse')return;
@@ -1157,28 +1166,51 @@
       else if(cur<-RW*0.5){set(-RW);swipeOpen=inner;}
       else{set(0);if(swipeOpen===inner)swipeOpen=null;}}
     inner.addEventListener('pointerup',end);inner.addEventListener('pointercancel',end);
-    // 노출된 버튼 탭
-    row.querySelector('.swipe-act.left').addEventListener('click',function(){
-      if(!placed){var slot=nextSlotToday();t.scheduledStart=todayAt(Math.floor(slot),(slot%1)*60);if(!t.durationMin)t.durationMin=50;
-        renderTodo();renderBig();renderMosaic();pushSnapshot();}
-      closeSwipe();});
-    row.querySelector('.swipe-act.right').addEventListener('click',function(){deleteTask(t);});
+    // 4버튼 탭
+    row.querySelector('.sa-tomorrow').addEventListener('click',function(){
+      var d=new Date();d.setDate(d.getDate()+1);d.setHours(0,0,0,0);
+      t.deferredUntil=d.toISOString();t.deferCount=(t.deferCount||0)+1;
+      closeSwipe();renderTodo();pushSnapshot();});
+    row.querySelector('.sa-matrix').addEventListener('click',function(){
+      showMxPick(row,t);});
+    row.querySelector('.sa-timeline').addEventListener('click',function(){
+      var slot=nextSlotToday();t.scheduledStart=todayAt(Math.floor(slot),(slot%1)*60);if(!t.durationMin)t.durationMin=50;
+      closeSwipe();renderTodo();renderBig();renderMosaic();pushSnapshot();});
+    row.querySelector('.sa-delete').addEventListener('click',function(){deleteTask(t);});
+  }
+  // 매트릭스 버튼 → 행이 4등분 사분면 선택지로 (앱 파리티, 요청).
+  function showMxPick(row,t){
+    var pick=row.querySelector('.mx-pick');
+    var QS=[[1,'중요·긴급','#EF6461'],[2,'중요·여유','#4585D6'],[3,'긴급·사소','#F0863D'],[4,'사소·여유','#9A5BD8']];
+    pick.innerHTML=QS.map(function(q){return '<button data-q="'+q[0]+'" style="background:'+q[2]+'">'+q[1]+'</button>';}).join('');
+    row.classList.add('mx-open');
+    pick.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){
+      t.matrixQuadrant=+b.dataset.q;row.classList.remove('mx-open');closeSwipe();renderAll();pushSnapshot();});});
   }
 
   function renderTodo(){
     var dow=document.getElementById('todoDow');
     if(dow)dow.textContent=new Date().toLocaleDateString('en-US',{weekday:'long'});
     var list=document.getElementById('todoList');list.innerHTML='';
-    var tasks=DATA.tasks||[];
+    // 내일로 미룬 일은 그날이 되기 전엔 숨긴다 (앱 파리티, 요청).
+    var todayMid=new Date();todayMid.setHours(0,0,0,0);
+    var tasks=(DATA.tasks||[]).filter(function(t){
+      if(!t.deferredUntil)return true;return new Date(t.deferredUntil)<=todayMid;});
     if(!tasks.length){list.innerHTML='<div class="empty">할 일이 없어요.</div>';return;}
     var order=tasks.map(function(t,i){return i;}).sort(function(a,b){return (tasks[b].isStarred?1:0)-(tasks[a].isStarred?1:0);});
     order.forEach(function(i){
       var t=tasks[i];var placed=t.scheduledStart&&t.durationMin&&dateKey(t.scheduledStart)===todayKey();
       var row=document.createElement('div');row.className='task'+(t.isDone?' done':'');
-      // 스와이프 액션(폰): 오른쪽으로 밀면 →타임라인, 왼쪽으로 밀면 삭제 (요청).
+      // 스와이프 4버튼 (앱 파리티, 요청): 오른쪽으로 밀면 내일로(보라)+매트릭스(청록),
+      // 왼쪽으로 밀면 타임라인(파랑)+삭제(빨강). 버튼 색·아이콘·슬라이드 동일.
       row.innerHTML=
-        '<div class="swipe-act left">'+(placed?'<span>✓ 오늘</span>':'<span>→ 타임라인</span>')+'</div>'+
-        '<div class="swipe-act right"><span>삭제</span></div>'+
+        '<div class="swipe-grp lead">'+
+          '<button class="sa sa-tomorrow">'+IC.curve+'<b>내일로</b></button>'+
+          '<button class="sa sa-matrix">'+IC.grid+'<b>매트릭스</b></button></div>'+
+        '<div class="swipe-grp trail">'+
+          '<button class="sa sa-timeline">'+IC.sunrise+'<b>타임라인</b></button>'+
+          '<button class="sa sa-delete">'+IC.trash+'<b>삭제</b></button></div>'+
+        '<div class="mx-pick"></div>'+
         '<div class="task-inner">'+
           '<span class="check'+(t.isDone?' done':'')+'"></span>'+
           '<span class="swatch" style="background:'+catColor(t.categoryID)+'"></span>'+
