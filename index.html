@@ -38,6 +38,40 @@
   .pane-tl{flex:0 0 42%;max-width:520px;display:flex;flex-direction:column;border-right:1px solid var(--line);min-height:0}
   .tl-top{display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top)) 12px 8px;background:var(--card);border-bottom:1px solid var(--line)}
   /* 첨부5: 날짜 선택 박스 (달력 아이콘 + ‹ 날짜 ›). */
+  @media(max-width:860px){.pane-tl .tl-top{display:none}}
+  /* 타임라인 우하단 버튼들 (요청: 첨부2) */
+  .tl-fabs{position:fixed;right:22px;bottom:calc(78px + env(safe-area-inset-bottom));display:none;align-items:center;gap:12px;z-index:15}
+  body[data-m="timeline"] .tl-fabs{display:flex}
+  @media(min-width:861px){.tl-fabs{display:none!important}}
+  .tl-batchbtn{width:48px;height:48px;border-radius:50%;border:0;background:rgba(40,50,80,.72);color:#fff;
+    display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 16px rgba(10,20,50,.3);backdrop-filter:blur(4px)}
+  .tl-batchbtn svg{width:22px;height:22px}
+  .tl-plusbtn{width:56px;height:56px;border-radius:50%;border:0;background:#3D51C4;color:#fff;
+    display:grid;place-items:center;cursor:pointer;box-shadow:0 8px 20px rgba(20,40,120,.35)}
+  .tl-plusbtn svg{width:28px;height:28px}
+  .tl-donebtn{height:48px;border-radius:999px;border:0;background:#3D51C4;color:#fff;font-family:inherit;
+    font-size:15px;font-weight:800;padding:0 22px;cursor:pointer;box-shadow:0 8px 20px rgba(20,40,120,.35);display:none}
+  body[data-m="timeline"].batch-adjust .tl-donebtn{display:block}
+  /* 한 번에 계획하기 패널 (첨부1) */
+  .batch-head{display:flex;align-items:center;padding:10px 6px 18px}
+  .batch-head b{flex:1;text-align:center;font-size:18px}
+  .batch-head button{border:0;background:none;font-family:inherit;font-size:15px;cursor:pointer;width:52px}
+  #batchCancel{color:var(--ink-soft)}#batchOk{color:var(--sky-blue);font-weight:800}
+  .batch-rows{max-height:38vh;overflow-y:auto}
+  .batch-row{display:flex;align-items:center;gap:12px;padding:10px 6px;border-bottom:1px solid var(--line)}
+  .batch-row .brm{width:24px;height:24px;border-radius:50%;border:0;background:#E53935;color:#fff;font-size:15px;
+    font-weight:800;line-height:1;cursor:pointer;flex:0 0 auto;display:grid;place-items:center}
+  .batch-row input{flex:1;border:0;background:none;font-family:inherit;font-size:16px;color:var(--ink);min-width:0}
+  .batch-row .brh{color:var(--ink-soft);cursor:grab;flex:0 0 auto;touch-action:none;padding:4px}
+  .batch-add{display:block;margin:14px auto;border:0;background:none;color:#b8593a;font-size:26px;cursor:pointer}
+  .batch-due{display:flex;align-items:center;gap:10px;padding:8px 6px calc(10px + env(safe-area-inset-bottom))}
+  .batch-due .bd-l{font-weight:800;font-size:15px;display:flex;align-items:center;gap:6px}
+  .batch-due .bd-time{font-size:19px;font-weight:800;background:var(--card-2);border-radius:999px;padding:8px 18px}
+  /* 배치 조절 모드 블록 (첨부3) */
+  .block.pending{outline:2px dashed rgba(240,210,120,.9);outline-offset:-2px;filter:saturate(.5) brightness(.75)}
+  .block.pending .bx{opacity:1!important}
+  .bhandle{position:absolute;left:50%;transform:translateX(-50%);width:86px;height:9px;border-radius:5px;
+    background:rgba(255,255,255,.9);box-shadow:0 2px 6px rgba(0,0,0,.35);z-index:7;cursor:ns-resize;touch-action:none}
   .tl-datebox{display:flex;align-items:center;gap:2px;background:var(--card-2);border:1px solid var(--line);
     border-radius:12px;padding:5px 8px;margin-right:auto}
   .tl-datebox>.ic{width:17px;height:17px;color:var(--ink-soft);margin-right:2px}
@@ -109,9 +143,15 @@
   .block:hover .bplay,.block:hover .bx{opacity:1}
   .block .bx{font-size:15px}
   .block .bplay:hover,.block .bx:hover{background:rgba(255,255,255,.5)}
-  @media(hover:none){.block .bplay,.block .bx{opacity:.9}}
-  .block-resize{position:absolute;left:0;right:0;bottom:0;height:12px;cursor:ns-resize;border-radius:0 0 12px 12px}
-  .block-resize::after{content:"";position:absolute;left:50%;bottom:3px;transform:translateX(-50%);width:26px;height:3px;border-radius:3px;background:rgba(255,255,255,.6)}
+  /* 요청: 평소엔 ✕·핸들 안 보임 — 꾹 눌러 armed 되면 표시. */
+  .block .bx{opacity:0;pointer-events:none}
+  .block.armed .bx{opacity:1!important;pointer-events:auto}
+  .block.armed{box-shadow:0 0 0 2px rgba(255,255,255,.75),0 8px 20px rgba(10,20,50,.35)}
+  .block-resize{position:absolute;left:0;right:0;bottom:0;height:14px;cursor:ns-resize;border-radius:0 0 12px 12px;
+    pointer-events:none;touch-action:none}
+  .block.armed .block-resize,#tlScroll.editing .block-resize{pointer-events:auto}
+  .block-resize::after{content:"";position:absolute;left:50%;bottom:3px;transform:translateX(-50%);width:34px;height:5px;border-radius:3px;background:rgba(255,255,255,.9);opacity:0}
+  .block.armed .block-resize::after,#tlScroll.editing .block-resize::after{opacity:1}
   .tl-empty{position:absolute;left:0;right:0;top:46%;text-align:center;color:#fff;opacity:.9;font-size:14px;padding:0 20px}
   .tl-tree{position:absolute;bottom:0;right:12px;width:88px;z-index:2;pointer-events:none;filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))}
   .tl-hills{position:absolute;left:0;right:0;bottom:0;height:150px;width:100%;object-fit:cover;object-position:center bottom;mix-blend-mode:soft-light;opacity:.9;z-index:1;pointer-events:none}
@@ -741,6 +781,28 @@
   </div>
 </div>
 
+<!-- 타임라인 우하단 버튼 + 한 번에 계획하기 (요청: 앱 파리티) -->
+<div class="tl-fabs">
+  <button class="tl-donebtn" id="batchDone">확인</button>
+  <button class="tl-batchbtn" id="tlBatch" title="한 번에 계획하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3.5" width="13" height="13" rx="2.5"/><path d="M4 8v9.5A3.5 3.5 0 0 0 7.5 21H17"/><path d="M13.5 7v6M10.5 10h6"/></svg></button>
+  <button class="tl-plusbtn" id="tlFab" title="작업 추가"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+</div>
+<div class="sheet-scrim" id="batchScrim" style="bottom:0">
+  <div class="sheet batch-sheet">
+    <div class="sheet-grip"></div>
+    <div class="batch-head"><button id="batchCancel">취소</button><b>한 번에 계획하기</b><button id="batchOk">확인</button></div>
+    <div class="batch-rows" id="batchRows"></div>
+    <button class="batch-add" id="batchAdd">＋</button>
+    <div class="batch-due">
+      <span class="bd-l"><svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="width:18px;height:18px"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg> 마감</span>
+      <span style="flex:1"></span>
+      <button class="cap-chip" id="dueMinus">-30분</button>
+      <span class="bd-time" id="batchDueTime"></span>
+      <button class="cap-chip" id="duePlus">+30분</button>
+    </div>
+  </div>
+</div>
+
 <!-- 오늘 다짐 팝업 (요청: 캡슐 탭 → 위쪽 고정, 키보드와 안 겹침) -->
 <div class="scrim" id="vowScrim">
   <div class="modal" style="margin-top:13vh">
@@ -1134,13 +1196,121 @@
       requestAnimationFrame(function(){updateTlSky();tick=false;});},{passive:true});
   })();
 
+  // ── 한 번에 계획하기 (요청: 첨부1~3) ──
+  var batchItems=[],batchDueMin=0,batchIds=null;   // batchIds!=null → 조절 모드
+  function openBatch(){
+    batchItems=['','',''];
+    var d=new Date();batchDueMin=Math.ceil((d.getHours()*60+d.getMinutes()+120)/30)*30;   // 기본: 2시간 뒤(30분 스냅)
+    renderBatchRows();paintBatchDue();
+    document.getElementById('batchScrim').classList.add('open');
+  }
+  function closeBatch(){document.getElementById('batchScrim').classList.remove('open');}
+  function paintBatchDue(){
+    var h=Math.floor(batchDueMin/60)%24,m=batchDueMin%60;
+    var ampm=h<12?'AM':'PM',h12=h%12===0?12:h%12;
+    document.getElementById('batchDueTime').textContent=h12+':'+('0'+m).slice(-2)+' '+ampm;
+  }
+  function renderBatchRows(){
+    var w=document.getElementById('batchRows');
+    w.innerHTML=batchItems.map(function(v,i){
+      return '<div class="batch-row" data-i="'+i+'">'+
+        '<button class="brm">−</button>'+
+        '<input placeholder="할 일 '+(i+1)+'" value="'+esc(v)+'" maxlength="60">'+
+        '<span class="brh"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span>'+
+      '</div>';
+    }).join('');
+    w.querySelectorAll('.batch-row').forEach(function(row){
+      var i=+row.dataset.i;
+      row.querySelector('.brm').addEventListener('click',function(){
+        saveBatchInputs();batchItems.splice(i,1);if(!batchItems.length)batchItems=[''];renderBatchRows();});
+      row.querySelector('input').addEventListener('input',function(){batchItems[i]=this.value;});
+      // 핸들 드래그로 순서 변경 (요청).
+      var h=row.querySelector('.brh');
+      h.addEventListener('pointerdown',function(e){
+        e.preventDefault();saveBatchInputs();
+        function move(ev){
+          var rows=[].slice.call(w.querySelectorAll('.batch-row'));
+          var from=batchItems.length>rows.length?null:rows.indexOf(row);
+          var to=from;
+          rows.forEach(function(r,k){var rr=r.getBoundingClientRect();
+            if(ev.clientY>rr.top&&ev.clientY<rr.bottom)to=k;});
+          if(to!==from&&from!=null&&to!=null){
+            var it=batchItems.splice(from,1)[0];batchItems.splice(to,0,it);
+            renderBatchRows();row=w.querySelectorAll('.batch-row')[to];}
+        }
+        function up(){document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);}
+        document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
+      });
+    });
+  }
+  function saveBatchInputs(){
+    document.querySelectorAll('#batchRows .batch-row').forEach(function(row){
+      batchItems[+row.dataset.i]=row.querySelector('input').value;});
+  }
+  function confirmBatch(){
+    saveBatchInputs();
+    var titles=batchItems.map(function(v,i){return (v||'').trim()||('할 일 '+(i+1));})
+      .filter(function(v,i){return (batchItems[i]||'').trim()||true;});
+    titles=batchItems.map(function(v,i){return (v||'').trim();}).filter(Boolean);
+    if(!titles.length){alert('할 일을 입력하세요.');return;}
+    var startSlot=nextSlotToday();
+    var startMin=Math.round(startSlot*60/5)*5;
+    var total=batchDueMin-startMin;
+    if(total<titles.length*10){alert('마감까지 시간이 부족해요.');return;}
+    var per=Math.floor(total/titles.length/5)*5;
+    var ids=[];var cur=startMin;
+    titles.forEach(function(title){
+      var d=new Date();d.setHours(Math.floor(cur/60),cur%60,0,0);
+      var nt=addTask({title:title,scheduledStart:d.toISOString(),durationMin:per});
+      ids.push(nt.id);cur+=per;
+    });
+    batchIds=ids;
+    closeBatch();
+    document.body.classList.add('batch-adjust');
+    renderBig();pushSnapshot();
+  }
+  function finishBatchAdjust(){batchIds=null;document.body.classList.remove('batch-adjust');renderBig();}
+  // 블록 사이 경계 핸들 (요청: 위로 밀면 위 블록 축소·아래 확대).
+  function addBatchHandles(sc){
+    if(!batchIds)return;
+    var tasks=batchIds.map(function(id){return (DATA.tasks||[]).find(function(t){return t.id===id;});}).filter(Boolean);
+    tasks.sort(function(a,b){return new Date(a.scheduledStart)-new Date(b.scheduledStart);});
+    for(var i=0;i<tasks.length-1;i++){
+      (function(a,b){
+        var aEnd=new Date(a.scheduledStart).getTime()+a.durationMin*60000;
+        var bStart=new Date(b.scheduledStart).getTime();
+        if(Math.abs(aEnd-bStart)>10*60000)return;          // 연속 블록만
+        var d=new Date(aEnd),hf=d.getHours()+d.getMinutes()/60;
+        var h=document.createElement('div');h.className='bhandle';h.style.top=(yFor(hf)-5)+'px';
+        h.addEventListener('pointerdown',function(e){
+          e.preventDefault();e.stopPropagation();
+          var y0=e.clientY,durA=a.durationMin,durB=b.durationMin,startB=new Date(b.scheduledStart);
+          function move(ev){
+            var dm=Math.round((ev.clientY-y0)*(60/PPH)/5)*5;
+            dm=Math.max(-(durA-10),Math.min(durB-10,dm));
+            a.durationMin=durA+dm;
+            var nb=new Date(startB.getTime()+dm*60000);
+            b.scheduledStart=nb.toISOString();b.durationMin=durB-dm;
+            renderBig();                                     // 스크롤 유지됨(batch 모드)
+            ev.preventDefault();
+          }
+          function up(){document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);pushSnapshot();}
+          document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
+        });
+        sc.appendChild(h);
+      })(tasks[i],tasks[i+1]);
+    }
+  }
+
   function renderBig(){
     // 기상·취침 설정이 타임라인 시간대를 정한다 (요청).
     var sset=DATA.settings||{};
     TS=Math.max(0,Math.floor((sset.wakeMinutes!=null?sset.wakeMinutes:360)/60));
     TE=Math.min(24,Math.ceil((sset.bedMinutes!=null?sset.bedMinutes:1440)/60));
     if(TE<=TS+2)TE=24;
-    var sc=document.getElementById('tlScroll');sc.innerHTML='';
+    var sc=document.getElementById('tlScroll');
+    var prevScroll=batchIds!=null?sc.scrollTop:null;      // 배치 조절 중엔 스크롤 유지
+    sc.innerHTML='';
     var html='';for(var h=TS;h<=TE;h++){html+='<div class="hour"><span class="lbl">'+(h%24).toString().padStart(2,'0')+':00</span><span class="rule"></span></div>';}
     sc.insertAdjacentHTML('beforeend',html);
     var tk=selKey(),any=false;
@@ -1152,7 +1322,8 @@
       var el=document.createElement('div');el.className='block';
       el.style.top=yFor(hf)+'px';el.style.height=Math.max(28,(t.durationMin/60)*PPH-6)+'px';
       el.style.background=hexA(col,.9);el.style.borderColor=hexA(col,.5);
-      el.innerHTML='<span>'+catIcon(t.categoryID)+'</span>'+esc(t.title)+'<small>'+t.durationMin+'m</small>'+
+      if(batchIds&&batchIds.indexOf(t.id)>=0)el.classList.add('pending');
+      el.innerHTML='<span>'+catIcon(t.categoryID)+'</span>'+esc(t.title)+'<small>'+durLabel(t.durationMin)+'</small>'+
         '<button class="bplay" title="집중 시작">'+IC.play+'</button><button class="bx" title="삭제">×</button>';
       el.style.cursor='grab';el.title='드래그로 이동 · 아래끝으로 길이 · 클릭으로 수정';
       var rz=document.createElement('div');rz.className='block-resize';el.appendChild(rz);
@@ -1167,9 +1338,11 @@
     if(dayOffset===0){var now=new Date();nf=now.getHours()+now.getMinutes()/60;if(nf<TS)nf=TS+1.5;
       var n=document.createElement('div');n.className='now';n.style.top=yFor(nf)+'px';n.innerHTML='<span class="pill">지금</span><span class="wire"></span>';sc.appendChild(n);}
     if(!any){var e=document.createElement('div');e.className='tl-empty';e.textContent='이 날 일정이 비어 있어요.';sc.appendChild(e);}
+    addBatchHandles(sc);                                  // 배치 조절 핸들 (요청)
     // (요청) 태양·달 제거 — 동적 하늘색만 유지.
     updateTlSky();
-    setTimeout(function(){sc.scrollTop=Math.max(0,yFor(nf)-150);updateTlSky();},30);
+    if(batchIds!=null&&prevScroll!=null){sc.scrollTop=prevScroll;}
+    else setTimeout(function(){sc.scrollTop=Math.max(0,yFor(nf)-150);updateTlSky();},30);
     var lbl=dayOffset===0?'오늘':dayOffset===-1?'어제':dayOffset===1?'내일':'';
     try{document.getElementById('tlDate').textContent=selDate().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'})+(lbl?' · '+lbl:'');}catch(e){}
   }
@@ -1178,6 +1351,15 @@
   // 타임라인에서 직접 작업 추가 (요청): 지금(또는 다음 빈 슬롯)에 블록을 만들고
   // 편집 모달을 열어 모든 옵션을 설정. 보고 있는 날짜에 배치된다.
   document.getElementById('tlAdd').addEventListener('click',function(){openCapture('timeline');});
+  document.getElementById('tlFab').addEventListener('click',function(){openCapture('timeline');});
+  document.getElementById('tlBatch').addEventListener('click',openBatch);
+  document.getElementById('batchCancel').addEventListener('click',closeBatch);
+  document.getElementById('batchScrim').addEventListener('click',function(e){if(e.target===this)closeBatch();});
+  document.getElementById('batchOk').addEventListener('click',confirmBatch);
+  document.getElementById('batchAdd').addEventListener('click',function(){saveBatchInputs();batchItems.push('');renderBatchRows();});
+  document.getElementById('dueMinus').addEventListener('click',function(){batchDueMin=Math.max(0,batchDueMin-30);paintBatchDue();});
+  document.getElementById('duePlus').addEventListener('click',function(){batchDueMin=Math.min(1440,batchDueMin+30);paintBatchDue();});
+  document.getElementById('batchDone').addEventListener('click',finishBatchAdjust);
   // 타임라인 편집 모드 (요청): 켜면 블록 삭제(×)·재생(▶)이 항상 보이고,
   // 드래그로 이동·아래끝으로 길이·탭으로 수정은 그대로 동작한다.
   document.getElementById('tlEdit').addEventListener('click',function(){
@@ -1258,31 +1440,64 @@
   function doHabitAdd(){var el=document.getElementById('habitAdd');var v=(el.value||'').trim();if(!v)return;addHabit({title:v});el.value='';}
   // 타임라인 블록 드래그로 이동 (요청): 세로로 끌면 시작 시각이 5분 단위로 바뀜.
   // 움직이지 않으면 클릭 → 편집 모달. 양방향 sync.
+  // 블록 편집 (요청): 평소엔 ✕·핸들 숨김. 꾹(380ms) 누르면 armed —
+  // ✕·핸들이 보이고 가운데/위를 잡아 상하 이동, 핸들로 높이. 그동안 스크롤 정지.
+  var tlDragging=false;
+  document.addEventListener('touchmove',function(e){if(tlDragging)e.preventDefault();},{passive:false});
+  document.addEventListener('pointerdown',function(e){
+    var armed=document.querySelectorAll('#tlScroll .block.armed');
+    if(!armed.length)return;
+    if(e.target.closest('.block.armed'))return;
+    armed.forEach(function(b){b.classList.remove('armed');});
+  },true);
   function dragBlock(el,t){
-    var sy=0,moved=false,base=null,pending=null;
+    var sy=0,moved=false,base=null,pending=null,armTimer=null;
     el.addEventListener('pointerdown',function(e){
-      base=new Date(t.scheduledStart);sy=e.clientY;moved=false;pending=null;
-      try{el.setPointerCapture(e.pointerId);}catch(_){}
+      if(e.target.closest('.block-resize,.bx,.bplay'))return;
+      var isMouse=e.pointerType==='mouse';
+      var armedNow=el.classList.contains('armed')||isMouse;
+      sy=e.clientY;moved=false;pending=null;
+      if(armedNow){
+        base=new Date(t.scheduledStart);tlDragging=true;
+        try{el.setPointerCapture(e.pointerId);}catch(_){}
+      }else{
+        // 꾹 눌러 arm — 8px 이상 움직이면 취소(스크롤로 간주).
+        base=null;
+        var sx0=e.clientX,sy0=e.clientY;
+        armTimer=setTimeout(function(){armTimer=null;el.classList.add('armed');
+          base=new Date(t.scheduledStart);tlDragging=true;
+          if(navigator.vibrate)try{navigator.vibrate(10);}catch(_){}
+        },380);
+        function chk(ev){if(Math.abs(ev.clientX-sx0)+Math.abs(ev.clientY-sy0)>8)cancel();}
+        function cancel(){if(armTimer){clearTimeout(armTimer);armTimer=null;}
+          el.removeEventListener('pointermove',chk);el.removeEventListener('pointerup',cancel);el.removeEventListener('pointercancel',cancel);}
+        el.addEventListener('pointermove',chk);
+        el.addEventListener('pointerup',cancel);el.addEventListener('pointercancel',cancel);
+      }
     });
     el.addEventListener('pointermove',function(e){
       if(base==null)return;var dy=e.clientY-sy;if(Math.abs(dy)>4){moved=true;el.style.cursor='grabbing';}
-      if(moved){var nd=new Date(base.getTime()+(dy/PPH)*3600000);var mm=Math.round(nd.getMinutes()/5)*5;nd.setMinutes(mm,0,0);
+      if(moved){e.preventDefault();var nd=new Date(base.getTime()+(dy/PPH)*3600000);var mm=Math.round(nd.getMinutes()/5)*5;nd.setMinutes(mm,0,0);
         pending=nd;el.style.top=yFor(nd.getHours()+nd.getMinutes()/60)+'px';}
     });
-    function done(){if(base==null)return;el.style.cursor='grab';
+    function done(){tlDragging=false;if(base==null)return;el.style.cursor='grab';
       if(moved&&pending){t.scheduledStart=pending.toISOString();base=null;renderBig();renderMosaic();pushSnapshot();}
-      else{base=null;openEditor(t);}}
+      else{base=null;if(!el.classList.contains('armed'))openEditor(t);}}
     el.addEventListener('pointerup',done);
-    el.addEventListener('pointercancel',function(){base=null;el.style.cursor='grab';});
+    el.addEventListener('pointercancel',function(){tlDragging=false;base=null;el.style.cursor='grab';});
   }
   // 타임라인 블록 아래끝 드래그로 길이(분) 조절 (요청): 5분 스냅, 양방향 sync.
+  function durLabel(m){return m>=60?(Math.floor(m/60)+'시간'+(m%60?' '+(m%60)+'분':'')):(m+'분');}
   function resizeBlock(handle,el,t){
     var sy=0,baseDur=0,active=false,pending=0;
-    handle.addEventListener('pointerdown',function(e){e.stopPropagation();sy=e.clientY;baseDur=t.durationMin||50;active=true;pending=baseDur;try{handle.setPointerCapture(e.pointerId);}catch(_){}});
-    handle.addEventListener('pointermove',function(e){if(!active)return;e.stopPropagation();
+    handle.addEventListener('pointerdown',function(e){e.stopPropagation();e.preventDefault();
+      sy=e.clientY;baseDur=t.durationMin||50;active=true;pending=baseDur;tlDragging=true;
+      try{handle.setPointerCapture(e.pointerId);}catch(_){}});
+    handle.addEventListener('pointermove',function(e){if(!active)return;e.stopPropagation();e.preventDefault();
       var dMin=Math.round(((e.clientY-sy)/PPH*60)/5)*5;pending=Math.max(5,baseDur+dMin);
-      el.style.height=Math.max(28,(pending/60)*PPH-6)+'px';el.querySelector('small').textContent=pending+'m';});
-    handle.addEventListener('pointerup',function(e){if(!active)return;e.stopPropagation();active=false;if(pending&&pending!==baseDur){t.durationMin=pending;renderBig();renderMosaic();pushSnapshot();}});
+      el.style.height=Math.max(28,(pending/60)*PPH-6)+'px';el.querySelector('small').textContent=durLabel(pending);});
+    handle.addEventListener('pointerup',function(e){if(!active)return;e.stopPropagation();active=false;tlDragging=false;
+      if(pending&&pending!==baseDur){t.durationMin=pending;renderBig();renderMosaic();pushSnapshot();}});
   }
 
   /* ---------- 작업 편집 모달 (요청: 앱처럼 편집) ---------- */
