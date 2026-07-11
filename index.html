@@ -277,6 +277,20 @@
   .util .acct .ic{width:17px;height:17px}
   /* 요일 칩 — 누르면 캘린더 스트립 펼침 (요청: 평소 숨김, 내용 최대화). */
   /* 설정 섹션 헤더 + 토글 목록 (요청). */
+  /* 설정 전체 페이지 (요청). */
+  .scrim.setpage{align-items:stretch;justify-content:stretch;padding:0}
+  .setpage .modal{width:100%;max-width:none;height:100%;max-height:none;margin:0;border-radius:0;padding:0;
+    overflow:hidden;display:flex;flex-direction:column}
+  .setpage-head{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;
+    border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:2}
+  .setpage-head h3{flex:1;text-align:center;font-size:17px;margin:0}
+  .setpage-x{border:0;background:none;font-size:20px;color:var(--ink-soft);cursor:pointer;width:32px;height:32px}
+  .setpage-done{border:0;background:none;font-family:inherit;font-size:15px;font-weight:800;color:var(--sky-blue);cursor:pointer;width:44px}
+  .setpage-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 18px calc(28px + env(safe-area-inset-bottom))}
+  .setpage-body input:not([type=checkbox]){width:100%;font-family:inherit;font-size:16px;padding:12px 13px;margin-bottom:9px;border:1px solid var(--line);border-radius:12px;background:var(--card-2);outline:none;box-sizing:border-box}
+  .setpage-body .set-toggles input{width:19px;height:19px;padding:0;margin:0}
+  .set-row-btn{width:100%;text-align:left;border:1px solid var(--line);background:var(--card-2);color:var(--ink);
+    font-family:inherit;font-size:15px;font-weight:600;border-radius:12px;padding:14px 15px;margin-bottom:9px;cursor:pointer}
   .set-sec{font-size:12px;font-weight:800;color:var(--sky-blue);margin:18px 0 4px;letter-spacing:.02em}
   .set-toggles{display:flex;flex-direction:column;gap:2px}
   .set-toggles label{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--ink);padding:7px 2px;cursor:pointer}
@@ -285,15 +299,15 @@
   .sheet-scrim{position:fixed;inset:0;z-index:55;background:rgba(15,20,40,.42);backdrop-filter:blur(3px);
     display:none;align-items:flex-end;padding-bottom:calc(60px + env(safe-area-inset-bottom))}
   .sheet-scrim.open{display:flex}
-  body.more-open .mbar{z-index:58}
-  .sheet{width:100%;background:var(--card);border-radius:22px 22px 0 0;padding:8px 18px calc(20px + env(safe-area-inset-bottom));
+  body.more-open .mbar{z-index:58;background:#fff;box-shadow:0 -6px 20px rgba(20,40,80,.16)}
+  .sheet{width:100%;background:var(--card);border-radius:22px 22px 0 0;padding:6px 18px calc(14px + env(safe-area-inset-bottom));
     box-shadow:0 -12px 40px rgba(0,0,0,.3);transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.7,.2,1)}
   .sheet-scrim.open .sheet{transform:translateY(0)}
   .sheet-grip{width:38px;height:4px;border-radius:2px;background:var(--line);margin:6px auto 10px}
-  .sheet-head{font-size:17px;font-weight:800;margin:2px 4px 14px}
+  .sheet-head{font-size:16px;font-weight:800;margin:2px 4px 10px}
   .sheet-grid{display:flex;gap:12px;padding-bottom:6px}
-  .sheet-grid button,.sheet-item{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;border:0;background:var(--card-2);
-    border-radius:16px;padding:16px 6px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;color:var(--ink)}
+  .sheet-grid button,.sheet-item{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:var(--card-2);
+    border-radius:15px;padding:13px 6px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;color:var(--ink)}
   .sheet-grid .ic{width:26px;height:26px;color:var(--ink-soft)}
   .sheet-grid svg,.sheet-item svg{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   .sheet-head{display:flex;align-items:center}
@@ -733,10 +747,14 @@
 </div>
 
 <!-- 설정 (요청: 웹 이식) -->
-<div class="scrim" id="settingsScrim">
+<div class="scrim setpage" id="settingsScrim">
   <div class="modal">
-    <button class="mclose" id="settingsClose">✕</button>
-    <h3>설정</h3>
+    <div class="setpage-head">
+      <button class="setpage-x" id="settingsClose">✕</button>
+      <h3>설정</h3>
+      <button class="setpage-done" id="setSave">완료</button>
+    </div>
+    <div class="setpage-body">
 
     <div class="set-sec">상단 바</div>
     <div class="elabel">오늘 다짐</div><input id="setVow" placeholder="예: 오늘도 한 걸음" maxlength="40">
@@ -761,7 +779,11 @@
     <div class="set-sec">작업 추가</div>
     <div class="elabel">추가할 때 기본 길이 (분)</div><input type="number" id="setDefDur" min="0" step="5">
 
-    <button class="go" id="setSave">저장</button>
+    <div class="set-sec">계정 · 기타</div>
+    <button class="set-row-btn" id="setStatsBtn">통계 보기</button>
+    <button class="set-row-btn" id="setAccountBtn">로그인</button>
+
+    </div>
   </div>
 </div>
 
@@ -1440,6 +1462,7 @@
     document.getElementById('setDdayLabel').value=s.ddayLabel||'';
     document.getElementById('setDdayDate').value=s.ddayDate?s.ddayDate.slice(0,10):'';
     document.getElementById('setBarPeriod').value=s.barPeriodSec!=null?s.barPeriodSec:6;
+    document.getElementById('setAccountBtn').textContent=(session&&session.user)?('로그아웃 ('+session.user.email+')'):'로그인';
     var bi=s.barItems||{};
     document.querySelectorAll('#setBarItems input').forEach(function(cb){cb.checked=bi[cb.dataset.k]!==false&&bi[cb.dataset.k]!==undefined?!!bi[cb.dataset.k]:!!bi[cb.dataset.k];});
     document.getElementById('settingsScrim').classList.add('open');}
@@ -1966,7 +1989,8 @@
 
   /* ---------- auth + snapshot ---------- */
   var session=null;try{session=JSON.parse(localStorage.getItem(AUTH_KEY)||'null');}catch(e){}
-  function updateAcct(){if(typeof renderMoreSheet==='function')renderMoreSheet();}
+  function updateAcct(){if(typeof renderMoreSheet==='function')renderMoreSheet();
+    var ab=document.getElementById('setAccountBtn');if(ab)ab.textContent=(session&&session.user)?('로그아웃 ('+session.user.email+')'):'로그인';}
   function normalize(s){return {tasks:s.tasks||[],habits:s.habits||[],sessions:s.sessions||[],settings:s.settings||{focusGoalMinutes:240}};}
 
   /* 서버 스냅샷을 통째로 보관 (schemaVersion·sessions 등 앱 전용 필드 보존).
@@ -2085,6 +2109,8 @@
   document.getElementById('settingsClose').addEventListener('click',function(){document.getElementById('settingsScrim').classList.remove('open');});
   document.getElementById('settingsScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
   document.getElementById('setSave').addEventListener('click',saveSettings);
+  document.getElementById('setStatsBtn').addEventListener('click',function(){document.getElementById('settingsScrim').classList.remove('open');openStats();});
+  document.getElementById('setAccountBtn').addEventListener('click',accountAction);
   document.getElementById('moreScrim').addEventListener('click',function(e){if(e.target===this){navEditMode=false;closeMore();}});
   document.getElementById('navEditBtn').addEventListener('click',toggleNavEdit);
   document.getElementById('topCap').addEventListener('click',barAdvance);
@@ -2511,11 +2537,10 @@
     bucket:{label:'물통',svg:'<path d="M12 3.4s6.2 6.5 6.2 11a6.2 6.2 0 0 1-12.4 0c0-4.5 6.2-11 6.2-11z" fill="currentColor" stroke="none"/>',type:'tab'},
     matrix:{label:'매트릭스',svg:'<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',type:'tab'},
     routine:{label:'루틴',svg:'<path d="M17 3.5l3 3-3 3"/><path d="M20 6.5H8.5A4.5 4.5 0 0 0 4 11v.5"/><path d="M7 20.5l-3-3 3-3"/><path d="M4 17.5h11.5A4.5 4.5 0 0 0 20 13v-.5"/>',type:'tab'},
-    stats:{label:'통계',svg:'<path d="M5 20V11M11 20V4M17 20v-6"/><path d="M3 20h18"/>',type:'action'},
-    settings:{label:'설정',svg:'<circle cx="12" cy="12" r="3.1"/><path d="M12 3v2.5M12 18.5V21M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M3 12h2.5M18.5 12H21M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/>',type:'action'},
-    account:{label:'로그인',svg:'<circle cx="12" cy="8" r="3.4"/><path d="M5 20c1-4 4-5.5 7-5.5s6 1.5 7 5.5"/>',type:'action'}
+    friends:{label:'함께',svg:'<circle cx="9" cy="8" r="3"/><path d="M3.6 20c.6-3.3 2.6-4.9 5.4-4.9s4.8 1.6 5.4 4.9"/><circle cx="17" cy="9" r="2.4"/><path d="M15.6 14.7c2.6.3 4.2 1.7 4.8 4.2"/>',type:'action'},
+    settings:{label:'설정',svg:'<circle cx="12" cy="12" r="3.1"/><path d="M12 3v2.5M12 18.5V21M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M3 12h2.5M18.5 12H21M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/>',type:'action'}
   };
-  var NAV_ALL=['timeline','todo','bucket','matrix','routine','stats','settings','account'];
+  var NAV_ALL=['timeline','todo','bucket','matrix','routine','friends','settings'];
   var NAV_MAX=5,navEditMode=false,navPopKey=null;
   function navBarKeys(){var a=DATA.settings&&DATA.settings.navBar;if(!a||!a.length)a=['timeline','todo','bucket','matrix','routine'];return a.filter(function(k){return NAV_DEF[k];});}
   function navOverflowKeys(){var bar=navBarKeys();return NAV_ALL.filter(function(k){return bar.indexOf(k)<0;});}
@@ -2525,9 +2550,8 @@
     else{document.getElementById('loginErr').textContent='';setLMode('signIn');document.getElementById('loginScrim').classList.add('open');document.getElementById('loginEmail').focus();}}
   function runNavItem(key){var d=NAV_DEF[key];if(!d)return;
     if(d.type==='tab')setTab(key);
-    else if(key==='stats'){closeMore();openStats();}
     else if(key==='settings'){closeMore();openSettings();}
-    else if(key==='account'){closeMore();accountAction();}}
+    else if(key==='friends'){closeMore();alert('함께 기능은 준비 중이에요.');}}
   function renderNav(){
     var bar=navBarKeys(),cur=document.body.getAttribute('data-m'),mbar=document.getElementById('mbar');
     if(!mbar)return;
