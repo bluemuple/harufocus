@@ -159,6 +159,12 @@
   .swipe-grp{position:absolute;top:0;bottom:0;width:128px;display:flex;z-index:0;visibility:hidden}
   .swipe-grp.lead{left:0}.swipe-grp.trail{right:0}
   .task.sw-left .swipe-grp.lead,.task.sw-right .swipe-grp.trail{visibility:visible}
+  /* 둥근 코너 노치 채움 (요청): inner 코너 뒤 레이어가 인접 버튼 색으로 보이게
+     그룹을 안쪽으로 14px 연장한다 (닫힘 상태에선 inner가 덮는다). */
+  .swipe-grp.trail::before{content:"";position:absolute;top:0;bottom:0;left:-14px;width:15px;background:#2E7DF6}
+  .swipe-grp.lead::after{content:"";position:absolute;top:0;bottom:0;right:-14px;width:15px;background:#0E90A6}
+  .mtask .swipe-grp.trail::before{background:#F5352B}
+  .mtask .swipe-grp.lead::after{background:#2E7DF6}
   .sa{flex:1;height:100%;border:0;color:#fff;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:3px}
   .sa b{font-size:10px;font-weight:800}
@@ -889,7 +895,7 @@
     schedule:svgI('<circle cx="12" cy="12" r="8"/><path d="M9 12.3l2 2 4-4.2"/>'),
     bell:svgI('<path d="M6 10.5a6 6 0 0 1 12 0c0 4 1.4 5.4 1.4 5.4H4.6S6 14.5 6 10.5z"/><path d="M10 18.5a2 2 0 0 0 4 0"/>'),
     flag:svgI('<path d="M6 3v18"/><path d="M6 4h11l-2.5 3.5L17 11H6"/>'),
-    repeat2:svgI('<path d="M4 7h11a4 4 0 0 1 4 4M20 17H9a4 4 0 0 1-4-4"/><path d="M16 4l3 3-3 3M8 20l-3-3 3-3"/>'),
+    repeat2:svgI('<path d="M17 3.5l3 3-3 3"/><path d="M20 6.5H8.5A4.5 4.5 0 0 0 4 11v.5"/><path d="M7 20.5l-3-3 3-3"/><path d="M4 17.5h11.5A4.5 4.5 0 0 0 20 13v-.5"/>'),
     star:svgI('<path d="M12 3.5l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/>'),
     starFill:svgI('<path d="M12 3.5l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/>','currentColor'),
     trash:svgI('<path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/>'),
