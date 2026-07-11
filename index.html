@@ -63,7 +63,13 @@
 
   /* big timeline (sky) */
   #view-big{position:absolute;inset:0;overflow:hidden;
-    background:linear-gradient(180deg,#3f6fb0 0%,#77a7dd 52%,#bcd6ef 100%)}
+    background:linear-gradient(180deg,var(--tl-top,#3f6fb0) 0%,var(--tl-mid,#77a7dd) 55%,var(--tl-bot,#bcd6ef) 100%)}
+  /* 시간축에 고정된 해·달 — 스크롤하면 함께 움직인다 (요청). */
+  .tl-sun{position:absolute;left:50%;width:64px;height:64px;border-radius:50%;transform:translateX(-50%);
+    background:radial-gradient(circle at 50% 45%,#fff8dc,#ffe89a 45%,rgba(255,224,150,0) 72%);
+    box-shadow:0 0 40px 14px rgba(255,231,150,.55);pointer-events:none;z-index:0}
+  .tl-moon{position:absolute;left:64%;width:34px;height:34px;pointer-events:none;z-index:0;
+    filter:drop-shadow(0 0 10px rgba(210,225,255,.5))}
   .tl-scroll{position:absolute;inset:0;overflow-y:auto;padding:14px 0 190px}
   .hour{position:relative;height:74px;padding-left:52px}
   .hour .lbl{position:absolute;left:14px;top:-8px;font-size:12px;color:#fff;opacity:.85;font-variant-numeric:tabular-nums;text-shadow:0 1px 2px rgba(0,0,0,.3)}
@@ -725,6 +731,58 @@
   function yFor(h){return 14+(h-TS)*PPH;}
   function selDate(){var d=new Date();d.setDate(d.getDate()+dayOffset);return d;}
   function selKey(){var d=selDate();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+  // ── 타임라인 천체 (요청: 스크롤 시 해·달 위치 + 달 위상 + 하늘색 동적) ──
+  // 태양의 남중(가장 높음)은 정오, 달은 위상에 따라 남중 시각이 밀린다.
+  var SYNODIC=29.530588853, NEW_MOON=Date.UTC(2000,0,6,18,14)/86400000;
+  function moonAge(date){var d=date.getTime()/86400000-NEW_MOON;return ((d%SYNODIC)+SYNODIC)%SYNODIC;}
+  function moonPhase(date){return moonAge(date)/SYNODIC;}   // 0 신월 .5 보름 1 신월
+  // 달 남중 시각(대략): 신월=정오, 보름=자정. 위상 0..1 → 12h..(다음날)12h.
+  function moonTransitHour(date){return (12+24*moonPhase(date))%24;}
+  // 위상 SVG: 밝은 원반 + 어두운 종결선(터미네이터 타원).
+  function moonSVG(date){
+    var p=moonPhase(date),r=16,cx=17,cy=17;
+    var mag=Math.cos(p*2*Math.PI);            // 1 신월(안 보임) … -1 보름(꽉 참)
+    var rx=Math.abs(mag)*r;
+    var big=p<0.5?1:0;                          // 오른쪽/왼쪽 반원
+    var inner=(mag>0)?(p<0.5?1:0):(p<0.5?0:1);  // 초승/그믐 vs 볼록
+    var lit='M '+cx+' '+(cy-r)+' a '+r+' '+r+' 0 0 '+big+' 0 '+(2*r)+
+            ' a '+rx.toFixed(2)+' '+r+' 0 0 '+inner+' 0 '+(-2*r)+' z';
+    return '<svg viewBox="0 0 34 34"><circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="#3a4767"/>'+
+           '<path d="'+lit+'" fill="#eef3ff"/></svg>';
+  }
+  function addCelestial(sc){
+    var sun=document.createElement('div');sun.className='tl-sun';sun.style.top=(yFor(12.5)-32)+'px';sc.appendChild(sun);
+    var now=new Date();var mh=moonTransitHour(now);
+    // 낮 타임라인(TS..TE)에 들어오는 시각으로 달을 놓는다 (없으면 이른 새벽/늦은밤).
+    var mHour=(mh>=TS&&mh<=TE)?mh:(mh<TS?TS+1:TE-1);
+    var moon=document.createElement('div');moon.className='tl-moon';moon.style.top=(yFor(mHour)-17)+'px';
+    moon.innerHTML=moonSVG(now);sc.appendChild(moon);
+  }
+  // 시간대별 하늘 3색 (앱 SkyPalette 근사): top/mid/bot.
+  function tlSkyFor(h){
+    var K=[[0,0x141a2b,0x24304f,0x353f5c],[5,0x2f3e77,0x6a5a86,0xb4657f],
+           [6.5,0x5e7fb4,0x9fb6d8,0xffd79a],[9,0x2e86d8,0x77a7dd,0xafdbf2],
+           [16,0x2e86d8,0x77a7dd,0xafdbf2],[18,0x5e7fb4,0x8f88b0,0xff9e8c],
+           [19.5,0x2f3e77,0x4a4570,0xb4657f],[21,0x141a2b,0x24304f,0x353f5c],[24,0x141a2b,0x24304f,0x353f5c]];
+    var i=0;while(i<K.length-1&&h>K[i+1][0])i++;
+    var a=K[i],b=K[Math.min(i+1,K.length-1)],t=(h-a[0])/Math.max(0.001,b[0]-a[0]);
+    return [lerpHex(a[1],b[1],t),lerpHex(a[2],b[2],t),lerpHex(a[3],b[3],t)];
+  }
+  function updateTlSky(){
+    var sc=document.getElementById('tlScroll');if(!sc)return;
+    // 화면 중앙에 보이는 시각으로 하늘색을 정한다.
+    var centerY=sc.scrollTop+sc.clientHeight/2;
+    var h=TS+(centerY-14)/PPH;h=Math.max(0,Math.min(24,h));
+    var c=tlSkyFor(h),r=document.getElementById('view-big').style;
+    r.setProperty('--tl-top',c[0]);r.setProperty('--tl-mid',c[1]);r.setProperty('--tl-bot',c[2]);
+  }
+  // 스크롤은 rAF로 스로틀 — CSS 변수만 갱신해 빠릿하게 (요청).
+  (function(){var sc=document.getElementById('tlScroll'),tick=false;
+    if(!sc)return;
+    sc.addEventListener('scroll',function(){if(tick)return;tick=true;
+      requestAnimationFrame(function(){updateTlSky();tick=false;});},{passive:true});
+  })();
+
   function renderBig(){
     // 기상·취침 설정이 타임라인 시간대를 정한다 (요청).
     var sset=DATA.settings||{};
@@ -758,7 +816,10 @@
     if(dayOffset===0){var now=new Date();nf=now.getHours()+now.getMinutes()/60;if(nf<TS)nf=TS+1.5;
       var n=document.createElement('div');n.className='now';n.style.top=yFor(nf)+'px';n.innerHTML='<span class="pill">지금</span><span class="wire"></span>';sc.appendChild(n);}
     if(!any){var e=document.createElement('div');e.className='tl-empty';e.textContent='이 날 일정이 비어 있어요.';sc.appendChild(e);}
-    setTimeout(function(){sc.scrollTop=Math.max(0,yFor(nf)-150);},30);
+    // 해·달을 시간축에 고정 배치 (요청): 스크롤하면 함께 움직인다.
+    addCelestial(sc);
+    updateTlSky();
+    setTimeout(function(){sc.scrollTop=Math.max(0,yFor(nf)-150);updateTlSky();},30);
     var lbl=dayOffset===0?'오늘':dayOffset===-1?'어제':dayOffset===1?'내일':'';
     try{document.getElementById('tlDate').textContent=selDate().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'})+(lbl?' · '+lbl:'');}catch(e){}
   }
