@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>harufocus</title>
 <meta name="description" content="시간을 하늘 색으로 보여주는 세로 타임라인 플래너.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='52' r='30' fill='none' stroke='%23f2c14e' stroke-width='7'/><circle cx='50' cy='18' r='6.5' fill='%23f2c14e'/></svg>">
@@ -60,6 +60,9 @@
   @media(min-width:861px){.page-fab{position:absolute}}
   h2{position:relative}
   .h2-sub{font-size:16px;font-weight:400;color:var(--ink-soft);margin-left:6px}
+  /* 전역: 꾹 눌러 텍스트 선택 금지(입력란 제외) + 확대 금지 (요청). */
+  body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  input,textarea,[contenteditable]{-webkit-user-select:text;user-select:text}
   .tladd:hover{filter:brightness(1.05)}
   .tl-date{font-weight:700;font-size:14px}
   .seg{margin-left:auto;display:flex;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:2px}
@@ -144,11 +147,13 @@
 
   /* to-do */
   .todo{display:flex;flex-direction:column;gap:9px}
-  .task{position:relative;display:flex;align-items:stretch;background:rgba(255,255,255,.96);border:1px solid rgba(255,255,255,.7);border-radius:16px;box-shadow:0 4px 14px rgba(20,40,80,.10);overflow:hidden}
+  .task{position:relative;display:flex;align-items:stretch;background:transparent;border:0;border-radius:16px;box-shadow:0 4px 14px rgba(20,40,80,.10);overflow:hidden}
   .check{width:22px;height:22px;border-radius:50%;border:2px solid var(--ink-soft);flex:0 0 auto;cursor:pointer;display:grid;place-items:center}
   .check.done{background:#6bbf7a;border-color:#6bbf7a}
   .check.done::after{content:"✓";color:#fff;font-size:13px;font-weight:800}
   .swatch{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
+  .t-icon{flex:0 0 auto;display:grid;place-items:center;width:20px;height:20px}
+  .t-icon .ic{width:19px;height:19px}
   .task-inner{display:flex;align-items:center;gap:11px;flex:1;min-width:0;padding:11px 13px;background:#fff;position:relative;z-index:1;touch-action:pan-y;border-radius:16px}
   /* 스와이프 4버튼 (앱 파리티): 좌우 그룹, 각 그룹 2버튼. 색·아이콘 앱과 동일. */
   .swipe-grp{position:absolute;top:0;bottom:0;width:128px;display:flex;z-index:0;visibility:hidden}
@@ -198,8 +203,20 @@
   /* 매트릭스 셀 — 앱처럼 하늘 위 반투명 카드 (요청). */
   .quad{border-radius:16px;padding:12px;min-height:120px;border:1px solid rgba(255,255,255,.55);
     background:rgba(255,255,255,.18)!important;backdrop-filter:blur(2px)}
-  .quad h3{font-size:12.5px;font-weight:800;margin-bottom:8px;color:#fff;text-shadow:0 1px 3px rgba(20,40,80,.4)}
-  .mtask{background:rgba(255,255,255,.96);border-radius:11px;padding:8px 10px;font-size:12.5px;margin-bottom:6px;box-shadow:0 3px 10px rgba(20,40,80,.12)}
+  /* 매트릭스 제목 (요청): 쉐이드 대신 흰 1px 아웃라인 — 진한 잉크 글자가
+     어떤 그라데이션 배경에서도 또렷하게 보인다. */
+  .quad h3{font-size:12.5px;font-weight:800;margin-bottom:8px;color:#22314f;
+    text-shadow:-1px 0 0 rgba(255,255,255,.85),1px 0 0 rgba(255,255,255,.85),0 -1px 0 rgba(255,255,255,.85),0 1px 0 rgba(255,255,255,.85)}
+  .mtask{position:relative;background:transparent;border-radius:11px;font-size:12.5px;margin-bottom:6px;box-shadow:0 3px 10px rgba(20,40,80,.12);overflow:hidden}
+  .mtask-inner{display:flex;align-items:center;gap:7px;background:#fff;border-radius:11px;padding:8px 10px;position:relative;z-index:1;touch-action:pan-y}
+  .swipe-grp.sm{width:auto}
+  .swipe-grp.sm .sa{width:38px;flex:0 0 38px}
+  .swipe-grp.sm .sa svg{width:17px;height:17px}
+  .mtask.sw-left .swipe-grp.lead,.mtask.sw-right .swipe-grp.trail{visibility:visible}
+  .mx-ghost{position:fixed;z-index:95;pointer-events:none;opacity:.9;box-shadow:0 12px 30px rgba(0,0,0,.3);list-style:none}
+  .mx-ghost .swipe-grp{display:none}
+  .mx-dragsrc{opacity:.3}
+  .mx-dropline{position:fixed;height:3px;border-radius:2px;background:var(--sky-blue);z-index:94;display:none;box-shadow:0 0 6px rgba(70,133,214,.6)}
   .q1,.q2,.q3,.q4{background:rgba(255,255,255,.18)}
   .q1 h3{color:#c0455f}.q2 h3{color:#3f9a58}.q3 h3{color:#c58a1e}.q4 h3{color:#6b7688}
 
@@ -248,7 +265,8 @@
   .task .del{margin-left:6px;border:0;background:transparent;color:var(--ink-soft);font-size:18px;line-height:1;cursor:pointer;opacity:.55;padding:0 2px}
   .task .del:hover{opacity:1;color:#e0564e}
   .quad .qadd{margin-top:8px;width:100%;font-family:inherit;font-size:12.5px;font-weight:700;color:#fff;background:rgba(255,255,255,.14);border:1px dashed rgba(255,255,255,.6);border-radius:9px;padding:8px 0;cursor:pointer}
-  .quad .mtask{display:flex;align-items:center;gap:7px}
+  .quad .mtask{display:block}
+  .mtask-inner{width:100%;box-sizing:border-box}
   .mck{width:18px;height:18px;border-radius:50%;border:2px solid var(--ink-soft);flex:0 0 auto;cursor:pointer;display:grid;place-items:center;font-size:11px;color:#fff}
   .mck.on{background:#6bbf7a;border-color:#6bbf7a}
   .mt-main{flex:1;min-width:0}
@@ -267,8 +285,9 @@
   .topcap .tc-ic{flex:0 0 auto;display:grid;place-items:center;color:var(--ink-soft)}
   .topcap .tc-ic svg{width:15px;height:15px}
   .topcap .tc-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .topcap .tc-txt.slidedown{animation:tcDown .32s ease}
-  @keyframes tcDown{0%{transform:translateY(-90%);opacity:0}100%{transform:translateY(0);opacity:1}}
+  .topcap .tc-txt.slidedown{animation:tcDown .7s cubic-bezier(.25,.8,.3,1)}
+  @keyframes tcDown{0%{transform:translateY(-110%);opacity:0}100%{transform:translateY(0);opacity:1}}
+  .topcap{transition:width .45s cubic-bezier(.3,.7,.3,1)}
   .util{position:fixed;top:calc(8px + env(safe-area-inset-top));right:10px;z-index:40;display:flex;gap:6px}
   .util .acct{background:rgba(255,255,255,.82);backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(20,40,80,.18)}
   body[data-m="timeline"] .topcap{display:none}
@@ -359,12 +378,14 @@
   .cap-opt .ic{width:26px;height:26px}
   .cap-opt b{font-size:10.5px;font-weight:800}
   .cap-input{display:flex;align-items:center;gap:9px;padding:6px 2px 2px}
-  .cap-dot{width:22px;height:22px;border-radius:50%;border:2px solid rgba(0,0,0,.08);flex:0 0 auto;cursor:pointer;padding:0}
-  .cap-icon{width:26px;height:26px;border:0;background:none;color:var(--ink-soft);cursor:pointer;flex:0 0 auto;display:grid;place-items:center}
+  .cap-dot{width:26px;height:26px;border-radius:50%;border:2px solid rgba(0,0,0,.08);flex:0 0 auto;cursor:pointer;padding:0}
+  .cap-icon{width:34px;height:34px;border:0;background:none;color:var(--ink-soft);cursor:pointer;flex:0 0 auto;display:grid;place-items:center}
+  .cap-icon .ic{width:26px;height:26px}
   .cap-input input{flex:1;border:0;background:none;font-family:inherit;font-size:16px;color:var(--ink);min-width:0}
   .cap-input input:focus{outline:none}
-  .cap-submit{width:34px;height:34px;border-radius:50%;border:0;background:var(--ink-soft);color:#fff;
+  .cap-submit{width:42px;height:42px;border-radius:50%;border:0;background:var(--ink-soft);color:#fff;
     display:grid;place-items:center;cursor:pointer;flex:0 0 auto}
+  .cap-submit .ic{width:22px;height:22px}
   .cap-submit:disabled{opacity:.4}
   .cap-detail{max-height:46vh;overflow-y:auto}
   .cap-panel{padding:8px 4px}
@@ -620,7 +641,7 @@
           <h2>할 일 <button class="dow-toggle" id="todoDow" data-cal="todo"></button></h2>
           <div class="calstrip" data-cal="todo"></div>
           <div class="todo" id="todoList"></div>
-          <button class="page-fab" id="todoFab" title="할 일 추가"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button class="page-fab" id="todoFab" title="할 일 추가"><svg viewBox="0 0 24 24" style="width:30px;height:30px" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         </section>
         <section class="view" id="view-matrix">
           <h2>매트릭스 <button class="dow-toggle" id="matrixDow" data-cal="matrix"></button></h2>
@@ -874,7 +895,7 @@
     trash:svgI('<path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/>'),
     grid:svgI('<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'),
     sunrise:svgI('<path d="M3 19h18M7.5 19a4.5 4.5 0 0 1 9 0M12 9.8v2.4M5.9 12.6l1.5 1.5M18.1 12.6l-1.5 1.5M3.5 16h1.8M18.7 16h1.8"/>'),
-    curve:svgI('<path d="M7 18a10 10 0 0 1 10-10"/><path d="M13 4l4 4-4 4"/>'),
+    curve:svgI('<path d="M6 19v-3.5A7.5 7.5 0 0 1 13.5 8H17"/><path d="M13.8 4.2L17.6 8l-3.8 3.8"/>'),
     bold:svgI('<path d="M7 5h6a3.2 3.2 0 0 1 0 6.4H7zM7 11.4h7a3.4 3.4 0 0 1 0 6.8H7z"/>'),
     italic:svgI('<path d="M11 5h6M7 19h6M14 5l-4 14"/>'),
     bullet:svgI('<circle cx="5" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="18" r="1.2" fill="currentColor" stroke="none"/><path d="M9 6h11M9 12h11M9 18h11"/>'),
@@ -963,7 +984,7 @@
       {title:'영어 단어',categoryID:'study',weekdaysMask:42,reminderMinutesJSON:'[1260]'},
       {title:'저녁 명상',categoryID:'mind',weekdaysMask:127,reminderMinutesJSON:'[1350]'}
     ],
-    settings:{focusGoalMinutes:240,defaultDurationMin:50,barPeriodSec:6,
+    settings:{focusGoalMinutes:240,defaultDurationMin:50,barPeriodSec:300,
       barItems:{vow:true,focusSum:true,sunset:true,sunrise:true,dday:false},
       todayVow:'',ddayLabel:'',ddayDate:null,lat:-43.53,lng:172.63}
   };
@@ -1461,7 +1482,7 @@
     document.getElementById('setVow').value=s.todayVow||'';
     document.getElementById('setDdayLabel').value=s.ddayLabel||'';
     document.getElementById('setDdayDate').value=s.ddayDate?s.ddayDate.slice(0,10):'';
-    document.getElementById('setBarPeriod').value=s.barPeriodSec!=null?s.barPeriodSec:6;
+    document.getElementById('setBarPeriod').value=s.barPeriodSec!=null?s.barPeriodSec:300;
     document.getElementById('setAccountBtn').textContent=(session&&session.user)?('로그아웃 ('+session.user.email+')'):'로그인';
     var bi=s.barItems||{};
     document.querySelectorAll('#setBarItems input').forEach(function(cb){cb.checked=bi[cb.dataset.k]!==false&&bi[cb.dataset.k]!==undefined?!!bi[cb.dataset.k]:!!bi[cb.dataset.k];});
@@ -1474,7 +1495,7 @@
     S.todayVow=document.getElementById('setVow').value||'';
     S.ddayLabel=document.getElementById('setDdayLabel').value||'';
     var dd=document.getElementById('setDdayDate').value;S.ddayDate=dd?new Date(dd).toISOString():null;
-    S.barPeriodSec=Math.max(2,parseInt(document.getElementById('setBarPeriod').value,10)||6);
+    S.barPeriodSec=Math.max(2,parseInt(document.getElementById('setBarPeriod').value,10)||300);
     S.barItems=S.barItems||{};
     document.querySelectorAll('#setBarItems input').forEach(function(cb){S.barItems[cb.dataset.k]=cb.checked;});
     document.getElementById('settingsScrim').classList.remove('open');renderAll();startBarRotation();pushSnapshot();}
@@ -1571,7 +1592,9 @@
       '<div class="mx-pick"></div>'+
       '<div class="task-inner">'+
         '<span class="check'+(t.isDone?' done':'')+'"></span>'+
-        '<span class="swatch" style="background:'+catColor(t.categoryID)+'"></span>'+
+        (t.iconName
+          ?'<span class="t-icon" style="color:'+(iconTint(t.iconName)||catColor(t.categoryID))+'">'+findIconSvg(t.iconName)+'</span>'
+          :'<span class="swatch" style="background:'+catColor(t.categoryID)+'"></span>')+
         '<div class="t-main"><div class="t-title">'+esc(t.title)+'</div>'+
           '<div class="t-meta">'+(placed?'<span class="t-time">'+fmtTime(t.scheduledStart)+'</span>':'')+taskMetaHTML(t)+'</div></div>'+
         memoIconHTML(t)+
@@ -1612,6 +1635,89 @@
     }
   }
 
+  // 매트릭스 행 스와이프 (요청: 할일처럼, 버튼 폭 최소). 오른쪽=내일로+타임라인, 왼쪽=삭제.
+  function attachMxSwipe(el,t){
+    var inner=el.querySelector('.mtask-inner'),sx=0,sy=0,cur=0,startCur=0,drag=false,lock='';
+    var LW=76,RW=38;
+    function set(x){cur=x;inner.style.transform='translateX('+x+'px)';
+      el.classList.toggle('sw-left',x>4);el.classList.toggle('sw-right',x<-4);}
+    inner.addEventListener('pointerdown',function(e){if(e.pointerType==='mouse')return;
+      sx=e.clientX;sy=e.clientY;startCur=cur;drag=true;lock='';inner.style.transition='none';});
+    inner.addEventListener('pointermove',function(e){if(!drag||mxDragging)return;
+      var dx=e.clientX-sx,dy=e.clientY-sy;
+      if(!lock){if(Math.abs(dx)<6&&Math.abs(dy)<6)return;lock=Math.abs(dx)>Math.abs(dy)?'x':'y';}
+      if(lock!=='x')return;e.preventDefault();
+      set(Math.max(-RW,Math.min(LW,startCur+dx)));});
+    function end(){if(!drag)return;drag=false;inner.style.transition='transform .2s cubic-bezier(.3,0,.2,1)';
+      if(cur>LW*0.5)set(LW);else if(cur<-RW*0.5)set(-RW);else set(0);}
+    inner.addEventListener('pointerup',end);inner.addEventListener('pointercancel',end);
+    var bt=el.querySelector('.sa-tomorrow');if(bt)bt.addEventListener('click',function(){
+      var d=new Date();d.setDate(d.getDate()+1);d.setHours(0,0,0,0);t.deferredUntil=d.toISOString();renderAll();pushSnapshot();});
+    var bl=el.querySelector('.sa-timeline');if(bl)bl.addEventListener('click',function(){
+      var slot=nextSlotToday();t.scheduledStart=todayAt(Math.floor(slot),(slot%1)*60);if(!t.durationMin)t.durationMin=50;renderAll();pushSnapshot();});
+    var bd=el.querySelector('.sa-delete');if(bd)bd.addEventListener('click',function(){deleteTask(t);});
+  }
+  // 매트릭스 롱프레스 드래그 (요청): 고스트 + 목적지 가로선, 드롭하면 그 위치로 즉시 이동.
+  var mxDragging=false;
+  function attachMxDrag(el,t){
+    var timer=null,ghost=null,line=null,dropQuad=null,dropIndex=0;
+    var inner=el.querySelector('.mtask-inner');
+    inner.addEventListener('pointerdown',function(e){
+      if(e.target.closest('.mck,.t-memo'))return;
+      var startX=e.clientX,startY=e.clientY;
+      timer=setTimeout(function(){startDrag(startX,startY);},420);
+      function cancel(){if(timer){clearTimeout(timer);timer=null;}
+        inner.removeEventListener('pointermove',checkMove);inner.removeEventListener('pointerup',cancel);inner.removeEventListener('pointercancel',cancel);}
+      function checkMove(ev){if(Math.abs(ev.clientX-startX)+Math.abs(ev.clientY-startY)>8)cancel();}
+      inner.addEventListener('pointermove',checkMove);
+      inner.addEventListener('pointerup',cancel);inner.addEventListener('pointercancel',cancel);
+    });
+    function startDrag(px,py){
+      mxDragging=true;
+      var r=el.getBoundingClientRect();
+      ghost=el.cloneNode(true);ghost.className='mtask mx-ghost';
+      ghost.style.width=r.width+'px';ghost.style.left=r.left+'px';ghost.style.top=r.top+'px';
+      document.body.appendChild(ghost);
+      line=document.createElement('div');line.className='mx-dropline';document.body.appendChild(line);
+      el.classList.add('mx-dragsrc');
+      function move(ev){
+        ghost.style.transform='translate('+(ev.clientX-px)+'px,'+(ev.clientY-py)+'px)';
+        // 어느 셀 위인가
+        dropQuad=null;line.style.display='none';
+        document.querySelectorAll('#matrixGrid .quad').forEach(function(q){
+          var qr=q.getBoundingClientRect();
+          if(ev.clientX>=qr.left&&ev.clientX<=qr.right&&ev.clientY>=qr.top&&ev.clientY<=qr.bottom){
+            dropQuad=+q.dataset.q;
+            // 삽입 위치: 그 셀의 mtask들 중 커서 아래 첫 항목 앞
+            var tasks=[].slice.call(q.querySelectorAll('.mtask:not(.mx-dragsrc)'));
+            dropIndex=tasks.length;var lineY=null;
+            for(var i=0;i<tasks.length;i++){var tr=tasks[i].getBoundingClientRect();
+              if(ev.clientY<tr.top+tr.height/2){dropIndex=i;lineY=tr.top-3;break;}}
+            if(lineY==null){var last=tasks[tasks.length-1];
+              lineY=last?last.getBoundingClientRect().bottom+3:qr.top+34;}
+            line.style.display='block';line.style.left=(qr.left+8)+'px';line.style.width=(qr.width-16)+'px';line.style.top=lineY+'px';
+          }
+        });
+        ev.preventDefault();
+      }
+      function up(){
+        document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);
+        ghost.remove();line.remove();el.classList.remove('mx-dragsrc');mxDragging=false;
+        if(dropQuad!=null){
+          t.matrixQuadrant=dropQuad;
+          // 같은 셀 내 순서: DATA.tasks에서 t를 빼고 dropIndex 위치의 작업 앞에 삽입
+          var all=DATA.tasks,siblings=all.filter(function(x){return x!==t&&x.matrixQuadrant===dropQuad;});
+          all.splice(all.indexOf(t),1);
+          var anchorTask=siblings[dropIndex];
+          all.splice(anchorTask?all.indexOf(anchorTask):all.length,0,t);
+          renderAll();pushSnapshot();       // 요청: 애니메이션 없이 즉시 반영
+        }
+      }
+      document.addEventListener('pointermove',move);
+      document.addEventListener('pointerup',up);
+    }
+  }
+
   function renderMatrix(){
     var mdow=document.getElementById('matrixDow');
     if(mdow)mdow.textContent=calSel.toLocaleDateString('en-US',{weekday:'short'});
@@ -1620,23 +1726,24 @@
     [{q:1,cls:'q1',h:'중요 · 긴급'},{q:2,cls:'q2',h:'중요 · 여유'},{q:3,cls:'q3',h:'긴급 · 사소'},{q:4,cls:'q4',h:'사소 · 여유 · 보상'}].forEach(function(qd){
       var items=(DATA.tasks||[]).filter(function(t){return t.matrixQuadrant===qd.q;});
       cnt[qd.q]=items.length;
-      var b=document.createElement('div');b.className='quad '+qd.cls;
+      var b=document.createElement('div');b.className='quad '+qd.cls;b.dataset.q=qd.q;
       b.innerHTML='<h3>'+qd.h+'</h3>'+
         items.map(function(t){return '<div class="mtask'+(t.isDone?' done':'')+'">'+
+          '<div class="swipe-grp lead sm"><button class="sa sa-tomorrow">'+IC.curve+'</button><button class="sa sa-timeline">'+IC.sunrise+'</button></div>'+
+          '<div class="swipe-grp trail sm"><button class="sa sa-delete">'+IC.trash+'</button></div>'+
+          '<div class="mtask-inner">'+
           '<span class="mck'+(t.isDone?' on':'')+'" title="완료">'+(t.isDone?'✓':'')+'</span>'+
-          '<div class="mt-main"><div class="mt-title">'+esc(t.title)+'</div>'+
-            '<div class="t-meta">'+taskMetaHTML(t)+'</div></div>'+
-          memoIconHTML(t)+
-          '<button class="play" title="집중 시작">'+IC.play+'</button>'+
-          '<button class="del" title="삭제">×</button></div>';}).join('')+
+          (t.iconName?'<span class="t-icon" style="color:'+(iconTint(t.iconName)||catColor(t.categoryID))+'">'+findIconSvg(t.iconName)+'</span>':'')+
+          '<div class="mt-main"><div class="mt-title">'+esc(t.title)+'</div></div>'+
+          memoIconHTML(t)+'</div></div>';}).join('')+
         '<button class="qadd" data-q="'+qd.q+'">+ 추가</button>';
       b.querySelectorAll('.mtask').forEach(function(el,k){
         var t=items[k];
-        el.querySelector('.del').addEventListener('click',function(){deleteTask(t);});
-        el.querySelector('.play').addEventListener('click',function(){startFocus(t);});
         el.querySelector('.mck').addEventListener('click',function(){t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;if(t.isDone)grantReward(t);renderAll();pushSnapshot();});
         var mi=el.querySelector('.t-memo');if(mi)mi.addEventListener('click',function(e){e.stopPropagation();openMemoPopup(t);});
         var mt=el.querySelector('.mt-title');mt.style.cursor='pointer';mt.addEventListener('click',function(){openEditor(t);});
+        attachMxSwipe(el,t);      // 좌우 스와이프 (요청: 폭 최소화)
+        attachMxDrag(el,t);       // 꾹 눌러 셀 간 이동 (요청: 고스트+가로선)
       });
       b.querySelector('.qadd').addEventListener('click',function(){openCapture('matrix',{quadrant:qd.q});});
       g.appendChild(b);
@@ -2146,45 +2253,88 @@
       repeatDaysMask:0,rewardIsMoney:false,rewardText:'',rewardToQ4:false},
     calMonth:null,notePlaceholderShown:false};
   var CAP_COLORS=['#EF6461','#F0863D','#EAB81E','#8DC63F','#43B96B','#27AFC1','#5B93E6','#4585D6','#9A5BD8','#C77DE0'];
+  // 앱 아이콘 파리티 (요청: filled SF-symbol 스타일). fI = filled icon.
+  function fI(p){return '<svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none">'+p+'</svg>';}
   var CAP_ICONS={
-    mind:[['brain','<path d="M9 4a3 3 0 0 0-3 3c-1.4.3-2.3 1.6-2 3 .2.9.9 1.5 1.7 1.8-.4.6-.6 1.3-.4 2.1.3 1.1 1.3 1.8 2.3 1.8V18a2 2 0 0 0 2 2h.4V4z"/>'],
-      ['heart','<path d="M12 20s-7-4.4-7-9.7A4 4 0 0 1 12 7.6 4 4 0 0 1 19 10.3C19 15.6 12 20 12 20z" fill="currentColor" fill-opacity=".15"/>'],
-      ['moon','<path d="M18 13.5A7 7 0 1 1 10.5 6 5.5 5.5 0 0 0 18 13.5z"/><path d="M19 5l.5 1.5L21 7l-1.5.5L19 9l-.5-1.5L17 7l1.5-.5z"/>'],
-      ['leaf','<path d="M6 18C4 12 8 5 18 5c0 10-7 14-13 13z"/><path d="M6 18l7-7"/>'],
-      ['sparkle','<path d="M12 3v4M12 17v4M5 12H3M21 12h-2M6.5 6.5l-1.5-1.5M19 19l-1.5-1.5M6.5 17.5L5 19M19 5l-1.5 1.5"/>'],
-      ['smile','<circle cx="12" cy="12" r="8"/><path d="M9 10h.01M15 10h.01M8.5 14a4 4 0 0 0 7 0"/>'],
-      ['book2','<path d="M4 5h8v15H4zM12 5h8v15h-8z"/>'],
-      ['meditate','<circle cx="12" cy="7" r="2"/><path d="M12 9v3M6 19c1-3 3.5-4 6-4s5 1 6 4"/><path d="M8 13l4-1 4 1"/>']],
-    health:[['run','<path d="M13 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/><path d="M10 20l2-5 2 2 3 3M9 12l2-3 3 1 2-2M6 9l3 1"/>'],
-      ['dumbbell','<path d="M6 9v6M18 9v6M3 12h2M19 12h2M8 8h8v8H8z"/>'],
-      ['water','<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>'],
-      ['bike','<circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17l4-8h5l3 8M10 9H8"/>'],
-      ['apple','<path d="M12 8c-3 0-5 2-5 5.5S9 20 12 20s5-2.5 5-6.5S15 8 12 8z"/><path d="M12 8V5c0-.8.7-1.5 2-1.5"/>']],
-    rest:[['sun','<circle cx="12" cy="12" r="4.2"/><path d="M12 3v2.3M12 18.7V21M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M3 12h2.3M18.7 12H21M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"/>'],
-      ['party','<path d="M4 20l3-11 11 3-11 8z"/><path d="M13 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/>'],
-      ['music','<path d="M9 18V6l10-2v11"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="15" r="2.5"/>'],
-      ['gamepad','<rect x="3" y="8" width="18" height="9" rx="4"/><path d="M8 11v3M6.5 12.5h3M16 12h.01M18.5 10.5h.01"/>'],
-      ['film','<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14M3 9h4M17 9h4M3 15h4M17 15h4"/>']],
-    life:[['coin','<circle cx="12" cy="12" r="8"/><path d="M8.6 9l1.8 5 1.6-4 1.6 4 1.8-5"/>'],
-      ['wallet','<rect x="3" y="7" width="18" height="12" rx="2"/><path d="M3 10h18M15 14h3"/>'],
-      ['card','<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M6 14h4"/>'],
-      ['chart2','<path d="M5 20V11M11 20V4M17 20v-6"/><path d="M3 20h18"/>'],
-      ['gift2','<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M12 9v11M4 13.5h16"/>']],
-    study:[['sprout','<path d="M12 21v-8"/><path d="M12 13c0-4 3-6.6 7-6.6 0 4-3 6.6-7 6.6z"/><path d="M12 15c0-2.8-2.1-4.6-5.3-4.6 0 2.8 2.1 4.6 5.3 4.6z"/>'],
-      ['book3','<path d="M4 19V6a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v13"/><path d="M4 19a2 2 0 0 0 2 2h13"/><path d="M12 4v17"/>'],
-      ['pencil','<path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/>'],
-      ['bulb','<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5.9 1 .9 1.7V16h5.2v-.4c0-.7.3-1.2.9-1.7A6 6 0 0 0 12 3z"/>'],
-      ['target','<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.2"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>']],
-    focus:[['book4','<path d="M4 19V6a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v13"/><path d="M4 19a2 2 0 0 0 2 2h13"/><path d="M12 4v17"/>'],
-      ['laptop','<rect x="4" y="5" width="16" height="10" rx="1.5"/><path d="M2 19h20"/>'],
-      ['briefcase','<rect x="3" y="8" width="18" height="11" rx="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'],
-      ['clock2','<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>'],
-      ['check2','<circle cx="12" cy="12" r="8"/><path d="M9 12.3l2 2 4-4.2"/>']],
-    people:[['people2','<circle cx="9" cy="8" r="3"/><path d="M3.6 20c.6-3.3 2.6-4.9 5.4-4.9s4.8 1.6 5.4 4.9"/><circle cx="17" cy="9" r="2.4"/><path d="M15.6 14.7c2.6.3 4.2 1.7 4.8 4.2"/>'],
-      ['chat','<path d="M4 5h16v11H9l-4 3.5V16H4z"/>'],
-      ['hand','<path d="M8 19l-3-3.5c-.6-.7-.5-1.7.2-2.2.6-.5 1.5-.4 2 .2L9 15V6.5a1.3 1.3 0 0 1 2.6 0V12M11.6 12V5a1.3 1.3 0 0 1 2.6 0v7M14.2 12V6.3a1.3 1.3 0 0 1 2.6 0V13c0 3.9-2 7-5.5 7-2 0-3-.7-4-2"/>'],
-      ['gift3','<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M12 9v11M4 13.5h16"/>']]};
-  var CAP_CAT_ORDER=['mind','health','rest','life','study','focus','people'];
+    mind:[
+      ['brain','<path d="M12 2a7.2 7.2 0 0 0-7.2 7.2c0 1.5.46 2.9 1.25 4.05L4.2 16.5c-.25.5.11 1.1.67 1.1h1.33v2.1c0 .7.56 1.3 1.3 1.3H11v1h4.5v-3.6c2.7-1.2 4.7-3.8 4.7-7A7.2 7.2 0 0 0 12 2zm-1.9 5.1a1.6 1.6 0 0 1 1.9-.55A1.6 1.6 0 0 1 14.8 6a1.9 1.9 0 0 1 1.5 3.1 1.9 1.9 0 0 1-1.4 3.15c-.15.75-.8 1.3-1.6 1.3-.5 0-.95-.22-1.25-.57a1.75 1.75 0 0 1-2.8-1.4c0-.25.05-.5.15-.72A1.85 1.85 0 0 1 8.3 9.1c0-.9.63-1.64 1.47-1.83z" fill-rule="evenodd" clip-rule="evenodd"/>'],
+      ['heart','<path d="M12 21.3l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.53L12 21.3z"/>'],
+      ['moonzzz','<path d="M11.2 3.1c-4.2.4-7.5 4-7.5 8.4 0 4.7 3.8 8.5 8.5 8.5 3.2 0 6-1.8 7.4-4.4-6.3-.2-10.4-6.9-8.4-12.5z"/><path d="M14.5 3h4l-2.7 3.4h2.7V8h-4.3l2.7-3.4h-2.4zM18.7 9.2h3l-1.9 2.3h1.9v1.3h-3.2l1.9-2.3h-1.7z"/>'],
+      ['leaf','<path d="M20.5 3.5S9.7 4 6.1 7.6c-2.6 2.6-2.9 6.6-.9 9.5 1.5-3.2 4-6 7.3-7.6-2.8 2.3-4.9 5.4-5.7 9 2.9 1.5 6.5 1 8.9-1.4C19.3 13.5 20.5 3.5 20.5 3.5z"/>'],
+      ['clap','<path d="M10.1 3.2l1.2-.6 1.6 3.1-1.2.6zM15.9 2.9l1.3.4-1 3.3-1.3-.4zM6.6 5.2l1-.9 2.3 2.6-1 .9z"/><path d="M17.5 9.4l-3.2-3.2a1.2 1.2 0 0 0-1.7 1.7l2.4 2.4-.7.7-4-4a1.2 1.2 0 1 0-1.7 1.7l4 4-.6.6-3.2-3.2A1.2 1.2 0 1 0 7.1 11.8l3.2 3.2-.6.6-2.3-2.3a1.2 1.2 0 1 0-1.7 1.7l4.5 4.5a5.5 5.5 0 0 0 7.8-7.8l-.5-.5z"/>'],
+      ['smile','<path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm3.5 6A1.5 1.5 0 1 1 14 9.5 1.5 1.5 0 0 1 15.5 8zm-7 0A1.5 1.5 0 1 1 7 9.5 1.5 1.5 0 0 1 8.5 8zm3.5 9.5c-2.33 0-4.31-1.46-5.11-3.5h10.22c-.8 2.04-2.78 3.5-5.11 3.5z"/>'],
+      ['book','<path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/>'],
+      ['meditate','<circle cx="12" cy="5" r="2.2"/><path d="M12 8.2c-1.3 0-2.4.8-2.9 2l-1.2 3c-1.6.6-3 1.5-4.2 2.7-.5.5-.5 1.3 0 1.7.5.5 1.2.5 1.7 0 1.7-1.6 4-2.6 6.6-2.6s4.9 1 6.6 2.6c.5.5 1.2.5 1.7 0s.5-1.2 0-1.7c-1.2-1.2-2.6-2.1-4.2-2.7l-1.2-3c-.5-1.2-1.6-2-2.9-2z"/><path d="M7 19.5c1.4-1 3.1-1.5 5-1.5s3.6.5 5 1.5c-.7 1.5-2.7 2.5-5 2.5s-4.3-1-5-2.5z"/>']],
+    health:[
+      ['run','<circle cx="14.5" cy="3.8" r="1.9"/><path d="M10.2 8.7L7.5 22h2.1l1.7-7.6 2.2 2.1V22h2v-6.9l-2.2-2.1.6-3c1.3 1.5 3.2 2.5 5.4 2.5v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.2L6 7.7v4.8h2V9.1l2.2-.4"/>'],
+      ['dumbbell','<path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>'],
+      ['walk','<circle cx="13.2" cy="4" r="1.9"/><path d="M9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3c1.3 1.5 3.2 2.5 5.4 2.5v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.2L6 8.3V13h2V9.6l1.8-.7"/>'],
+      ['yoga','<circle cx="12" cy="4" r="2"/><path d="M16.8 8.1L14 9.7V13l2.9 4.4c.4.5.3 1.3-.3 1.7-.5.4-1.3.2-1.7-.3L12 14.7l-2.9 4.1c-.4.5-1.2.7-1.7.3-.6-.4-.7-1.2-.3-1.7L10 13V9.7L7.2 8.1c-.6-.3-.8-1-.5-1.6.3-.6 1-.8 1.6-.5L12 8.1l3.7-2.1c.6-.3 1.3-.1 1.6.5.3.6.1 1.3-.5 1.6z"/>'],
+      ['drop','<path d="M12 2s6.2 6.6 6.2 11.2a6.2 6.2 0 0 1-12.4 0C5.8 8.6 12 2 12 2z"/>'],
+      ['bike','<path d="M15.5 5.5a1.9 1.9 0 1 0 0-3.8 1.9 1.9 0 0 0 0 3.8zM5 12a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 8.5A3.5 3.5 0 1 1 8.5 17 3.5 3.5 0 0 1 5 20.5zm5.8-10l2.4-2.4.8.8c1.06 1.06 2.38 1.78 4 2v-2.2c-1.1-.2-2-.66-2.7-1.36l-1.9-1.9c-.5-.4-1-.6-1.6-.6s-1.1.2-1.4.6L7.6 8.2c-.4.4-.6.9-.6 1.4 0 .6.2 1.1.6 1.4l3.4 3v5h2v-6.2l-2.2-2.3zM19 12a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 8.5a3.5 3.5 0 1 1 3.5-3.5 3.5 3.5 0 0 1-3.5 3.5z"/>'],
+      ['swim','<circle cx="16.5" cy="5.5" r="1.9"/><path d="M9 10.5l3-2.6c.4-.35 1-.5 1.5-.4l4.6 1.2-.5 1.9-3.8-1-1.7 1.5 3.4 2.6c-1 .3-1.9.8-2.5 1.3-.9-.7-2.1-1.5-4-2.5z"/><path d="M2 17.5c1.7 0 1.7 1.2 3.3 1.2s1.7-1.2 3.3-1.2 1.7 1.2 3.3 1.2 1.7-1.2 3.4-1.2 1.7 1.2 3.3 1.2 1.7-1.2 3.4-1.2v2c-1.7 0-1.7 1.2-3.4 1.2s-1.6-1.2-3.3-1.2-1.7 1.2-3.4 1.2-1.6-1.2-3.3-1.2-1.7 1.2-3.3 1.2S3.7 19.5 2 19.5z"/>'],
+      ['lift','<circle cx="12" cy="6.3" r="2"/><path d="M3 3.5h2.2v5H3zM18.8 3.5H21v5h-2.2zM6 5h12v1.8H6z"/><path d="M10 9h4l1 4.5-1.4.9V19l1.9 2.4c.3.4.2 1-.2 1.3-.4.3-1 .3-1.3-.2L12 20.3l-2 2.2c-.3.5-.9.5-1.3.2-.4-.3-.5-.9-.2-1.3L10.4 19v-4.6L9 13.5z"/>'],
+      ['steps','<path d="M9.4 2.5c1.6.3 2.6 2.2 2.3 4.7-.15 1.2-.3 2-.9 2.6-.9.9-3 .8-3.8-.4-.5-.8-.6-1.7-.5-3 .2-2.4 1.4-4.2 2.9-3.9zM7 11.5h4.2c.2 1.4-.3 2.9-2.1 2.9S6.9 12.9 7 11.5zM16 8.5c-1.6.3-2.6 2.2-2.3 4.7.15 1.2.3 2 .9 2.6.9.9 3 .8 3.8-.4.5-.8.6-1.7.5-3-.2-2.4-1.4-4.2-2.9-3.9zM18.5 17.5h-4.2c-.2 1.4.3 2.9 2.1 2.9s2.2-1.5 2.1-2.9z"/>']],
+    rest:[
+      ['game','<path d="M21 6H3a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2zM11 13H8.5v2.5h-2V13H4v-2h2.5V8.5h2V11H11v2zm4.5 3a1.5 1.5 0 1 1 1.5-1.5 1.5 1.5 0 0 1-1.5 1.5zm4-3A1.5 1.5 0 1 1 21 11.5 1.5 1.5 0 0 1 19.5 13z"/>'],
+      ['music','<path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/>'],
+      ['palette','<path d="M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.42-4.03-8-9-8zm-5.5 9A1.5 1.5 0 1 1 8 10.5 1.5 1.5 0 0 1 6.5 12zm3-4A1.5 1.5 0 1 1 11 6.5 1.5 1.5 0 0 1 9.5 8zm5 0A1.5 1.5 0 1 1 16 6.5 1.5 1.5 0 0 1 14.5 8zm3 4A1.5 1.5 0 1 1 19 10.5 1.5 1.5 0 0 1 17.5 12z"/>'],
+      ['film','<path d="M18 4l2 3h-3l-2-3h-2l2 3h-3l-2-3H8l2 3H7L5 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V4h-4z"/>'],
+      ['camera','<path d="M9 2L7.17 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3.17L15 2H9zm3 15a5 5 0 1 1 5-5 5 5 0 0 1-5 5zm0-8.2A3.2 3.2 0 1 0 15.2 12 3.2 3.2 0 0 0 12 8.8z"/>'],
+      ['guitar','<path d="M19.6 2.4l2 2-4.3 4.3.5 1.4-1.5 1.5c1 1.7.9 3.8-.5 5.2-.9.9-1 1.5-1.1 2.2-.1.9-.3 1.9-1.4 2.9-1.7 1.7-4.6 1.5-6.6-.5s-2.2-4.9-.5-6.6c1-1 2-1.2 2.9-1.4.7-.1 1.3-.2 2.2-1.1 1.4-1.4 3.5-1.5 5.2-.5l1.5-1.5 1.4.5 4.2-4.4zM8.6 15.4a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2z"/>'],
+      ['popcorn','<path d="M7 4.2C7 3 8 2 9.2 2c.6 0 1.2.3 1.6.7C11.1 2.3 11.7 2 12.4 2c.9 0 1.7.5 2 1.3.3-.1.6-.2 1-.2C16.9 3.1 18 4.2 18 5.6c0 .3 0 .5-.1.7H6.2C6.1 6 6 5.7 6 5.4 6 4.9 6.4 4.4 7 4.2z"/><path d="M5 8h14l-1.5 13c-.1.6-.6 1-1.2 1H7.7c-.6 0-1.1-.4-1.2-1L5 8zm4.2 2l.6 10h1.4L10.6 10H9.2zm4.2 0l-.6 10h1.4l.6-10h-1.4z"/>']],
+    life:[
+      ['money','<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z"/>'],
+      ['banknote','<path d="M21 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zM12 15.5A3.5 3.5 0 1 1 15.5 12 3.5 3.5 0 0 1 12 15.5zM4.5 8A1.5 1.5 0 1 1 6 9.5 1.5 1.5 0 0 1 4.5 8zm15 8A1.5 1.5 0 1 1 18 14.5 1.5 1.5 0 0 1 19.5 16z"/>'],
+      ['chartup','<path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>'],
+      ['card','<path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>'],
+      ['cart','<path d="M7 18a2 2 0 1 0 2 2 2 2 0 0 0-2-2zM1 2v2h2l3.6 7.59-1.35 2.45A2 2 0 0 0 7 17h12v-2H7.42a.25.25 0 0 1-.22-.37L8.1 13h7.45a2 2 0 0 0 1.75-1.03l3.58-6.49A1 1 0 0 0 20 4H5.21l-.94-2H1zm16 16a2 2 0 1 0 2 2 2 2 0 0 0-2-2z"/>']],
+    study:[
+      ['openbook','<path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .42.44.66.75.5C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.31.16.75-.08.75-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/>'],
+      ['gradcap','<path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/>'],
+      ['pencil','<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>'],
+      ['globe','<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1a2 2 0 0 0 2 2v1.93zm6.9-2.54A2 2 0 0 0 16 16h-1v-3a1 1 0 0 0-1-1H8v-2h2a1 1 0 0 0 1-1V7h2a2 2 0 0 0 2-2v-.41a7.98 7.98 0 0 1 2.9 12.8z"/>'],
+      ['keyboard','<path d="M20 5H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/>']],
+    focus:[
+      ['book2','<path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM9 4h2v6L10 8.8 9 10V4z"/>'],
+      ['laptop','<path d="M20 15V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9H1.5c0 1.4 1.1 2.5 2.5 2.5h16c1.4 0 2.5-1.1 2.5-2.5H20zM6 6h12v9H6V6z"/>'],
+      ['briefcase','<path d="M20 7h-4V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM10 5h4v2h-4V5z"/>'],
+      ['clock','<path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 13.2l-5.2-3.1V7h1.9v4.2l4.3 2.5-1 1.5z"/>'],
+      ['check','<path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.8 14.5L5.7 12l1.6-1.6 2.9 2.9 6.5-6.5 1.6 1.6-8.1 8.1z"/>']],
+    people:[
+      ['people','<path d="M9 11a3.2 3.2 0 1 0-3.2-3.2A3.2 3.2 0 0 0 9 11zm0 1.8c-2.7 0-6 1.3-6 4V19h12v-2.2c0-2.7-3.3-4-6-4zM16.8 11a2.7 2.7 0 1 0-2.7-2.7A2.7 2.7 0 0 0 16.8 11zm.2 1.9c-.4 0-.8 0-1.2.1a4.7 4.7 0 0 1 1.7 3.8V19H22v-2c0-2.4-3-4.1-5-4.1z"/>'],
+      ['chat','<path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/>'],
+      ['hand','<path d="M21 7c-.55 0-1 .45-1 1v4.34a.66.66 0 0 1-1.33 0V4a1 1 0 0 0-2 0v7.34a.66.66 0 0 1-1.33 0V2.5a1 1 0 0 0-2 0v8.84a.66.66 0 0 1-1.33 0V4.5a1 1 0 0 0-2 0v11.41l-4.12-2.35a.94.94 0 0 0-1.19.19c-.34.38-.32.96.04 1.32l6.55 6.55A4.68 4.68 0 0 0 14.6 23H17a5 5 0 0 0 5-5V8c0-.55-.45-1-1-1z"/>'],
+      ['gift','<path d="M20 7h-2.18A3 3 0 0 0 18 6a3 3 0 0 0-5.5-1.66L12 5l-.5-.66A3 3 0 0 0 6 6a3 3 0 0 0 .18 1H4a2 2 0 0 0-2 2v2h9V7h2v4h9V9a2 2 0 0 0-2-2zM9 7a1 1 0 1 1 1-1 1 1 0 0 1-1 1zm6 0a1 1 0 1 1 1-1 1 1 0 0 1-1 1zM3 20a2 2 0 0 0 2 2h6v-9H3v7zm10 2h6a2 2 0 0 0 2-2v-7h-8v9z"/>']],
+    daily:[
+      ['meal','<path d="M11 9H9V2H7v7H5V2H3v7a4 4 0 0 0 3.75 3.97V22h2.5v-9.03A4 4 0 0 0 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/>'],
+      ['bed','<path d="M7 13a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9a4 4 0 0 0-4-4z"/>'],
+      ['shower','<path d="M12 3a6 6 0 0 0-6 6v1h12V9a6 6 0 0 0-6-6zM5 11.5h14v2H5z"/><path d="M7 15.5a1.2 1.2 0 1 1-1.2 1.9A1.2 1.2 0 0 1 7 15.5zm5 0a1.2 1.2 0 1 1-1.2 1.9A1.2 1.2 0 0 1 12 15.5zm5 0a1.2 1.2 0 1 1-1.2 1.9 1.2 1.2 0 0 1 1.2-1.9zM7 19.3a1.2 1.2 0 1 1-1.2 1.9A1.2 1.2 0 0 1 7 19.3zm5 0a1.2 1.2 0 1 1-1.2 1.9 1.2 1.2 0 0 1 1.2-1.9zm5 0a1.2 1.2 0 1 1-1.2 1.9 1.2 1.2 0 0 1 1.2-1.9z"/>'],
+      ['pills','<path d="M4.2 4.2a4.6 4.6 0 0 1 6.5 0l4.6 4.6a4.6 4.6 0 0 1-6.5 6.5L4.2 10.7a4.6 4.6 0 0 1 0-6.5zm1.4 1.4a2.6 2.6 0 0 0 0 3.7l1.9 1.9 3.7-3.7-1.9-1.9a2.6 2.6 0 0 0-3.7 0z"/><circle cx="17" cy="17" r="5"/>'],
+      ['alarm','<path d="M22 5.72l-4.6-3.86-1.29 1.53 4.6 3.86L22 5.72zM7.88 3.39L6.6 1.86 2 5.71l1.29 1.53 4.59-3.85zM12 4a9 9 0 1 0 9 9 9 9 0 0 0-9-9zm.5 4H11v6l4.75 2.85.75-1.23-4-2.37V8z"/>'],
+      ['trash','<path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>'],
+      ['coffee','<path d="M20 3H4v10a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-3h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/>'],
+      ['dishes','<path d="M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 2v2h14V5H5zm2.5 1.5a.8.8 0 1 0-.8-.8.8.8 0 0 0 .8.8zM12 9a5 5 0 1 0 5 5 5 5 0 0 0-5-5zm-2.6 5.6c1.4-1.3 3.8-1.3 5.2 0 .4.4 1.1.4 1.4-.1a3.6 3.6 0 1 0-6.9.4c0-.1.2-.2.3-.3z"/>'],
+      ['sunrise2','<path d="M12 2l3 3.5h-2V9h-2V5.5H9zM12 11a5 5 0 0 1 5 5H7a5 5 0 0 1 5-5zM3.5 13.6l1.4-1.4 1.8 1.8-1.4 1.4zM17.3 14l1.8-1.8 1.4 1.4-1.8 1.8zM2 18h20v2H2z"/>']],
+    etc:[
+      ['sun','<path d="M12 6a6 6 0 1 0 6 6 6 6 0 0 0-6-6zM11 1h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3zM4.2 5.6L5.6 4.2l2.1 2.1-1.4 1.4zm12.1 12.1l1.4-1.4 2.1 2.1-1.4 1.4zM4.2 18.4l2.1-2.1 1.4 1.4-2.1 2.1zM16.3 6.3l2.1-2.1 1.4 1.4-2.1 2.1z"/>'],
+      ['star','<path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>'],
+      ['badge','<path d="M23 12l-2.44-2.79.34-3.69-3.61-.82-1.89-3.2L12 2.96 8.6 1.5 6.71 4.69 3.1 5.5l.34 3.7L1 12l2.44 2.79-.34 3.7 3.61.82L8.6 22.5l3.4-1.47 3.4 1.46 1.89-3.19 3.61-.82-.34-3.69L23 12zm-12.91 4.72l-3.8-3.81 1.48-1.48 2.32 2.33 5.85-5.87 1.48 1.48-7.33 7.35z"/>'],
+      ['flag','<path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>'],
+      ['sparkles','<path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z"/>']]
+  };
+  // 그룹 정의 — 생활/기타는 물통 옆면(카테고리)에 안 묶임 (요청).
+  var ICON_GROUPS=[
+    {key:'mind',label:'마음',color:'#E85A8A',cat:'mind'},
+    {key:'health',label:'몸',color:'#F0863D',cat:'health'},
+    {key:'rest',label:'기쁨',color:'#EAB81E',cat:'rest'},
+    {key:'life',label:'돈',color:'#43B96B',cat:'life'},
+    {key:'study',label:'성장',color:'#27AFC1',cat:'study'},
+    {key:'focus',label:'공부/일',color:'#4585D6',cat:'focus'},
+    {key:'people',label:'사람',color:'#9A5BD8',cat:'people'},
+    {key:'daily',label:'생활',color:'#9AA3B2',cat:null},
+    {key:'etc',label:'기타',color:'#9AA3B2',cat:null}
+  ];
 
   function capOpen(){return cap.open;}
   function openCapture(origin,opts){
@@ -2222,10 +2372,13 @@
     if(e.target.closest('#todoFab,#habitFab,.qadd,#tlAdd'))return;  // 여는 버튼은 제외
     closeCapture();
   },true);
-  // 스와이프 열림 상태에서 버튼 이외를 누르면 원위치로 (요청).
+  // 스와이프 열림 상태에서 다른 곳을 누르면 원위치로 (요청).
+  // 단, 열린 행 자체는 제외 — 유저가 잡고 드래그해서 되돌릴 수 있게 (요청).
   document.addEventListener('pointerdown',function(e){
     if(!swipeOpen)return;
-    if(e.target.closest('.sa')||e.target.closest('.mx-pick'))return;   // 스와이프 버튼은 동작
+    if(e.target.closest('.sa')||e.target.closest('.mx-pick'))return;
+    var row=e.target.closest('.task');
+    if(row&&row.contains(swipeOpen))return;              // 열린 행은 드래그 핸들러가 처리
     closeSwipe();
   },true);
   function setCapDetail(d){cap.detail=(cap.detail===d?'options':d);paintCap();}
@@ -2306,15 +2459,20 @@
   }
 
   function findIconSvg(key){
-    for(var c in CAP_ICONS){var hit=CAP_ICONS[c].find(function(p){return p[0]===key;});if(hit)return svgI(hit[1]);}
+    for(var c in CAP_ICONS){var hit=CAP_ICONS[c].find(function(p){return p[0]===key;});if(hit)return fI(hit[1]);}
     return IC.none;
+  }
+  function iconTint(key){
+    for(var i=0;i<ICON_GROUPS.length;i++){var g=ICON_GROUPS[i];
+      if(CAP_ICONS[g.key].some(function(p){return p[0]===key;}))return g.color;}
+    return null;
   }
   function renderIconPanel(){
     var html='<div class="icon-panel"><button class="icon-none" id="iconNoneBtn">'+IC.none+' 아이콘 없음</button>';
-    CAP_CAT_ORDER.forEach(function(cid){
-      html+='<div class="icg-h">'+esc(CATS[cid].name)+'</div><div class="icg-grid">';
-      CAP_ICONS[cid].forEach(function(p){
-        html+='<button data-i="'+p[0]+'" data-c="'+cid+'" style="color:'+CATS[cid].color+'">'+svgI(p[1])+'</button>';
+    ICON_GROUPS.forEach(function(g){
+      html+='<div class="icg-h">'+esc(g.label)+'</div><div class="icg-grid">';
+      CAP_ICONS[g.key].forEach(function(p){
+        html+='<button data-i="'+p[0]+'" data-c="'+(g.cat||'')+'" style="color:'+g.color+'">'+fI(p[1])+'</button>';
       });
       html+='</div>';
     });
@@ -2333,7 +2491,7 @@
     var ni=e.target.closest('#iconNoneBtn');
     if(ni){cap.draft.iconName=null;cap.iconOpen=false;paintCap();return;}
     var ib=e.target.closest('.icg-grid button');
-    if(ib){cap.draft.iconName=ib.dataset.i;cap.draft.categoryID=ib.dataset.c;cap.iconOpen=false;paintCap();return;}
+    if(ib){cap.draft.iconName=ib.dataset.i;if(ib.dataset.c)cap.draft.categoryID=ib.dataset.c;cap.iconOpen=false;paintCap();return;}
     var cb=e.target.closest('.color-row button');
     if(cb){cap.draft.colorKey=cb.dataset.c;cap.colorOpen=false;paintCap();return;}
   });
@@ -2674,7 +2832,11 @@
     if(barIdx>=keys.length)barIdx=0;
     var c=barContent(keys[barIdx]);
     document.getElementById('tcIc').innerHTML=c.ic;
-    var txt=document.getElementById('tcTxt');txt.textContent=c.txt;
+    var txt=document.getElementById('tcTxt');
+    var before=cap.offsetWidth;                          // 전환 전 폭
+    cap.style.width='auto';txt.textContent=c.txt;
+    var after=cap.offsetWidth;                           // 새 내용 폭
+    if(anim&&before!==after){cap.style.width=before+'px';void cap.offsetWidth;cap.style.width=after+'px';}
     if(anim){txt.classList.remove('slidedown');void txt.offsetWidth;txt.classList.add('slidedown');}
   }
   function barAdvance(){var keys=barEnabledKeys();if(!keys.length)return;barIdx=(barIdx+1)%keys.length;paintBar(true);}
@@ -2682,7 +2844,7 @@
     if(barTimer)clearInterval(barTimer);
     barIdx=0;paintBar(false);
     var keys=barEnabledKeys();if(keys.length<2)return;
-    var per=Math.max(2,(DATA.settings&&DATA.settings.barPeriodSec)||6)*1000;
+    var per=Math.max(2,(DATA.settings&&DATA.settings.barPeriodSec)||300)*1000;
     barTimer=setInterval(barAdvance,per);
   }
 
