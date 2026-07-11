@@ -171,6 +171,11 @@
   .t-hint{font-size:10.5px;font-weight:700;color:var(--ink-soft);background:var(--card-2);border-radius:999px;padding:1px 7px}
   .ic{width:1.06em;height:1.06em;vertical-align:-0.16em;display:inline-block}
   .t-memo{border:0;background:transparent;font-size:15px;cursor:pointer;opacity:.6;padding:0 2px;color:var(--ink-soft)}
+  .memo-view{min-height:60px;font-size:14.5px;line-height:1.55;color:var(--ink);white-space:pre-wrap;word-break:break-word;cursor:text;padding:4px 2px}
+  .memo-view:empty::before{content:"메모가 비어 있어요. 편집을 눌러 작성하세요.";color:var(--ink-soft)}
+  .memo-view b{font-weight:800}.memo-view em{font-style:italic}
+  .memo-view ul,.memo-view ol{margin:4px 0 4px 18px}
+  .memo-edit{width:100%;min-height:140px;font-family:inherit;font-size:16px;padding:11px;border:1px solid var(--line);border-radius:12px;background:var(--card-2);resize:vertical;box-sizing:border-box}
   .t-memo:hover{opacity:1}
   .t-time{font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
   /* 스와이프 대신 호버로 액션 버튼 노출 (요청): 데스크톱은 호버 시, 모바일은 항상. */
@@ -287,19 +292,19 @@
   /* ---------- 공용 캡처바 (앱 CaptureBar 파리티, 요청) ---------- */
   .cap-wrap{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--card-2);
     border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(20,40,80,.12);display:none;
-    padding:8px 10px calc(6px + env(safe-area-inset-bottom));touch-action:pan-y}
+    padding:8px 10px calc(6px + env(safe-area-inset-bottom));touch-action:none}
   .cap-wrap.open{display:block}
   @media(min-width:861px){.cap-wrap{left:auto;right:24px;bottom:24px;width:420px;border-radius:16px;border:1px solid var(--line)}}
-  .cap-icons{display:flex;gap:14px;overflow-x:auto;padding:6px 4px;-ms-overflow-style:none;scrollbar-width:none}
-  .cap-icons::-webkit-scrollbar{display:none}
-  .cap-opt{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:none;
-    color:var(--ink-soft);cursor:pointer;padding:4px 2px;font-family:inherit}
+  .cap-icons{display:flex;justify-content:space-between;gap:4px;padding:8px 2px 6px}
+  .cap-opt{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:none;
+    color:var(--ink-soft);cursor:pointer;padding:4px 0;font-family:inherit}
   .cap-opt.on{color:var(--sky-blue)}
-  .cap-opt b{font-size:9px;font-weight:800}
+  .cap-opt .ic{width:26px;height:26px}
+  .cap-opt b{font-size:10.5px;font-weight:800}
   .cap-input{display:flex;align-items:center;gap:9px;padding:6px 2px 2px}
   .cap-dot{width:22px;height:22px;border-radius:50%;border:2px solid rgba(0,0,0,.08);flex:0 0 auto;cursor:pointer;padding:0}
   .cap-icon{width:26px;height:26px;border:0;background:none;color:var(--ink-soft);cursor:pointer;flex:0 0 auto;display:grid;place-items:center}
-  .cap-input input{flex:1;border:0;background:none;font-family:inherit;font-size:15px;color:var(--ink);min-width:0}
+  .cap-input input{flex:1;border:0;background:none;font-family:inherit;font-size:16px;color:var(--ink);min-width:0}
   .cap-input input:focus{outline:none}
   .cap-submit{width:34px;height:34px;border-radius:50%;border:0;background:var(--ink-soft);color:#fff;
     display:grid;place-items:center;cursor:pointer;flex:0 0 auto}
@@ -417,19 +422,22 @@
   .bi-side .v{width:38px;text-align:right;color:var(--ink-soft);font-variant-numeric:tabular-nums}
 
   /* ---------- login modal ---------- */
-  .scrim{position:fixed;inset:0;z-index:30;background:rgba(15,20,40,.5);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:22px}
+  .scrim{position:fixed;inset:0;z-index:30;background:rgba(15,20,40,.5);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:0}
   .scrim.open{display:flex}
-  .modal{position:relative;background:var(--card);border-radius:20px;padding:26px 22px 20px;width:100%;max-width:360px;box-shadow:0 30px 70px rgba(0,0,0,.35)}
+  .modal{position:relative;background:var(--card);border-radius:20px;padding:20px 16px 16px;
+    width:calc(100% - 40px);max-width:320px;margin:calc(14px + env(safe-area-inset-top)) auto 0;
+    max-height:80vh;overflow-y:auto;overflow-x:hidden;box-shadow:0 30px 70px rgba(0,0,0,.35);-webkit-overflow-scrolling:touch}
   .modal h3{font-size:20px}.modal .msub{color:var(--ink-soft);font-size:12.5px;margin:6px 0 15px}
-  .modal input{width:100%;font-family:inherit;font-size:15px;padding:12px 13px;margin-bottom:9px;border:1px solid var(--line);border-radius:12px;background:var(--card-2);outline:none}
+  .modal input,.modal textarea,.modal select{width:100%;font-family:inherit;font-size:16px;padding:12px 13px;margin-bottom:9px;border:1px solid var(--line);border-radius:12px;background:var(--card-2);outline:none;box-sizing:border-box}
   .modal input:focus{border-color:var(--sky-blue)}
   .modal .go{width:100%;border:none;cursor:pointer;font-family:inherit;font-size:15px;font-weight:700;padding:13px;border-radius:12px;background:var(--ink);color:#fff;margin-top:5px}
   .modal .merr{color:#d5495f;font-size:12.5px;min-height:16px;margin:2px 0 3px}
   .modal .mswitch{text-align:center;font-size:12.5px;color:var(--ink-soft);margin-top:13px}
   .modal .mswitch a{color:var(--sky-blue);font-weight:600;cursor:pointer}
-  .modal .mclose{position:absolute;top:12px;right:14px;border:none;background:transparent;font-size:18px;color:var(--ink-soft);cursor:pointer}
+  .modal .mclose{position:sticky;float:right;top:0;margin:-6px -4px 0 0;width:30px;height:30px;border:none;
+    background:var(--card-2);border-radius:50%;font-size:16px;color:var(--ink-soft);cursor:pointer;z-index:5;display:grid;place-items:center}
   /* 작업 편집 모달 (요청: 웹에서도 앱처럼 편집) */
-  .modal.wide{max-width:420px}
+  .modal.wide{max-width:320px}
   .elabel{font-size:11.5px;font-weight:700;color:var(--ink-soft);margin:12px 0 6px}
   .chips{display:flex;flex-wrap:wrap;gap:6px}
   .chip{font-family:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:var(--card-2);color:var(--ink-soft);border-radius:999px;padding:7px 12px;cursor:pointer}
@@ -485,11 +493,13 @@
   .ftick{stroke:rgba(255,255,255,.5)}
   .ftlabel{fill:rgba(255,255,255,.78);font-size:13px;font-weight:700}
   /* 보상 (요청) */
-  .rewardrow{align-items:center;gap:8px}
+  .rewardrow{align-items:center;gap:8px;flex-wrap:wrap}
+  .rewardrow #eRewardText{min-width:120px}
   .chip.rmoney{min-width:34px;font-weight:800}
   .chip.rmoney.on{background:#f7c948;color:#5a4600;border-color:#f0b400}
   .rmoneylbl{font-size:12px;font-weight:800;color:#b8860b}
-  .rq4{display:flex;align-items:center;gap:4px;font-size:12.5px;white-space:nowrap;color:var(--ink-soft)}
+  .rq4{display:flex;align-items:center;gap:4px;font-size:12.5px;white-space:nowrap;color:var(--ink-soft);flex:0 0 auto}
+  .rq4 input{width:18px;height:18px;margin:0}
   .t-reward{font-size:11px;font-weight:800;color:#b8860b;background:rgba(247,201,72,.22);border-radius:999px;padding:2px 8px;
     white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle}
   /* 폰에선 긴 텍스트 칩이 2줄로 깨지므로 심볼만 (요청). */
@@ -535,7 +545,6 @@
         <div id="view-big">
           <img class="tl-hills" src="assets/hills.png" alt="">
           <div class="tl-scroll" id="tlScroll"></div>
-          <img class="tl-tree" src="assets/tree.png" alt="">
         </div>
         <div id="view-mosaic">
           
@@ -624,13 +633,10 @@
     <input id="eTitle" placeholder="제목">
     <div class="elabel">분류</div><div class="chips" id="eCats"></div>
     <div class="elabel">길이</div><div class="chips" id="eDurs"></div>
-    <div class="elabel">타임라인 배치 (날짜 · 시각)</div>
-    <div class="erow"><input type="date" id="eDate"><input type="time" id="eTime"><button class="chip" id="eClearTime">빼기</button></div>
+    <div class="elabel">타임라인 배치 (오늘 · 시각)</div>
+    <div class="erow"><input type="time" id="eTime" style="flex:1"><button class="chip" id="eClearTime">빼기</button></div>
     <div class="elabel">매트릭스</div><div class="chips" id="eQuads"></div>
-    <div class="etoggles">
-      <label class="tpill"><span class="tp-l"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.5l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/></svg> 별표</span><input type="checkbox" id="eStar"></label>
-      <label class="tpill"><span class="tp-l"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M9 12.3l2 2 4-4.2"/></svg> 완료</span><input type="checkbox" id="eDone"></label>
-    </div>
+
     <div class="elabel">보상 <span style="font-weight:400;color:var(--muted)">· 끝내면 나에게 주는 선물</span></div>
     <div class="erow rewardrow">
       <button class="chip rmoney" id="eRewardMoney" title="가상 돈 보상">₩</button>
@@ -644,6 +650,17 @@
     <div id="eSubs"></div>
     <div class="erow"><input id="eSubAdd" placeholder="하위 작업 추가…" maxlength="80"><button class="chip" id="eSubAddBtn">추가</button></div>
     <div class="ebtns"><button class="del" id="eDelete">삭제</button><button class="play" id="ePlay">집중 ▶</button><button class="go" id="eSave">저장</button></div>
+  </div>
+</div>
+
+<!-- 메모 전용 팝업 (요청: 메모 아이콘 탭 → 메모만, 내용·편집 탭하면 편집) -->
+<div class="scrim" id="memoScrim">
+  <div class="modal">
+    <button class="mclose" id="memoClose">✕</button>
+    <h3>메모</h3>
+    <div id="memoView" class="memo-view"></div>
+    <textarea id="memoEdit" class="memo-edit" style="display:none" placeholder="메모…"></textarea>
+    <div class="ebtns"><button class="chip" id="memoEditBtn">편집</button><button class="go" id="memoSave" style="display:none">완료</button></div>
   </div>
 </div>
 
@@ -800,6 +817,37 @@
   }
   // 메모가 있으면 메모 아이콘 (요청). 클릭 시 편집 모달의 메모로.
   function memoIconHTML(t){return (t.notes&&t.notes.trim())?'<button class="t-memo" title="메모 보기">'+IC.note+'</button>':'';}
+  // 메모 전용 팝업 (요청): 아이콘 탭 → 내용만, 내용/편집 탭하면 편집.
+  var memoTask=null;
+  function mdToHtml(src){
+    var e=esc(src||'');
+    e=e.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/(^|[^*])\*([^*]+)\*/g,'$1<em>$2</em>');
+    var lines=e.split(/\n/),out=[],inUl=false,inOl=false;
+    function closeLists(){if(inUl){out.push('</ul>');inUl=false;}if(inOl){out.push('</ol>');inOl=false;}}
+    lines.forEach(function(ln){
+      if(/^\s*[-*]\s+/.test(ln)){if(!inUl){closeLists();out.push('<ul>');inUl=true;}out.push('<li>'+ln.replace(/^\s*[-*]\s+/,'')+'</li>');}
+      else if(/^\s*\d+\.\s+/.test(ln)){if(!inOl){closeLists();out.push('<ol>');inOl=true;}out.push('<li>'+ln.replace(/^\s*\d+\.\s+/,'')+'</li>');}
+      else{closeLists();out.push(ln);}
+    });
+    closeLists();return out.join('\n');
+  }
+  function openMemoPopup(t){
+    memoTask=t;
+    var v=document.getElementById('memoView'),ed=document.getElementById('memoEdit');
+    v.innerHTML=mdToHtml(t.notes||'');v.style.display='';ed.style.display='none';ed.value=t.notes||'';
+    document.getElementById('memoEditBtn').style.display='';document.getElementById('memoSave').style.display='none';
+    document.getElementById('memoScrim').classList.add('open');
+  }
+  function memoStartEdit(){
+    document.getElementById('memoView').style.display='none';
+    var ed=document.getElementById('memoEdit');ed.style.display='';
+    document.getElementById('memoEditBtn').style.display='none';document.getElementById('memoSave').style.display='';
+    ed.focus();
+  }
+  function memoSavePopup(){
+    if(memoTask){memoTask.notes=document.getElementById('memoEdit').value||'';renderAll();pushSnapshot();}
+    document.getElementById('memoScrim').classList.remove('open');
+  }
   function fmtTime(iso){if(!iso)return '—';var d=new Date(iso);return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
   function dateKey(iso){var d=new Date(iso);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
   function todayKey(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
@@ -975,8 +1023,7 @@
     if(dayOffset===0){var now=new Date();nf=now.getHours()+now.getMinutes()/60;if(nf<TS)nf=TS+1.5;
       var n=document.createElement('div');n.className='now';n.style.top=yFor(nf)+'px';n.innerHTML='<span class="pill">지금</span><span class="wire"></span>';sc.appendChild(n);}
     if(!any){var e=document.createElement('div');e.className='tl-empty';e.textContent='이 날 일정이 비어 있어요.';sc.appendChild(e);}
-    // 해·달을 시간축에 고정 배치 (요청): 스크롤하면 함께 움직인다.
-    addCelestial(sc);
+    // (요청) 태양·달 제거 — 동적 하늘색만 유지.
     updateTlSky();
     setTimeout(function(){sc.scrollTop=Math.max(0,yFor(nf)-150);updateTlSky();},30);
     var lbl=dayOffset===0?'오늘':dayOffset===-1?'어제':dayOffset===1?'내일':'';
@@ -1117,11 +1164,8 @@
     editTask=t;eCat=t.categoryID||'focus';eDur=t.durationMin||0;eQuad=t.matrixQuadrant||0;
     document.getElementById('eTitle').value=t.title||'';
     if(t.scheduledStart){var d=new Date(t.scheduledStart);
-      document.getElementById('eDate').value=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
       document.getElementById('eTime').value=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
-    }else{document.getElementById('eDate').value='';document.getElementById('eTime').value='';}
-    document.getElementById('eStar').checked=!!t.isStarred;
-    document.getElementById('eDone').checked=!!t.isDone;
+    }else{document.getElementById('eTime').value='';}
     eRewardIsMoney=(t.rewardMoney||0)>0;
     document.getElementById('eRewardText').value=eRewardIsMoney?String(t.rewardMoney):(t.rewardText||'');
     document.getElementById('eRewardQ4').checked=!!t.rewardToQ4;
@@ -1200,18 +1244,16 @@
     if(!editTask)return;
     var tt=(document.getElementById('eTitle').value||'').trim();if(tt)editTask.title=tt;
     editTask.categoryID=eCat;editTask.durationMin=eDur;editTask.matrixQuadrant=eQuad;
-    editTask.isStarred=document.getElementById('eStar').checked;
     editTask.notes=document.getElementById('eNote').value||'';
     // 보상 저장 (요청).
     var rt=(document.getElementById('eRewardText').value||'').trim();
     if(eRewardIsMoney){editTask.rewardMoney=parseInt(rt.replace(/[^0-9]/g,''),10)||0;editTask.rewardText='';editTask.rewardToQ4=false;}
     else{editTask.rewardText=rt;editTask.rewardMoney=0;editTask.rewardToQ4=document.getElementById('eRewardQ4').checked&&!!rt;}
-    var done=document.getElementById('eDone').checked,wasDone=editTask.isDone;
-    if(done!==editTask.isDone){editTask.isDone=done;editTask.completedAt=done?new Date().toISOString():null;}
-    if(done&&!wasDone)grantReward(editTask);
-    var dv=document.getElementById('eDate').value,tv=document.getElementById('eTime').value;
-    if(dv&&tv){editTask.scheduledStart=new Date(dv+'T'+tv).toISOString();if(!editTask.durationMin)editTask.durationMin=50;}
-    else if(!dv&&!tv){editTask.scheduledStart=null;}
+    // 시간만 입력 → 오늘(보고 있는 날짜) 그 시각에 배치, 비우면 배치 해제 (요청).
+    var tv=document.getElementById('eTime').value;
+    if(tv){var bd=new Date(calSel);var hm=tv.split(':');bd.setHours(+hm[0],+hm[1],0,0);
+      editTask.scheduledStart=bd.toISOString();if(!editTask.durationMin)editTask.durationMin=50;}
+    else{editTask.scheduledStart=null;}
     closeEditor();renderAll();pushSnapshot();
   }
 
@@ -1432,7 +1474,7 @@
       '</div>';
     var tl=row.querySelector('.t-title');tl.style.cursor='pointer';tl.addEventListener('click',function(){openEditor(t);});
     row.querySelector('.play').addEventListener('click',function(){startFocus(t);});
-    var mi=row.querySelector('.t-memo');if(mi)mi.addEventListener('click',function(){openEditor(t);});
+    var mi=row.querySelector('.t-memo');if(mi)mi.addEventListener('click',function(e){e.stopPropagation();openMemoPopup(t);});
     row.querySelector('.check').addEventListener('click',function(){t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;if(t.isDone)grantReward(t);renderTodo();pushSnapshot();});
     row.querySelector('.star').addEventListener('click',function(){t.isStarred=!t.isStarred;renderTodo();pushSnapshot();});
     attachSwipe(row,t,!!placed);
@@ -1487,7 +1529,7 @@
         el.querySelector('.del').addEventListener('click',function(){deleteTask(t);});
         el.querySelector('.play').addEventListener('click',function(){startFocus(t);});
         el.querySelector('.mck').addEventListener('click',function(){t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;if(t.isDone)grantReward(t);renderAll();pushSnapshot();});
-        var mi=el.querySelector('.t-memo');if(mi)mi.addEventListener('click',function(){openEditor(t);});
+        var mi=el.querySelector('.t-memo');if(mi)mi.addEventListener('click',function(e){e.stopPropagation();openMemoPopup(t);});
         var mt=el.querySelector('.mt-title');mt.style.cursor='pointer';mt.addEventListener('click',function(){openEditor(t);});
       });
       b.querySelector('.qadd').addEventListener('click',function(){openCapture('matrix',{quadrant:qd.q});});
@@ -1919,10 +1961,16 @@
   buildEditChips();
   document.getElementById('editClose').addEventListener('click',closeEditor);
   document.getElementById('editScrim').addEventListener('click',function(e){if(e.target===this)closeEditor();});
+  // 메모 전용 팝업 배선 (요청)
+  document.getElementById('memoClose').addEventListener('click',function(){document.getElementById('memoScrim').classList.remove('open');});
+  document.getElementById('memoScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+  document.getElementById('memoView').addEventListener('click',memoStartEdit);
+  document.getElementById('memoEditBtn').addEventListener('click',memoStartEdit);
+  document.getElementById('memoSave').addEventListener('click',memoSavePopup);
   document.getElementById('eSave').addEventListener('click',saveEditor);
   document.getElementById('eDelete').addEventListener('click',function(){if(editTask){var t=editTask;closeEditor();deleteTask(t);}});
   document.getElementById('ePlay').addEventListener('click',function(){if(editTask)startFocus(editTask);});
-  document.getElementById('eClearTime').addEventListener('click',function(){document.getElementById('eDate').value='';document.getElementById('eTime').value='';});
+  document.getElementById('eClearTime').addEventListener('click',function(){document.getElementById('eTime').value='';});
   document.getElementById('eSubAddBtn').addEventListener('click',addSub);
   document.getElementById('eSubAdd').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();addSub();}});
   // 보상: 돈 토글 · Q4 체크 · 숫자만 (요청) + 설명 말풍선.
@@ -2040,13 +2088,29 @@
     var wrap=document.getElementById('capWrap');wrap.classList.add('open');
     var mb=document.querySelector('.mbar');if(mb)mb.style.display='none';
     paintCap();
-    setTimeout(function(){document.getElementById('capText').focus();},50);
+    setTimeout(function(){document.getElementById('capText').focus();positionCap();},50);
   }
   function closeCapture(){
     cap.open=false;
-    document.getElementById('capWrap').classList.remove('open');
+    var wrap=document.getElementById('capWrap');wrap.classList.remove('open');wrap.style.bottom='';
     var mb=document.querySelector('.mbar');if(mb)mb.style.display='';
   }
+  // 캡처바를 키보드 바로 위에 고정 (요청: 키보드 위 패널 자동 상승, 빈 공간·이동 없음).
+  function positionCap(){
+    if(!cap.open)return;var wrap=document.getElementById('capWrap');var vv=window.visualViewport;
+    if(vv){var gap=window.innerHeight-vv.height-vv.offsetTop;wrap.style.bottom=(gap>1?gap:0)+'px';}
+  }
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize',positionCap);
+    window.visualViewport.addEventListener('scroll',positionCap);
+  }
+  // 캡처바 바깥을 누르면 패널·키보드 모두 사라지도록 (요청).
+  document.addEventListener('pointerdown',function(e){
+    if(!cap.open)return;
+    if(e.target.closest('#capWrap'))return;                 // 패널 내부는 유지
+    if(e.target.closest('#todoFab,#habitFab,.qadd,#tlAdd'))return;  // 여는 버튼은 제외
+    closeCapture();
+  },true);
   function setCapDetail(d){cap.detail=(cap.detail===d?'options':d);paintCap();}
   function submitCapture(){
     var title=(document.getElementById('capText').value||'').trim();
