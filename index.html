@@ -406,6 +406,16 @@
   .cal-pane{width:33.3333%;flex:0 0 33.3333%}
   .calstrip.open{display:block}
   .sec-h{font-size:13px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(20,40,80,.4);margin:14px 2px 8px}
+  /* 첫 방문 안내 카드 (요청). */
+  .welcome{background:rgba(255,255,255,.94);border-radius:18px;padding:18px 18px 14px;margin:8px 0 16px;
+    box-shadow:0 8px 24px rgba(20,40,80,.16)}
+  .welcome b{font-size:16px;display:block;margin-bottom:10px}
+  .w-step{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--ink);padding:4px 0}
+  .w-step span{width:20px;height:20px;border-radius:50%;background:var(--sky-blue);color:#fff;font-size:11.5px;
+    font-weight:800;display:grid;place-items:center;flex:0 0 auto}
+  .w-note{font-size:12.5px;color:var(--ink-soft);margin:7px 0 11px}
+  #welcomeGo{width:100%;border:0;background:var(--sky-blue);color:#fff;font-family:inherit;font-size:14.5px;
+    font-weight:800;border-radius:12px;padding:12px;cursor:pointer}
   .sec-h:first-child{margin-top:8px}
   .sec-h{margin-bottom:10px}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}
@@ -436,6 +446,7 @@
   .cap-input{display:flex;align-items:center;gap:9px;padding:6px 2px 2px}
   .cap-dot{width:26px;height:26px;border-radius:50%;border:2px solid rgba(0,0,0,.08);flex:0 0 auto;cursor:pointer;padding:0}
   .cap-icon{width:34px;height:34px;border:0;background:none;color:var(--ink-soft);cursor:pointer;flex:0 0 auto;display:grid;place-items:center}
+  #capMore.on{color:var(--sky-blue)}
   .cap-icon .ic{width:26px;height:26px}
   .cap-input input{flex:1;border:0;background:none;font-family:inherit;font-size:16px;color:var(--ink);min-width:0}
   .cap-input input:focus{outline:none}
@@ -597,7 +608,14 @@
   .subt.done{text-decoration:line-through;color:var(--ink-soft)}
   .subdel{border:0;background:transparent;color:var(--ink-soft);font-size:16px;cursor:pointer;opacity:.5}
   .subdel:hover{opacity:1;color:#e0564e}
-  .stat-big{font-size:16px;margin-bottom:2px}.stat-big b{font-size:19px}
+  .stat-big{font-size:15px;margin-bottom:2px}.stat-big b{font-size:19px}
+  .stat-big .up{color:#2f9e57}.stat-big .dn{color:#c26a3d}
+  .stat-cheer{font-size:13px;color:var(--ink);background:var(--card-2);border-radius:11px;padding:9px 12px;margin:7px 0 2px}
+  .stat-days{display:flex;gap:7px;align-items:flex-end;padding:4px 2px 0}
+  .stat-days .sd{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+  .stat-days .sd-bar{width:100%;max-width:26px;border-radius:5px 5px 2px 2px;background:rgba(70,133,214,.35)}
+  .stat-days .sd-bar.today{background:var(--sky-blue)}
+  .stat-days span{font-size:10px;color:var(--ink-soft)}
   .stat-prog{height:11px;border-radius:6px;background:var(--line);overflow:hidden;margin-top:6px}
   .stat-prog>div{height:100%;background:var(--sky-blue);border-radius:6px}
   .stat-note{font-size:12px;color:var(--ink-soft);margin-top:8px}
@@ -620,7 +638,10 @@
   .ft-timer{font-size:50px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.02em;text-shadow:0 1px 3px rgba(0,0,0,.3)}
   .ft-pausebtn{width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.16);color:#fff;font-size:16px;cursor:pointer}
   .ft-sub{font-size:13px;opacity:.9;margin-top:10px;min-height:18px;text-shadow:0 1px 2px rgba(0,0,0,.2)}
-  .ft-bottom{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom));left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:2}
+  .ft-bottom{position:absolute;bottom:calc(18px + env(safe-area-inset-bottom));left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:2}
+  .ft-finish{font-family:inherit;font-size:16px;font-weight:800;border:0;border-radius:999px;padding:14px 44px;cursor:pointer;
+    background:rgba(255,255,255,.2);color:#fff;backdrop-filter:blur(4px)}
+  .ft-morepanel{position:absolute;top:64px;left:14px;display:flex;flex-direction:column;gap:8px;z-index:4}
   .ft-chip{font-family:inherit;font-size:14px;font-weight:700;border:0;border-radius:999px;padding:11px 20px;cursor:pointer;background:rgba(255,255,255,.14);color:#fff}
   .ft-chip.on{color:#ffd76a;background:rgba(255,255,255,.26)}
   .ft-tree{position:absolute;bottom:0;left:5%;height:165px;pointer-events:none;z-index:1}
@@ -829,6 +850,7 @@
     <button class="cap-dot" id="capDot"></button>
     <button class="cap-icon" id="capIconBtn"></button>
     <input id="capText" placeholder="빠르게 담기…" maxlength="120">
+    <button class="cap-icon" id="capMore" title="자세히"><svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg></button>
     <button class="cap-submit" id="capSubmit" disabled><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
   </div>
 </div>
@@ -836,7 +858,12 @@
 <!-- 집중 모드 (요청) -->
 <div class="focusScrim" id="focusScrim">
   <button class="fx" id="ftClose" title="끝내기">✕</button>
-  <button class="fm" id="fmBtn" title="Focus music"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v11"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="15" r="2.5"/></svg></button>
+  <!-- 세부 기능은 ⋯ 뒤로 (요청: 처음엔 단순, 눌러야 세세하게). -->
+  <button class="fm" id="ftMore" title="더보기"><svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+  <div class="ft-morepanel" id="ftMorePanel" style="display:none">
+    <button class="ft-chip" id="ftPomo">⏱ 포모도로</button>
+    <button class="ft-chip" id="fmBtn">♪ 집중 음악</button>
+  </div>
   <div class="fm-chips" id="fmChips" style="display:none"></div>
   <div class="ft-title" id="ftTitle"></div>
   <div class="ft-stats" id="ftStats"></div>
@@ -849,8 +876,7 @@
   </div>
   <div class="ft-sub" id="ftSub"></div>
   <div class="ft-bottom">
-    <button class="ft-chip" id="ftPomo">⏱ 포모도로</button>
-    <button class="ft-chip" id="ftFinish">■ 끝내기</button>
+    <button class="ft-finish" id="ftFinish">끝내기</button>
   </div>
   <img class="ft-tree" src="assets/tree.png" alt="">
 </div>
@@ -1802,20 +1828,52 @@
     return {byCat:byCat,total:total,today:0,demo:true};
   }
   function hm(sec){var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);return (h>0?h+'시간 ':'')+m+'분';}
+  // 통계 (요청 재설계): 어제·지난주와 비교해 "잘 하고 있구나"를 느끼게.
+  function sumRange(d0,d1){var t=0;allSessions().forEach(function(x){
+    var d=new Date(x.start);if(d>=d0&&d<d1)t+=x.focusedSec||0;});return t;}
   function openStats(){
     var st=focusStats(),goal=((DATA.settings&&DATA.settings.focusGoalMinutes)||240)*60;
     var maxCat=Math.max(1,Object.keys(st.byCat).reduce(function(m,k){return Math.max(m,st.byCat[k]);},0));
     var streak=(DATA.habits||[]).reduce(function(m,h){return Math.max(m,habitStreak(h));},0);
+    var now=new Date(),t0=new Date();t0.setHours(0,0,0,0);
+    var y0=new Date(t0.getTime()-86400000);
+    var todaySec=sumRange(t0,now),yestSec=sumRange(y0,t0);
+    var w0=new Date(t0.getTime()-6*86400000),pw0=new Date(t0.getTime()-13*86400000);
+    var thisWeek=sumRange(w0,now),lastWeek=sumRange(pw0,w0);
+    // 오늘 vs 어제
+    var dDiff=todaySec-yestSec;
+    var dayCmp=yestSec===0&&todaySec===0?'오늘 첫 집중을 시작해 보세요'
+      :(dDiff>=0?'어제보다 <b class="up">+'+hm(dDiff)+'</b>':'어제 대비 <b class="dn">-'+hm(-dDiff)+'</b>');
+    // 이번 주 vs 지난주 + 격려 (요청).
+    var wMsg,wCmp;
+    if(lastWeek===0&&thisWeek===0){wCmp='';wMsg='이번 주, 가볍게 한 번 집중해 볼까요?';}
+    else if(lastWeek===0){wCmp='';wMsg='이번 주 새로 집중을 시작했어요. 좋은 출발이에요 👏';}
+    else{var pct=Math.round((thisWeek-lastWeek)/lastWeek*100);
+      wCmp=pct>=0?'지난주보다 <b class="up">+'+pct+'%</b>':'지난주 대비 <b class="dn">'+pct+'%</b>';
+      wMsg=pct>=10?'지난주보다 확실히 더 집중했어요. 잘 하고 있어요 👏'
+        :pct>=-10?'지난주 페이스를 꾸준히 지키고 있어요 🌱'
+        :'괜찮아요 — 오늘 한 번의 집중이면 다시 올라가요 ☀️';}
+    // 최근 7일 미니 바 (오늘 강조)
+    var days=[],maxD=1;
+    for(var i=6;i>=0;i--){var a=new Date(t0.getTime()-i*86400000),b=new Date(a.getTime()+86400000);
+      var v=sumRange(a,b);days.push({d:a,v:v});if(v>maxD)maxD=v;}
+    var spark='<div class="stat-days">'+days.map(function(o,i){
+      return '<div class="sd"><div class="sd-bar'+(i===6?' today':'')+'" style="height:'+Math.max(4,Math.round(o.v/maxD*44))+'px"></div>'+
+        '<span>'+['일','월','화','수','목','금','토'][o.d.getDay()]+'</span></div>';}).join('')+'</div>';
     var bars=Object.keys(st.byCat).sort(function(a,b){return st.byCat[b]-st.byCat[a];}).map(function(k){
       return '<div class="bi-side"><span class="nm">'+esc(catName(k))+'</span><div class="bar"><div class="fill" style="width:'+Math.round(st.byCat[k]/maxCat*100)+'%;background:'+catColor(k)+'"></div></div><span class="v">'+hm(st.byCat[k])+'</span></div>';}).join('')
       ||'<div class="stat-note">아직 집중 기록이 없어요.</div>';
     var body=document.getElementById('statsBody');
     body.innerHTML=
-      '<div class="stat-big">'+(st.demo?'누적':'지난 7일')+' · <b>'+hm(st.total)+'</b> 집중</div>'+
-      '<div class="elabel">카테고리별</div><div class="bi-sides">'+bars+'</div>'+
-      (st.demo?'':'<div class="elabel">오늘 · 목표</div><div>'+hm(st.today)+' / '+hm(goal)+'</div><div class="stat-prog"><div style="width:'+Math.min(100,Math.round(st.today/Math.max(1,goal)*100))+'%"></div></div>')+
+      '<div class="stat-big">오늘 <b>'+hm(todaySec)+'</b> 집중 · '+dayCmp+'</div>'+
+      '<div class="stat-prog"><div style="width:'+Math.min(100,Math.round(todaySec/Math.max(1,goal)*100))+'%"></div></div>'+
+      '<div class="stat-note">하루 목표 '+hm(goal)+'</div>'+
+      '<div class="elabel">최근 7일</div>'+spark+
+      '<div class="stat-big" style="margin-top:6px">이번 주 <b>'+hm(thisWeek)+'</b>'+(wCmp?' · '+wCmp:'')+'</div>'+
+      '<div class="stat-cheer">'+wMsg+'</div>'+
+      '<div class="elabel">카테고리별 (7일)</div><div class="bi-sides">'+bars+'</div>'+
       '<div class="elabel">최고 연속</div><div class="stat-big">🔥 '+streak+'일</div>'+
-      (st.demo?'<div class="stat-note">로그인하면 날짜별 집중 세션 통계가 보여요.</div>':'');
+      (st.demo?'<div class="stat-note">로그인하면 내 기록으로 채워져요.</div>':'');
     document.getElementById('statsScrim').classList.add('open');
   }
 
@@ -1897,6 +1955,16 @@
     attachSwipe(row,t,!!placed);
     return row;
   }
+  // 첫 방문 안내 (요청): 핵심 3단계만, 닫으면 다시 안 보임.
+  function welcomeHTML(){
+    return '<div class="welcome" id="welcomeCard">'+
+      '<b>하루를 이렇게 써보세요</b>'+
+      '<div class="w-step"><span>1</span>＋ 로 오늘 할 일을 담고</div>'+
+      '<div class="w-step"><span>2</span>오른쪽으로 밀어 타임라인에 배치한 뒤</div>'+
+      '<div class="w-step"><span>3</span>▶ 를 눌러 그 시간 안에 끝내요</div>'+
+      '<div class="w-note">블록 없이 ▶만 눌러 바로 시작해도 돼요.</div>'+
+      '<button id="welcomeGo">시작하기</button></div>';
+  }
   function renderTodo(){
     var dow=document.getElementById('todoDow');
     if(dow)dow.textContent=calSel.toLocaleDateString('ko-KR',{weekday:'short'});
@@ -1918,6 +1986,11 @@
     var backlog=visible.filter(function(t){return !t.scheduledStart;})
       .sort(function(a,b){var d=(a.isDone?1:0)-(b.isDone?1:0);if(d)return d;
         return (b.isStarred?1:0)-(a.isStarred?1:0);});
+    if(!localStorage.getItem('hfWelcomed')&&calSel>=todayMid){
+      list.insertAdjacentHTML('beforeend',welcomeHTML());
+      var wc=list.querySelector('#welcomeGo');
+      if(wc)wc.addEventListener('click',function(){localStorage.setItem('hfWelcomed','1');renderTodo();});
+    }
     // 과거 날짜 선택 = 그날 완료한 작업만 보여준다 (앱 파리티, 요청).
     if(calSel<todayMid){
       var doneThat=(DATA.tasks||[]).filter(function(t){return t.completedAt&&calSameDay(new Date(t.completedAt),calSel);});
@@ -2523,6 +2596,12 @@
   });
   document.getElementById('ftPause').addEventListener('click',togglePauseFocus);
   document.getElementById('ftFinish').addEventListener('click',finishFocus);
+  document.getElementById('ftMore').addEventListener('click',function(){
+    var p=document.getElementById('ftMorePanel');
+    var open=p.style.display==='none';
+    p.style.display=open?'flex':'none';
+    if(!open)document.getElementById('fmChips').style.display='none';
+  });
   document.getElementById('ftClose').addEventListener('click',finishFocus);
   document.getElementById('fmBtn').addEventListener('click',function(){
     var w=document.getElementById('fmChips');w.style.display=w.style.display==='none'?'flex':'none';});
@@ -2676,7 +2755,7 @@
   function openCapture(origin,opts){
     opts=opts||{};
     cap.open=true;cap.origin=origin;cap.quadrant=opts.quadrant||0;
-    cap.detail='options';cap.iconOpen=false;cap.colorOpen=false;
+    cap.detail='options';cap.iconOpen=false;cap.colorOpen=false;cap.optionsOpen=false;
     cap.draft={title:'',categoryID:(opts.categoryID||'focus'),colorKey:'',iconName:null,
       durationMin:(origin==='timeline'?50:(origin==='matrix'?0:50)),
       scheduledStart:opts.scheduledStart||null,reminderOffsets:[0],nudgeEnabled:false,dueDate:null,
@@ -2720,7 +2799,7 @@
     if(row&&row.contains(swipeOpen))return;              // 열린 행은 드래그 핸들러가 처리
     closeSwipe();
   },true);
-  function setCapDetail(d){cap.detail=(cap.detail===d?'options':d);paintCap();}
+  function setCapDetail(d){cap.detail=(cap.detail===d?'options':d);cap.optionsOpen=true;paintCap();}
   function submitCapture(){
     var title=(document.getElementById('capText').value||'').trim();
     if(!title)return;
@@ -2760,8 +2839,13 @@
     crw.innerHTML=cap.colorOpen?renderColorRow():'';
 
     // 옵션 줄 or 상세 패널
+    var more=document.getElementById('capMore');
+    more.classList.toggle('on',!!cap.optionsOpen);
+    more.onclick=function(){cap.optionsOpen=!cap.optionsOpen;if(!cap.optionsOpen)cap.detail='options';paintCap();};
     var d=document.getElementById('capDetail');
-    if(cap.detail==='options'){
+    if(cap.detail==='options'&&!cap.optionsOpen){
+      d.innerHTML='';
+    } else if(cap.detail==='options'){
       d.innerHTML='<div class="cap-icons">'+
         '<button class="cap-opt" data-d="duration">'+IC.timer+'<b>'+capDurLabel(cap.draft.durationMin)+'</b></button>'+
         '<button class="cap-opt'+(cap.draft.scheduledStart?' on':'')+'" data-d="schedule">'+IC.schedule+'<b>시간배치</b></button>'+
