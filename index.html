@@ -686,6 +686,7 @@
 
   /* ---------- login modal ---------- */
   .scrim{position:fixed;inset:0;z-index:30;background:rgba(15,20,40,.5);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:0}
+  #loginScrim{z-index:80}
   .scrim.open{display:flex}
   .modal{position:relative;background:var(--card);border-radius:20px;padding:20px 16px 16px;
     width:calc(100% - 40px);max-width:320px;margin:calc(14px + env(safe-area-inset-top)) auto 0;
@@ -929,7 +930,6 @@
   <div class="modal">
     <button class="mclose" id="loginClose">✕</button>
     <h3 id="loginTitle">로그인</h3>
-    <div class="msub">Elly Day 계정으로 로그인하면 아이폰·아이패드와 같은 데이터를 봐요.</div>
     <input id="loginEmail" type="email" placeholder="이메일">
     <input id="loginPw" type="password" placeholder="비밀번호 (6자 이상)">
     <div class="merr" id="loginErr"></div>
@@ -3158,11 +3158,11 @@
     var st=document.getElementById('setAcctStatus'),ab=document.getElementById('setAccountBtn');
     if(!st||!ab)return;
     if(session&&session.user){
-      st.innerHTML='✅ <b>'+esc(session.user.email)+'</b><br><span>아이폰·아이패드와 실시간 동기화 중이에요.</span>';
-      ab.textContent='로그아웃';
+      st.style.display='';st.innerHTML='✅ <b>'+esc(session.user.email)+'</b>';
+      ab.textContent='로그아웃';ab.style.marginTop='8px';
     }else{
-      st.innerHTML='로그인하면 <b>아이폰 앱과 같은 데이터</b>를 보고,<br>일기 사진도 함께 볼 수 있어요.';
-      ab.textContent='로그인';
+      st.style.display='none';st.innerHTML='';
+      ab.textContent='로그인';ab.style.marginTop='0';
     }
   }
   function normalize(s){return {tasks:s.tasks||[],habits:s.habits||[],sessions:s.sessions||[],
@@ -3883,7 +3883,9 @@
   function saveNav(bar){if(!DATA.settings)DATA.settings={};DATA.settings.navBar=bar;DATA.settings.barTabsRaw=bar.join(',');pushSnapshot();}
   function navLabel(key){if(key==='account')return (session&&session.user)?'로그아웃':'로그인';return NAV_DEF[key].label;}
   function accountAction(){if(session){if(confirm('로그아웃할까요?'))signOut();}
-    else{document.getElementById('loginErr').textContent='';setLMode('signIn');document.getElementById('loginScrim').classList.add('open');document.getElementById('loginEmail').focus();}}
+    else{document.getElementById('settingsScrim').classList.remove('open');   // 설정 뒤에 가려지는 버그 fix
+      document.getElementById('loginErr').textContent='';setLMode('signIn');
+      document.getElementById('loginScrim').classList.add('open');document.getElementById('loginEmail').focus();}}
   function runNavItem(key){var d=NAV_DEF[key];if(!d)return;
     if(d.type==='tab')setTab(key);
     else if(key==='settings'){closeMore();openSettings();}
