@@ -362,6 +362,9 @@
   .set-row-btn{width:100%;text-align:left;border:1px solid var(--line);background:var(--card-2);color:var(--ink);
     font-family:inherit;font-size:15px;font-weight:600;border-radius:12px;padding:14px 15px;margin-bottom:9px;cursor:pointer}
   .set-sec{font-size:12px;font-weight:800;color:var(--sky-blue);margin:18px 0 4px;letter-spacing:.02em}
+  .set-acct{background:var(--card-2);border:1px solid var(--line);border-radius:14px;padding:14px 15px}
+  .sa-status{font-size:13.5px;line-height:1.55;color:var(--ink)}
+  .sa-status span{color:var(--ink-soft);font-size:12.5px}
   .ele-colors{display:flex;gap:8px;flex-wrap:wrap;padding:2px 0 4px}
   .ele-colors button{width:34px;height:34px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
   .ele-colors button.on{border-color:var(--sky-blue);box-shadow:0 0 0 2px rgba(70,133,214,.25)}
@@ -1085,6 +1088,12 @@
     </div>
     <div class="setpage-body">
 
+    <div class="set-sec">계정</div>
+    <div class="set-acct">
+      <div class="sa-status" id="setAcctStatus"></div>
+      <button class="go" id="setAccountBtn" style="margin-top:8px">로그인</button>
+    </div>
+
     <div class="set-sec">엘리</div>
     <div class="elabel">이름</div><input id="setEleName" placeholder="엘리" maxlength="10">
     <div class="elabel">몸 색</div>
@@ -1117,9 +1126,8 @@
     <div class="set-sec">작업 추가</div>
     <div class="elabel">추가할 때 기본 길이 (분)</div><input type="number" id="setDefDur" min="0" step="5">
 
-    <div class="set-sec">계정 · 기타</div>
+    <div class="set-sec">기타</div>
     <button class="set-row-btn" id="setStatsBtn">통계 보기</button>
-    <button class="set-row-btn" id="setAccountBtn">로그인</button>
 
     </div>
   </div>
@@ -2093,7 +2101,7 @@
     document.getElementById('setDdayLabel').value=s.ddayLabel||'';
     document.getElementById('setDdayDate').value=s.ddayDate?s.ddayDate.slice(0,10):'';
     document.getElementById('setBarPeriod').value=s.barPeriodSec!=null?s.barPeriodSec:300;
-    document.getElementById('setAccountBtn').textContent=(session&&session.user)?('로그아웃 ('+session.user.email+')'):'로그인';
+    paintAcctSection();
     var bi=s.barItems||{};
     document.querySelectorAll('#setBarItems input').forEach(function(cb){cb.checked=bi[cb.dataset.k]!==false&&bi[cb.dataset.k]!==undefined?!!bi[cb.dataset.k]:!!bi[cb.dataset.k];});
     document.getElementById('settingsScrim').classList.add('open');}
@@ -3145,7 +3153,18 @@
   /* ---------- auth + snapshot ---------- */
   var session=null;try{session=JSON.parse(localStorage.getItem(AUTH_KEY)||'null');}catch(e){}
   function updateAcct(){if(typeof renderMoreSheet==='function')renderMoreSheet();
-    var ab=document.getElementById('setAccountBtn');if(ab)ab.textContent=(session&&session.user)?('로그아웃 ('+session.user.email+')'):'로그인';}
+    paintAcctSection();}
+  function paintAcctSection(){
+    var st=document.getElementById('setAcctStatus'),ab=document.getElementById('setAccountBtn');
+    if(!st||!ab)return;
+    if(session&&session.user){
+      st.innerHTML='✅ <b>'+esc(session.user.email)+'</b><br><span>아이폰·아이패드와 실시간 동기화 중이에요.</span>';
+      ab.textContent='로그아웃';
+    }else{
+      st.innerHTML='로그인하면 <b>아이폰 앱과 같은 데이터</b>를 보고,<br>일기 사진도 함께 볼 수 있어요.';
+      ab.textContent='로그인';
+    }
+  }
   function normalize(s){return {tasks:s.tasks||[],habits:s.habits||[],sessions:s.sessions||[],
     settings:s.settings||{focusGoalMinutes:240},diary:s.diary||[]};}
 
