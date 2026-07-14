@@ -472,6 +472,13 @@
   .d-head{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-bottom:4px}
   .d-card.dark .d-head{color:#aab4cc}
   .d-head .ic{width:13px;height:13px}
+  .d-elewrap{position:absolute;right:8px;bottom:6px;display:flex;align-items:flex-end;gap:6px;z-index:2}
+  .d-elehint{font-size:10.5px;color:var(--ink-soft);background:rgba(255,255,255,.95);border:1px solid var(--line);
+    border-radius:999px;padding:4px 9px;margin-bottom:4px;white-space:nowrap}
+  .d-card.dark .d-elehint{background:rgba(30,38,60,.95);color:#aab4cc;border-color:#3a466b}
+  .d-elebadge{border:0;background:none;padding:0;cursor:pointer;height:34px}
+  .d-elebadge img{height:34px;display:block}
+  .d-card:has(.d-elewrap) .d-body{padding-right:44px}
   .d-eye{margin-left:auto;border:0;background:none;cursor:pointer;color:var(--ink-soft);padding:2px}
   .d-eye.on{color:var(--sky-blue)}
   .d-body{font-size:13.5px;line-height:1.6;color:var(--ink);word-break:break-word;
@@ -2816,6 +2823,37 @@
     }else w.style.display='none';
   });
 
+  /* ── 앉은 엘리 (ele-word) 틴트 베이킹 — 앱 EleArt 포팅 ──
+     base에 틴트를 multiply로 굽고 원본 알파로 오려낸 뒤, "-fix"(눈·발톱
+     원색)를 normal로 얹는다. 결과는 dataURL로 캐시. */
+  var eleArtCache={};
+  function eleWordImg(name,tintHex,cb){
+    var key=name+'|'+tintHex;
+    if(eleArtCache[key]){cb(eleArtCache[key]);return;}
+    var base=new Image(),fix=new Image(),left=2;
+    function done(){
+      if(--left>0)return;
+      if(!base.naturalWidth){cb(null);return;}
+      var cv=document.createElement('canvas');cv.width=base.naturalWidth;cv.height=base.naturalHeight;
+      var ctx=cv.getContext('2d');
+      ctx.drawImage(base,0,0);
+      ctx.globalCompositeOperation='multiply';
+      ctx.fillStyle=tintHex;ctx.fillRect(0,0,cv.width,cv.height);
+      ctx.globalCompositeOperation='destination-in';
+      ctx.drawImage(base,0,0);                              // 알파로 오려내기
+      ctx.globalCompositeOperation='source-over';
+      if(fix.naturalWidth)ctx.drawImage(fix,0,0);           // 눈·발톱 원색 (fix)
+      var url;
+      try{url=cv.toDataURL('image/png');}                   // file:// 등 canvas taint 폴백
+      catch(_){url='assets/'+name+'.png';}
+      eleArtCache[key]=url;cb(url);
+    }
+    base.onload=done;base.onerror=done;
+    fix.onload=done;fix.onerror=done;
+    base.src='assets/'+name+'.png';
+    fix.src='assets/'+name+'-fix.png';
+  }
+
   /* ── 일기 사진 (§3 규약: Storage 비공개 버킷 diary-photos, <uid>/<파일명>) ── */
   var PHOTO_BUCKET='diary-photos',photoUrlCache={};
   function getPhotos(e){try{var a=JSON.parse(e.photos||'[]');return Array.isArray(a)?a:[];}catch(_){return [];}}
@@ -2959,9 +2997,13 @@
           var ph=getPhotos(e),photos='';
           if(ph.length)photos='<div class="d-photos" data-ph="'+esc(ph[0])+'">'+(ph.length>1?'<span class="d-pbadge">+'+(ph.length-1)+'</span>':'')+'</div>';
           return '<div class="d-card'+(night?' dark':'')+'" data-id="'+e.id+'" style="--dc:'+m.color+'">'+
-            '<div class="d-head">'+m.icon+' '+m.label+' · '+time+
-            (e.kind==='word'?'<button class="d-eye'+(e.shownInBar?' on':'')+'" data-id="'+e.id+'" title="상단 바 표시">👁</button>':'')+
-            '</div><div class="d-row"><div class="d-main"><div class="d-body">'+dMd(e.text)+'</div></div>'+photos+'</div></div>';
+            '<div class="d-head">'+m.icon+' '+m.label+' · '+time+'</div>'+
+            '<div class="d-row"><div class="d-main"><div class="d-body">'+dMd(e.text)+'</div></div>'+photos+'</div>'+
+            (e.kind==='word'?
+              '<div class="d-elewrap">'+
+              (!localStorage.getItem('hfEleWordHint')?'<span class="d-elehint">날 누르면 이 한마디를 상단에서 숨겨줘요</span>':'')+
+              '<button class="d-elebadge" data-id="'+e.id+'" data-open="'+(e.shownInBar?1:0)+'"><img alt=""></button></div>':'')+
+            '</div>';
         }).join('')+
         taskFootprints(d)+
         '</div></div>';
@@ -2974,10 +3016,14 @@
         if(entry)openDiaryEntry(entry,false);
       });
     });
-    wrap.querySelectorAll('.d-eye').forEach(function(b){
+    wrap.querySelectorAll('.d-elebadge').forEach(function(b){
+      // 앉은 엘리 = 상단바 노출 토글 (앱: 눈 버튼 대체). 뜬눈=보임/감은눈=숨김.
+      eleWordImg(b.dataset.open==='1'?'ele-word-open':'ele-word',eleTint(),function(u){
+        if(u)b.querySelector('img').src=u;});
       b.addEventListener('click',function(e){e.stopPropagation();
         var entry=(DATA.diary||[]).find(function(x){return String(x.id)===b.dataset.id;});
-        if(entry){entry.shownInBar=!entry.shownInBar;entry.updatedAt=new Date().toISOString();renderDiary();pushSnapshot();}});
+        if(entry){entry.shownInBar=!entry.shownInBar;entry.updatedAt=new Date().toISOString();
+          localStorage.setItem('hfEleWordHint','1');renderDiary();pushSnapshot();}});
     });
     // 썸네일 로드 (§3: signed URL; 비로그인/미수신은 자리 표시)
     wrap.querySelectorAll('.d-photos[data-ph]').forEach(function(el){
