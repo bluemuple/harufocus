@@ -410,6 +410,32 @@
   .cal-pane{width:33.3333%;flex:0 0 33.3333%}
   .calstrip.open{display:block}
   .sec-h{font-size:13px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(20,40,80,.4);margin:14px 2px 8px}
+  /* ── 평원 유기 요소 (앱 §1: 들풀·들꽃/반딧불) + 장소 ── */
+  .meadow{position:absolute;left:0;right:0;bottom:0;height:110px;pointer-events:none;z-index:2;overflow:hidden}
+  @media(max-width:860px){
+    .meadow,.sea-layer,.city-layer{bottom:calc(58px + env(safe-area-inset-bottom))}
+    .ele-tip{bottom:calc(64px + env(safe-area-inset-bottom))}
+    .ele-big{bottom:calc(84px + env(safe-area-inset-bottom))}
+  }
+  .grass{position:absolute;bottom:6px;width:26px;height:34px}
+  .grass svg{width:100%;height:100%}
+  .ff{position:absolute;width:7px;height:7px;border-radius:50%;background:#ffe9a3;
+    box-shadow:0 0 8px 3px rgba(255,230,150,.65);animation:ffFloat 5.2s ease-in-out infinite alternate}
+  @keyframes ffFloat{0%{transform:translate(0,0);opacity:.55}50%{opacity:1}100%{transform:translate(14px,-22px);opacity:.7}}
+  .sea-layer{position:absolute;left:0;right:0;bottom:0;height:120px;pointer-events:none;z-index:1;
+    background:linear-gradient(180deg,rgba(80,150,210,0) 0%,rgba(70,140,205,.45) 30%,rgba(45,105,170,.7) 100%)}
+  .sea-layer::before{content:"";position:absolute;left:0;right:0;top:26px;height:3px;border-radius:2px;
+    background:rgba(255,255,255,.35);filter:blur(1px)}
+  .city-layer{position:absolute;left:0;right:0;bottom:0;height:90px;pointer-events:none;z-index:1}
+  .city-layer svg{width:100%;height:100%}
+  .b-ele.pour svg{transform:rotate(-22deg) translate(2px,4px)}
+  .b-ele svg{transition:transform .5s cubic-bezier(.3,.7,.3,1)}
+  .ele-heart{position:absolute;font-size:20px;pointer-events:none;animation:heartUp 1s ease-out forwards;z-index:3}
+  @keyframes heartUp{0%{transform:translateY(0) scale(.7);opacity:1}100%{transform:translateY(-46px) scale(1.15);opacity:0}}
+  /* 까지 라인 (§4) */
+  .until-line{position:absolute;left:40px;right:8px;height:2.5px;background:#F6C453;z-index:8;cursor:ns-resize;touch-action:none}
+  .until-line::before{content:"🏁";position:absolute;right:0;top:-11px;font-size:15px}
+  .until-line::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom:-9px}
   /* ── 엘리 (앱 §2) ── */
   .ele-tip{position:absolute;left:-4px;bottom:6px;width:72px;height:44px;border:0;background:none;
     cursor:pointer;z-index:5;padding:0;opacity:.92}
@@ -778,6 +804,9 @@
         <div id="view-big">
           <img class="tl-hills" src="assets/hills.png" alt="">
           <div class="tl-scroll" id="tlScroll"></div>
+          <div class="meadow" id="tlMeadow"></div>
+          <div class="sea-layer" id="seaLayer" style="display:none"></div>
+          <div class="city-layer" id="cityLayer" style="display:none"><svg viewBox="0 0 400 90" preserveAspectRatio="none"><path d="M0 90V55h18V38h14v17h10V26h20v29h8V44h16v11h12V18h6l3-8 3 8h6v37h14V40h18v15h10V30h22v25h9V47h15v8h13V22h20v33h11V42h17v13h9V35h21v20h12V50h14v5h11V28h19v27h9V45h16v10h12V33h20v57z" fill="rgba(20,28,52,.55)"/></svg></div>
           <!-- 엘리 (앱 §2): 평소엔 코끝만, 탭하면 등장 → 감정 피커 → 일기 프롬프트 -->
           <button class="ele-tip" id="eleTip" title="엘리">
             <svg viewBox="0 0 80 46"><path d="M-4 46 Q6 40 12 28 Q18 15 34 14 Q52 13 58 26 Q62 36 56 46 Z" fill="var(--ele,#D4C1D2)"/><circle cx="46" cy="24" r="2.6" fill="#3a3242"/></svg>
@@ -1067,6 +1096,10 @@
       <label><input type="checkbox" data-k="dday"> D-day</label>
     </div>
     <div class="elabel">전환 주기 (초)</div><input type="number" id="setBarPeriod" min="2" max="60" step="1">
+
+    <div class="set-sec">타임라인</div>
+    <div class="elabel">장소</div>
+    <div class="seg hseg" id="setScenery"><button data-s="plain" class="on">평원</button><button data-s="sea">바다</button><button data-s="city">도시</button></div>
 
     <div class="set-sec">하루</div>
     <div class="elabel">기상 시각</div><input type="time" id="setWake">
@@ -1366,6 +1399,54 @@
     }
   }
 
+  // ── 평원 유기 요소 (앱 §1): 들풀·들꽃=낮 집중 25분당 1(최대7, 그날 리셋),
+  //    반딧불=해 진 뒤 밤 집중 25분당 1(최대7, 집중 중엔 최소2) ──
+  function focusSecSplit(){
+    var S=DATA.settings||{},lat=S.lat!=null?S.lat:-43.53,lng=S.lng!=null?S.lng:172.63;
+    var t=sunTimes(new Date(),lat,lng),t0=new Date();t0.setHours(0,0,0,0);
+    var day=0,night=0;
+    allSessions().forEach(function(x){
+      var d=new Date(x.start);if(d<t0)return;
+      var sec=x.focusedSec||0;
+      if(d>=t.sunrise&&d<t.sunset)day+=sec;else night+=sec;
+    });
+    return {day:day,night:night,sunset:t.sunset,sunrise:t.sunrise};
+  }
+  var GRASS_SVGS=[
+    '<svg viewBox="0 0 26 34"><g stroke="#7fae62" stroke-width="2.2" fill="none" stroke-linecap="round"><path d="M13 34V12"/><path d="M13 30C9 26 7 20 8 14"/><path d="M13 30c4-4 6-10 5-16"/></g></svg>',
+    '<svg viewBox="0 0 26 34"><g stroke="#8db974" stroke-width="2.2" fill="none" stroke-linecap="round"><path d="M13 34V14"/><path d="M13 28c-4-3-5-8-4-12"/><path d="M13 28c4-3 5-8 4-12"/></g><circle cx="13" cy="11" r="3.6" fill="#F3C6D3"/><circle cx="13" cy="11" r="1.5" fill="#F5E4B8"/></svg>',
+    '<svg viewBox="0 0 26 34"><g stroke="#76a35e" stroke-width="2.2" fill="none" stroke-linecap="round"><path d="M13 34V13"/><path d="M13 27c-5-2-7-7-6-11"/></g><circle cx="13" cy="10" r="3.4" fill="#F5E4B8"/><circle cx="13" cy="10" r="1.4" fill="#E8A24C"/></svg>'];
+  function renderMeadow(){
+    var w=document.getElementById('tlMeadow');if(!w)return;
+    var S=DATA.settings||{},scen=S.sceneryRaw||'plain';
+    var sp=focusSecSplit(),now=new Date();
+    var isNight=now>=sp.sunset||now<sp.sunrise;
+    var html='';
+    if(scen==='plain'){                                   // 풀은 평원에서만 (§1)
+      var g=Math.min(7,Math.floor(sp.day/1500));
+      for(var i=0;i<g;i++){
+        html+='<span class="grass" style="left:'+(7+i*13)+'%;transform:scale('+(0.85+(i%3)*0.12)+')">'+GRASS_SVGS[i%3]+'</span>';
+      }
+    }
+    if(isNight){
+      var f=Math.min(7,Math.floor(sp.night/1500));
+      if(fTask)f=Math.max(f,2);                           // 집중 중엔 2 (§1)
+      f=Math.min(7,f);
+      for(var j=0;j<f;j++){
+        html+='<span class="ff" style="left:'+(12+j*12)+'%;bottom:'+(18+(j%3)*16)+'px;animation-delay:'+(j*0.7)+'s"></span>';
+      }
+    }
+    w.innerHTML=html;
+  }
+  // 타임라인 장소 (§7: 평원/바다/도시 — settings.sceneryRaw)
+  function applyScenery(){
+    var scen=(DATA.settings&&DATA.settings.sceneryRaw)||'plain';
+    var hills=document.querySelector('#view-big .tl-hills');
+    if(hills)hills.style.display=scen==='plain'?'':'none';
+    var sea=document.getElementById('seaLayer');if(sea)sea.style.display=scen==='sea'?'':'none';
+    var city=document.getElementById('cityLayer');if(city)city.style.display=scen==='city'?'':'none';
+  }
+
   // ── 타임라인 천체 (요청: 스크롤 시 해·달 위치 + 달 위상 + 하늘색 동적) ──
   // 태양의 남중(가장 높음)은 정오, 달은 위상에 따라 남중 시각이 밀린다.
   var SYNODIC=29.530588853, NEW_MOON=Date.UTC(2000,0,6,18,14)/86400000;
@@ -1492,11 +1573,44 @@
     renderBig();pushSnapshot();
   }
   function finishBatchAdjust(){batchIds=null;document.body.classList.remove('batch-adjust');renderBig();}
+  // 까지 라인 (§4): 마지막 블록 끝 = 라인. 드래그 1분 스냅, 전체 비율 스케일.
+  function addUntilLine(sc,tasks){
+    var last=tasks[tasks.length-1];
+    var endMs=new Date(last.scheduledStart).getTime()+last.durationMin*60000;
+    var d=new Date(endMs),hf=d.getHours()+d.getMinutes()/60;
+    var line=document.createElement('div');line.className='until-line';line.style.top=(yFor(hf)-1)+'px';
+    line.addEventListener('pointerdown',function(e){
+      e.preventDefault();e.stopPropagation();
+      var y0=e.clientY;
+      var firstStart=new Date(tasks[0].scheduledStart).getTime();
+      var origDurs=tasks.map(function(t){return t.durationMin;});
+      var oldTotal=origDurs.reduce(function(a,b){return a+b;},0);
+      var minTotal=tasks.length*5;
+      function move(ev){
+        var dm=Math.round((ev.clientY-y0)*(60/PPH));          // 1분 스냅 (§4)
+        var newTotal=Math.max(minTotal,oldTotal+dm);
+        // 비율 유지 + 누적 반올림 → 마지막 블록 끝 = 라인 (§4)
+        var scale=newTotal/oldTotal,accOld=0,prevEnd=0;
+        tasks.forEach(function(t,i){
+          accOld+=origDurs[i];
+          var endR=(i===tasks.length-1)?newTotal:Math.round(accOld*scale);
+          var dur=Math.max(5,endR-prevEnd);
+          t.scheduledStart=new Date(firstStart+prevEnd*60000).toISOString();
+          t.durationMin=dur;prevEnd=prevEnd+dur;
+        });
+        renderBig();ev.preventDefault();
+      }
+      function up(){document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);pushSnapshot();}
+      document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
+    });
+    sc.appendChild(line);
+  }
   // 블록 사이 경계 핸들 (요청: 위로 밀면 위 블록 축소·아래 확대).
   function addBatchHandles(sc){
     if(!batchIds)return;
     var tasks=batchIds.map(function(id){return (DATA.tasks||[]).find(function(t){return t.id===id;});}).filter(Boolean);
     tasks.sort(function(a,b){return new Date(a.scheduledStart)-new Date(b.scheduledStart);});
+    if(tasks.length)addUntilLine(sc,tasks);               // 까지 라인 (§4)
     for(var i=0;i<tasks.length-1;i++){
       (function(a,b){
         var aEnd=new Date(a.scheduledStart).getTime()+a.durationMin*60000;
@@ -1567,6 +1681,7 @@
       var n=document.createElement('div');n.className='now';n.style.top=yFor(nf)+'px';n.innerHTML='<span class="pill">지금</span><span class="wire"></span>';sc.appendChild(n);}
     if(!any){var e=document.createElement('div');e.className='tl-empty';e.textContent='이 날 일정이 비어 있어요.';sc.appendChild(e);}
     addBatchHandles(sc);                                  // 배치 조절 핸들 (요청)
+    renderMeadow();applyScenery();                        // 들풀·반딧불·장소 (§1·§7)
     // (요청) 태양·달 제거 — 동적 하늘색만 유지.
     updateTlSky();
     if(batchIds!=null&&prevScroll!=null){sc.scrollTop=prevScroll;}
@@ -1959,6 +2074,8 @@
     document.getElementById('setDefDur').value=s.defaultDurationMin!=null?s.defaultDurationMin:50;
     document.getElementById('setVow').value=s.motto||s.todayVow||'';
     document.getElementById('setEleName').value=s.eleName||'';
+    var scen=s.sceneryRaw||'plain';
+    document.querySelectorAll('#setScenery button').forEach(function(b){b.classList.toggle('on',b.dataset.s===scen);});
     var ELE_COLORS=['#F2D6C4','#E8C0A4','#D8A87E','#B67F55','#8E5A3A','#5C3A28',
                     '#D4C1D2','#F3C6D3','#BEE3CF','#BCD8F0','#F5E4B8','#CBCBD6'];
     var cur=s.eleTintHex||'#D4C1D2';
@@ -1980,6 +2097,8 @@
     S.defaultDurationMin=parseInt(document.getElementById('setDefDur').value,10)||0;
     S.motto=document.getElementById('setVow').value||'';
     S.eleName=(document.getElementById('setEleName').value||'').trim();
+    var scb=document.querySelector('#setScenery button.on');
+    if(scb)S.sceneryRaw=scb.dataset.s;
     var selc=document.querySelector('#setEleColors button.on');
     if(selc)S.eleTintHex=selc.dataset.c;
     S.ddayLabel=document.getElementById('setDdayLabel').value||'';
@@ -2286,6 +2405,7 @@
   }
 
   function renderMatrix(){
+    var mxLongL=false,mxLongR=false;
     var mdow=document.getElementById('matrixDow');
     if(mdow)mdow.textContent=calSel.toLocaleDateString('ko-KR',{weekday:'short'});
     var g=document.getElementById('matrixGrid');g.innerHTML='';g.classList.add('fit');
@@ -2317,8 +2437,14 @@
       b.querySelector('.qadd').addEventListener('click',function(){openCapture('matrix',{quadrant:qd.q});});
       var q4t=b.querySelector('.q4time');
       if(q4t)q4t.addEventListener('click',appNudge);   // Screen Time은 웹 불가 (§9)
+      items.forEach(function(t){if((t.title||'').length>12){if(qd.q===1||qd.q===3)mxLongL=true;else mxLongR=true;}});
       g.appendChild(b);
     });
+    // 열 폭 (§5): 반대 열이 완전히 비었고 이쪽에 긴 제목 → 0.62/0.38.
+    var leftCnt=(cnt[1]||0)+(cnt[3]||0),rightCnt=(cnt[2]||0)+(cnt[4]||0);
+    g.style.gridTemplateColumns=
+      (rightCnt===0&&leftCnt>0&&mxLongL)?'0.62fr 0.38fr':
+      (leftCnt===0&&rightCnt>0&&mxLongR)?'0.38fr 0.62fr':'1fr 1fr';
     // rows grow with their content (max of the two cells in the row); page never
     // scrolls — an overloaded cell scrolls internally (요청).
     var r1=Math.max(cnt[1],cnt[2]),r2=Math.max(cnt[3],cnt[4]);
@@ -2574,6 +2700,9 @@
   function rainBucket(){
     if(bRaining)return;var scene=document.querySelector('.bucket-scene'),tub=document.getElementById('tub');
     if(!scene||!tub)return;bRaining=true;
+    // 코끼리가 기울며 물을 붓는다 (§6 단순화 연출).
+    var bel=document.querySelector('.b-ele');
+    if(bel){bel.classList.add('pour');setTimeout(function(){bel.classList.remove('pour');},2400);}
     var sec=bucketDaySec(),rained=+localStorage.getItem(rainedKey())||0;
     var avail=Math.max(0,sec-rained),mins=Math.floor(avail/60);
     var cl=document.createElement('div');cl.className='rain-cloud';cl.textContent='☁️';scene.appendChild(cl);
@@ -2653,6 +2782,22 @@
   function eleClose(){document.getElementById('eleStage').classList.remove('open');}
   document.getElementById('eleTip').addEventListener('click',eleOpen);
   document.getElementById('eleStage').addEventListener('click',function(e){if(e.target===this)eleClose();});
+  // 쓰다듬기 (§2): 엘리 위를 문지르면 하트.
+  (function(){
+    var acc=0,lx=null,ly=null,big=document.getElementById('eleBig');
+    big.addEventListener('pointermove',function(e){
+      if(e.buttons===0&&e.pointerType==='mouse')return;
+      if(lx!=null){acc+=Math.abs(e.clientX-lx)+Math.abs(e.clientY-ly);}
+      lx=e.clientX;ly=e.clientY;
+      if(acc>80){acc=0;
+        var h=document.createElement('span');h.className='ele-heart';h.textContent='💗';
+        var st=document.getElementById('eleStage'),r=st.getBoundingClientRect();
+        h.style.left=(e.clientX-r.left-10)+'px';h.style.top=(e.clientY-r.top-24)+'px';
+        st.appendChild(h);setTimeout(function(){h.remove();},1000);
+      }
+    });
+    big.addEventListener('pointerleave',function(){lx=null;ly=null;acc=0;});
+  })();
   document.getElementById('eleBig').addEventListener('click',function(){
     var w=document.getElementById('eleEmotions');
     if(w.style.display==='none'){
@@ -3118,6 +3263,10 @@
   document.getElementById('settingsClose').addEventListener('click',function(){document.getElementById('settingsScrim').classList.remove('open');});
   document.getElementById('settingsScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
   document.getElementById('setSave').addEventListener('click',saveSettings);
+  document.querySelectorAll('#setScenery button').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('#setScenery button').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on');});});
   document.getElementById('setStatsBtn').addEventListener('click',function(){document.getElementById('settingsScrim').classList.remove('open');openStats();});
   document.getElementById('setAccountBtn').addEventListener('click',accountAction);
   document.getElementById('moreScrim').addEventListener('click',function(e){if(e.target===this){navEditMode=false;closeMore();}});
