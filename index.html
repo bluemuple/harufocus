@@ -3296,7 +3296,12 @@
     }).then(function(r){
         if(r.status===401){signOut();throw new Error('auth');}
         if(opt.raw)return r;
-        return r.ok?(r.status===204?null:r.json()):r.text().then(function(t){throw new Error(t||r.status);});
+        // 버그 수정: Prefer return=minimal의 201은 본문이 비어 r.json()이
+        // 터졌다 ("보내지 못했어요" 오탐 — 실제 전송은 성공). 텍스트로 받고
+        // 비어 있으면 null.
+        return r.ok
+          ? r.text().then(function(t){return t?JSON.parse(t):null;})
+          : r.text().then(function(t){throw new Error(t||r.status);});
       });
   }
   var myProfile=null,friendProfiles={};   // user_id → profile
