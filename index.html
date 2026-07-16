@@ -438,6 +438,44 @@
   .until-line{position:absolute;left:40px;right:8px;height:2.5px;background:#F6C453;z-index:8;cursor:ns-resize;touch-action:none}
   .until-line::before{content:"🏁";position:absolute;right:0;top:-11px;font-size:15px}
   .until-line::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom:-9px}
+  /* ── 친구(루틴 공유) ── */
+  .friends-fab{right:88px;background:rgba(255,255,255,.92);color:var(--ink-soft);box-shadow:0 6px 16px rgba(20,40,80,.2)}
+  .fr-mycode{background:var(--card-2);border-radius:13px;padding:10px 13px;margin-bottom:4px}
+  .fr-coderow{display:flex;align-items:center;gap:8px}
+  .fr-coderow b{font-size:19px;letter-spacing:.06em;flex:1;font-variant-numeric:tabular-nums}
+  .fr-row{display:flex;align-items:center;gap:9px;padding:9px 2px;border-bottom:1px solid var(--line)}
+  .fr-avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:19px;flex:0 0 auto;background:var(--card-2)}
+  .fr-name{font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fr-chips{display:flex;gap:4px;font-size:11px}
+  .fr-chips span{background:var(--card-2);border-radius:999px;padding:3px 7px}
+  .fd-grid{display:grid;gap:3px;font-size:11px;margin:6px 0 2px}
+  .fd-grid .hd{font-weight:700;color:var(--ink-soft);text-align:center}
+  .fd-grid .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:4px}
+  .fd-grid .ck{width:20px;height:20px;border-radius:50%;border:1.6px solid #7fc6cc;margin:0 auto;display:grid;place-items:center;color:#fff;font-size:11px}
+  .fd-grid .ck.on{background:#4bb6bd;border-color:#4bb6bd}
+  .fd-grid .ck.avoid{border-color:#e5a06b}
+  .fd-grid .ck.avoid.on{background:#e5885a;border-color:#e5885a}
+  .fd-convo{max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding:4px 0}
+  .fd-msg{max-width:82%;border-radius:13px;padding:7px 11px;font-size:13px;position:relative}
+  .fd-msg.me{align-self:flex-end;background:var(--sky-blue);color:#fff}
+  .fd-msg.them{align-self:flex-start;background:var(--card-2)}
+  .fd-msg .rx{position:absolute;right:-4px;bottom:-9px;font-size:13px}
+  .fd-rxrow{display:flex;gap:5px;margin-top:3px}
+  .fd-rxrow button{border:0;background:var(--card-2);border-radius:999px;font-size:13px;padding:2px 7px;cursor:pointer;opacity:.65}
+  .fd-rxrow button.on{opacity:1;background:#ffe9ee}
+  /* 받은 쪽지 배너 (루틴 상단) */
+  .msg-banner{background:rgba(255,255,255,.95);border-radius:14px;padding:10px 12px;margin-bottom:12px;
+    box-shadow:0 4px 12px rgba(20,40,80,.14);display:flex;align-items:flex-start;gap:9px}
+  .msg-banner .mb-x{margin-left:auto;border:0;background:none;color:var(--ink-soft);cursor:pointer;font-size:15px;flex:0 0 auto}
+  .msg-banner .mb-body{font-size:13.5px;min-width:0}
+  .msg-banner .mb-from{font-weight:800;font-size:12px;color:var(--ink-soft)}
+  /* 프로필 피커 */
+  .pf-faces,.pf-tones{display:flex;gap:8px;flex-wrap:wrap;padding:2px 0 6px}
+  .pf-faces button{width:44px;height:44px;border-radius:50%;border:2px solid transparent;background:var(--card-2);font-size:24px;cursor:pointer}
+  .pf-faces button.on{border-color:var(--sky-blue)}
+  .pf-tones button{width:34px;height:34px;border-radius:50%;border:2px solid transparent;cursor:pointer;font-size:17px;background:var(--card-2)}
+  .pf-tones button.on{border-color:var(--sky-blue)}
+  .inv-hero{font-size:15px;line-height:1.6;margin:4px 0 12px}
   /* ── 엘리 (앱 §2) ── */
   .ele-tip{position:absolute;left:-4px;bottom:6px;width:72px;height:44px;border:0;background:none;
     cursor:pointer;z-index:5;padding:0;opacity:.92}
@@ -888,7 +926,9 @@
             <button class="daynav" id="rwNext">›</button>
             <div class="seg r-wm"><button id="rwWeek" class="on" data-wm="week">주</button><button id="rwMonth" data-wm="month">월</button></div>
           </div>
+          <div id="msgBanner"></div>
           <div class="routines" id="routineList"></div>
+          <button class="page-fab friends-fab" id="friendsFab" title="친구"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.6 20c.6-3.3 2.6-4.9 5.4-4.9s4.8 1.6 5.4 4.9"/><circle cx="17" cy="9" r="2.4"/><path d="M15.6 14.7c2.6.3 4.2 1.7 4.8 4.2"/></svg></button>
           <button class="page-fab" id="habitFab" title="루틴 추가"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         </section>
         <section class="view" id="view-diary">
@@ -1103,6 +1143,7 @@
     <div class="set-acct">
       <div class="sa-status" id="setAcctStatus"></div>
       <button class="go" id="setAccountBtn" style="margin-top:8px">로그인</button>
+      <button class="set-row-btn" id="setProfileBtn" style="margin-top:8px;margin-bottom:0">프로필 (이름·아바타)</button>
     </div>
 
     <div class="set-sec">엘리</div>
@@ -1155,6 +1196,56 @@
 </div>
 
 <!-- 루틴 편집 시트 (앱 파리티, 요청) -->
+<!-- 친구(루틴 공유) — iOS Phase 2~4 파리티 -->
+<div class="scrim" id="friendsScrim">
+  <div class="modal">
+    <button class="mclose" id="friendsClose">✕</button>
+    <h3>친구</h3>
+    <div class="fr-mycode">
+      <div class="elabel">나의 코드</div>
+      <div class="fr-coderow"><b id="myCode">···-···</b>
+        <button class="chip" id="copyCode">복사</button>
+        <button class="chip" id="showQr">QR</button></div>
+      <div id="myQrWrap" style="display:none;text-align:center;padding:8px 0"><img id="myQrImg" width="180" height="180" style="border-radius:12px;background:#fff;padding:8px"></div>
+    </div>
+    <div class="elabel">친구 코드로 추가</div>
+    <div class="erow"><input id="friendCodeInput" placeholder="XXX-XXX" maxlength="7" style="flex:1;text-transform:uppercase"><button class="chip" id="friendCodeAdd">추가</button></div>
+    <div class="merr" id="friendErr"></div>
+    <div class="elabel">친구 목록</div>
+    <div id="friendList"></div>
+  </div>
+</div>
+<div class="scrim" id="friendDetailScrim">
+  <div class="modal">
+    <button class="mclose" id="friendDetailClose">✕</button>
+    <h3 id="fdName">친구</h3>
+    <div id="fdWeek"></div>
+    <div class="elabel">쪽지</div>
+    <div id="fdConvo" class="fd-convo"></div>
+    <div class="erow"><input id="fdMsgInput" placeholder="쪽지 보내기… (500자)" maxlength="500" style="flex:1"><button class="chip" id="fdMsgSend">보내기</button></div>
+    <div class="ebtns"><button class="del" id="fdUnfriend">친구 끊기</button></div>
+  </div>
+</div>
+<div class="scrim" id="inviteScrim">
+  <div class="modal">
+    <button class="mclose" id="inviteClose">✕</button>
+    <h3>친구 초대 🐘</h3>
+    <div id="inviteBody"></div>
+  </div>
+</div>
+<div class="scrim" id="profileScrim">
+  <div class="modal">
+    <button class="mclose" id="profileClose">✕</button>
+    <h3>내 프로필</h3>
+    <input id="pfName" placeholder="이름 (친구에게 보여요)" maxlength="12">
+    <div class="elabel">아바타</div>
+    <div class="pf-faces" id="pfFaces"></div>
+    <div class="elabel">피부색 / 엘리 색</div>
+    <div class="pf-tones" id="pfTones"></div>
+    <button class="go" id="pfSave">저장</button>
+  </div>
+</div>
+
 <div class="scrim" id="habitScrim">
   <div class="modal">
     <button class="mclose" id="habitClose">✕</button>
@@ -3128,6 +3219,299 @@
     renderDiary();startBarRotation();pushSnapshot();
   }
 
+  /* ── 소셜: 루틴 친구 공유 (iOS Phase 2~4 파리티) ──
+     테이블: sundial_profiles / friendships / routine_snapshots / friend_messages.
+     friendships는 user_a<user_b 정렬 삽입, snapshots select엔 user_id 필수. */
+  function sReq(path,opt){
+    opt=opt||{};
+    var h={apikey:SUPA_KEY,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'};
+    if(opt.prefer)h.Prefer=opt.prefer;
+    return fetch(SUPA_URL+'/rest/v1/'+path,{method:opt.method||'GET',headers:h,
+      body:opt.body?JSON.stringify(opt.body):undefined})
+      .then(function(r){
+        if(r.status===401){signOut();throw new Error('auth');}
+        if(opt.raw)return r;
+        return r.ok?(r.status===204?null:r.json()):r.text().then(function(t){throw new Error(t||r.status);});
+      });
+  }
+  var myProfile=null,friendProfiles={};   // user_id → profile
+  function pairKey(a,b){return a<b?[a,b]:[b,a];}   // uuid 문자열 비교 = pg uuid 정렬과 일치
+  function avatarHTML(p,size){
+    size=size||36;
+    var face=(p&&p.avatar_face)||'🐘',tone=(p&&p.avatar_tone)||'';
+    if(face==='🐘'){
+      var tint=/^#/.test(tone)?tone:'#D4C1D2';
+      return '<span class="fr-avatar" style="width:'+size+'px;height:'+size+'px;background:'+tint+'33">🐘</span>';
+    }
+    return '<span class="fr-avatar" style="width:'+size+'px;height:'+size+'px">'+face+tone+'</span>';
+  }
+  function ensureProfile(cb){
+    if(!session){cb(null);return;}
+    if(myProfile){cb(myProfile);return;}
+    sReq('sundial_profiles?user_id=eq.'+session.user.id+'&select=*').then(function(rows){
+      if(rows&&rows.length){myProfile=rows[0];cb(myProfile);return;}
+      // 없으면 생성 (friend_code는 서버 기본값)
+      sReq('sundial_profiles',{method:'POST',prefer:'resolution=merge-duplicates,return=representation',
+        body:[{user_id:session.user.id,name:'',avatar_face:'🐘',avatar_tone:eleTint()}]})
+      .then(function(rows2){myProfile=rows2&&rows2[0]||null;cb(myProfile);})
+      .catch(function(){cb(null);});
+    }).catch(function(){cb(null);});
+  }
+  function fetchFriends(cb){
+    sReq('sundial_friendships?select=user_a,user_b').then(function(rows){
+      var ids=(rows||[]).map(function(r){return r.user_a===session.user.id?r.user_b:r.user_a;});
+      if(!ids.length){cb([]);return;}
+      sReq('sundial_profiles?user_id=in.('+ids.join(',')+')&select=*').then(function(ps){
+        (ps||[]).forEach(function(p){friendProfiles[p.user_id]=p;});
+        cb(ids.map(function(id){return friendProfiles[id]||{user_id:id,name:'',avatar_face:'🐘',avatar_tone:''};}));
+      }).catch(function(){cb([]);});
+    }).catch(function(){cb([]);});
+  }
+  function addFriendById(fid,cb){
+    var pk=pairKey(session.user.id,fid);
+    sReq('sundial_friendships',{method:'POST',prefer:'return=minimal',
+      body:[{user_a:pk[0],user_b:pk[1]}],raw:true})
+    .then(function(r){cb(r.ok||r.status===409);})   // 409 = 이미 친구
+    .catch(function(){cb(false);});
+  }
+  function findByCode(code,cb){
+    sReq('rpc/sundial_find_by_code',{method:'POST',body:{code:code}}).then(function(rows){
+      var p=Array.isArray(rows)?rows[0]:rows;
+      cb(p&&p.user_id?p:null);
+    }).catch(function(){cb(null);});
+  }
+  // 내 루틴 스냅샷 업로드 — 루틴 페이지 열 때 (iOS RoutineSnapshotBuilder 형식).
+  function weekStartStr(d){var ws=calWeekStart(d||new Date());
+    return ws.getFullYear()+'-'+('0'+(ws.getMonth()+1)).slice(-2)+'-'+('0'+ws.getDate()).slice(-2);}
+  function uploadRoutineSnapshot(){
+    if(!session)return;
+    var ws=calWeekStart(new Date()),days=[];
+    for(var i=0;i<7;i++){var d=new Date(ws);d.setDate(ws.getDate()+i);
+      days.push(d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2));}
+    var routines=(DATA.habits||[]).map(function(h){
+      var log=habitLog(h);
+      return {name:h.title,kind:h.isAvoid?'avoid':'build',
+        checked:days.filter(function(k){return log[k]===1;})};
+    });
+    sReq('sundial_routine_snapshots',{method:'POST',prefer:'resolution=merge-duplicates,return=minimal',
+      body:[{user_id:session.user.id,week:{routines:routines,week:weekStartStr()}}],raw:true}).catch(function(){});
+  }
+  // ── 친구 목록 모달 ──
+  function openFriends(){
+    if(!session){accountAction();return;}
+    document.getElementById('friendErr').textContent='';
+    document.getElementById('myQrWrap').style.display='none';
+    document.getElementById('friendsScrim').classList.add('open');
+    ensureProfile(function(p){
+      document.getElementById('myCode').textContent=(p&&p.friend_code)||'···-···';
+    });
+    renderFriendList();
+  }
+  function renderFriendList(){
+    var w=document.getElementById('friendList');
+    w.innerHTML='<div class="msub">불러오는 중…</div>';
+    fetchFriends(function(fr){
+      if(!fr.length){w.innerHTML='<div class="msub">아직 친구가 없어요. 코드를 나눠보세요.</div>';return;}
+      // 오늘 체크 칩용 스냅샷 (⚠ user_id 포함 select)
+      sReq('sundial_routine_snapshots?user_id=in.('+fr.map(function(f){return f.user_id;}).join(',')+')&select=user_id,week')
+      .then(function(snaps){
+        var byId={};(snaps||[]).forEach(function(sn){byId[sn.user_id]=sn.week;});
+        var today=new Date();var tk=today.getFullYear()+'-'+('0'+(today.getMonth()+1)).slice(-2)+'-'+('0'+today.getDate()).slice(-2);
+        w.innerHTML=fr.map(function(f){
+          var wk=byId[f.user_id],b=0,a=0;
+          if(wk&&wk.routines)wk.routines.forEach(function(r){
+            if((r.checked||[]).indexOf(tk)>=0){if(r.kind==='avoid')a++;else b++;}});
+          return '<div class="fr-row" data-id="'+f.user_id+'">'+avatarHTML(f)+
+            '<span class="fr-name">'+esc(f.name||'친구')+'</span>'+
+            '<span class="fr-chips">'+(b?'<span>🌱 '+b+'</span>':'')+(a?'<span>✂️ '+a+'</span>':'')+'</span>'+
+            '<button class="chip fr-detail">자세히</button></div>';
+        }).join('');
+        w.querySelectorAll('.fr-row').forEach(function(row){
+          row.querySelector('.fr-detail').addEventListener('click',function(){
+            openFriendDetail(row.dataset.id);});
+        });
+      }).catch(function(){w.innerHTML='<div class="msub">불러오지 못했어요.</div>';});
+    });
+  }
+  // ── 친구 상세: 읽기 전용 주간 그리드 + 대화 ──
+  var fdCur=null;
+  function openFriendDetail(fid){
+    fdCur=fid;
+    var p=friendProfiles[fid]||{};
+    document.getElementById('fdName').innerHTML=avatarHTML(p,28)+' '+esc(p.name||'친구');
+    document.getElementById('friendDetailScrim').classList.add('open');
+    // 주간 그리드
+    var g=document.getElementById('fdWeek');g.innerHTML='<div class="msub">불러오는 중…</div>';
+    sReq('sundial_routine_snapshots?user_id=eq.'+fid+'&select=user_id,week').then(function(rows){
+      var wk=rows&&rows[0]&&rows[0].week;
+      if(!wk||!wk.routines||!wk.routines.length){g.innerHTML='<div class="msub">공유된 루틴이 없어요.</div>';return;}
+      var ws=new Date(wk.week||weekStartStr());var days=[],labels=['일','월','화','수','목','금','토'];
+      for(var i=0;i<7;i++){var d=new Date(ws);d.setDate(ws.getDate()+i);
+        days.push(d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2));}
+      var html='<div class="fd-grid" style="grid-template-columns:minmax(60px,1fr) repeat(7,24px)">'+
+        '<div></div>'+labels.map(function(l){return '<div class="hd">'+l+'</div>';}).join('');
+      wk.routines.forEach(function(r){
+        html+='<div class="nm">'+(r.kind==='avoid'?'✂️ ':'🌱 ')+esc(r.name)+'</div>'+
+          days.map(function(k){var on=(r.checked||[]).indexOf(k)>=0;
+            return '<div class="ck'+(on?' on':'')+(r.kind==='avoid'?' avoid':'')+'">'+(on?'✓':'')+'</div>';}).join('');
+      });
+      g.innerHTML=html+'</div>';
+    }).catch(function(){g.innerHTML='<div class="msub">불러오지 못했어요.</div>';});
+    renderConvo();
+  }
+  function renderConvo(){
+    var c=document.getElementById('fdConvo');c.innerHTML='';
+    if(!fdCur)return;
+    sReq('sundial_friend_messages?or=(and(sender.eq.'+session.user.id+',recipient.eq.'+fdCur+'),and(sender.eq.'+fdCur+',recipient.eq.'+session.user.id+'))&order=created_at.asc&select=*')
+    .then(function(msgs){
+      var RX={heart:'❤️',happy:'😊',sad:'😢',angry:'😠'};
+      c.innerHTML=(msgs||[]).map(function(m){
+        var me=m.sender===session.user.id;
+        var rx=m.reaction?'<span class="rx">'+(RX[m.reaction]||'')+'</span>':'';
+        var rxRow='';
+        if(!me){ // 받은 쪽지만 반응 가능
+          rxRow='<div class="fd-rxrow">'+Object.keys(RX).map(function(k){
+            return '<button data-mid="'+m.id+'" data-rx="'+k+'" class="'+(m.reaction===k?'on':'')+'">'+RX[k]+'</button>';}).join('')+'</div>';
+        }
+        return '<div class="fd-msg '+(me?'me':'them')+'">'+esc(m.body)+rx+'</div>'+rxRow;
+      }).join('');
+      c.scrollTop=c.scrollHeight;
+      c.querySelectorAll('[data-rx]').forEach(function(b){
+        b.addEventListener('click',function(){
+          var val=b.classList.contains('on')?null:b.dataset.rx;   // 같은 반응 재탭 = 해제(null)
+          sReq('sundial_friend_messages?id=eq.'+b.dataset.mid,{method:'PATCH',prefer:'return=minimal',
+            body:{reaction:val}}).then(renderConvo).catch(function(){});
+        });
+      });
+    }).catch(function(){});
+  }
+  // ── 받은 쪽지 배너 (루틴 상단) ──
+  function renderMsgBanner(){
+    var w=document.getElementById('msgBanner');if(!w)return;
+    if(!session){w.innerHTML='';return;}
+    sReq('sundial_friend_messages?recipient=eq.'+session.user.id+'&dismissed=eq.false&order=created_at.desc&limit=1&select=*')
+    .then(function(rows){
+      var m=rows&&rows[0];
+      if(!m){w.innerHTML='';return;}
+      var p=friendProfiles[m.sender];
+      var paint=function(){
+        var RX={heart:'❤️',happy:'😊',sad:'😢',angry:'😠'};
+        w.innerHTML='<div class="msg-banner">'+avatarHTML(p,30)+
+          '<div class="mb-body"><div class="mb-from">'+esc((p&&p.name)||'친구')+'</div>'+esc(m.body)+
+          '<div class="fd-rxrow">'+Object.keys(RX).map(function(k){
+            return '<button data-rx="'+k+'" class="'+(m.reaction===k?'on':'')+'">'+RX[k]+'</button>';}).join('')+'</div></div>'+
+          '<button class="mb-x">✕</button></div>';
+        w.querySelector('.mb-x').addEventListener('click',function(){
+          sReq('sundial_friend_messages?id=eq.'+m.id,{method:'PATCH',prefer:'return=minimal',
+            body:{dismissed:true}}).then(renderMsgBanner).catch(function(){});
+        });
+        w.querySelectorAll('[data-rx]').forEach(function(b){
+          b.addEventListener('click',function(){
+            var val=b.classList.contains('on')?null:b.dataset.rx;
+            sReq('sundial_friend_messages?id=eq.'+m.id,{method:'PATCH',prefer:'return=minimal',
+              body:{reaction:val}}).then(renderMsgBanner).catch(function(){});
+          });
+        });
+      };
+      if(p)paint();
+      else sReq('sundial_profiles?user_id=eq.'+m.sender+'&select=*').then(function(ps){
+        if(ps&&ps[0]){friendProfiles[m.sender]=ps[0];p=ps[0];}paint();}).catch(paint);
+    }).catch(function(){});
+  }
+
+  // ── 초대 랜딩 (핵심): ellyday.com/?invite=<코드> ──
+  var pendingInvite=null;
+  function normCode(v){v=(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    return v.length>=6?v.slice(0,3)+'-'+v.slice(3,6):v;}
+  function openInvite(){
+    var b=document.getElementById('inviteBody');
+    document.getElementById('inviteScrim').classList.add('open');
+    if(!session){
+      b.innerHTML='<div class="inv-hero">친구가 <b>\'엘리의 하루\'</b>로 초대했어요 🐘<br>'+
+        '가입하면 서로의 루틴을 응원할 수 있어요.</div>'+
+        '<button class="go" id="invJoin">가입하고 친구 되기</button>'+
+        '<div class="mswitch"><a id="invLogin">이미 계정이 있어요 — 로그인</a></div>';
+      document.getElementById('invJoin').addEventListener('click',function(){
+        document.getElementById('inviteScrim').classList.remove('open');
+        setLMode('signUp');document.getElementById('loginScrim').classList.add('open');
+        document.getElementById('loginEmail').focus();});
+      document.getElementById('invLogin').addEventListener('click',function(){
+        document.getElementById('inviteScrim').classList.remove('open');
+        setLMode('signIn');document.getElementById('loginScrim').classList.add('open');
+        document.getElementById('loginEmail').focus();});
+    }else acceptInvite();
+  }
+  function acceptInvite(){
+    if(!pendingInvite||!session)return;
+    var code=pendingInvite;
+    var b=document.getElementById('inviteBody');
+    document.getElementById('inviteScrim').classList.add('open');
+    b.innerHTML='<div class="msub">초대를 확인하는 중…</div>';
+    ensureProfile(function(){
+      findByCode(code,function(p){
+        if(!p){b.innerHTML='<div class="inv-hero">코드를 찾지 못했어요 😢<br>친구에게 코드를 다시 확인해 주세요.</div>';pendingInvite=null;return;}
+        if(p.user_id===session.user.id){b.innerHTML='<div class="inv-hero">내 코드예요 🐘</div>';pendingInvite=null;return;}
+        addFriendById(p.user_id,function(ok){
+          pendingInvite=null;
+          try{history.replaceState(null,'',location.pathname);}catch(_){}
+          if(!ok){b.innerHTML='<div class="inv-hero">친구 추가에 실패했어요. 잠시 후 다시 시도해 주세요.</div>';return;}
+          friendProfiles[p.user_id]=p;
+          b.innerHTML='<div class="inv-hero"><b>'+esc(p.name||'친구')+'</b>님과 루틴을 나눌 수 있어요! 🎉<br>'+
+            '<span class="msub">루틴 페이지 → 친구 아이콘에서 서로의 한 주를 볼 수 있어요.</span></div>'+
+            '<button class="go" id="invApp">📱 앱으로 추가</button>'+
+            '<div class="mswitch"><a id="invWeb">웹에서 계속</a></div>';
+          document.getElementById('invApp').addEventListener('click',function(){
+            location.href='ellyday://invite/'+code;});   // 앱 미설치면 무시됨 → 웹 그대로
+          document.getElementById('invWeb').addEventListener('click',function(){
+            document.getElementById('inviteScrim').classList.remove('open');
+            if(myProfile&&!(myProfile.name||'').trim())openProfile();   // 이름 없으면 프로필 제안
+          });
+        });
+      });
+    });
+  }
+  // ── 프로필 (이름 + 아바타: 사람 이모지+피부색 / 엘리+색) ──
+  var PF_FACES=['🐘','🧑','👩','👨','🧒','👧','👦','👵','👴'];
+  var PF_SKIN=['','🏻','🏼','🏽','🏾','🏿'];
+  var PF_ELE=['#D4C1D2','#F3C6D3','#BEE3CF','#BCD8F0','#F5E4B8','#CBCBD6'];
+  var pfFace='🐘',pfTone='#D4C1D2';
+  function openProfile(){
+    if(!session){accountAction();return;}
+    ensureProfile(function(p){
+      document.getElementById('pfName').value=(p&&p.name)||'';
+      pfFace=(p&&p.avatar_face)||'🐘';pfTone=(p&&p.avatar_tone)||'#D4C1D2';
+      paintProfile();
+      document.getElementById('profileScrim').classList.add('open');
+    });
+  }
+  function paintProfile(){
+    var fw=document.getElementById('pfFaces');
+    fw.innerHTML=PF_FACES.map(function(f){
+      return '<button data-f="'+f+'" class="'+(pfFace===f?'on':'')+'">'+f+'</button>';}).join('');
+    fw.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){
+      pfFace=b.dataset.f;
+      pfTone=pfFace==='🐘'?(/^#/.test(pfTone)?pfTone:'#D4C1D2'):(/^#/.test(pfTone)?'':pfTone);
+      paintProfile();});});
+    var tw=document.getElementById('pfTones');
+    if(pfFace==='🐘'){
+      tw.innerHTML=PF_ELE.map(function(c){
+        return '<button data-t="'+c+'" class="'+(pfTone===c?'on':'')+'" style="background:'+c+'"></button>';}).join('');
+    }else{
+      tw.innerHTML=PF_SKIN.map(function(m){
+        return '<button data-t="'+m+'" class="'+(pfTone===m?'on':'')+'">🖐'+m+'</button>';}).join('');
+    }
+    tw.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){
+      pfTone=b.dataset.t;paintProfile();});});
+  }
+  function saveProfile(){
+    var name=(document.getElementById('pfName').value||'').trim();
+    sReq('sundial_profiles',{method:'POST',prefer:'resolution=merge-duplicates,return=representation',
+      body:[{user_id:session.user.id,name:name,avatar_face:pfFace,avatar_tone:pfTone,updated_at:new Date().toISOString()}]})
+    .then(function(rows){myProfile=rows&&rows[0]||myProfile;
+      document.getElementById('profileScrim').classList.remove('open');})
+    .catch(function(){appNudge();});
+  }
+
   // "앱에서 하세요" 안내 토스트 (앱 핸드오프 §0-2, §9)
   function appNudge(){
     var t=document.getElementById('appNudge');
@@ -3150,6 +3534,7 @@
       document.querySelectorAll('.tabbody .view').forEach(function(v){v.classList.toggle('on',v.id==='view-'+name);});
     }
     if(name==='bucket')bucketIntro();   // 처음 열면 살짝 돌려 보여줌 (요청)
+    if(name==='routine'&&session){uploadRoutineSnapshot();renderMsgBanner();}   // 소셜 (iOS 파리티)
   }
   document.querySelectorAll('.tabrow button,.mbtn').forEach(function(b){b.addEventListener('click',function(){if(b.dataset.tab)setTab(b.dataset.tab);});});
   function setMode(m){
@@ -3214,7 +3599,8 @@
     .then(function(r){if(r.status===401)signOut();else if(!r.ok)r.text().then(function(t){console.warn('[harufocus] 저장 실패',r.status,t);});})
     .catch(function(e){console.warn('[harufocus] 저장 네트워크 오류',e);});
   }
-  function saveSession(j){session={access_token:j.access_token,user:{id:j.user.id,email:j.user.email}};localStorage.setItem(AUTH_KEY,JSON.stringify(session));updateAcct();}
+  function saveSession(j){session={access_token:j.access_token,user:{id:j.user.id,email:j.user.email}};localStorage.setItem(AUTH_KEY,JSON.stringify(session));updateAcct();
+    if(pendingInvite)setTimeout(acceptInvite,300);}   // 초대 → 가입/로그인 → 친구 수락
   function signOut(){session=null;localStorage.removeItem(AUTH_KEY);updateAcct();DATA=DEMO;renderAll();}
   function authReq(p,b){return fetch(SUPA_URL+'/auth/v1/'+p,{method:'POST',headers:{apikey:SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});});}
 
@@ -3293,6 +3679,72 @@
       else if(f==='link'){var u=prompt('링크 주소');if(u)mdWrap(ta,'[',']('+u+')');}
     });
   });
+  // 소셜 배선 (iOS Phase 2~4 파리티)
+  document.getElementById('friendsFab').addEventListener('click',openFriends);
+  document.getElementById('friendsClose').addEventListener('click',function(){document.getElementById('friendsScrim').classList.remove('open');});
+  document.getElementById('friendsScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+  document.getElementById('copyCode').addEventListener('click',function(){
+    var code=document.getElementById('myCode').textContent;
+    if(navigator.clipboard)navigator.clipboard.writeText(code).then(function(){appToast('코드를 복사했어요');});
+  });
+  document.getElementById('showQr').addEventListener('click',function(){
+    var w=document.getElementById('myQrWrap');
+    var code=document.getElementById('myCode').textContent;
+    if(w.style.display==='none'&&/^[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(code)){
+      // 앱 스캐너 규약: "ellyday-friend-<코드>"
+      document.getElementById('myQrImg').src='https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+encodeURIComponent('ellyday-friend-'+code);
+      w.style.display='';
+    }else w.style.display='none';
+  });
+  document.getElementById('friendCodeAdd').addEventListener('click',function(){
+    var err=document.getElementById('friendErr');err.textContent='';
+    var code=normCode(document.getElementById('friendCodeInput').value);
+    if(!/^[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(code)){err.textContent='코드는 XXX-XXX 형식이에요.';return;}
+    findByCode(code,function(p){
+      if(!p){err.textContent='코드를 찾지 못했어요.';return;}
+      if(p.user_id===session.user.id){err.textContent='내 코드예요 🐘';return;}
+      addFriendById(p.user_id,function(ok){
+        if(!ok){err.textContent='추가에 실패했어요.';return;}
+        friendProfiles[p.user_id]=p;
+        document.getElementById('friendCodeInput').value='';
+        renderFriendList();appToast((p.name||'친구')+'님과 친구가 됐어요!');
+      });
+    });
+  });
+  document.getElementById('friendDetailClose').addEventListener('click',function(){document.getElementById('friendDetailScrim').classList.remove('open');});
+  document.getElementById('friendDetailScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+  document.getElementById('fdMsgSend').addEventListener('click',function(){
+    if(!fdCur)return;
+    var inp=document.getElementById('fdMsgInput');
+    var body=Array.from((inp.value||'').trim()).slice(0,500).join('');   // code point 500 제한
+    if(!body)return;
+    sReq('sundial_friend_messages',{method:'POST',prefer:'return=minimal',
+      body:[{sender:session.user.id,recipient:fdCur,body:body}]})
+    .then(function(){inp.value='';renderConvo();}).catch(function(){appToast('보내지 못했어요');});
+  });
+  document.getElementById('fdUnfriend').addEventListener('click',function(){
+    if(!fdCur||!confirm('친구를 끊을까요?'))return;
+    var pk=pairKey(session.user.id,fdCur);
+    sReq('sundial_friendships?user_a=eq.'+pk[0]+'&user_b=eq.'+pk[1],{method:'DELETE',prefer:'return=minimal'})
+    .then(function(){document.getElementById('friendDetailScrim').classList.remove('open');renderFriendList();})
+    .catch(function(){});
+  });
+  document.getElementById('inviteClose').addEventListener('click',function(){document.getElementById('inviteScrim').classList.remove('open');});
+  document.getElementById('inviteScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+  document.getElementById('profileClose').addEventListener('click',function(){document.getElementById('profileScrim').classList.remove('open');});
+  document.getElementById('profileScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+  document.getElementById('pfSave').addEventListener('click',saveProfile);
+  document.getElementById('setProfileBtn').addEventListener('click',openProfile);
+  // 간단 토스트
+  function appToast(msg){
+    var t=document.getElementById('appNudge');
+    if(!t){t=document.createElement('div');t.id='appNudge';
+      t.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom));z-index:99;background:rgba(30,38,60,.95);color:#fff;font-size:13px;font-weight:600;border-radius:999px;padding:11px 18px;box-shadow:0 8px 24px rgba(0,0,0,.3);transition:opacity .3s';
+      document.body.appendChild(t);}
+    t.textContent=msg;t.style.opacity='1';
+    clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},2200);
+  }
+  window.appToast=appToast;
   // 메모 전용 팝업 배선 (요청)
   document.getElementById('memoClose').addEventListener('click',function(){document.getElementById('memoScrim').classList.remove('open');});
   document.getElementById('memoScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
@@ -4091,6 +4543,11 @@
 
   /* ---------- boot ---------- */
   renderNav();updateAcct();setTab('todo');renderAll();startBarRotation();if(session)fetchSnapshot();
+  // 초대 랜딩 (핵심): ?invite=<코드>
+  try{
+    var inv=new URLSearchParams(location.search).get('invite');
+    if(inv){pendingInvite=normCode(inv);if(pendingInvite)openInvite();}
+  }catch(_){}
 })();
 </script>
 </body>
