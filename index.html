@@ -3224,11 +3224,14 @@
      friendships는 user_a<user_b 정렬 삽입, snapshots select엔 user_id 필수. */
   function sReq(path,opt){
     opt=opt||{};
-    var h={apikey:SUPA_KEY,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'};
-    if(opt.prefer)h.Prefer=opt.prefer;
-    return fetch(SUPA_URL+'/rest/v1/'+path,{method:opt.method||'GET',headers:h,
-      body:opt.body?JSON.stringify(opt.body):undefined})
-      .then(function(r){
+    // 만료 임박 토큰은 먼저 갱신 (버그 수정: 만료 후 401 → "보내지 못했어요").
+    return freshToken().then(function(tok){
+      if(!tok)throw new Error('auth');
+      var h={apikey:SUPA_KEY,Authorization:'Bearer '+tok,'Content-Type':'application/json'};
+      if(opt.prefer)h.Prefer=opt.prefer;
+      return fetch(SUPA_URL+'/rest/v1/'+path,{method:opt.method||'GET',headers:h,
+        body:opt.body?JSON.stringify(opt.body):undefined});
+    }).then(function(r){
         if(r.status===401){signOut();throw new Error('auth');}
         if(opt.raw)return r;
         return r.ok?(r.status===204?null:r.json()):r.text().then(function(t){throw new Error(t||r.status);});
@@ -3569,7 +3572,8 @@
      DATA.tasks는 serverSnap.tasks와 같은 참조라 편집이 그대로 반영된다. */
   var serverSnap=null;
   function fetchSnapshot(){if(!session)return;
-    fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=snapshot',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+session.access_token}})
+    freshToken().then(function(tok){if(!tok)throw 0;
+      return fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=snapshot',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok}});})
     .then(function(r){if(r.status===401){signOut();throw 0;}return r.json();})
     .then(function(rows){
       serverSnap=(rows&&rows.length&&rows[0].snapshot)||{schemaVersion:1,tasks:[],habits:[],sessions:[],settings:null};
@@ -3595,13 +3599,36 @@
   function pushSnapshot(){if(!session)return;clearTimeout(pushTimer);pushTimer=setTimeout(doPush,1200);}
   function doPush(){pushTimer=null;if(!session)return;
     var body=[{user_id:session.user.id,snapshot:currentSnap(),device_id:webDeviceId(),updated_at:new Date().toISOString()}];
-    fetch(SUPA_URL+'/rest/v1/sundial_state',{method:'POST',headers:{apikey:SUPA_KEY,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)})
+    freshToken().then(function(tok){if(!tok)throw new Error('auth');
+      return fetch(SUPA_URL+'/rest/v1/sundial_state',{method:'POST',headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});})
     .then(function(r){if(r.status===401)signOut();else if(!r.ok)r.text().then(function(t){console.warn('[harufocus] 저장 실패',r.status,t);});})
     .catch(function(e){console.warn('[harufocus] 저장 네트워크 오류',e);});
   }
-  function saveSession(j){session={access_token:j.access_token,user:{id:j.user.id,email:j.user.email}};localStorage.setItem(AUTH_KEY,JSON.stringify(session));updateAcct();
+  function saveSession(j){session={access_token:j.access_token,
+    // 토큰 갱신 재료 (버그 수정: 이걸 안 저장해 1시간 뒤 모든 쓰기가 401 →
+    // "보내지 못했어요"). refresh 응답에 refresh_token이 없으면 기존 것 유지.
+    refresh_token:j.refresh_token||(session&&session.refresh_token)||null,
+    expires_at:Math.floor(Date.now()/1000)+(j.expires_in||3600),
+    user:{id:j.user.id,email:j.user.email}};
+    localStorage.setItem(AUTH_KEY,JSON.stringify(session));updateAcct();
     if(pendingInvite)setTimeout(acceptInvite,300);}   // 초대 → 가입/로그인 → 친구 수락
   function signOut(){session=null;localStorage.removeItem(AUTH_KEY);updateAcct();DATA=DEMO;renderAll();}
+  /* 만료 60초 전이면 refresh_token으로 갱신하고 유효한 access_token을 돌려준다.
+     실패(재사용된 토큰 등) 시 로그아웃 후 null. 예전 저장분(refresh 없음)은
+     한 번 재로그인하면 이후부터 자동 갱신. */
+  var refreshing=null;
+  function freshToken(){
+    if(!session)return Promise.resolve(null);
+    if(session.expires_at&&session.expires_at-60>Math.floor(Date.now()/1000))return Promise.resolve(session.access_token);
+    if(!session.refresh_token){signOut();return Promise.resolve(null);}
+    if(refreshing)return refreshing;   // 동시 요청은 한 번의 갱신에 합류
+    refreshing=authReq('token?grant_type=refresh_token',{refresh_token:session.refresh_token})
+      .then(function(res){refreshing=null;
+        if(res.ok&&res.j.access_token){saveSession(res.j);return session.access_token;}
+        signOut();return null;})
+      .catch(function(){refreshing=null;return session&&session.access_token;});
+    return refreshing;
+  }
   function authReq(p,b){return fetch(SUPA_URL+'/auth/v1/'+p,{method:'POST',headers:{apikey:SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});});}
 
   var scrim=document.getElementById('loginScrim'),mode='signIn';
@@ -3836,7 +3863,8 @@
   var lastSeenUpdated=null;
   function pollSync(){
     if(document.hidden||!session||pushTimer)return;
-    fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=updated_at,device_id',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+session.access_token}})
+    freshToken().then(function(tok){if(!tok)throw 0;
+      return fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=updated_at,device_id',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok}});})
     .then(function(r){return r.json();}).then(function(rows){
       if(!rows||!rows.length)return;var u=rows[0].updated_at,dev=rows[0].device_id;
       if(lastSeenUpdated===null){lastSeenUpdated=u;return;}
