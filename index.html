@@ -569,7 +569,7 @@
   .d-toolbar{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap}
   .d-view-body{font-size:14.5px;line-height:1.7;min-height:80px;white-space:pre-wrap;word-break:break-word}
   .d-view-body h4{font-size:17px;margin:2px 0 6px}
-  #diaryEditTa{width:100%;min-height:180px;font-family:inherit;font-size:16px;line-height:1.6;
+  #diaryEditTa{width:100%;min-height:180px;font-family:inherit;font-size:17px;line-height:1.6;
     padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card-2);resize:vertical;box-sizing:border-box}
   .modal.dark{background:#232b44;color:#e8ecf6}
   .modal.dark input,.modal.dark textarea{background:#2c3552;color:#e8ecf6;border-color:#3a466b}
@@ -877,6 +877,28 @@
   .ft-finish{font-family:inherit;font-size:16px;font-weight:800;border:0;border-radius:999px;padding:14px 44px;cursor:pointer;
     background:rgba(255,255,255,.2);color:#fff;backdrop-filter:blur(4px)}
   .ft-morepanel{position:absolute;top:64px;left:14px;display:flex;flex-direction:column;gap:8px;z-index:4}
+  /* 전환 카드 (§5): 링 안 원형 크롭 엘리 그림 5초, 종이 위 다음 작업명. */
+  .ft-nextcard{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:78%;aspect-ratio:1;
+    border-radius:50%;overflow:hidden;z-index:6;box-shadow:0 10px 30px rgba(0,0,0,.3);animation:fncIn .5s ease}
+  .ft-nextcard img{width:100%;height:100%;object-fit:cover;display:block}
+  .ft-nextcard .fnc-title{position:absolute;left:64.1%;top:49.5%;transform:translate(-50%,-50%) rotate(-3deg);
+    width:38%;text-align:center;font-size:13px;font-weight:800;color:#3a3242;line-height:1.25;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  @keyframes fncIn{0%{opacity:0;transform:translate(-50%,-50%) scale(.8)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+  /* 딴짓 포스트잇 (§5): 우측 가장자리, 탭=뒤집기, 우로 밀면 숨김. */
+  .postit{position:absolute;right:10px;top:38%;width:104px;height:104px;z-index:4;
+    background:#F5E27A;border-radius:3px;box-shadow:0 6px 14px rgba(0,0,0,.25);transform:rotate(-4deg);
+    cursor:pointer;transition:transform .25s;touch-action:none}
+  .focusScrim.night .postit{background:#CBB94F}
+  .pi-front{display:grid;place-items:center;height:100%;font-size:13px;font-weight:800;color:#6b5c14;text-align:center;line-height:1.4}
+  .pi-back{display:none;flex-direction:column;height:100%;padding:7px}
+  .postit.flip .pi-front{display:none}
+  .postit.flip .pi-back{display:flex}
+  .pi-back textarea{flex:1;border:0;background:none;font-family:inherit;font-size:12px;resize:none;color:#4d420e;outline:none}
+  .pi-back button{border:0;background:#6b5c14;color:#fff;font-family:inherit;font-size:11px;font-weight:800;
+    border-radius:6px;padding:5px 0;cursor:pointer}
+  .postit-edge{position:absolute;right:0;top:40%;width:26px;height:52px;border:0;border-radius:8px 0 0 8px;
+    background:rgba(245,226,122,.85);font-size:14px;cursor:pointer;z-index:4}
   .ft-chip{font-family:inherit;font-size:14px;font-weight:700;border:0;border-radius:999px;padding:11px 20px;cursor:pointer;background:rgba(255,255,255,.14);color:#fff}
   .ft-chip.on{color:#ffd76a;background:rgba(255,255,255,.26)}
   .ft-tree{position:absolute;bottom:0;left:5%;height:165px;pointer-events:none;z-index:1}
@@ -1020,7 +1042,8 @@
           <button class="page-fab" id="diaryFab" title="새 일기"><svg viewBox="0 0 24 24" style="width:30px;height:30px" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         </section>
         <section class="view" id="view-bucket">
-          <h2>물통 <span id="bMoney" class="bmoney"></span></h2>
+          <h2>물통 <span id="bMoney" class="bmoney"></span>
+            <button class="app-banner" id="bucketTimeBtn" style="float:right">📱 내 시간이 간 곳</button></h2>
           <div class="bucket-wrap">
             <div class="bucket-col">
               <div class="bucket-nav"><button id="bPrev">‹</button><span id="bDate">오늘</span><button id="bNext">›</button></div>
@@ -1208,6 +1231,11 @@
   <div class="ft-bottom">
     <button class="ft-finish" id="ftFinish">끝내기</button>
   </div>
+  <div class="postit" id="postit" style="display:none">
+    <div class="pi-front">딴짓하고<br>싶죠?</div>
+    <div class="pi-back"><textarea id="piText" maxlength="60" placeholder="적어두고 지금은 집중!"></textarea><button id="piSave">담기</button></div>
+  </div>
+  <button class="postit-edge" id="postitEdge" style="display:none">📝</button>
   <img class="ft-tree" src="assets/tree.png" alt="">
 </div>
 
@@ -1259,6 +1287,12 @@
 
     <div class="set-sec">작업 추가</div>
     <div class="elabel">추가할 때 기본 길이 (분)</div><input type="number" id="setDefDur" min="0" step="5">
+
+    <div class="set-sec">집중 페이지</div>
+    <div class="set-toggles">
+      <label><input type="checkbox" id="setPostIt"> 딴짓 포스트잇 표시</label>
+      <label><input type="checkbox" id="setPostItQ4"> 적으면 Q4(나중에)에 담기</label>
+    </div>
 
     <div class="set-sec">기타</div>
     <button class="set-row-btn" id="setStatsBtn">통계 보기</button>
@@ -2381,6 +2415,46 @@
     html+='<g id="ftKnob"><circle cx="160" cy="42" r="10" fill="'+color+'" stroke="#fff" stroke-width="3.5"/></g>';
     svg.innerHTML=html;
   }
+  // 전환 차임 (§5 start4 근사 — WebAudio 두 음).
+  function playChime(){
+    try{
+      var ctx=new (window.AudioContext||window.webkitAudioContext)();
+      var t0=ctx.currentTime;
+      [523.25,783.99].forEach(function(f,i){
+        var o=ctx.createOscillator(),g=ctx.createGain();
+        o.type='sine';o.frequency.value=f;
+        g.gain.setValueAtTime(0.0001,t0+i*0.18);
+        g.gain.exponentialRampToValueAtTime(0.2,t0+i*0.18+0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001,t0+i*0.18+0.55);
+        o.connect(g);g.connect(ctx.destination);
+        o.start(t0+i*0.18);o.stop(t0+i*0.18+0.6);
+      });
+      setTimeout(function(){ctx.close();},1600);
+    }catch(_){}
+  }
+  // 전환 카드 (§5): 원형 크롭 엘리 + 종이 위 다음 작업명, 5초.
+  function showAdvanceCard(nextTitle){
+    var wrap=document.querySelector('.ft-ringwrap');if(!wrap)return;
+    var card=document.createElement('div');card.className='ft-nextcard';
+    card.innerHTML='<img alt=""><div class="fnc-title">'+esc(nextTitle||'')+'</div>';
+    wrap.appendChild(card);
+    eleWordImg('elly-desk-next',eleTint(),function(u){var im=card.querySelector('img');if(u&&im)im.src=u;});
+    setTimeout(function(){card.remove();},5000);
+  }
+  // 딴짓 포스트잇 (§5)
+  function postItOn(){return localStorage.getItem('hfPostItOn')!=='0';}
+  function postItQ4(){return localStorage.getItem('hfPostItToQ4')!=='0';}
+  function paintPostit(){
+    var p=document.getElementById('postit'),e=document.getElementById('postitEdge');
+    if(!p)return;
+    var tucked=localStorage.getItem('hfPostItTucked')==='1';
+    p.style.display=postItOn()&&!tucked?'':'none';
+    e.style.display=postItOn()&&tucked?'':'none';
+    p.classList.remove('flip');
+    var ta=document.getElementById('piText');if(ta)ta.value='';
+    var sv=document.getElementById('piSave');if(sv)sv.style.display=postItQ4()?'':'none';
+  }
+
   var fAdvanced=false;
   function nextDueTask(){
     if(!fTask||!fTask.scheduledStart)return null;
@@ -2405,6 +2479,7 @@
           var prevTitle=fTask.title;
           endFocusSession();                                   // 기록 남기고
           startFocus(nx);                                      // 다음 작업으로
+          playChime();showAdvanceCard(nx.title);               // 전환 연출 (§5)
           document.getElementById('ftSub').textContent='"'+(nx.title||'')+'" 할 시간이에요 — "'+(prevTitle||'')+'" 수고했어요';
           return;
         }
@@ -2431,6 +2506,7 @@
     document.getElementById('focusScrim').classList.toggle('night',h<6||h>=18);
     document.getElementById('ftPause').innerHTML=IC.pause;paintPomoChip();paintFm();
     if(fmScene()!=='none')fmStart(fmScene());   // 저장된 focus music 이어서 (클릭 제스처라 자동재생 허용)
+    paintPostit();
     document.getElementById('focusScrim').classList.add('open');tickFocus();fTimer=setInterval(tickFocus,250);}
   function togglePauseFocus(){if(fPaused){fPausedAcc+=Date.now()-fPauseAt;fPaused=false;document.getElementById('ftPause').innerHTML=IC.pause;if(fmCtx)fmCtx.resume();}
     else{fPauseAt=Date.now();fPaused=true;document.getElementById('ftPause').innerHTML=IC.play;if(fmCtx)fmCtx.suspend();}}
@@ -2453,6 +2529,8 @@
     document.getElementById('setDefDur').value=s.defaultDurationMin!=null?s.defaultDurationMin:50;
     document.getElementById('setVow').value=s.motto||s.todayVow||'';
     document.getElementById('setEleName').value=s.eleName||'';
+    document.getElementById('setPostIt').checked=localStorage.getItem('hfPostItOn')!=='0';
+    document.getElementById('setPostItQ4').checked=localStorage.getItem('hfPostItToQ4')!=='0';
     var scen=s.sceneryRaw||'plain';
     document.querySelectorAll('#setScenery button').forEach(function(b){b.classList.toggle('on',b.dataset.s===scen);});
     var ELE_COLORS=['#F2D6C4','#E8C0A4','#D8A87E','#B67F55','#8E5A3A','#5C3A28',
@@ -3188,8 +3266,14 @@
         var k=b.dataset.e;w.style.display='none';
         var entry=newDiaryEntry('emotion',{emotionKind:k,prompt:ELE_RESP[k]});
         var bub=document.getElementById('eleBubble');
-        bub.innerHTML=esc(ELE_RESP[k])+'<button class="eb-pencil">✏️ 일기로 남기기</button>';
+        bub.innerHTML=esc(ELE_RESP[k])+'<button class="eb-pencil">✏️ 일기에 적어볼까요?</button>';
         bub.style.display='block';
+        // 칭찬 하트 3개 (§5)
+        var st=document.getElementById('eleStage');
+        for(var hi=0;hi<3;hi++)(function(i){setTimeout(function(){
+          var h=document.createElement('span');h.className='ele-heart';h.textContent='💗';
+          h.style.left=(30+i*14)+'%';h.style.bottom=(46+i*4)+'%';
+          st.appendChild(h);setTimeout(function(){h.remove();},1000);},i*220);})(hi);
         bub.querySelector('.eb-pencil').addEventListener('click',function(){
           eleClose();openDiaryEntry(entry,true);});
         renderDiary();pushSnapshot();
@@ -4041,6 +4125,44 @@
     clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},2200);
   }
   window.appToast=appToast;
+  // 딴짓 포스트잇 배선 (§5)
+  (function(){
+    var p=document.getElementById('postit');if(!p)return;
+    var sx=null,dragging=false;
+    p.addEventListener('pointerdown',function(e){
+      if(p.classList.contains('flip'))return;
+      sx=e.clientX;dragging=true;
+    });
+    p.addEventListener('pointermove',function(e){
+      if(!dragging||sx==null)return;
+      var dx=e.clientX-sx;
+      if(dx>0)p.style.transform='rotate(-4deg) translateX('+dx+'px)';
+    });
+    p.addEventListener('pointerup',function(e){
+      if(!dragging)return;dragging=false;
+      var dx=e.clientX-(sx||0);sx=null;
+      p.style.transform='';
+      if(dx>60){localStorage.setItem('hfPostItTucked','1');paintPostit();return;}   // 우로 슬라이드 = 숨김
+      if(Math.abs(dx)<8){p.classList.add('flip');                                    // 탭 = 뒤집기
+        var ta=document.getElementById('piText');if(ta)setTimeout(function(){ta.focus();},50);}
+    });
+    document.getElementById('postitEdge').addEventListener('click',function(){
+      localStorage.removeItem('hfPostItTucked');paintPostit();});                    // 가장자리 탭 = 복귀
+    document.getElementById('piSave').addEventListener('click',function(e){
+      e.stopPropagation();
+      var ta=document.getElementById('piText'),v=(ta.value||'').trim();
+      if(v&&postItQ4()){addTask({title:v,matrixQuadrant:4});appToast('"'+v+'" — Q4(나중에)에 담아뒀어요');}
+      else if(v)appToast('적어뒀어요 — 지금은 집중!');
+      ta.value='';p.classList.remove('flip');
+    });
+  })();
+  // 설정: 집중 페이지 토글
+  document.getElementById('setPostIt').addEventListener('change',function(){
+    localStorage.setItem('hfPostItOn',this.checked?'1':'0');paintPostit();});
+  document.getElementById('setPostItQ4').addEventListener('change',function(){
+    localStorage.setItem('hfPostItToQ4',this.checked?'1':'0');paintPostit();});
+  // 물통 '내 시간이 간 곳' (§6 — Screen Time은 iOS 전용)
+  document.getElementById('bucketTimeBtn').addEventListener('click',appNudge);
   // 메모 전용 팝업 배선 (요청)
   document.getElementById('memoClose').addEventListener('click',function(){document.getElementById('memoScrim').classList.remove('open');});
   document.getElementById('memoScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
