@@ -3668,7 +3668,7 @@
   // 카탈로그: 기기 로컬(새 태그 맨 앞) + 동기화로 온 태그는 뒤에 합류 (D4-2).
   function tagCatalog(){
     var local=[];try{local=JSON.parse(localStorage.getItem('hfDiaryTagCatalog')||'[]');}catch(_){}
-    var seen={};local.forEach(function(t){seen[t]=1;});
+    var seen=Object.create(null);local.forEach(function(t){seen[t]=1;});   // "toString" 태그 누락 방지 (리뷰 fix)
     (DATA.diary||[]).forEach(function(e){getTags(e).forEach(function(t){
       if(!seen[t]){seen[t]=1;local.push(t);}});});
     return local;
@@ -3996,7 +3996,7 @@
     if(!diaryCur||diaryCur._virtual)return;
     diaryCur.text=document.getElementById('diaryEditTa').value||'';
     diaryCur.updatedAt=new Date().toISOString();
-    if(!diaryCur.text.trim()&&!getPhotos(diaryCur).length){DATA.diary=(DATA.diary||[]).filter(function(x){return x!==diaryCur;});}
+    if(!diaryCur.text.trim()&&!getPhotos(diaryCur).length&&!getTags(diaryCur).length){DATA.diary=(DATA.diary||[]).filter(function(x){return x!==diaryCur;});}
     document.getElementById('diaryScrim').classList.remove('open');
     renderDiary();startBarRotation();pushSnapshot();
   }
@@ -4482,8 +4482,10 @@
   });
   document.getElementById('diaryClose').addEventListener('click',function(){
     if(diaryCur&&!diaryCur._virtual&&!String(document.getElementById('diaryEditTa').value||diaryCur.text||'').trim()
-       &&!getPhotos(diaryCur).length)
+       &&!getPhotos(diaryCur).length&&!getTags(diaryCur).length){   // 태그 있으면 유지 (리뷰 fix)
       DATA.diary=(DATA.diary||[]).filter(function(x){return x!==diaryCur;});   // 빈 새 일기는 버림
+      pushSnapshot();                                    // 태그 push로 생긴 서버 고스트 제거 (리뷰 fix)
+    }
     document.getElementById('diaryScrim').classList.remove('open');renderDiary();});
   document.getElementById('diaryScrim').addEventListener('click',function(e){if(e.target===this)document.getElementById('diaryClose').click();});
   document.getElementById('diaryEditBtn').addEventListener('click',function(){setDiaryMode(true);});
