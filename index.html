@@ -54,6 +54,29 @@
   .tl-donebtn{height:48px;border-radius:999px;border:0;background:#3D51C4;color:#fff;font-family:inherit;
     font-size:15px;font-weight:800;padding:0 22px;cursor:pointer;box-shadow:0 8px 20px rgba(20,40,120,.35);display:none}
   body[data-m="timeline"].batch-adjust .tl-donebtn{display:block}
+  /* 편집 bar v2 (D2-3) */
+  .edit-bar{position:fixed;left:0;right:0;bottom:0;z-index:62;background:rgba(255,255,255,.97);
+    border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(20,40,80,.18);
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:12px;align-items:stretch}
+  .eb-left{flex:1;min-width:0}
+  .eb-row{display:flex;gap:8px;margin-bottom:7px}
+  .eb-row button{flex:1;height:38px;border:1px solid var(--line);border-radius:11px;background:var(--card-2);
+    font-family:inherit;font-size:15px;cursor:pointer;color:var(--ink)}
+  .eb-row button:disabled{opacity:.35}
+  .eb-danger{color:#E0453A!important}
+  .eb-done{background:var(--ink)!important;color:#fff!important;border-color:var(--ink)!important;font-weight:800}
+  .eb-title{font-size:12.5px;font-weight:700;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .eb-slider{flex:0 0 51px;height:86px;align-self:center;border:1px solid var(--line);border-radius:13px;background:var(--card-2);
+    display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:6px 0;
+    cursor:ns-resize;touch-action:none;color:var(--ink-soft);font-size:11px;user-select:none}
+  .eb-slider i{flex:1;width:4px;border-radius:2px;background:var(--line);margin:4px 0}
+  .dueline.selected::after{content:"";position:absolute;left:8px;right:-6px;top:-26px;height:40px;
+    border:1px solid rgba(255,255,255,.95);border-radius:12px;pointer-events:none}
+  /* 마감집게 (D2-3) */
+  .due-clamp{position:absolute;left:15%;width:70%;z-index:5;text-align:center}
+  .due-clamp .dc-label{font-size:11.5px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(20,40,80,.5);margin-bottom:3px}
+  .due-clamp .dc-grip{height:16px;cursor:ns-resize;touch-action:none}
+  .due-clamp svg{width:100%;height:16px;display:block}
   /* 한 번에 계획하기 패널 (첨부1) */
   .batch-head{display:flex;align-items:center;padding:10px 6px 18px}
   .batch-head b{flex:1;text-align:center;font-size:18px}
@@ -134,7 +157,8 @@
   /* 지금 라인 = 빨강, x=56 시작 (델타 §2·§7) */
   .now{position:absolute;left:8px;right:12px;z-index:4;display:flex;align-items:center;gap:8px}
   .now .pill{background:#E34238;color:#fff;font-weight:800;font-size:11px;padding:3px 8px;border-radius:8px}
-  .now .wire{flex:1;height:2px;background:#E34238;border-radius:2px}
+  .now .wire{flex:1;height:2px;background:#E34238;border-radius:2px;position:relative}
+  .now .wire::before{content:"";position:absolute;left:-2px;top:-1.5px;width:5px;height:5px;border-radius:50%;background:#E34238}
   /* 마감선 (델타 §2): 계획 = 가로 선. 텍스트는 선의 밑줄처럼 위에. */
   .dueline{position:absolute;left:0;right:8px;height:0;z-index:4}
   .dueline .dl-wire{position:absolute;left:56px;right:0;top:-1px;height:2px;background:var(--sky-blue);border-radius:2px;opacity:.85}
@@ -146,6 +170,13 @@
   .tl-night .dl-text{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
   .dueline .dl-cap{position:absolute;right:0;top:-11px;background:#fff;color:var(--ink);font-size:11px;font-weight:800;
     border-radius:999px;padding:4px 10px;box-shadow:0 3px 8px rgba(20,40,80,.22);cursor:ns-resize;touch-action:none;user-select:none}
+  .dueline .dl-radio{position:absolute;left:93px;top:-22px;width:22px;height:22px;border-radius:50%;
+    border:2px solid rgba(255,255,255,.85);background:transparent;cursor:pointer;color:#fff;font-size:12px;
+    font-weight:800;display:grid;place-items:center;box-shadow:0 1px 4px rgba(20,40,80,.25)}
+  .dueline .dl-radio.on{background:var(--dc,#4585D6);border-color:var(--dc,#4585D6)}
+  .dueline .dl-text{left:124px}
+  .dueline .dl-text.done{text-decoration:line-through;opacity:.65}
+  .dueline.done .dl-wire{opacity:.45}
   .dueline .dl-x{position:absolute;right:-4px;top:-30px;width:22px;height:22px;border-radius:50%;border:0;
     background:rgba(30,38,60,.9);color:#fff;font-size:12px;cursor:pointer;display:none;place-items:center}
   .dueline.armed .dl-x{display:grid}
@@ -1165,8 +1196,26 @@
 <!-- 타임라인 우하단 버튼 + 한 번에 계획하기 (요청: 앱 파리티) -->
 <div class="tl-fabs">
   <button class="tl-donebtn" id="batchDone">확인</button>
+  <button class="tl-batchbtn" id="dueEditFab" title="마감선 편집" style="display:none;width:44px;height:44px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/></svg></button>
   <button class="tl-batchbtn" id="tlBatch" title="한 번에 계획하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3.5" width="13" height="13" rx="2.5"/><path d="M4 8v9.5A3.5 3.5 0 0 0 7.5 21H17"/><path d="M13.5 7v6M10.5 10h6"/></svg></button>
   <button class="tl-plusbtn" id="tlFab" title="작업 추가"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+</div>
+<!-- 편집 bar v2 (D2-3): 마감선 선택·이동·undo/redo·재정비 -->
+<div class="edit-bar" id="editBar" style="display:none">
+  <div class="eb-left">
+    <div class="eb-row">
+      <button id="ebUp" title="위 선택">▲</button><button id="ebDown" title="아래 선택">▽</button>
+      <button id="ebUndo" title="되돌리기">↩︎</button><button id="ebRedo" title="다시">↪︎</button>
+    </div>
+    <div class="eb-row">
+      <button id="ebPencil" title="작업 편집">✏️</button>
+      <button id="ebTrash" title="마감선만 삭제" class="eb-danger">🗑</button>
+      <button id="ebRealign" title="마감 재정비"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/><path d="M19 3l2 2-2 2"/></svg></button>
+      <button id="ebDone" class="eb-done">완료</button>
+    </div>
+    <div class="eb-title" id="ebTitle"></div>
+  </div>
+  <div class="eb-slider" id="ebSlider" title="1분 단위 이동"><span>▲</span><i></i><span>▼</span></div>
 </div>
 <div class="sheet-scrim" id="batchScrim" style="bottom:0">
   <div class="sheet batch-sheet">
@@ -1232,7 +1281,7 @@
     <button class="ft-finish" id="ftFinish">끝내기</button>
   </div>
   <div class="postit" id="postit" style="display:none">
-    <div class="pi-front">딴짓하고<br>싶죠?</div>
+    <div class="pi-front" id="piFront">엘리야<br>조금만<br>기다려</div>
     <div class="pi-back"><textarea id="piText" maxlength="60" placeholder="적어두고 지금은 집중!"></textarea><button id="piSave">담기</button></div>
   </div>
   <button class="postit-edge" id="postitEdge" style="display:none">📝</button>
@@ -1287,6 +1336,16 @@
 
     <div class="set-sec">작업 추가</div>
     <div class="elabel">추가할 때 기본 길이 (분)</div><input type="number" id="setDefDur" min="0" step="5">
+    <div class="elabel">아이콘 표시 (숨겨도 값이 걸려 있으면 나타나요)</div>
+    <div class="set-toggles" id="setCapIcons">
+      <label><input type="checkbox" data-k="duration" disabled checked> 길이 — 기본 길이 프리셋·슬라이더</label>
+      <label><input type="checkbox" data-k="note"> 메모 — 마크다운 메모</label>
+      <label><input type="checkbox" data-k="calreg"> 일정등록 — 캘린더에 저장 (앱)</label>
+      <label><input type="checkbox" data-k="reward"> 보상 — 끝내면 나에게 주는 선물</label>
+      <label><input type="checkbox" data-k="reminder"> 알림 — 정시·N분 전</label>
+      <label><input type="checkbox" data-k="due"> 마감일 — 날짜 캘린더</label>
+      <label><input type="checkbox" data-k="repeat"> 반복 — 요일 선택</label>
+    </div>
 
     <div class="set-sec">집중 페이지</div>
     <div class="set-toggles">
@@ -1906,13 +1965,135 @@
     return blocks;
   }
 
+  /* ── 편집 bar v2 (D2-3): 마감선 선택·이동·undo/redo·재정비·집게 ── */
+  var editBarOn=false,selDueId=null,dueUndo=[],dueRedo=[];
+  function todayDueLines(includeDone){
+    return (DATA.tasks||[]).filter(function(t){
+      return t.scheduledStart&&(t.durationMin||0)>0&&!t.isRewardItem&&(includeDone||!t.isDone)&&
+        dateKey(taskDueAt(t).toISOString())===todayKey();
+    }).sort(function(a,b){return taskDueAt(a)-taskDueAt(b);});
+  }
+  function dueSnapshot(){return JSON.stringify((DATA.tasks||[]).map(function(t){
+    return {id:t.id,s:t.scheduledStart,d:t.durationMin,p:t.planDueAt,done:t.isDone};}));}
+  function dueRestore(snap){
+    JSON.parse(snap).forEach(function(r){var t=taskByID(r.id);if(!t)return;
+      t.scheduledStart=r.s;t.durationMin=r.d;t.planDueAt=r.p;t.isDone=r.done;});
+    renderAll();pushSnapshot();
+  }
+  function duePushUndo(){dueUndo.push(dueSnapshot());if(dueUndo.length>30)dueUndo.shift();dueRedo=[];paintEditBar();}
+  function openEditBar(tid){
+    editBarOn=true;
+    var lines=todayDueLines(true);
+    selDueId=tid||nearestDueId();
+    if(!selDueId&&lines.length)selDueId=lines[0].id;
+    document.getElementById('editBar').style.display='flex';
+    paintEditBar();renderBig();
+  }
+  function closeEditBar(){editBarOn=false;selDueId=null;
+    document.getElementById('editBar').style.display='none';renderBig();}
+  function nearestDueId(){
+    var lines=todayDueLines(false);if(!lines.length)return null;
+    var now=Date.now(),best=lines[0],bd=1/0;
+    lines.forEach(function(t){var d=Math.abs(taskDueAt(t).getTime()-now);if(d<bd){bd=d;best=t;}});
+    return best.id;
+  }
+  function paintEditBar(){
+    var t=taskByID(selDueId);
+    document.getElementById('ebTitle').textContent=t?(t.title+' · '+('0'+taskDueAt(t).getHours()).slice(-2)+':'+('0'+taskDueAt(t).getMinutes()).slice(-2)+'까지'):'선택된 마감선 없음';
+    document.getElementById('ebUndo').disabled=!dueUndo.length;
+    document.getElementById('ebRedo').disabled=!dueRedo.length;
+  }
+  function ebMove(dir){
+    var lines=todayDueLines(true);if(!lines.length)return;
+    var i=lines.findIndex(function(t){return t.id===selDueId;});
+    i=Math.max(0,Math.min(lines.length-1,i+dir));
+    selDueId=lines[i].id;paintEditBar();renderBig();
+  }
+  // 마감 재정비 (D2-3): 지난 미완료 선들을 지금 아래로 순서대로.
+  function realignDues(){
+    var now=Date.now();
+    var past=todayDueLines(false).filter(function(t){return taskDueAt(t).getTime()<now;});
+    if(!past.length){appToast('지난 마감선이 없어요');return;}
+    duePushUndo();
+    var cursor=now;
+    past.forEach(function(t){
+      var plan=t.createdDurationMin||t.durationMin||30;
+      var focMin=Math.round(todayFocusSec(t.id)/60);
+      var len;
+      if(focMin>=plan)len=30;                       // 계획 이상 재생 → 30분
+      else if(focMin>0)len=Math.max(5,plan-focMin); // 일부 재생 → 잔여
+      else len=plan;                                // 기록 0 → 계획 그대로
+      var due=cursor+len*60000;
+      t.planDueAt=new Date(due).toISOString();
+      t.durationMin=len;
+      t.scheduledStart=new Date(due-len*60000).toISOString();
+      cursor=due;
+    });
+    renderAll();pushSnapshot();
+    appToast('마감 재정비 완료 — ↩︎로 되돌릴 수 있어요 ('+past.length+'개)');
+  }
+  function todayFocusSec(tid){
+    var t0=todayKey(),sum=0;
+    allSessions().forEach(function(x){if(x.taskID===tid&&dateKey(x.start)===t0)sum+=x.focusedSec||0;});
+    return sum;
+  }
+  // 마감집게 (D2-3): 마지막 선 아래, 드래그 = 미래 미완료 선 간격 비율 스케일.
+  function addDueClamp(sc){
+    if(dayOffset!==0)return;
+    var fut=todayDueLines(false).filter(function(t){return taskDueAt(t).getTime()>Date.now();});
+    var all=todayDueLines(true);
+    if(!all.length)return;
+    var last=all[all.length-1],lastDue=taskDueAt(last);
+    var hf=lastDue.getHours()+lastDue.getMinutes()/60;if(hf<TS||hf>TE)return;
+    var wrap=document.createElement('div');wrap.className='due-clamp';
+    wrap.style.top=(yFor(hf)+10)+'px';
+    var label;
+    if(!fut.length){
+      var doneCnt=all.filter(function(t){return t.isDone;}).length;
+      var spent=Math.round(all.reduce(function(a,t){return a+todayFocusSec(t.id);},0)/60);
+      label=doneCnt?'축하해요! '+doneCnt+'개 작업을 '+durLabel(Math.max(1,spent))+' 만에 끝냈어요!':'';
+    }else{
+      var totalMin=Math.round((taskDueAt(fut[fut.length-1]).getTime()-Date.now())/60000);
+      label=('0'+lastDue.getHours()).slice(-2)+'시 '+('0'+lastDue.getMinutes()).slice(-2)+'분까지 '+fut.length+'개를 끝낼 수 있어요 · '+durLabel(Math.max(1,totalMin));
+    }
+    if(!label)return;
+    wrap.innerHTML='<div class="dc-label">'+esc(label)+'</div>'+
+      '<div class="dc-grip"><svg viewBox="0 0 100 16" preserveAspectRatio="none">'+
+      '<path d="M2 2h96M2 2v9a3 3 0 0 0 3 3h12M98 2v9a3 3 0 0 1-3 3H83" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2.4" stroke-linecap="round"/>'+
+      '<path d="M42 8h16M42 11h16M42 14h16" stroke="rgba(255,255,255,.9)" stroke-width="1.6"/></svg></div>';
+    // 손잡이 드래그 (1분 스냅, 비율 스케일)
+    var grip=wrap.querySelector('.dc-grip');
+    grip.addEventListener('pointerdown',function(e){
+      if(!fut.length)return;
+      e.preventDefault();tlDragging=true;
+      var y0=e.clientY,now0=Date.now();
+      var orig=fut.map(function(t){return {t:t,due:taskDueAt(t).getTime(),dur:t.durationMin};});
+      var oldTotal=orig[orig.length-1].due-now0;
+      duePushUndo();
+      function move(ev){
+        var dm=Math.round((ev.clientY-y0)*(60/PPH))*60000;   // 1분 스냅
+        var newTotal=Math.max(fut.length*5*60000,oldTotal+dm);
+        var k=newTotal/oldTotal;
+        orig.forEach(function(o){
+          var nd=now0+Math.round((o.due-now0)*k/60000)*60000;
+          o.t.planDueAt=new Date(nd).toISOString();
+        });
+        renderBig();ev.preventDefault();
+      }
+      function up(){document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);
+        tlDragging=false;renderAll();pushSnapshot();}
+      document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
+    });
+    sc.appendChild(wrap);
+  }
+
   // 마감선 캡슐 드래그 (§2): 1분 스냅, 자유 이동, 놓을 때 ±8분→아래 10분 스프링.
   function attachDueDrag(dl,t){
     var cap=dl.querySelector('.dl-cap');if(!cap)return;
     cap.addEventListener('pointerdown',function(e){
       e.preventDefault();e.stopPropagation();
       var y0=e.clientY,due0=taskDueAt(t).getTime(),moved=false;
-      var armTimer=setTimeout(function(){if(!moved)dl.classList.add('armed');},450);   // 꾹=편집(X)
+      var armTimer=setTimeout(function(){if(!moved)openEditBar(t.id);},420);   // 꾹=편집 bar v2 (D2-3)
       tlDragging=true;
       function move(ev){
         if(Math.abs(ev.clientY-y0)>4)moved=true;
@@ -1926,6 +2107,7 @@
         document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);
         clearTimeout(armTimer);tlDragging=false;
         if(!moved)return;
+        duePushUndo();
         var due=taskDueAt(t).getTime();
         // 겹침 스프링 스냅 (§2·§7): 다른 캡슐 ±8분 → 그 아래 10분.
         var others=(DATA.tasks||[]).filter(function(x){return x!==t&&x.scheduledStart&&(x.durationMin||0)>0&&!x.isDone&&!x.isRewardItem;});
@@ -1992,8 +2174,9 @@
       sc.appendChild(el);
     });
     // ② 마감선 (§2): 계획 = 가로 선. 라디오 완료 시 소멸, 기록 생겨도 유지.
+    // D2 정정: 완료해도 선은 남는다(취소선) — 재정비·집게 대상에서만 제외.
     var lines=(DATA.tasks||[]).filter(function(t){
-      return t.scheduledStart&&(t.durationMin||0)>0&&!t.isDone&&!t.isRewardItem&&
+      return t.scheduledStart&&(t.durationMin||0)>0&&!t.isRewardItem&&
         dateKey(taskDueAt(t).toISOString())===tk;
     }).sort(function(a,b){return taskDueAt(a)-taskDueAt(b);});
     var prevDue=null;
@@ -2009,21 +2192,33 @@
       var dispMin=Math.max(1,Math.round((due.getTime()-anchor)/60000));
       prevDue=due;
       var y=yFor(hf);
-      var dl=document.createElement('div');dl.className='dueline';dl.style.top=y+'px';dl.dataset.tid=t.id;
+      var dl=document.createElement('div');dl.className='dueline'+(t.isDone?' done':'');
+      dl.style.top=y+'px';dl.dataset.tid=t.id;
       // 선이 블록 위를 지나면 텍스트 숨김 (§2).
       var covered=recBlocks.some(function(b){
         var bs=new Date(b.start),be=new Date(b.end);
         var y1=yFor(bs.getHours()+bs.getMinutes()/60),y2=yFor(be.getHours()+be.getMinutes()/60);
         return y>=y1-2&&y<=y2+18;});
+      // D2-2: 길이 'n시간 n분', 당일·과거·미완료면 'n시간 n분 지남'.
+      var lenTxt=durLabel(dispMin);
+      if(dayOffset===0&&due.getTime()<nowMs&&!t.isDone)lenTxt=lenTxt+' 지남';
       dl.innerHTML='<div class="dl-wire"></div>'+
         '<button class="dl-play" title="집중 시작">'+IC.play+'</button>'+
-        (covered?'':'<div class="dl-text">'+esc(t.title)+' · '+dispMin+'분</div>')+
+        '<button class="dl-radio'+(t.isDone?' on':'')+'" title="완료" style="--dc:'+catColor(t.categoryID)+'">'+(t.isDone?'✓':'')+'</button>'+
+        (covered?'':'<div class="dl-text'+(t.isDone?' done':'')+'">'+esc(t.title)+' · '+lenTxt+'</div>')+
         '<span class="dl-cap">'+('0'+due.getHours()).slice(-2)+':'+('0'+due.getMinutes()).slice(-2)+'까지</span>'+
-        '<button class="dl-x" title="삭제">✕</button>';
+        '<button class="dl-x" title="마감선만 삭제">✕</button>';
       dl.querySelector('.dl-play').addEventListener('click',function(e){e.stopPropagation();startFocus(t);});
+      // D2-2 마감 동그라미: 완료 토글 (보상 지급 + 취소선)
+      dl.querySelector('.dl-radio').addEventListener('click',function(e){e.stopPropagation();
+        t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;
+        if(t.isDone)grantReward(t);renderAll();pushSnapshot();});
+      // D2-3 삭제 의미 분리: 캡슐 X = 마감선만 삭제(기록 유지).
       dl.querySelector('.dl-x').addEventListener('click',function(e){e.stopPropagation();
-        deleteTask(t);renderBig();renderMosaic();pushSnapshot();});
-      attachDueDrag(dl,t);
+        t.scheduledStart=null;t.planDueAt=null;
+        renderBig();renderMosaic();renderTodo();pushSnapshot();});
+      if(editBarOn&&t.id===selDueId)dl.classList.add('selected');
+      if(!t.isDone)attachDueDrag(dl,t);
       sc.appendChild(dl);
     });
     var nf=TS+1.5;
@@ -2031,6 +2226,9 @@
       var n=document.createElement('div');n.className='now';n.style.top=yFor(nf)+'px';n.innerHTML='<span class="pill">지금</span><span class="wire"></span>';sc.appendChild(n);}
     if(!any){var e=document.createElement('div');e.className='tl-empty';e.textContent='이 날 일정이 비어 있어요.';sc.appendChild(e);}
     addBatchHandles(sc);                                  // 배치 조절 핸들 (요청)
+    addDueClamp(sc);                                      // 마감집게 (D2-3)
+    var pf=document.getElementById('dueEditFab');
+    if(pf)pf.style.display=(dayOffset===0&&todayDueLines(true).length)?'grid':'none';
     renderMeadow();applyScenery();                        // 들풀·반딧불·장소 (§1·§7)
     // (요청) 태양·달 제거 — 동적 하늘색만 유지.
     updateTlSky();
@@ -2045,6 +2243,44 @@
   // 편집 모달을 열어 모든 옵션을 설정. 보고 있는 날짜에 배치된다.
   document.getElementById('tlAdd').addEventListener('click',function(){openCapture('timeline');});
   document.getElementById('tlFab').addEventListener('click',function(){openCapture('timeline');});
+  // 편집 bar v2 배선 (D2-3)
+  document.getElementById('dueEditFab').addEventListener('click',function(){openEditBar(null);});
+  document.getElementById('ebUp').addEventListener('click',function(){ebMove(-1);});
+  document.getElementById('ebDown').addEventListener('click',function(){ebMove(1);});
+  document.getElementById('ebUndo').addEventListener('click',function(){
+    if(!dueUndo.length)return;dueRedo.push(dueSnapshot());dueRestore(dueUndo.pop());paintEditBar();});
+  document.getElementById('ebRedo').addEventListener('click',function(){
+    if(!dueRedo.length)return;dueUndo.push(dueSnapshot());dueRestore(dueRedo.pop());paintEditBar();});
+  document.getElementById('ebPencil').addEventListener('click',function(){
+    var t=taskByID(selDueId);if(t)openEditor(t);});
+  document.getElementById('ebTrash').addEventListener('click',function(){
+    var t=taskByID(selDueId);if(!t)return;
+    duePushUndo();t.scheduledStart=null;t.planDueAt=null;      // 마감선만 삭제 (기록 유지)
+    selDueId=nearestDueId();renderAll();pushSnapshot();paintEditBar();});
+  document.getElementById('ebRealign').addEventListener('click',realignDues);
+  document.getElementById('ebDone').addEventListener('click',closeEditBar);
+  // 세로 슬라이더: 드래그 = 선택 마감선 1분 이동
+  (function(){
+    var sl=document.getElementById('ebSlider');
+    sl.addEventListener('pointerdown',function(e){
+      var t=taskByID(selDueId);if(!t||t.isDone)return;
+      e.preventDefault();
+      var y0=e.clientY,due0=taskDueAt(t).getTime(),pushed=false;
+      function move(ev){
+        if(!pushed){duePushUndo();pushed=true;}
+        var dm=Math.round((ev.clientY-y0)/2);                  // 2px = 1분
+        t.planDueAt=new Date(due0+dm*60000).toISOString();
+        paintEditBar();renderBig();ev.preventDefault();
+      }
+      function up(){document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);
+        if(pushed){renderAll();pushSnapshot();}}
+      document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
+    });
+  })();
+  // 빈 화면 탭 = 편집 종료 (D2-3)
+  document.getElementById('tlScroll').addEventListener('click',function(e){
+    if(editBarOn&&!e.target.closest('.dueline,.block,.due-clamp'))closeEditBar();
+  });
   document.getElementById('tlBatch').addEventListener('click',openBatch);
   document.getElementById('batchCancel').addEventListener('click',closeBatch);
   document.getElementById('batchScrim').addEventListener('click',function(e){if(e.target===this)closeBatch();});
@@ -2113,7 +2349,19 @@
   }
   function addTask(o){if(!DATA.tasks)DATA.tasks=[];var t=newTask(o);
     if(t.scheduledStart&&(t.durationMin||0)>0&&!t.planDueAt)setPlanFromSchedule(t);
+    if((t.durationMin||0)>0&&t.createdDurationMin==null)t.createdDurationMin=t.durationMin;   // D2-1
+    inheritSimilarColor(t);                                                                   // D2-4
     DATA.tasks.push(t);renderAll();pushSnapshot();return t;}
+  // D2-4: 유사 문구 = 완전 동일 색 — "수학"과 "수학 풀기"는 같은 색(카테고리·colorKey 승계).
+  function inheritSimilarColor(t){
+    var norm=function(x){return String(x||'').replace(/\s+/g,'').toLowerCase();};
+    var mine=norm(t.title);if(!mine)return;
+    var hit=(DATA.tasks||[]).find(function(x){
+      var other=norm(x.title);if(!other)return false;
+      return other===mine||other.indexOf(mine)===0||mine.indexOf(other)===0;});
+    if(hit){t.categoryID=hit.categoryID;if(hit.colorKey)t.colorKey=hit.colorKey;
+      if(hit.iconName&&!t.iconName)t.iconName=hit.iconName;}
+  }
   function deleteTask(t){DATA.tasks=(DATA.tasks||[]).filter(function(x){return x!==t;});renderAll();pushSnapshot();}
   function doTodoAdd(){var el=document.getElementById('todoAdd');var v=(el.value||'').trim();if(!v)return;addTask({title:v});el.value='';}
 
@@ -2447,6 +2695,8 @@
   function paintPostit(){
     var p=document.getElementById('postit'),e=document.getElementById('postitEdge');
     if(!p)return;
+    var fr=document.getElementById('piFront');
+    if(fr)fr.innerHTML=esc(eleName())+'야<br>조금만<br>기다려';   // D2-8: 충동=엘리 프레임
     var tucked=localStorage.getItem('hfPostItTucked')==='1';
     p.style.display=postItOn()&&!tucked?'':'none';
     e.style.display=postItOn()&&tucked?'':'none';
@@ -2529,6 +2779,9 @@
     document.getElementById('setDefDur').value=s.defaultDurationMin!=null?s.defaultDurationMin:50;
     document.getElementById('setVow').value=s.motto||s.todayVow||'';
     document.getElementById('setEleName').value=s.eleName||'';
+    var capH={};try{capH=JSON.parse(localStorage.getItem('hfCapHidden')||'{\"reminder\":1,\"due\":1,\"repeat\":1}');}catch(_){}
+    document.querySelectorAll('#setCapIcons input[data-k]').forEach(function(cb){
+      if(cb.dataset.k!=='duration')cb.checked=!capH[cb.dataset.k];});
     document.getElementById('setPostIt').checked=localStorage.getItem('hfPostItOn')!=='0';
     document.getElementById('setPostItQ4').checked=localStorage.getItem('hfPostItToQ4')!=='0';
     var scen=s.sceneryRaw||'plain';
@@ -2676,6 +2929,14 @@
       t.matrixQuadrant=+b.dataset.q;row.classList.remove('mx-open');closeSwipe();renderAll();pushSnapshot();});});
   }
 
+  // D2-5: '타임라인N' 회색 캡슐 — N = 그 작업의 오늘 기록 블록 수.
+  function tlBadgeHTML(t){
+    var hasPlan=t.scheduledStart&&dateKey(taskDueAt(t).toISOString())===todayKey();
+    var n=0;
+    try{n=dayRecordBlocks(todayKey()).filter(function(b){return b.taskID===t.id;}).length;}catch(_){}
+    if(!hasPlan&&!n)return '';
+    return '<span class="t-hint" style="background:var(--card-2)">타임라인'+(n||'')+'</span>';
+  }
   // 할일 한 줄 (스와이프 4버튼 포함) — 여러 섹션이 공유한다 (요청 리팩터).
   function buildTodoRow(t){
     var placed=t.scheduledStart&&t.durationMin;
@@ -2694,7 +2955,7 @@
           ?'<span class="t-icon" style="color:'+(iconTint(t.iconName)||catColor(t.categoryID))+'">'+findIconSvg(t.iconName)+'</span>'
           :'<span class="swatch" style="background:'+catColor(t.categoryID)+'"></span>')+
         '<div class="t-main"><div class="t-title">'+esc(t.title)+'</div>'+
-          '<div class="t-meta">'+(placed?'<span class="t-time">'+fmtTime(t.scheduledStart)+'</span>':'')+taskMetaHTML(t)+'</div></div>'+
+          '<div class="t-meta">'+(placed?'<span class="t-time">'+fmtTime(t.scheduledStart)+'</span>':'')+taskMetaHTML(t)+tlBadgeHTML(t)+'</div></div>'+
         memoIconHTML(t)+
         '<span class="star'+(t.isStarred?' on':'')+'">'+(t.isStarred?'★':'☆')+'</span>'+
         '<button class="play" title="집중 시작">'+IC.play+'</button>'+
@@ -2730,14 +2991,14 @@
     // 내일로 미룬 일은 그날이 되기 전엔 숨긴다 (앱 파리티, 요청).
     var visible=(DATA.tasks||[]).filter(function(t){
       if(!t.deferredUntil)return true;return new Date(t.deferredUntil)<=todayMid;});
-    // 선택 날짜에 배치된 일정 — 완료된 건 섹션 맨 아래로 (요청).
-    var scheduled=visible.filter(function(t){return t.scheduledStart&&calSameDay(new Date(t.scheduledStart),calSel);})
+    // D2-5: '오늘 계획' 섹션 폐지 — 타임라인 작업도 담아둔 일에 1행으로 합류.
+    var scheduled=[];
+    var backlog=visible
       .sort(function(a,b){var d=(a.isDone?1:0)-(b.isDone?1:0);if(d)return d;
-        return new Date(a.scheduledStart)-new Date(b.scheduledStart);});
-    // 담아둔 일 — 별표 위로, 완료는 맨 아래로 (요청).
-    var backlog=visible.filter(function(t){return !t.scheduledStart;})
-      .sort(function(a,b){var d=(a.isDone?1:0)-(b.isDone?1:0);if(d)return d;
-        return (b.isStarred?1:0)-(a.isStarred?1:0);});
+        var st=(b.isStarred?1:0)-(a.isStarred?1:0);if(st)return st;
+        var as=a.scheduledStart?new Date(a.scheduledStart).getTime():1/0;
+        var bs=b.scheduledStart?new Date(b.scheduledStart).getTime():1/0;
+        return as-bs;});
     if(!localStorage.getItem('hfWelcomed')&&calSel>=todayMid){
       list.insertAdjacentHTML('beforeend',welcomeHTML());
       var wc=list.querySelector('#welcomeGo');
@@ -4157,6 +4418,12 @@
     });
   })();
   // 설정: 집중 페이지 토글
+  document.querySelectorAll('#setCapIcons input[data-k]').forEach(function(cb){
+    cb.addEventListener('change',function(){
+      var h={};try{h=JSON.parse(localStorage.getItem('hfCapHidden')||'{\"reminder\":1,\"due\":1,\"repeat\":1}');}catch(_){}
+      if(cb.checked)delete h[cb.dataset.k];else h[cb.dataset.k]=1;
+      localStorage.setItem('hfCapHidden',JSON.stringify(h));
+    });});
   document.getElementById('setPostIt').addEventListener('change',function(){
     localStorage.setItem('hfPostItOn',this.checked?'1':'0');paintPostit();});
   document.getElementById('setPostItQ4').addEventListener('change',function(){
@@ -4367,7 +4634,7 @@
       scheduledStart:opts.scheduledStart||null,reminderOffsets:[0],nudgeEnabled:false,dueDate:null,
       notes:'',repeatDaysMask:0,rewardIsMoney:false,rewardText:'',rewardToQ4:false};
     document.getElementById('capText').value='';
-    document.getElementById('capText').placeholder=origin==='timeline'?'이때까지 끝낼 수 있어요':'빠르게 담기…';
+    document.getElementById('capText').placeholder=origin==='timeline'?'예: 35분 영어 — 줄바꿈으로 여러 개':'예: 30분 달리기';
     var wrap=document.getElementById('capWrap');wrap.classList.add('open');
     var mb=document.querySelector('.mbar');if(mb)mb.style.display='none';
     paintCap();
@@ -4418,6 +4685,8 @@
       closeCapture();renderAll();pushSnapshot();return;
     }
     var title=lines[0];
+    var pp=parseDurTitle(title);
+    if(pp){title=pp.title;cap.draft.durationMin=pp.dur;}
     var o={title:title,categoryID:cap.draft.categoryID,colorKey:cap.draft.colorKey,iconName:cap.draft.iconName,
       durationMin:cap.draft.durationMin,scheduledStart:cap.draft.scheduledStart,
       reminderOffsets:cap.draft.reminderOffsets,nudgeEnabled:cap.draft.nudgeEnabled,
@@ -4432,9 +4701,16 @@
     addTask(o);
     closeCapture();renderAll();pushSnapshot();
   }
+  // D2-7 최소 자연어: "35분 영어" / "1시간 30분 수학" → 길이+제목.
+  function parseDurTitle(raw){
+    var m=raw.match(/^\s*(?:(\d+)\s*시간)?\s*(?:(\d+)\s*분)?\s+(.+)$/);
+    if(m&&(m[1]||m[2]))return {dur:(+(m[1]||0))*60+(+(m[2]||0)),title:m[3].trim()};
+    return null;
+  }
   function submitCaptureOne(title,batchID){
-    var o={title:title,categoryID:cap.draft.categoryID,colorKey:cap.draft.colorKey,iconName:cap.draft.iconName,
-      durationMin:cap.draft.durationMin,reminderOffsets:cap.draft.reminderOffsets,
+    var p=parseDurTitle(title);
+    var o={title:p?p.title:title,categoryID:cap.draft.categoryID,colorKey:cap.draft.colorKey,iconName:cap.draft.iconName,
+      durationMin:p?p.dur:cap.draft.durationMin,reminderOffsets:cap.draft.reminderOffsets,
       nudgeEnabled:cap.draft.nudgeEnabled,dueDate:cap.draft.dueDate,repeatDaysMask:cap.draft.repeatDaysMask};
     if(batchID){o.rewardBatchID=batchID;
       if(cap.draft.rewardIsMoney)o.rewardMoney=parseInt((cap.draft.rewardText||'').replace(/[^0-9]/g,''),10)||0;
@@ -4472,16 +4748,26 @@
     if(cap.detail==='options'&&!cap.optionsOpen){
       d.innerHTML='';
     } else if(cap.detail==='options'){
-      d.innerHTML='<div class="cap-icons">'+
-        '<button class="cap-opt" data-d="duration">'+IC.timer+'<b>'+capDurLabel(cap.draft.durationMin)+'</b></button>'+
-        '<button class="cap-opt'+(cap.draft.scheduledStart?' on':'')+'" data-d="schedule">'+IC.schedule+'<b>시간배치</b></button>'+
-        '<button class="cap-opt'+(cap.draft.nudgeEnabled||cap.draft.reminderOffsets.length?' on':'')+'" data-d="reminder">'+IC.bell+'<b>알림</b></button>'+
-        '<button class="cap-opt'+(cap.draft.dueDate?' on':'')+'" data-d="due">'+IC.flag+'<b>마감</b></button>'+
-        '<button class="cap-opt'+(cap.draft.notes?' on':'')+'" data-d="note">'+IC.note+'<b>메모</b></button>'+
-        '<button class="cap-opt'+(cap.draft.repeatDaysMask?' on':'')+'" data-d="repeat">'+IC.repeat2+'<b>반복</b></button>'+
-        '<button class="cap-opt'+((cap.draft.rewardIsMoney||cap.draft.rewardText)?' on':'')+'" data-d="reward">'+IC.gift+'<b>보상</b></button>'+
-        '</div>';
-      d.querySelectorAll('.cap-opt').forEach(function(b){b.addEventListener('click',function(){setCapDetail(b.dataset.d);});});
+      // D2-6: 아이콘 표시/숨김 설정 (기본 숨김=알림·마감일·반복, 값 걸리면 표시).
+      var hidden={};try{hidden=JSON.parse(localStorage.getItem('hfCapHidden')||'{"reminder":1,"due":1,"repeat":1}');}catch(_){}
+      var defs=[
+        ['duration',IC.timer,capDurLabel(cap.draft.durationMin),false],
+        ['note',IC.note,'메모',!!cap.draft.notes],
+        ['calreg','<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="14" height="15" rx="2.5"/><path d="M3 9.5h14M7 3v4M13 3v4"/><path d="M19 13v6M16 16h6"/></svg>','일정등록',false],
+        ['reward',IC.gift,'보상',(cap.draft.rewardIsMoney||cap.draft.rewardText)],
+        ['reminder',IC.bell,'알림',(cap.draft.nudgeEnabled||cap.draft.reminderOffsets.length>0)],
+        ['due',IC.flag,'마감',!!cap.draft.dueDate],
+        ['repeat',IC.repeat2,'반복',!!cap.draft.repeatDaysMask],
+        ['schedule',IC.schedule,'시간배치',!!cap.draft.scheduledStart]
+      ];
+      d.innerHTML='<div class="cap-icons">'+defs.map(function(def){
+        var key=def[0],on=def[3];
+        if(hidden[key]&&!on)return '';                          // 숨김 — 값 걸리면 표시
+        return '<button class="cap-opt'+(on?' on':'')+'" data-d="'+key+'">'+def[1]+'<b>'+def[2]+'</b></button>';
+      }).join('')+'</div>';
+      d.querySelectorAll('.cap-opt').forEach(function(b){b.addEventListener('click',function(){
+        if(b.dataset.d==='calreg'){appNudge();return;}          // 웹 캘린더 미연동 (D2-9)
+        setCapDetail(b.dataset.d);});});
     } else if(cap.detail==='duration'){
       d.innerHTML=renderDurationPanel();
       wireDurationPanel();
@@ -4921,12 +5207,14 @@
     if(k==='focusSum'){var st=focusStats();var sec=st?st.today:0;var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);
       return {ic:IC.timer,txt:'오늘 집중 '+(h?h+'시간 ':'')+m+'분'};}
     if(k==='sunset'||k==='sunrise'){
+      // D2-2: 문구 없이 아이콘(해+↑/↓) + 남은 시간 카운트다운만.
       var lat=S.lat!=null?S.lat:-43.53,lng=S.lng!=null?S.lng:172.63;
-      var t=sunTimes(new Date(),lat,lng);
-      if(k==='sunset')return {ic:IC.sunset||IC.note,txt:'해질녘 '+fmtClock(t.sunset)};
-      var now=new Date(),sr=t.sunrise;if(sr<now)sr=sunTimes(new Date(Date.now()+86400000),lat,lng).sunrise;
-      var mins=Math.max(0,Math.round((sr-now)/60000)),hh=Math.floor(mins/60);
-      return {ic:IC.sunrise,txt:'해돋이까지 '+(hh?hh+'시간 ':'')+(mins%60)+'분'};
+      var now=new Date(),t=sunTimes(now,lat,lng);
+      var target=k==='sunset'?t.sunset:t.sunrise;
+      if(target<now)target=(k==='sunset'?sunTimes(new Date(Date.now()+86400000),lat,lng).sunset
+                                        :sunTimes(new Date(Date.now()+86400000),lat,lng).sunrise);
+      var mins=Math.max(0,Math.round((target-now)/60000)),hh=Math.floor(mins/60);
+      return {ic:(k==='sunset'?IC.sunset:IC.sunrise),txt:(hh?hh+'시간 ':'')+(mins%60)+'분'};
     }
     if(k==='dday'){
       if(!S.ddayDate)return {ic:IC.flag,txt:'D-day 미설정'};
