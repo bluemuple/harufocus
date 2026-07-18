@@ -413,6 +413,15 @@
   .set-row-btn{width:100%;text-align:left;border:1px solid var(--line);background:var(--card-2);color:var(--ink);
     font-family:inherit;font-size:15px;font-weight:600;border-radius:12px;padding:14px 15px;margin-bottom:9px;cursor:pointer}
   .set-sec{font-size:12px;font-weight:800;color:var(--sky-blue);margin:18px 0 4px;letter-spacing:.02em}
+  .ab-card{background:var(--card-2);border-radius:14px;padding:14px 15px;font-size:14px;line-height:1.65;margin-bottom:4px}
+  .ab-ios{font-size:10px;font-weight:800;color:#fff;background:var(--sky-blue);border-radius:999px;padding:2px 8px;vertical-align:2px}
+  .ab-bars{margin:10px 0 4px;display:flex;flex-direction:column;gap:7px}
+  .ab-bar{position:relative;height:14px}
+  .ab-bar span{position:absolute;left:0;top:0;height:8px;border-radius:4px;display:block}
+  .ab-bar span:last-child{top:6px;opacity:.85}
+  .ab-legend{font-size:11px;color:var(--ink-soft);margin-bottom:6px}
+  .ab-legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin:0 4px 0 8px;vertical-align:-1px}
+  .ab-legend i:first-child{margin-left:0}
   .set-acct{background:var(--card-2);border:1px solid var(--line);border-radius:14px;padding:14px 15px}
   .sa-status{font-size:13.5px;line-height:1.55;color:var(--ink)}
   .sa-status span{color:var(--ink-soft);font-size:12.5px}
@@ -598,6 +607,33 @@
   .d-foot s{opacity:.75}
   /* 읽기/편집 패널 */
   .d-toolbar{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap}
+  .d-tag{display:inline-block;background:var(--card-2);border-radius:999px;padding:1px 8px;margin-left:5px;
+    font-size:10.5px;font-weight:700;color:var(--ink-soft)}
+  .d-card.dark .d-tag{background:#2c3552;color:#aab4cc}
+  .d-chip.tagchip{background:rgba(255,255,255,.35)}
+  .d-chip.tagchip.on{background:#fff;color:var(--ink)}
+  /* 에디터 태그 bar (D4-2): [+추가 고정] + 카탈로그 캡슐 가로 스크롤 */
+  .d-tagbar{display:flex;gap:6px;align-items:center;margin:0 0 8px;overflow-x:auto;padding:2px 0}
+  .d-tagbar .tb-add{flex:0 0 auto;border:1px dashed var(--line);background:var(--card);border-radius:999px;
+    padding:6px 12px;font-family:inherit;font-size:12px;font-weight:700;color:var(--sky-blue);cursor:pointer;
+    position:sticky;left:0;z-index:1}
+  .d-tagbar .tb-cap{flex:0 0 auto;border:0;background:var(--card-2);border-radius:999px;padding:6px 12px;
+    font-family:inherit;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer}
+  .d-tagbar input{flex:0 0 96px;border:1px solid var(--line);border-radius:999px;padding:6px 10px;
+    font-family:inherit;font-size:12px;outline:none}
+  .d-seltags{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px}
+  .d-seltags button{border:0;background:var(--card-2);border-radius:999px;padding:5px 11px;
+    font-family:inherit;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer}
+  .modal.dark .d-seltags button,.modal.dark .d-tagbar .tb-cap{background:#2c3552;color:#e8ecf6}
+  /* 프롬프트 드롭다운 (D5-2) */
+  .d-promptdd{border:1px solid var(--line);border-radius:13px;background:var(--card-2);
+    max-height:230px;overflow-y:auto;margin-bottom:8px;padding:6px}
+  .d-promptdd .pd-cat{font-size:11.5px;font-weight:800;color:var(--sky-blue);margin:8px 6px 3px}
+  .d-promptdd button{display:block;width:100%;text-align:left;border:0;background:none;font-family:inherit;
+    font-size:13px;color:var(--ink);padding:7px 8px;border-radius:8px;cursor:pointer}
+  .d-promptdd button:hover{background:rgba(0,0,0,.05)}
+  .modal.dark .d-promptdd{background:#2c3552;border-color:#3a466b}
+  .modal.dark .d-promptdd button{color:#e8ecf6}
   .d-view-body{font-size:14.5px;line-height:1.7;min-height:80px;white-space:pre-wrap;word-break:break-word}
   .d-view-body h4{font-size:17px;margin:2px 0 6px}
   #diaryEditTa{width:100%;min-height:180px;font-family:inherit;font-size:17px;line-height:1.6;
@@ -924,6 +960,14 @@
   .focusScrim.night .postit{background:#CBB94F}
   .pi-front{display:grid;place-items:center;height:100%;font-size:13px;font-weight:800;color:#6b5c14;text-align:center;line-height:1.4}
   .pi-back{display:none;flex-direction:column;height:100%;padding:7px}
+  .postit.flip{width:150px;height:150px}
+  .pi-top{font-size:11.5px;font-weight:800;color:#6b5c14;line-height:1.35;margin-bottom:3px}
+  .pi-bottom{display:flex;align-items:center;gap:4px}
+  .pi-bottom #piSave{flex:1}
+  .pi-bottom #piInfo{border:0;background:none;color:#6b5c14;font-size:13px;cursor:pointer;padding:0 2px}
+  .postit2{width:150px;height:150px;right:26px;top:calc(38% + 24px);transform:rotate(3deg);z-index:5;cursor:pointer}
+  .pi2-body{padding:12px 11px;font-size:11px;font-weight:700;color:#5c4f10;line-height:1.5}
+  .pi2-body span{font-size:10px;opacity:.75}
   .postit.flip .pi-front{display:none}
   .postit.flip .pi-back{display:flex}
   .pi-back textarea{flex:1;border:0;background:none;font-family:inherit;font-size:12px;resize:none;color:#4d420e;outline:none}
@@ -972,6 +1016,7 @@
       <button data-nav="diary">📖 한 줄 일기</button>
       <button data-nav="bucket">💧 물통</button>
       <button data-act="promise">🤝 약속</button>
+      <button data-act="about">📱 아이폰 앱</button>
       <button data-act="settings">⚙️ 설정</button>
     </div>
   </div>
@@ -1167,7 +1212,9 @@
       <div class="ebtns"><button class="chip" id="diaryEditBtn">✏️ 편집</button></div>
     </div>
     <div id="diaryEditWrap" style="display:none">
-      <div class="d-toolbar">
+      <div class="d-toolbar" id="diaryToolbar">
+        <button class="cap-fmt" id="diaryPromptBtn" title="프롬프트">💡</button>
+        <button class="cap-fmt" id="diaryTagBtn" title="태그">🏷</button>
         <button class="cap-fmt" data-df="h">#</button>
         <button class="cap-fmt" data-df="bold"><b>B</b></button>
         <button class="cap-fmt" data-df="under"><u>U</u></button>
@@ -1176,7 +1223,10 @@
         <button class="cap-fmt" data-df="numbered">1.</button>
         <button class="cap-fmt" data-df="link">🔗</button>
       </div>
+      <div class="d-tagbar" id="diaryTagBar" style="display:none"></div>
+      <div class="d-promptdd" id="diaryPromptDD" style="display:none"></div>
       <textarea id="diaryEditTa" placeholder="오늘은 어땠나요?"></textarea>
+      <div class="d-seltags" id="diarySelTags"></div>
       <div class="d-editphotos" id="diaryEditPhotos"></div>
       <input type="file" id="diaryPhotoFile" accept="image/*" multiple style="display:none">
       <div class="ebtns"><button class="del" id="diaryDelete">삭제</button><button class="go" id="diarySave">저장</button></div>
@@ -1284,7 +1334,14 @@
   </div>
   <div class="postit" id="postit" style="display:none">
     <div class="pi-front" id="piFront">엘리야<br>조금만<br>기다려</div>
-    <div class="pi-back"><textarea id="piText" maxlength="60" placeholder="적어두고 지금은 집중!"></textarea><button id="piSave">담기</button></div>
+    <div class="pi-back">
+      <div class="pi-top">엘리가 딴짓하고<br>싶은가 봐요</div>
+      <textarea id="piText" maxlength="60" placeholder=""></textarea>
+      <div class="pi-bottom"><button id="piSave">적어 두고 이따 해요</button><button id="piInfo">ⓘ</button></div>
+    </div>
+  </div>
+  <div class="postit postit2" id="postitInfo" style="display:none">
+    <div class="pi2-body">충동은 지우려 하면<br>더 커져요.<br><br>적어 두고 미루면<br>대개 스르르 가라앉아요.<br><span>— 파도 타듯 흘려보내기</span></div>
   </div>
   <button class="postit-edge" id="postitEdge" style="display:none">📝</button>
   <img class="ft-tree" src="assets/tree.png" alt="">
@@ -1413,6 +1470,39 @@
     <div class="elabel">피부색 / 엘리 색</div>
     <div class="pf-tones" id="pfTones"></div>
     <button class="go" id="pfSave">저장</button>
+  </div>
+</div>
+
+<!-- 아이폰 전용 기능 소개 (D5-4·D5-5) -->
+<div class="scrim setpage" id="aboutScrim">
+  <div class="modal">
+    <div class="setpage-head">
+      <button class="setpage-x" id="aboutClose">✕</button>
+      <h3>아이폰 앱에서 더</h3>
+      <span style="width:44px"></span>
+    </div>
+    <div class="setpage-body">
+      <div class="set-sec">딴짓 포스트잇</div>
+      <div class="ab-card">집중하다 딴생각이 나면, 그건 <b>엘리가 딴짓하고 싶은 거예요</b>.
+        포스트잇에 살짝 적어 두고 이따 하면 돼요 — 충동을 엘리에게 얹어 두는,
+        죄책감 없이 미루는 장치예요.</div>
+      <div class="set-sec">내 시간이 간 곳 <span class="ab-ios">아이폰 전용</span></div>
+      <div class="ab-card">하루가 끝나면 엘리가 시간의 행방을 보여줘요 — 가장 많이 쓴
+        <b>앱·웹 Top 5</b>를 '이 날'과 '7일 하루 평균'으로 겹쳐 봐요.
+        <div class="ab-bars">
+          <div class="ab-bar"><span style="width:78%;background:#E8564F"></span><span style="width:52%;background:#5A6B85"></span></div>
+          <div class="ab-bar"><span style="width:60%;background:#E8564F"></span><span style="width:66%;background:#5A6B85"></span></div>
+          <div class="ab-bar"><span style="width:38%;background:#E8564F"></span><span style="width:30%;background:#5A6B85"></span></div>
+        </div>
+        <div class="ab-legend"><i style="background:#E8564F"></i>이 날 <i style="background:#5A6B85"></i>7일 하루 평균</div>
+        스크린타임 API가 필요해 아이폰에서만 볼 수 있어요.</div>
+      <div class="set-sec">물통 첫 만남 <span class="ab-ios">아이폰 전용</span></div>
+      <div class="ab-card">처음 열면 물통의 일곱 면이 <b>높이 5</b>로 차 있어 물통의 모양이
+        바로 보여요. 손가락 안내가 <b>돌리기 → 면 고르기 → 높이 조절</b> 3단계로
+        함께해요 — 한 단계씩 해내면 👍. 타임라인에선 손가락을 한 번
+        오므린 뒤 "한 번 <b>더</b> 오므려 보세요"라고 알려줘요.</div>
+      <button class="go" id="aboutStore">📱 App Store에서 Elly Day 받기</button>
+    </div>
   </div>
 </div>
 
@@ -2692,10 +2782,13 @@
     if(!p)return;
     var fr=document.getElementById('piFront');
     if(fr)fr.innerHTML=esc(eleName())+'야<br>조금만<br>기다려';   // D2-8: 충동=엘리 프레임
+    var pt=document.querySelector('.pi-top');
+    if(pt)pt.innerHTML=esc(eleName())+'가 딴짓하고<br>싶은가 봐요';
     var tucked=localStorage.getItem('hfPostItTucked')==='1';
     p.style.display=postItOn()&&!tucked?'':'none';
     e.style.display=postItOn()&&tucked?'':'none';
     p.classList.remove('flip');
+    var inf=document.getElementById('postitInfo');if(inf)inf.style.display='none';
     var ta=document.getElementById('piText');if(ta)ta.value='';
     var sv=document.getElementById('piSave');if(sv)sv.style.display=postItQ4()?'':'none';
   }
@@ -3569,6 +3662,23 @@
   /* ── 일기 사진 (§3 규약: Storage 비공개 버킷 diary-photos, <uid>/<파일명>) ── */
   var PHOTO_BUCKET='diary-photos',photoUrlCache={};
   function getPhotos(e){try{var a=JSON.parse(e.photos||'[]');return Array.isArray(a)?a:[];}catch(_){return [];}}
+  // 일기 태그 (D4-1): photos와 같은 JSON 문자열. D5-1: 표기는 태그명만(# 없음).
+  function getTags(e){try{var a=JSON.parse(e.tags||'[]');return Array.isArray(a)?a:[];}catch(_){return [];}}
+  function setTags(e,arr){if(arr&&arr.length)e.tags=JSON.stringify(arr);else delete e.tags;}
+  // 카탈로그: 기기 로컬(새 태그 맨 앞) + 동기화로 온 태그는 뒤에 합류 (D4-2).
+  function tagCatalog(){
+    var local=[];try{local=JSON.parse(localStorage.getItem('hfDiaryTagCatalog')||'[]');}catch(_){}
+    var seen={};local.forEach(function(t){seen[t]=1;});
+    (DATA.diary||[]).forEach(function(e){getTags(e).forEach(function(t){
+      if(!seen[t]){seen[t]=1;local.push(t);}});});
+    return local;
+  }
+  function tagCatalogAdd(name){
+    var local=[];try{local=JSON.parse(localStorage.getItem('hfDiaryTagCatalog')||'[]');}catch(_){}
+    local=local.filter(function(t){return t!==name;});
+    local.unshift(name);                                   // 맨 왼쪽(앞)에 추가
+    localStorage.setItem('hfDiaryTagCatalog',JSON.stringify(local));
+  }
   function setPhotos(e,arr){if(arr&&arr.length)e.photos=JSON.stringify(arr);else delete e.photos;}
   // 표시: signed URL(1시간) — <img>는 헤더를 못 실으므로 sign 엔드포인트 사용.
   function diaryPhotoUrl(name,cb){
@@ -3627,7 +3737,7 @@
   /* ── 일기 페이지 (앱 핸드오프 §3) ── */
   var EMO={love:{k:'사랑',c:'#F07A9E',e:'💗'},joy:{k:'기쁨',c:'#FAB82E',e:'😊'},tangled:{k:'엉킴',c:'#9E80E6',e:'🌀'},
     blue:{k:'우울',c:'#7394BD',e:'🌧'},tired:{k:'피곤',c:'#7A85D9',e:'😴'}};
-  var diaryFilter='all',diaryCur=null;
+  var diaryFilter='all',diaryTagFilter=null,diaryCur=null;
   function eleName(){var n=(DATA.settings&&DATA.settings.eleName||'').trim();return n||'엘리';}
   function eleTint(){return (DATA.settings&&DATA.settings.eleTintHex)||'#D4C1D2';}
   function dKindMeta(e){
@@ -3678,11 +3788,19 @@
     var wrap=document.getElementById('diaryList');if(!wrap)return;
     // 필터 칩
     var chips=[['all','전체'],['free','일기'],['emotion','마음'],['word','한마디'],['bucket','물통']];
-    document.getElementById('diaryChips').innerHTML=chips.map(function(c){
-      return '<button class="d-chip'+(diaryFilter===c[0]?' on':'')+'" data-f="'+c[0]+'">'+c[1]+'</button>';}).join('');
+    // D5-1: 유저 태그 칩이 범주 칩보다 앞(맨 왼쪽). 태그 필터는 범주와 배타.
+    var tagChips=tagCatalog().map(function(tg){
+      return '<button class="d-chip tagchip'+(diaryTagFilter===tg?' on':'')+'" data-t="'+esc(tg)+'">'+esc(tg)+'</button>';}).join('');
+    document.getElementById('diaryChips').innerHTML=tagChips+chips.map(function(c){
+      return '<button class="d-chip'+(diaryFilter===c[0]&&!diaryTagFilter?' on':'')+'" data-f="'+c[0]+'">'+c[1]+'</button>';}).join('');
     document.querySelectorAll('#diaryChips .d-chip').forEach(function(b){
-      b.addEventListener('click',function(){diaryFilter=b.dataset.f;renderDiary();});});
-    var all=diaryEntries().filter(function(e){return diaryFilter==='all'||(e.kind||'free')===diaryFilter;});
+      b.addEventListener('click',function(){
+        if(b.dataset.t!=null){diaryTagFilter=diaryTagFilter===b.dataset.t?null:b.dataset.t;}
+        else{diaryFilter=b.dataset.f;diaryTagFilter=null;}
+        renderDiary();});});
+    var all=diaryEntries().filter(function(e){
+      if(diaryTagFilter)return getTags(e).indexOf(diaryTagFilter)>=0;
+      return diaryFilter==='all'||(e.kind||'free')===diaryFilter;});
     if(!all.length){wrap.innerHTML='<div class="empty" style="color:#fff;text-shadow:0 1px 2px rgba(20,40,80,.4)">아직 기록이 없어요. + 로 오늘을 남겨보세요.</div>';return;}
     var night=isNightNow();
     var html='',lastMonth='',lastDayKey='',today=new Date();today.setHours(0,0,0,0);
@@ -3709,7 +3827,10 @@
           var ph=getPhotos(e),photos='';
           if(ph.length)photos='<div class="d-photos" data-ph="'+esc(ph[0])+'">'+(ph.length>1?'<span class="d-pbadge">+'+(ph.length-1)+'</span>':'')+'</div>';
           return '<div class="d-card'+(night?' dark':'')+'" data-id="'+e.id+'" style="--dc:'+m.color+'">'+
-            '<div class="d-head">'+m.icon+' '+m.label+' · '+time+'</div>'+
+            '<div class="d-head">'+m.icon+' '+m.label+
+            getTags(e).slice(0,3).map(function(tg){return '<span class="d-tag">'+esc(tg)+'</span>';}).join('')+
+            (getTags(e).length>3?'<span class="d-tag">+'+(getTags(e).length-3)+'</span>':'')+
+            ' · '+time+'</div>'+
             '<div class="d-row"><div class="d-main"><div class="d-body">'+dMd(e.text)+'</div></div>'+photos+'</div>'+
             (e.kind==='word'?
               '<div class="d-elewrap">'+
@@ -3773,7 +3894,74 @@
   function setDiaryMode(edit){
     document.getElementById('diaryViewWrap').style.display=edit?'none':'';
     document.getElementById('diaryEditWrap').style.display=edit?'':'none';
-    if(edit){renderEditPhotos();document.getElementById('diaryEditTa').focus();}
+    document.getElementById('diaryTagBar').style.display='none';
+    document.getElementById('diaryPromptDD').style.display='none';
+    if(edit){renderEditPhotos();renderSelTags();document.getElementById('diaryEditTa').focus();}
+  }
+  // 선택된 태그 스택 (D4-2: 입력란 하단 좌측, 탭 = 제거; D5-1: # 없음)
+  function renderSelTags(){
+    var w=document.getElementById('diarySelTags');if(!w||!diaryCur)return;
+    w.innerHTML=getTags(diaryCur).map(function(tg){
+      return '<button data-t="'+esc(tg)+'">'+esc(tg)+' ✕</button>';}).join('');
+    w.querySelectorAll('button').forEach(function(b){
+      b.addEventListener('click',function(){
+        var arr=getTags(diaryCur).filter(function(x){return x!==b.dataset.t;});
+        setTags(diaryCur,arr);diaryCur.updatedAt=new Date().toISOString();
+        renderSelTags();pushSnapshot();});});
+  }
+  // 태그 bar (D4-2): [+추가 고정] + 카탈로그 캡슐. 탭=붙이고 닫힘. 추가=자동선택 안 됨.
+  function renderTagBar(adding){
+    var w=document.getElementById('diaryTagBar');
+    var caps=tagCatalog().map(function(tg){
+      return '<button class="tb-cap" data-t="'+esc(tg)+'">'+esc(tg)+'</button>';}).join('');
+    w.innerHTML=(adding
+      ?'<input id="tbNew" placeholder="새 태그" maxlength="12"><button class="tb-add" id="tbOk">✓</button><button class="tb-add" id="tbNo">✕</button>'
+      :'<button class="tb-add" id="tbPlus">＋ 태그 추가</button>')+caps;
+    if(adding){
+      var inp=document.getElementById('tbNew');inp.focus();
+      document.getElementById('tbOk').addEventListener('click',function(){
+        var v=(inp.value||'').trim().replace(/^#+/,'');
+        if(v)tagCatalogAdd(v);                              // 카탈로그 맨 앞, 자동 선택 안 됨
+        renderTagBar(false);});
+      document.getElementById('tbNo').addEventListener('click',function(){renderTagBar(false);});
+    }else{
+      document.getElementById('tbPlus').addEventListener('click',function(){renderTagBar(true);});
+    }
+    w.querySelectorAll('.tb-cap').forEach(function(b){
+      b.addEventListener('click',function(){
+        var arr=getTags(diaryCur);
+        if(arr.indexOf(b.dataset.t)<0){arr.push(b.dataset.t);setTags(diaryCur,arr);
+          diaryCur.updatedAt=new Date().toISOString();pushSnapshot();}
+        renderSelTags();
+        w.style.display='none';                             // 탭하면 붙고 bar 닫힘 (D4-2)
+      });});
+  }
+  // 프롬프트 (D5-2): 5범주×7 — 선택하면 첫 줄이 '# 프롬프트', 커서 다음 줄.
+  var DIARY_PROMPTS={
+    '하루 돌아보기':['오늘 가장 잘한 일','오늘 나를 웃게 한 순간','내일의 나에게 한마디','오늘 배운 것 하나','오늘 아쉬웠던 순간','오늘의 에너지 점수','오늘 가장 오래 머문 생각'],
+    '공부':['오늘 공부에서 얻은 것','가장 어려웠던 문제','내일 제일 먼저 볼 것','집중이 잘 된 시간대','외우고 싶은 한 줄','시험까지 남은 것 정리','오늘의 공부 환경 점검'],
+    '감정':['지금 마음을 색으로 표현하면','오늘 가장 컸던 감정','그 감정은 어디서 왔을까','엘리에게 들려주고 싶은 말','지금 몸의 느낌','오늘 나를 지치게 한 것','스스로에게 건네는 위로'],
+    '계획':['내일 꼭 끝낼 한 가지','이번 주 가장 중요한 일','미루고 있는 일 하나','내일 아침 첫 30분','이번 달 목표 점검','다음 휴식 계획','해 보고 싶은 일 리스트'],
+    '감사':['오늘 고마웠던 사람','당연하지만 감사한 것','오늘의 작은 행운','내 몸에게 감사한 점','오늘 가장 맛있던 것','나를 도와준 도구와 환경','지금 이 순간 감사한 것']};
+  function renderPromptDD(){
+    var w=document.getElementById('diaryPromptDD'),html='';
+    Object.keys(DIARY_PROMPTS).forEach(function(cat){
+      html+='<div class="pd-cat">'+cat+'</div>'+
+        DIARY_PROMPTS[cat].map(function(p){return '<button data-p="'+esc(p)+'">'+esc(p)+'</button>';}).join('');
+    });
+    w.innerHTML=html;
+    w.querySelectorAll('button[data-p]').forEach(function(b){
+      b.addEventListener('click',function(){
+        var ta=document.getElementById('diaryEditTa');
+        var lines=(ta.value||'').split('\n');
+        if(lines.length&&/^#\s/.test(lines[0]))lines[0]='# '+b.dataset.p;   // 첫 줄 교체
+        else lines.unshift('# '+b.dataset.p);
+        if(lines.length===1)lines.push('');                                  // 다음 줄 보장 (리뷰 fix)
+        ta.value=lines.join('\n');
+        var pos=lines[0].length+1;
+        ta.focus();ta.setSelectionRange(pos,pos);            // 커서 = 다음 줄
+        w.style.display='none';
+      });});
   }
   // 편집 중 사진 스트립 (§3: 최대 6, 압축 업로드, ✕=오브젝트 삭제)
   function renderEditPhotos(){
@@ -4300,6 +4488,16 @@
   document.getElementById('diaryScrim').addEventListener('click',function(e){if(e.target===this)document.getElementById('diaryClose').click();});
   document.getElementById('diaryEditBtn').addEventListener('click',function(){setDiaryMode(true);});
   document.getElementById('diarySave').addEventListener('click',saveDiaryEntry);
+  document.getElementById('diaryTagBtn').addEventListener('click',function(){
+    var w=document.getElementById('diaryTagBar');
+    document.getElementById('diaryPromptDD').style.display='none';
+    if(w.style.display==='none'){renderTagBar(false);w.style.display='flex';}
+    else w.style.display='none';});
+  document.getElementById('diaryPromptBtn').addEventListener('click',function(){
+    var w=document.getElementById('diaryPromptDD');
+    document.getElementById('diaryTagBar').style.display='none';
+    if(w.style.display==='none'){renderPromptDD();w.style.display='';}
+    else w.style.display='none';});
   document.getElementById('diaryDelete').addEventListener('click',deleteDiaryEntry);
   document.querySelectorAll('#diaryEditWrap [data-df]').forEach(function(b){
     b.addEventListener('click',function(){
@@ -4402,12 +4600,19 @@
     });
     document.getElementById('postitEdge').addEventListener('click',function(){
       localStorage.removeItem('hfPostItTucked');paintPostit();});                    // 가장자리 탭 = 복귀
+    document.getElementById('piInfo').addEventListener('click',function(e){
+      e.stopPropagation();
+      var info=document.getElementById('postitInfo');
+      info.style.display=info.style.display==='none'?'':'none';   // ⓘ = 원리 포스트잇 겹쳐 표시 (D5-3)
+    });
+    document.getElementById('postitInfo').addEventListener('click',function(){this.style.display='none';});
     document.getElementById('piSave').addEventListener('click',function(e){
       e.stopPropagation();
       var ta=document.getElementById('piText'),v=(ta.value||'').trim();
       if(v&&postItQ4()){addTask({title:v,matrixQuadrant:4});appToast('"'+v+'" — Q4(나중에)에 담아뒀어요');}
       else if(v)appToast('적어뒀어요 — 지금은 집중!');
       ta.value='';p.classList.remove('flip');
+      var inf=document.getElementById('postitInfo');if(inf)inf.style.display='none';   // 리뷰 fix
     });
   })();
   // 설정: 집중 페이지 토글
@@ -4513,6 +4718,9 @@
   document.getElementById('settingsClose').addEventListener('click',function(){document.getElementById('settingsScrim').classList.remove('open');});
   document.getElementById('settingsScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
   document.getElementById('setSave').addEventListener('click',saveSettings);
+  document.getElementById('aboutClose').addEventListener('click',function(){document.getElementById('aboutScrim').classList.remove('open');});
+  document.getElementById('aboutScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+  document.getElementById('aboutStore').addEventListener('click',appNudge);
   document.querySelectorAll('#setScenery button').forEach(function(b){
     b.addEventListener('click',function(){
       document.querySelectorAll('#setScenery button').forEach(function(x){x.classList.remove('on');});
@@ -5117,10 +5325,11 @@
     routine:{label:'루틴',svg:'<path d="M17 3.5l3 3-3 3"/><path d="M20 6.5H8.5A4.5 4.5 0 0 0 4 11v.5"/><path d="M7 20.5l-3-3 3-3"/><path d="M4 17.5h11.5A4.5 4.5 0 0 0 20 13v-.5"/>',type:'tab'},
     diary:{label:'일기',svg:'<path d="M5 4h13a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5z"/><path d="M5 4v16M9 2.5v3M9 11h6M9 15h4"/>',type:'tab'},
     lock:{label:'약속',svg:'<rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/>',type:'action'},
+    about:{label:'아이폰 앱',svg:'<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10.5 5h3M11 18.5h2"/>',type:'action'},
     friends:{label:'함께',svg:'<circle cx="9" cy="8" r="3"/><path d="M3.6 20c.6-3.3 2.6-4.9 5.4-4.9s4.8 1.6 5.4 4.9"/><circle cx="17" cy="9" r="2.4"/><path d="M15.6 14.7c2.6.3 4.2 1.7 4.8 4.2"/>',type:'action'},
     settings:{label:'설정',svg:'<path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58z"/><circle cx="12" cy="12" r="3.2"/>',type:'action'}
   };
-  var NAV_ALL=['timeline','todo','matrix','routine','bucket','diary','lock','friends','settings'];
+  var NAV_ALL=['timeline','todo','matrix','routine','bucket','diary','lock','friends','settings','about'];
   var NAV_MAX=6,navEditMode=false,navPopKey=null;
   function navBarKeys(){
     var s=DATA.settings||{};
@@ -5142,7 +5351,8 @@
     if(d.type==='tab')setTab(key);
     else if(key==='settings'){closeMore();openSettings();}
     else if(key==='friends'){closeMore();alert('함께 기능은 준비 중이에요.');}
-    else if(key==='lock'){closeMore();appNudge();}}          // 약속=집중 잠금, iOS 전용 (§6)
+    else if(key==='lock'){closeMore();appNudge();}
+    else if(key==='about'){closeMore();document.getElementById('aboutScrim').classList.add('open');}}
   function renderNav(){
     var bar=navBarKeys(),cur=document.body.getAttribute('data-m'),mbar=document.getElementById('mbar');
     if(!mbar)return;
@@ -5354,6 +5564,7 @@
       if(b.dataset.nav)setTab(b.dataset.nav);
       else if(b.dataset.act==='settings')openSettings();
       else if(b.dataset.act==='promise')appNudge();          // 약속(집중 잠금)은 iOS 전용
+      else if(b.dataset.act==='about')document.getElementById('aboutScrim').classList.add('open');
     });
   });
   document.addEventListener('click',function(e){
