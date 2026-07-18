@@ -648,6 +648,7 @@
   .cap-dot{width:26px;height:26px;border-radius:50%;border:2px solid rgba(0,0,0,.08);flex:0 0 auto;cursor:pointer;padding:0}
   .cap-icon{width:34px;height:34px;border:0;background:none;color:var(--ink-soft);cursor:pointer;flex:0 0 auto;display:grid;place-items:center}
   #capMore.on{color:var(--sky-blue)}
+  #capMic.on{color:#E34238}
   .cap-icon .ic{width:26px;height:26px}
   .cap-input textarea{flex:1;border:0;background:none;font-family:inherit;font-size:16px;color:var(--ink);min-width:0;
     resize:none;line-height:1.45;max-height:calc(2 * 1.45em + 4px);overflow-y:auto;padding:2px 0}
@@ -1252,6 +1253,7 @@
     <button class="cap-dot" id="capDot"></button>
     <button class="cap-icon" id="capIconBtn"></button>
     <textarea id="capText" placeholder="빠르게 담기…" maxlength="240" rows="1"></textarea>
+    <button class="cap-icon" id="capMic" title="음성 입력"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg></button>
     <button class="cap-icon" id="capMore" title="자세히"><svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg></button>
     <button class="cap-submit" id="capSubmit" disabled><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
   </div>
@@ -1337,15 +1339,8 @@
     <div class="set-sec">작업 추가</div>
     <div class="elabel">추가할 때 기본 길이 (분)</div><input type="number" id="setDefDur" min="0" step="5">
     <div class="elabel">아이콘 표시 (숨겨도 값이 걸려 있으면 나타나요)</div>
-    <div class="set-toggles" id="setCapIcons">
-      <label><input type="checkbox" data-k="duration" disabled checked> 길이 — 기본 길이 프리셋·슬라이더</label>
-      <label><input type="checkbox" data-k="note"> 메모 — 마크다운 메모</label>
-      <label><input type="checkbox" data-k="calreg"> 일정등록 — 캘린더에 저장 (앱)</label>
-      <label><input type="checkbox" data-k="reward"> 보상 — 끝내면 나에게 주는 선물</label>
-      <label><input type="checkbox" data-k="reminder"> 알림 — 정시·N분 전</label>
-      <label><input type="checkbox" data-k="due"> 마감일 — 날짜 캘린더</label>
-      <label><input type="checkbox" data-k="repeat"> 반복 — 요일 선택</label>
-    </div>
+    <div class="set-toggles" id="setCapIcons"></div>
+    <div class="msub">≡ 를 끌어 순서를 바꿀 수 있어요.</div>
 
     <div class="set-sec">집중 페이지</div>
     <div class="set-toggles">
@@ -1848,7 +1843,7 @@
     var titles=batchItems.map(function(v,i){return (v||'').trim()||('할 일 '+(i+1));})
       .filter(function(v,i){return (batchItems[i]||'').trim()||true;});
     titles=batchItems.map(function(v,i){return (v||'').trim();}).filter(Boolean);
-    if(!titles.length){alert('할 일을 입력하세요.');return;}
+    if(!titles.length){alert('할 일을 적어 주세요.');return;}
     var startSlot=nextSlotToday();
     var startMin=Math.round(startSlot*60/5)*5;
     var total=batchDueMin-startMin;
@@ -2338,7 +2333,7 @@
     id:uuid(),title:'',categoryID:'focus',colorKey:'',iconName:null,repeatDaysMask:0,
     scheduledStart:null,durationMin:0,isDone:false,isStarred:false,notes:'',dueDate:null,
     matrixQuadrant:0,countTarget:0,countDone:0,subtasksJSON:'[]',recurrenceRaw:'',
-    reminderOffsets:[0],nudgeEnabled:false,deferredUntil:null,deferCount:0,verificationCount:0,
+    reminderOffsets:[],nudgeEnabled:false,deferredUntil:null,deferCount:0,verificationCount:0,
     focusLockUsed:false,actualFocusedSec:0,cumulativeFocusedSec:0,lastFocusedAt:null,
     createdAt:new Date().toISOString(),restSpansJSON:'[]',completedAt:null,
     rewardText:'',rewardMoney:0,rewardToQ4:false,isRewardItem:false,rewardGranted:false,matrixSort:0
@@ -2779,9 +2774,7 @@
     document.getElementById('setDefDur').value=s.defaultDurationMin!=null?s.defaultDurationMin:50;
     document.getElementById('setVow').value=s.motto||s.todayVow||'';
     document.getElementById('setEleName').value=s.eleName||'';
-    var capH={};try{capH=JSON.parse(localStorage.getItem('hfCapHidden')||'{\"reminder\":1,\"due\":1,\"repeat\":1}');}catch(_){}
-    document.querySelectorAll('#setCapIcons input[data-k]').forEach(function(cb){
-      if(cb.dataset.k!=='duration')cb.checked=!capH[cb.dataset.k];});
+    renderCapIconSettings();
     document.getElementById('setPostIt').checked=localStorage.getItem('hfPostItOn')!=='0';
     document.getElementById('setPostItQ4').checked=localStorage.getItem('hfPostItToQ4')!=='0';
     var scen=s.sceneryRaw||'plain';
@@ -4418,12 +4411,55 @@
     });
   })();
   // 설정: 집중 페이지 토글
-  document.querySelectorAll('#setCapIcons input[data-k]').forEach(function(cb){
-    cb.addEventListener('change',function(){
-      var h={};try{h=JSON.parse(localStorage.getItem('hfCapHidden')||'{\"reminder\":1,\"due\":1,\"repeat\":1}');}catch(_){}
-      if(cb.checked)delete h[cb.dataset.k];else h[cb.dataset.k]=1;
-      localStorage.setItem('hfCapHidden',JSON.stringify(h));
-    });});
+  // D2-6: 작업 추가 아이콘 설정 — 표시 토글 + ≡ 드래그 순서.
+  var CAP_ICON_META=[
+    ['duration','길이 — 기본 길이 프리셋·슬라이더',true],
+    ['note','메모 — 마크다운 메모',false],
+    ['calreg','일정등록 — 캘린더에 저장 (앱)',false],
+    ['reward','보상 — 끝내면 나에게 주는 선물',false],
+    ['reminder','알림 — 정시·N분 전',false],
+    ['due','마감일 — 날짜 캘린더',false],
+    ['repeat','반복 — 요일 선택',false]];
+  function capOrderLoad(){var o=[];try{o=JSON.parse(localStorage.getItem('hfCapOrder')||'[]');}catch(_){}
+    var keys=CAP_ICON_META.map(function(m){return m[0];});
+    o=o.filter(function(k){return keys.indexOf(k)>=0;});
+    keys.forEach(function(k){if(o.indexOf(k)<0)o.push(k);});
+    return o;}
+  function renderCapIconSettings(){
+    var w=document.getElementById('setCapIcons');if(!w)return;
+    var h={};try{h=JSON.parse(localStorage.getItem('hfCapHidden')||'{\"reminder\":1,\"due\":1,\"repeat\":1}');}catch(_){}
+    var order=capOrderLoad();
+    w.innerHTML=order.map(function(k){
+      var m=CAP_ICON_META.find(function(x){return x[0]===k;});
+      return '<label data-k="'+k+'"><input type="checkbox" data-k="'+k+'"'+(m[2]?' disabled checked':(h[k]?'':' checked'))+'> '+m[1]+
+        '<span class="ci-handle" style="margin-left:auto;cursor:grab;color:var(--ink-soft);padding:0 4px;touch-action:none">≡</span></label>';
+    }).join('');
+    w.querySelectorAll('input[data-k]').forEach(function(cb){
+      cb.addEventListener('change',function(){
+        var hh={};try{hh=JSON.parse(localStorage.getItem('hfCapHidden')||'{\"reminder\":1,\"due\":1,\"repeat\":1}');}catch(_){}
+        if(cb.checked)delete hh[cb.dataset.k];else hh[cb.dataset.k]=1;
+        localStorage.setItem('hfCapHidden',JSON.stringify(hh));
+      });});
+    w.querySelectorAll('.ci-handle').forEach(function(hd){
+      hd.addEventListener('pointerdown',function(e){
+        e.preventDefault();
+        var row=hd.closest('label');
+        function move(ev){
+          var rows=[].slice.call(w.querySelectorAll('label'));
+          var from=rows.indexOf(row),to=from;
+          rows.forEach(function(r,k){var rr=r.getBoundingClientRect();
+            if(ev.clientY>rr.top&&ev.clientY<rr.bottom)to=k;});
+          if(to!==from){
+            var o=capOrderLoad();var it=o.splice(from,1)[0];o.splice(to,0,it);
+            localStorage.setItem('hfCapOrder',JSON.stringify(o));
+            renderCapIconSettings();
+            row=w.querySelectorAll('label')[to];
+          }
+        }
+        function up(){document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);}
+        document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
+      });});
+  }
   document.getElementById('setPostIt').addEventListener('change',function(){
     localStorage.setItem('hfPostItOn',this.checked?'1':'0');paintPostit();});
   document.getElementById('setPostItQ4').addEventListener('change',function(){
@@ -4537,7 +4573,7 @@
      알림·마감·메모·반복·보상)과 아이콘/색 피커가 스택으로 쌓인다. */
   var cap={open:false,origin:'todo',quadrant:0,detail:'options',iconOpen:false,colorOpen:false,
     draft:{title:'',categoryID:'focus',colorKey:'',iconName:null,durationMin:50,
-      scheduledStart:null,reminderOffsets:[0],nudgeEnabled:false,dueDate:null,notes:'',
+      scheduledStart:null,reminderOffsets:[],nudgeEnabled:false,dueDate:null,notes:'',
       repeatDaysMask:0,rewardIsMoney:false,rewardText:'',rewardToQ4:false},
     calMonth:null,notePlaceholderShown:false};
   var CAP_COLORS=['#EF6461','#F0863D','#EAB81E','#8DC63F','#43B96B','#27AFC1','#5B93E6','#4585D6','#9A5BD8','#C77DE0'];
@@ -4631,7 +4667,7 @@
     cap.detail='options';cap.iconOpen=false;cap.colorOpen=false;cap.optionsOpen=false;
     cap.draft={title:'',categoryID:(opts.categoryID||'focus'),colorKey:'',iconName:null,
       durationMin:(origin==='timeline'?50:(origin==='matrix'?0:50)),
-      scheduledStart:opts.scheduledStart||null,reminderOffsets:[0],nudgeEnabled:false,dueDate:null,
+      scheduledStart:opts.scheduledStart||null,reminderOffsets:[],nudgeEnabled:false,dueDate:null,
       notes:'',repeatDaysMask:0,rewardIsMoney:false,rewardText:'',rewardToQ4:false};
     document.getElementById('capText').value='';
     document.getElementById('capText').placeholder=origin==='timeline'?'예: 35분 영어 — 줄바꿈으로 여러 개':'예: 30분 달리기';
@@ -4701,10 +4737,22 @@
     addTask(o);
     closeCapture();renderAll();pushSnapshot();
   }
-  // D2-7 최소 자연어: "35분 영어" / "1시간 30분 수학" → 길이+제목.
+  // D2-7 자연어 확장: 한↔영, "1시간 반", m/h 축약, "35minutes", 접두·접미형.
+  var DUR_RE='(?:(\\d+)\\s*(?:시간|시|h|hr|hours?))?\\s*(반)?\\s*(?:(\\d+)\\s*(?:분|m|min|mins?|minutes?))?';
+  function durFromMatch(h,half,mi){
+    var v=(+(h||0))*60+(half?30:0)+(+(mi||0));
+    return v>0?v:null;
+  }
   function parseDurTitle(raw){
-    var m=raw.match(/^\s*(?:(\d+)\s*시간)?\s*(?:(\d+)\s*분)?\s+(.+)$/);
-    if(m&&(m[1]||m[2]))return {dur:(+(m[1]||0))*60+(+(m[2]||0)),title:m[3].trim()};
+    raw=String(raw||'');
+    // 접두형: "35분 영어" / "1시간 반 수학" / "35minutes math"
+    var m=raw.match(new RegExp('^\\s*'+DUR_RE+'\\s+(.+)$','i'));
+    if(m){var d=durFromMatch(m[1],m[2],m[3]);
+      if(d!=null)return {dur:d,title:m[4].trim()};}
+    // 접미형: "영어 35분" / "run 1h 30m"
+    m=raw.match(new RegExp('^(.+?)\\s+'+DUR_RE+'\\s*$','i'));
+    if(m){var d2=durFromMatch(m[2],m[3],m[4]);
+      if(d2!=null&&m[1].trim())return {dur:d2,title:m[1].trim()};}
     return null;
   }
   function submitCaptureOne(title,batchID){
@@ -4750,6 +4798,7 @@
     } else if(cap.detail==='options'){
       // D2-6: 아이콘 표시/숨김 설정 (기본 숨김=알림·마감일·반복, 값 걸리면 표시).
       var hidden={};try{hidden=JSON.parse(localStorage.getItem('hfCapHidden')||'{"reminder":1,"due":1,"repeat":1}');}catch(_){}
+      var order=[];try{order=JSON.parse(localStorage.getItem('hfCapOrder')||'[]');}catch(_){}
       var defs=[
         ['duration',IC.timer,capDurLabel(cap.draft.durationMin),false],
         ['note',IC.note,'메모',!!cap.draft.notes],
@@ -4760,6 +4809,9 @@
         ['repeat',IC.repeat2,'반복',!!cap.draft.repeatDaysMask],
         ['schedule',IC.schedule,'시간배치',!!cap.draft.scheduledStart]
       ];
+      if(order.length)defs.sort(function(a,b){                 // D2-6: 설정 순서 반영
+        var ia=order.indexOf(a[0]),ib=order.indexOf(b[0]);
+        return (ia<0?99:ia)-(ib<0?99:ib);});
       d.innerHTML='<div class="cap-icons">'+defs.map(function(def){
         var key=def[0],on=def[3];
         if(hidden[key]&&!on)return '';                          // 숨김 — 값 걸리면 표시
@@ -5019,6 +5071,31 @@
   }
 
   document.getElementById('capWrap').addEventListener('click',function(e){if(e.target===this)closeCapture();});
+  // 딕테이션 (D2-7): "엔터/줄바꿈/다음 줄"(en: enter/new line/next line) = 줄바꿈.
+  var capRec=null;
+  document.getElementById('capMic').addEventListener('click',function(){
+    var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){appToast('이 브라우저는 음성 입력을 지원하지 않아요 — 📱 앱에서 쓸 수 있어요');return;}
+    var btn=this;
+    if(capRec){try{capRec.stop();}catch(_){}capRec=null;btn.classList.remove('on');return;}
+    var rec=new SR();capRec=rec;
+    rec.lang=(navigator.language||'ko-KR');rec.continuous=true;rec.interimResults=false;
+    btn.classList.add('on');
+    rec.onresult=function(ev){
+      var ta=document.getElementById('capText');
+      for(var i=ev.resultIndex;i<ev.results.length;i++){
+        if(!ev.results[i].isFinal)continue;
+        var txt=ev.results[i][0].transcript;
+        // 음성 명령 → 줄바꿈 (앱 파리티)
+        txt=txt.replace(/\s*(엔터|줄\s*바꿈|다음\s*줄|enter|new line|next line)\s*/gi,'\n');
+        ta.value=(ta.value+txt).replace(/\n{2,}/g,'\n');
+        ta.dispatchEvent(new Event('input'));
+      }
+    };
+    rec.onend=function(){capRec=null;btn.classList.remove('on');};
+    rec.onerror=function(){capRec=null;btn.classList.remove('on');};
+    try{rec.start();}catch(_){capRec=null;btn.classList.remove('on');}
+  });
   // 캡처바 안 버튼을 눌러도 키보드가 안 내려가게 (요청): 입력란이 아닌 요소가
   // 포커스를 뺏지 못하도록 pointerdown 기본동작을 막는다. 스크롤·클릭·슬라이더는
   // 그대로 동작한다 (input/textarea는 제외해 이동 포커스 허용).
