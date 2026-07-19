@@ -1001,14 +1001,14 @@
   .fm-chips{position:absolute;top:64px;left:12px;right:12px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;z-index:3}
   .fm-chip{font-family:inherit;font-size:13px;font-weight:700;border:0;border-radius:999px;padding:9px 14px;cursor:pointer;background:rgba(0,0,0,.3);color:#fff;display:flex;align-items:center;gap:5px}
   .fm-chip.on{background:rgba(255,255,255,.32);color:#ffd76a}
-  .ft-title{margin-top:44px;font-size:24px;font-weight:800;max-width:84%;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.3)}
-  @media(max-height:760px){.ft-ringwrap{width:262px;height:262px}.ft-timer{font-size:42px}.ft-title{margin-top:40px;font-size:20px}}
+  .ft-title{margin-top:44px;font-size:28px;font-weight:800;max-width:84%;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.3)}
+  @media(max-height:760px){.ft-ringwrap{width:262px;height:262px}.ft-timer{font-size:38px}.ft-title{margin-top:40px;font-size:20px}}
   .ft-stats{font-size:13.5px;opacity:.92;margin-top:8px;text-shadow:0 1px 2px rgba(0,0,0,.25)}
-  .ft-ringwrap{position:relative;width:320px;height:320px;margin-top:18px;max-width:86vw;max-height:86vw}
+  .ft-ringwrap{position:relative;width:300px;height:300px;margin-top:18px;max-width:86vw;max-height:86vw}
   .ft-ringwrap svg{width:100%;height:100%}
   .ft-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
-  .ft-timer{font-size:50px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.02em;text-shadow:0 1px 3px rgba(0,0,0,.3)}
-  .ft-pausebtn{width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.16);color:#fff;font-size:16px;cursor:pointer}
+  .ft-timer{font-size:43px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.02em;text-shadow:0 1px 3px rgba(0,0,0,.3)}
+  .ft-pausebtn{width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.14);color:#fff;font-size:19px;cursor:pointer}
   .ft-sub{font-size:13px;opacity:.9;margin-top:10px;min-height:18px;text-shadow:0 1px 2px rgba(0,0,0,.2)}
   .ft-bottom{position:absolute;bottom:calc(18px + env(safe-area-inset-bottom));left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:2}
   .ft-finish{font-family:inherit;font-size:16px;font-weight:800;border:0;border-radius:999px;padding:14px 44px;cursor:pointer;
@@ -1022,33 +1022,52 @@
     width:38%;text-align:center;font-size:13px;font-weight:800;color:#3a3242;line-height:1.25;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   @keyframes fncIn{0%{opacity:0;transform:translate(-50%,-50%) scale(.8)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
-  /* 딴짓 포스트잇 (§5): 우측 가장자리, 탭=뒤집기, 우로 밀면 숨김. */
-  .postit{position:absolute;right:10px;top:38%;width:104px;height:104px;z-index:4;
-    background:#F5E27A;border-radius:3px;box-shadow:0 6px 14px rgba(0,0,0,.25);transform:rotate(-4deg);
+  /* 딴짓 포스트잇 (§5): 우측 가장자리, 탭=뒤집기, 우로 밀면 숨김. 앱 DistractionPostIt 파리티. */
+  .postit{position:absolute;right:10px;top:38%;width:150px;height:128px;z-index:4;
+    background:#FFEC8C;border-radius:6px;box-shadow:0 6px 14px rgba(0,0,0,.25);transform:rotate(-6deg);
     cursor:pointer;transition:transform .25s;touch-action:none}
-  .focusScrim.night .postit{background:#CBB94F}
-  .pi-front{display:grid;place-items:center;height:100%;font-size:13px;font-weight:800;color:#6b5c14;text-align:center;line-height:1.4}
-  .pi-back{display:none;flex-direction:column;height:100%;padding:7px}
-  .postit.flip{width:150px;height:150px}
-  .pi-top{font-size:11.5px;font-weight:800;color:#6b5c14;line-height:1.35;margin-bottom:3px}
-  .pi-bottom{display:flex;align-items:center;gap:4px}
-  .pi-bottom #piSave{flex:1}
-  .pi-bottom #piInfo{border:0;background:none;color:#6b5c14;font-size:13px;cursor:pointer;padding:0 2px}
-  .postit2{width:150px;height:150px;right:26px;top:calc(38% + 24px);transform:rotate(3deg);z-index:5;cursor:pointer}
-  .pi2-body{padding:12px 11px;font-size:11px;font-weight:700;color:#5c4f10;line-height:1.5}
-  .pi2-body span{font-size:10px;opacity:.75}
+  .focusScrim.night .postit{background:#B39F5C}
+  .pi-front{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:6px;
+    height:100%;padding:12px 0 12px 12px;text-align:left;font-size:13px;font-weight:700;color:#4D3D0D;line-height:1.5}
+  .focusScrim.night .pi-front{color:#3D300D}
+  .pi-badge{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border-radius:50%;
+    background:rgba(77,61,13,.75);color:#FFEC8C;font-size:11px;font-weight:800}
+  .focusScrim.night .pi-badge{color:#B39F5C}
+  .pi-back{display:none;flex-direction:column;gap:8px;padding:12px;color:#4D3D0D}
+  .postit.flip{width:250px;height:auto;border-radius:8px}
+  .pi-bhead{font-size:13px;font-weight:800;line-height:1.3}
+  .pi-bcap{display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(77,61,13,.85)}
+  .pi-bcap #piInfo{border:0;background:none;color:rgba(77,61,13,.6);font-size:12px;cursor:pointer;padding:0}
+  .pi-when{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .pi-wlab{font-size:10px;color:rgba(77,61,13,.6)}
+  .pi-whenchip{font-family:inherit;font-size:10px;font-weight:500;border:1px solid rgba(77,61,13,.3);
+    background:none;color:#4D3D0D;border-radius:999px;padding:4px 8px;cursor:pointer}
+  .pi-whenchip.on{font-weight:800;background:rgba(77,61,13,.16)}
+  .pi-list{display:flex;flex-direction:column;gap:5px;max-height:92px;overflow-y:auto}
+  .pi-lrow{display:flex;align-items:center;gap:6px;font-size:13px}
+  .pi-lrow .pi-licon{font-size:11px;opacity:.7}
+  .pi-lrow .pi-ltext{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pi-lrow .pi-lwhen{font-size:9px;color:rgba(77,61,13,.45)}
+  .pi-inrow{display:flex;align-items:center;gap:6px;padding:7px 9px;background:rgba(255,255,255,.32);border-radius:8px}
+  .pi-inrow input{flex:1;border:0;background:none;font-family:inherit;font-size:13px;color:#4D3D0D;outline:none}
+  .pi-inrow input::placeholder{color:rgba(77,61,13,.4)}
+  .pi-inrow #piAdd{border:0;background:none;color:rgba(77,61,13,.8);font-size:22px;line-height:1;cursor:pointer;padding:0}
+  .pi-bfoot{display:flex;align-items:center;gap:8px}
+  .pi-bfoot #piHint{flex:1;font-size:9px;color:rgba(77,61,13,.55)}
+  .pi-bfoot #piDone{border:0;background:none;font-family:inherit;font-size:12px;font-weight:800;color:#4D3D0D;cursor:pointer;padding:0}
+  .postit2{width:250px;height:auto;min-height:150px;border-radius:8px;right:26px;top:calc(38% + 24px);transform:rotate(3deg);z-index:5;cursor:pointer}
+  .pi2-body{padding:12px;font-size:11px;font-weight:700;color:#4D3D0D;line-height:1.5}
+  .pi2-title{font-size:13px;font-weight:800;margin-bottom:6px}
+  .pi2-body p{font-size:11px;font-weight:700;margin:0 0 7px;line-height:1.5;color:rgba(77,61,13,.85)}
+  .pi2-ok{text-align:right;font-size:11px;font-weight:800;cursor:pointer;color:#4D3D0D}
   .postit.flip .pi-front{display:none}
   .postit.flip .pi-back{display:flex}
-  .pi-back textarea{flex:1;border:0;background:none;font-family:inherit;font-size:12px;resize:none;color:#4d420e;outline:none}
-  .pi-back button{border:0;background:#6b5c14;color:#fff;font-family:inherit;font-size:11px;font-weight:800;
-    border-radius:6px;padding:5px 0;cursor:pointer}
   .postit-edge{position:absolute;right:0;top:40%;width:26px;height:52px;border:0;border-radius:8px 0 0 8px;
-    background:rgba(245,226,122,.85);font-size:14px;cursor:pointer;z-index:4}
+    background:rgba(255,236,140,.85);font-size:14px;cursor:pointer;z-index:4}
   .ft-chip{font-family:inherit;font-size:14px;font-weight:700;border:0;border-radius:999px;padding:11px 20px;cursor:pointer;background:rgba(255,255,255,.14);color:#fff}
   .ft-chip.on{color:#ffd76a;background:rgba(255,255,255,.26)}
   .ft-tree{position:absolute;bottom:0;left:5%;height:165px;pointer-events:none;z-index:1}
-  .ftick{stroke:rgba(255,255,255,.5)}
-  .ftlabel{fill:rgba(255,255,255,.78);font-size:13px;font-weight:700}
+  .ftlabel{fill:rgba(255,255,255,.62);font-size:12px;font-weight:600}
   /* 보상 (요청) */
   .rewardrow{align-items:center;gap:8px;flex-wrap:wrap}
   .rewardrow #eRewardText{min-width:120px}
@@ -1399,7 +1418,7 @@
   <div class="ft-title" id="ftTitle"></div>
   <div class="ft-stats" id="ftStats"></div>
   <div class="ft-ringwrap">
-    <svg id="ftRing" viewBox="0 0 320 320"></svg>
+    <svg id="ftRing" viewBox="0 0 300 300"></svg>
     <div class="ft-center">
       <div class="ft-timer" id="ftTimer">00:00</div>
       <button class="ft-pausebtn" id="ftPause" title="일시정지">⏸</button>
@@ -1410,15 +1429,23 @@
     <button class="ft-finish" id="ftFinish">끝내기</button>
   </div>
   <div class="postit" id="postit" style="display:none">
-    <div class="pi-front" id="piFront">엘리야<br>조금만<br>기다려</div>
+    <div class="pi-front" id="piFront"><span class="pi-ftext" id="piFtext">엘리야<br>조금만<br>기다려</span><span class="pi-badge" id="piBadge" style="display:none"></span></div>
     <div class="pi-back">
-      <div class="pi-top">엘리가 딴짓하고<br>싶은가 봐요</div>
-      <textarea id="piText" maxlength="60" placeholder=""></textarea>
-      <div class="pi-bottom"><button id="piSave">적어 두고 이따 해요</button><button id="piInfo">ⓘ</button></div>
+      <div class="pi-bhead" id="piBhead">엘리가 딴짓하고 싶은가 봐요</div>
+      <div class="pi-bcap"><span>적어 두고 이따 해요</span><button id="piInfo">ⓘ</button></div>
+      <div class="pi-when"><span class="pi-wlab">언제?</span><button class="pi-whenchip on" data-w="finish">이 일 끝내면</button><button class="pi-whenchip" data-w="time">시간 다 채우면</button></div>
+      <div class="pi-list" id="piList"></div>
+      <div class="pi-inrow"><input id="piText" maxlength="60" placeholder="예: 웹툰 보기"><button id="piAdd">⊕</button></div>
+      <div class="pi-bfoot"><span id="piHint">적으면 매트릭스 ‘보상’ 칸에 담겨요</span><button id="piDone">확인</button></div>
     </div>
   </div>
   <div class="postit postit2" id="postitInfo" style="display:none">
-    <div class="pi2-body">충동은 지우려 하면<br>더 커져요.<br><br>적어 두고 미루면<br>대개 스르르 가라앉아요.<br><span>— 파도 타듯 흘려보내기</span></div>
+    <div class="pi2-body">
+      <div class="pi2-title">이 포스트잇, 왜 있냐면요</div>
+      <p>집중하다 딴 게 하고 싶어지면, 바로 하지 말고 여기에 적어 두세요.</p>
+      <p>‘이따 하자’며 미뤄 두면 그 충동은 대개 스르르 가라앉아요. 그동안 지금 할 일에 계속 머물 수 있죠.</p>
+      <div class="pi2-ok">알겠어요</div>
+    </div>
   </div>
   <button class="postit-edge" id="postitEdge" style="display:none">📝</button>
   <img class="ft-tree" src="assets/tree.png" alt="">
@@ -2873,17 +2900,17 @@
   // 앱 타이머 링 (요청 첨부1): 눈금 + 분 라벨 + 진행 아크 + 노브.
   function buildRing(total,color,countdown){
     var svg=document.getElementById('ftRing');if(!svg)return;
-    var mins=Math.max(1,Math.round(total/60)),cx=160,cy=160,html='';
-    var n=Math.min(60,mins),labEvery=mins<=30?5:10;
-    for(var k=0;k<n;k++){var frac=k/n,a=frac*2*Math.PI-Math.PI/2;
-      var mv=Math.round(frac*mins),major=(mv%labEvery===0);
-      var r1=major?130:134,r2=140;
-      html+='<line class="ftick" x1="'+(cx+Math.cos(a)*r1).toFixed(1)+'" y1="'+(cy+Math.sin(a)*r1).toFixed(1)+'" x2="'+(cx+Math.cos(a)*r2).toFixed(1)+'" y2="'+(cy+Math.sin(a)*r2).toFixed(1)+'" stroke-width="'+(major?2:1)+'"/>';
-      if(major){var lr=152;html+='<text class="ftlabel" x="'+(cx+Math.cos(a)*lr).toFixed(1)+'" y="'+(cy+Math.sin(a)*lr+4.5).toFixed(1)+'" text-anchor="middle">'+mv+'</text>';}
+    // 앱 FocusTimerRing 파리티: 300pt 프레임, 링 지름 228(r=114)·선폭 10.
+    var mins=Math.max(1,Math.round(total/60)),cx=150,cy=150,r=114,html='';
+    var labEvery=mins<=30?5:(mins<=60?10:15),step=mins<=40?1:5;   // 앱 labelStep/minorStep
+    for(var m=0;m<mins;m+=step){var a=(m/mins)*2*Math.PI-Math.PI/2,major=(m%labEvery===0);
+      var r1=major?r+5:r+6,r2=major?r+11:r+10;                    // 앱 tick inner/outer
+      html+='<line class="ftick" x1="'+(cx+Math.cos(a)*r1).toFixed(1)+'" y1="'+(cy+Math.sin(a)*r1).toFixed(1)+'" x2="'+(cx+Math.cos(a)*r2).toFixed(1)+'" y2="'+(cy+Math.sin(a)*r2).toFixed(1)+'" style="stroke:rgba(255,255,255,'+(major?'.38':'.18')+')" stroke-width="'+(major?1.4:1)+'"/>';
+      if(major){var lr=r+24;html+='<text class="ftlabel" x="'+(cx+Math.cos(a)*lr).toFixed(1)+'" y="'+(cy+Math.sin(a)*lr+4.2).toFixed(1)+'" text-anchor="middle">'+m+'</text>';}
     }
-    html+='<circle cx="160" cy="160" r="118" fill="none" stroke="'+hexA(color,countdown?0.28:0.16)+'" stroke-width="13"/>';
-    html+='<circle id="ftArc" cx="160" cy="160" r="118" fill="none" stroke="'+color+'" stroke-width="13" stroke-linecap="round" transform="rotate(-90 160 160)"/>';
-    html+='<g id="ftKnob"><circle cx="160" cy="42" r="10" fill="'+color+'" stroke="#fff" stroke-width="3.5"/></g>';
+    html+='<circle cx="150" cy="150" r="114" fill="none" stroke="'+hexA(color,countdown?0.28:0.16)+'" stroke-width="10"/>';
+    html+='<circle id="ftArc" cx="150" cy="150" r="114" fill="none" stroke="'+color+'" stroke-width="10" stroke-linecap="round" transform="rotate(-90 150 150)"/>';
+    html+='<g id="ftKnob"><circle cx="150" cy="36" r="10" fill="'+color+'" stroke="#fff" stroke-width="3.5"/></g>';
     svg.innerHTML=html;
   }
   // 전환 차임 (§5 start4 근사 — WebAudio 두 음).
@@ -2915,23 +2942,45 @@
   // 딴짓 포스트잇 (§5)
   function postItOn(){return localStorage.getItem('hfPostItOn')!=='0';}
   function postItQ4(){return localStorage.getItem('hfPostItToQ4')!=='0';}
+  var piWhen='finish';   // 언제 할지 다짐 — 세션 한정 (앱 @State 기본 .finish)
+  function piWhenLabel(w){return w==='time'?'시간 다 채우면':'이 일 끝내면';}
+  function piJotKey(){return 'hfDistractionJot-'+(fTask?fTask.id:'');}   // 작업별 영속 (앱 jotKey)
+  function piLoadJot(){try{return JSON.parse(localStorage.getItem(piJotKey())||'[]')||[];}catch(_){return [];}}
+  function piSaveJot(a){try{localStorage.setItem(piJotKey(),JSON.stringify(a));}catch(_){}}
+  // 앞면 배지 수 + 뒷면 목록 (앱 allItems: 미리 건 보상 + 적은 딴짓).
+  function paintPostitList(){
+    var reward=fTask&&fTask.rewardText?fTask.rewardText:'',jot=piLoadJot();
+    var badge=document.getElementById('piBadge'),n=(reward?1:0)+jot.length;
+    if(badge){badge.textContent=n;badge.style.display=n>0?'':'none';}
+    var list=document.getElementById('piList');
+    if(list){var html='';
+      if(reward)html+='<div class="pi-lrow"><span class="pi-licon">🎁</span><span class="pi-ltext">'+esc(reward)+'</span><span class="pi-lwhen">'+piWhenLabel(piWhen)+'</span></div>';
+      jot.forEach(function(x){html+='<div class="pi-lrow"><span class="pi-licon">✎</span><span class="pi-ltext">'+esc(x)+'</span><span class="pi-lwhen">'+piWhenLabel(piWhen)+'</span></div>';});
+      list.innerHTML=html;}
+  }
   function paintPostit(){
     var p=document.getElementById('postit'),e=document.getElementById('postitEdge');
     if(!p)return;
-    var fr=document.getElementById('piFront');
+    var fr=document.getElementById('piFtext');
     if(fr)fr.innerHTML=esc(eleName())+'야<br>조금만<br>기다려';   // D2-8: 충동=엘리 프레임
-    var pt=document.querySelector('.pi-top');
-    if(pt)pt.innerHTML=esc(eleName())+'가 딴짓하고<br>싶은가 봐요';
+    var pt=document.getElementById('piBhead');
+    if(pt)pt.textContent=eleName()+'가 딴짓하고 싶은가 봐요';
     var tucked=localStorage.getItem('hfPostItTucked')==='1';
     p.style.display=postItOn()&&!tucked?'':'none';
     e.style.display=postItOn()&&tucked?'':'none';
     p.classList.remove('flip');
     var inf=document.getElementById('postitInfo');if(inf)inf.style.display='none';
     var ta=document.getElementById('piText');if(ta)ta.value='';
-    var sv=document.getElementById('piSave');if(sv)sv.style.display=postItQ4()?'':'none';
+    piWhen='finish';
+    document.querySelectorAll('.pi-whenchip').forEach(function(b){b.classList.toggle('on',b.dataset.w===piWhen);});
+    var hint=document.getElementById('piHint');if(hint)hint.style.visibility=postItQ4()?'visible':'hidden';   // Q4 꺼짐이면 안내만 숨김(앱), 확인은 유지
+    paintPostitList();
   }
 
   var fAdvanced=false;
+  // 휴식 문구 (앱 restLines 파리티): 휴식 진입(edge) 때만 랜덤 1개 선택해 위상 동안 유지.
+  var fRestLines=['잠깐, 창밖 가장 먼 곳에 눈의 초점을 맡겨 보세요','물 한 잔이 어울리는 시간이에요','두어 걸음이면 충분해요 — 방이 생각보다 넓어요','어깨와 목을 천천히 한 바퀴 —','하늘 한 번 보고 오면 다음 25분이 가벼워요','가장 멀리 있는 것을 하나 찾아보세요','허리를 펴면 생각도 펴져요'];
+  var fRestMsg='',fWasRest=false;
   function nextDueTask(){
     if(!fTask||!fTask.scheduledStart)return null;
     var myDue=taskDueAt(fTask).getTime(),best=null,bestDue=1/0;
@@ -2942,6 +2991,29 @@
       var dm=d.getTime();if(dm>myDue&&dm<bestDue){bestDue=dm;best=t;}
     });
     return best;
+  }
+  // 제목 아래 정보 한 줄 (앱 statsRow 파리티): ⏳오늘(이 작업·2번째부터)·🕰어제(제목)·↪다음 마감선·🎁보상.
+  function focusStatsText(){
+    if(!fTask)return '';
+    var t=fTask,el=focusElapsed(),segs=[],ss=DATA.sessions||[];
+    // ⏳ 오늘 이 작업 누적(저장 세션 + 실시간) — 오늘 첫 집중이면 링과 중복이라 생략 (앱 builtCompact).
+    var todaySaved=0;ss.forEach(function(x){if(x.taskID===t.id&&dateKey(x.start)===todayKey())todaySaved+=(x.focusedSec||0);});
+    if(todaySaved>0){var tot=todaySaved+el,h=Math.floor(tot/3600),m=Math.floor((tot%3600)/60);
+      segs.push('⏳ '+(h>0?'오늘 '+h+'시간 '+m+'분':'오늘 '+m+'분'));}
+    // 🕰 어제 같은 제목 작업 누적(≥1분) (앱 yesterdayCompact).
+    var yk=dateKey(new Date(Date.now()-86400000).toISOString()),ysec=0;
+    ss.forEach(function(x){if(x.taskTitle===t.title&&dateKey(x.start)===yk)ysec+=(x.focusedSec||0);});
+    if(ysec>=60){var yh=Math.floor(ysec/3600),ym=Math.floor((ysec%3600)/60);
+      segs.push('🕰 '+(yh>0?(ym>0?'어제 '+yh+'시간 '+ym+'분 집중':'어제 '+yh+'시간 집중'):'어제 '+ym+'분 집중'));}
+    // ↪ 다음 마감선 작업 + 마감선 간격 분 (앱 nextCompact).
+    var nx=nextDueTask();
+    if(nx){var gap=0;try{gap=Math.max(1,Math.round((taskDueAt(nx).getTime()-taskDueAt(t).getTime())/60000));}catch(_){}
+      if(!gap)gap=nx.durationMin||0;
+      segs.push('↪ '+(nx.title||'')+' '+gap+'분');}
+    // 🎁 걸어둔 보상 (앱 hasReward).
+    if((t.rewardMoney||0)>0)segs.push('🎁 끝나면 '+moneyStr(t.rewardMoney));
+    else if(t.rewardText)segs.push('🎁 끝나면 '+t.rewardText);
+    return segs.join(' · ');
   }
   function tickFocus(){
     if(!fTask)return;var el=focusElapsed(),ph=focusPhase(el);
@@ -2965,19 +3037,21 @@
     var key=ph.total+'|'+col+'|'+ph.countdown;
     if(key!==ftKey){ftKey=key;buildRing(ph.total,col,ph.countdown);}
     var prog=ph.countdown?1-(ph.left/ph.total):((el%3600)/3600);
-    var C=2*Math.PI*118,arc=document.getElementById('ftArc');
+    var C=2*Math.PI*114,arc=document.getElementById('ftArc');
     if(arc){if(ph.countdown){arc.setAttribute('stroke-dasharray',((1-prog)*C)+' '+C);arc.setAttribute('stroke-dashoffset',String(-prog*C));}
       else{arc.setAttribute('stroke-dasharray',(Math.max(0.001,prog)*C)+' '+C);arc.setAttribute('stroke-dashoffset','0');}}
-    var kn=document.getElementById('ftKnob');if(kn)kn.setAttribute('transform','rotate('+(prog*360)+' 160 160)');
+    var kn=document.getElementById('ftKnob');if(kn)kn.setAttribute('transform','rotate('+(prog*360)+' 150 150)');
     document.getElementById('ftTimer').textContent=fmtMS(ph.countdown?ph.left:el);
-    document.getElementById('ftSub').textContent=ph.rest?'쉬는 시간 — 잠깐 쉬어가요':(fPaused?'일시정지 중':'');
+    // 휴식 문구: 휴식 진입 에지에서만 랜덤 재추첨(위상 index 대체) — 앱 restLines·수동 일시정지 폴백.
+    if(ph.rest&&!fWasRest)fRestMsg=fRestLines[Math.floor(Math.random()*fRestLines.length)];
+    fWasRest=ph.rest;
+    document.getElementById('ftSub').textContent=ph.rest?fRestMsg:(fPaused?'일시정지 — 잠깐 쉬어가요':'');
+    document.getElementById('ftStats').textContent=focusStatsText();   // 실시간 갱신 (앱 파리티)
   }
   function paintPomoChip(){var b=document.getElementById('ftPomo');if(b){b.classList.toggle('on',pomoOn());b.innerHTML=IC.timer+(pomoOn()?' 포모도로 켜짐':' 포모도로');}}
-  function startFocus(t){closeEditor();fTask=t;fStart=Date.now();fPausedAcc=0;fPauseAt=0;fPaused=false;ftKey='';fAdvanced=false;
+  function startFocus(t){closeEditor();fTask=t;fStart=Date.now();fPausedAcc=0;fPauseAt=0;fPaused=false;ftKey='';fAdvanced=false;fWasRest=false;fRestMsg='';
     document.getElementById('ftTitle').innerHTML='<span style="opacity:.9">○</span> '+catIcon(t.categoryID)+' '+esc(t.title||'집중');
-    // 오늘 통계 (앱 파리티): ⏳ 오늘 N분 · ✨ n번째 집중.
-    var mins=0,cnt=0;(DATA.sessions||[]).forEach(function(x){if(dateKey(x.start)===todayKey()){mins+=Math.floor((x.focusedSec||0)/60);cnt++;}});
-    document.getElementById('ftStats').textContent='⏳ 오늘 '+mins+'분 · '+(cnt===0?'✨ 첫 집중':'✨ '+(cnt+1)+'번째 집중');
+    document.getElementById('ftStats').textContent=focusStatsText();   // 제목 아래 정보 한 줄 (앱 statsRow 파리티)
     var h=new Date().getHours();
     document.getElementById('focusScrim').classList.toggle('night',h<6||h>=18);
     document.getElementById('ftPause').innerHTML=IC.pause;paintPomoChip();paintFm();
@@ -4846,7 +4920,7 @@
     p.addEventListener('pointermove',function(e){
       if(!dragging||sx==null)return;
       var dx=e.clientX-sx;
-      if(dx>0)p.style.transform='rotate(-4deg) translateX('+dx+'px)';
+      if(dx>0)p.style.transform='rotate(-6deg) translateX('+dx+'px)';
     });
     p.addEventListener('pointerup',function(e){
       if(!dragging)return;dragging=false;
@@ -4856,6 +4930,21 @@
       if(Math.abs(dx)<8){p.classList.add('flip');                                    // 탭 = 뒤집기
         var ta=document.getElementById('piText');if(ta)setTimeout(function(){ta.focus();},50);}
     });
+    // 딴짓 추가 = 작업별 목록에 적고(영속), Q4 보상 칸에 담는다 (앱 add()). 목록·배지 갱신.
+    function piAddDraft(){
+      var ta=document.getElementById('piText'),v=(ta.value||'').trim();
+      if(!v)return;
+      var jot=piLoadJot();
+      if(jot.indexOf(v)<0){jot.push(v);piSaveJot(jot);}
+      if(postItQ4()){addTask({title:v,matrixQuadrant:4,isRewardItem:true,durationMin:0,iconName:'gift'});appToast('"'+v+'" — 매트릭스 ‘보상’ 칸에 담았어요');}
+      else appToast('적어뒀어요 — 지금은 집중!');
+      ta.value='';paintPostitList();
+    }
+    function piClose(){                                                              // 확인 = draft 저장 후 닫기 (앱 close())
+      piAddDraft();
+      p.classList.remove('flip');
+      var inf=document.getElementById('postitInfo');if(inf)inf.style.display='none';
+    }
     document.getElementById('postitEdge').addEventListener('click',function(){
       localStorage.removeItem('hfPostItTucked');paintPostit();});                    // 가장자리 탭 = 복귀
     document.getElementById('piInfo').addEventListener('click',function(e){
@@ -4864,14 +4953,14 @@
       info.style.display=info.style.display==='none'?'':'none';   // ⓘ = 원리 포스트잇 겹쳐 표시 (D5-3)
     });
     document.getElementById('postitInfo').addEventListener('click',function(){this.style.display='none';});
-    document.getElementById('piSave').addEventListener('click',function(e){
-      e.stopPropagation();
-      var ta=document.getElementById('piText'),v=(ta.value||'').trim();
-      if(v&&postItQ4()){addTask({title:v,matrixQuadrant:4});appToast('"'+v+'" — Q4(나중에)에 담아뒀어요');}
-      else if(v)appToast('적어뒀어요 — 지금은 집중!');
-      ta.value='';p.classList.remove('flip');
-      var inf=document.getElementById('postitInfo');if(inf)inf.style.display='none';   // 리뷰 fix
+    document.querySelectorAll('.pi-whenchip').forEach(function(b){                    // 언제? 칩 (세션 한정)
+      b.addEventListener('click',function(e){e.stopPropagation();piWhen=b.dataset.w;
+        document.querySelectorAll('.pi-whenchip').forEach(function(x){x.classList.toggle('on',x===b);});
+        paintPostitList();});
     });
+    document.getElementById('piText').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();piAddDraft();}});
+    document.getElementById('piAdd').addEventListener('click',function(e){e.stopPropagation();piAddDraft();});
+    document.getElementById('piDone').addEventListener('click',function(e){e.stopPropagation();piClose();});
   })();
   // 설정: 집중 페이지 토글
   // D2-6: 작업 추가 아이콘 설정 — 표시 토글 + ≡ 드래그 순서.
