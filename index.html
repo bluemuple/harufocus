@@ -919,6 +919,7 @@
   .wlabel .wn{font-weight:800;font-size:16px;letter-spacing:-.02em}
   .wlabel .ws{font-size:11px;font-weight:600;opacity:.72;margin-top:3px}
   .wlabel .wlv{position:absolute;top:12px;right:16px;font-size:12px;font-weight:800;opacity:.8}
+  .wlabel .wic{margin-bottom:2px;line-height:0}.wlabel .wic svg{display:block}
   .cap{backface-visibility:visible}
   .bbadge{position:absolute;left:50%;top:2px;transform:translateX(-50%);color:#fff;font-weight:800;font-size:15px;padding:5px 13px;border-radius:999px;box-shadow:0 7px 16px rgba(0,0,0,.28);opacity:0;transition:opacity .3s}
   .bbadge.on{opacity:1}
@@ -929,6 +930,10 @@
   .bi-lv{margin-left:auto;color:#fff;font-weight:800;font-size:13px;padding:3px 11px;border-radius:999px}
   .bi-msg{margin-top:13px;font-size:14px;line-height:1.55}
   .bi-hint{margin-top:10px;font-size:12px;color:var(--ink-soft)}
+  .bi-more{margin-top:11px;background:transparent;border:0;color:var(--ink-soft);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;padding:2px 0;text-decoration:underline;text-underline-offset:3px}
+  .bi-mean{margin-top:11px;font-size:13px;line-height:1.62}.bi-mean b{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:3px;font-weight:700}.bi-mean p{margin:0}
+  .bi-acts{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:13px}
+  .bi-acts button{min-height:40px;border-radius:10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--ink)}
   .bi-sides{margin-top:14px;border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:4px}
   .bi-side{display:flex;align-items:center;gap:9px;font-size:13px;cursor:pointer;padding:6px;border-radius:9px}
   .bi-side:hover{background:var(--card-2)}.bi-side.sel{background:var(--card-2);font-weight:600}
@@ -3900,7 +3905,53 @@
     {id:'rest',name:'기쁨',sub:'여유',msg:'기쁨도 계획이에요. 오늘 한 조각.',demo:4},
     {id:'people',name:'사람',sub:'연결됨',msg:'가까운 사람에게 건넨 한마디가 오래 남아요.',demo:3}
   ];
-  var bSel=-1,bucketDay=0,tubBuilt=false,bView=0,bManual={},bIntroTimer=null;
+
+  // 앱 BucketCoach 원문 (7면×3단계 low<3.5/mid<7.5/high). w=stateWord·d=direction·m=meaning.
+  var COACH={
+    mind:[
+      {w:'거친 파도',d:'요즘 감정이 크게 흔들려요 — 작은 진정 습관 하나를 시도해 보세요.',m:'지금은 마음이 자주 출렁여요. 낮은 점수는 실패가 아니라 돌봄이 필요하다는 신호예요 — 작은 진정 습관 하나가 파도를 잔잔하게 만들어요.'},
+      {w:'무덤덤',d:'요즘 자동조종으로 달리고 있어요 — 하루 한 번 마음을 들여다보세요.',m:'감정이 크게 흔들리진 않지만 조금 멀게 느껴져요. 마음을 자주 들여다볼수록 무뎌진 감각이 다시 살아나요.'},
+      {w:'맑고 안정',d:'감정을 잘 읽고 있어요 — 이 습관을 계속 이어가세요.',m:'감정을 알아차리고 잘 다루고 있어요. 이 점수는 마음이 든든한 토대 위에 있다는 뜻 — 스스로를 믿어도 돼요.'}],
+    health:[
+      {w:'방전 직전',d:'몸의 기본부터 챙겨요 — 규칙적인 한 끼나 이른 취침부터 시작해요.',m:'몸이 보내는 피로 신호가 쌓여 있어요. 낮은 점수는 게으름이 아니라 회복이 필요하다는 뜻이에요 — 기본 하나부터 돌보면 금세 올라와요.'},
+      {w:'절반쯤',d:'기본기 하나는 탄탄해요 — 빠진 하나를 골라 일주일만 지켜봐요.',m:'기본기 중 일부는 탄탄하고 일부는 흔들려요. 빠진 조각 하나를 채우면 몸 전체의 균형이 눈에 띄게 좋아져요.'},
+      {w:'든든함',d:'잠·식사·움직임이 모두 잘 굴러가요 — 이 루틴을 지켜요.',m:'몸의 기본기가 고루 안정적이에요. 이 점수는 에너지가 꾸준히 채워지고 있다는 신호 — 그 위에서 더 큰 걸 시도해도 좋아요.'}],
+    rest:[
+      {w:'일만 가득',d:'즐거움이 사라졌어요 — 이번 주에 좋아하는 일 하나를 예약해요.',m:'즐거움이 밀려나 있어요. 낮은 점수는 게으름이 아니라 쉼이 부족하다는 뜻 — 좋아하는 시간이 오히려 에너지를 돌려줘요.'},
+      {w:'숨 고르기 한 번',d:'일주일에 한 번쯤 숨을 돌리네요 — 한 번만 더 늘려봐요.',m:'즐거움이 있긴 하지만 아직 얇아요. 조금 더 자주 채우면 지치는 속도가 눈에 띄게 느려져요.'},
+      {w:'충전 완료',d:'좋아하는 시간이 에너지를 채우고 있어요 — 소중히 지켜요.',m:'좋아하는 활동으로 꾸준히 충전되고 있어요. 이 점수는 삶에 쉼표가 잘 찍혀 있다는 뜻이에요.'}],
+    life:[
+      {w:'빠듯함',d:'돈이 빠듯하게 느껴져요 — 이번 주 지출 계획을 간단히 세워봐요.',m:'돈이 늘 빠듯하게 느껴져요. 낮은 점수는 무능이 아니라 계획이 없다는 뜻 — 작은 규칙 하나가 숨통을 틔워줘요.'},
+      {w:'느슨하지만 무탈',d:'큰불은 없지만 계획도 없어요 — 돈에게 간단한 임무 하나를 줘봐요.',m:'큰불은 없지만 방향도 없어요. 느슨한 돈에 목적을 붙이면 같은 수입도 훨씬 든든해져요.'},
+      {w:'계획대로',d:'계획대로 쓰고 저축하고 있어요 — 지금처럼 가요.',m:'돈이 계획을 따라가고 저축이 늘고 있어요. 이 점수는 돈이 당신을 위해 일하기 시작했다는 신호예요.'}],
+    study:[
+      {w:'멈춤',d:'배움이 멈춰 있어요 — 하루 세 쪽, 10분부터 시작해요.',m:'요즘 배움이 멈춰 있어요. 낮은 점수는 재능 문제가 아니라 흐름이 끊긴 것 — 아주 작은 한 걸음이면 다시 굴러가요.'},
+      {w:'찔끔찔끔',d:'배움이 띄엄띄엄이에요 — 주제 하나를 골라 한 달만 파봐요.',m:'가끔 읽고 보지만 꾸준한 줄기가 없어요. 하나에 집중하면 흩어진 배움이 실력으로 뭉쳐요.'},
+      {w:'복리 성장',d:'꾸준히 배우고 있어요 — 계속 쌓아가요.',m:'배움은 이제 습관이에요 — 꾸준히 쌓이고, 성장이 눈에 보여요. 이 점수는 시간이 당신 편이라는 뜻이에요.'}],
+    focus:[
+      {w:'번아웃',d:'연료가 바닥났어요 — 하나를 내려놓고 쉰 다음에 밀어붙여요.',m:'연료가 바닥났어요. 낮은 점수는 의지 부족이 아니라 쉼이 먼저 필요하다는 신호 — 회복 뒤에 다시 밀어붙여도 늦지 않아요.'},
+      {w:'그냥 버티는 중',d:'지금은 전부 ‘해야 해서’ 해요 — 마음이 가는 한 조각을 찾아봐요.',m:'지금은 전부 ‘해야 해서’ 하고 있어요. 작은 흥미 하나를 붙이면 버티기가 나아가기로 바뀌어요.'},
+      {w:'탄력 붙음',d:'동기도 성과도 좋아요 — 이 흐름을 타요.',m:'동기도 성과도 좋아요. 이 점수는 지금이 밀어붙이기 좋은 때라는 신호 — 이 탄력을 아껴 써요.'}],
+    people:[
+      {w:'연결 끊김',d:'연결이 부족해요 — 오늘 한 사람에게 먼저 연락해 봐요.',m:'요즘 연결이 부족해요. 낮은 점수는 당신 탓이 아니라 거리가 벌어졌다는 신호 — 먼저 내민 손 하나가 관계를 되살려요.'},
+      {w:'한쪽으로 치우침',d:'한쪽에만 시간이 쏠려요 — 다른 쪽에도 차례를 줘요.',m:'한쪽 관계는 튼튼한데 다른 쪽이 얇아요. 균형을 맞추면 관계망 전체가 더 안전해져요.'},
+      {w:'연결됨',d:'관계가 건강해요 — 지금처럼 곁을 지켜요.',m:'친구도 가족도 두루 잘 지내요. 이 점수는 당신이 혼자가 아니라는 든든한 증거예요.'}]
+  };
+  function coachTierIdx(lv){return lv<3.5?0:(lv<7.5?1:2);}
+  function coachCustom(){try{var j=DATA.settings&&DATA.settings.bucketCoachJSON;if(!j)return null;var o=JSON.parse(j),out={};for(var k in o){if(Array.isArray(o[k]))out[k]=o[k].map(function(t){return {w:t.word,d:t.dir,m:t.mean};});}return out;}catch(_){return null;}}
+  function coachFor(id,lv){var cu=coachCustom();var arr=(cu&&cu[id])||COACH[id];if(!arr)return {w:'',d:'',m:''};return arr[coachTierIdx(lv)]||arr[0];}
+  function coachTier(id){return coachFor(id,sideLevel(id));}
+  // 물통 벽면 아이콘 (앱 Category.presetIcons SF Symbol 대응 인라인 SVG).
+  var SIDE_ICONS={
+    mind:'<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 20.3S4.2 15 4.2 9.4C4.2 6.6 6.3 5.2 8.1 5.2 9.6 5.2 11 6.1 12 7.4 13 6.1 14.4 5.2 15.9 5.2 17.7 5.2 19.8 6.6 19.8 9.4 19.8 15 12 20.3 12 20.3Z"/></svg>',
+    health:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4.6" r="1.9" fill="currentColor" stroke="none"/><path d="M12.7 8.2 10 11l2.6 1.4.9 4.4"/><path d="M10 11 6.4 11.4"/><path d="M15.6 12.7 17.2 15"/><path d="M13.5 16.8 11.4 20"/></svg>',
+    rest:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8.2"/><path d="M8.4 13.6c.9 1.5 2.2 2.2 3.6 2.2s2.7-.7 3.6-2.2" stroke-linecap="round"/><circle cx="9.2" cy="10" r=".95" fill="currentColor" stroke="none"/><circle cx="14.8" cy="10" r=".95" fill="currentColor" stroke="none"/></svg>',
+    life:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8.4"/><text x="12" y="16.3" font-size="11" text-anchor="middle" fill="currentColor" stroke="none" font-weight="700">₩</text></svg>',
+    study:'<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 4C9 4.5 4.5 11 4.5 19.5c0 .3.2.5.5.5C13.5 20 20 13 20 4Z"/><path d="M7 18C9 12 12 9 17 7" fill="none" stroke="#fff" stroke-width="1.1" stroke-linecap="round" opacity=".55"/></svg>',
+    focus:'<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect x="4" y="4" width="4" height="16" rx="1"/><rect x="9.5" y="4" width="4" height="16" rx="1" opacity=".72"/><path d="M15.2 5.3 19.4 6.4 16.4 21 12.2 19.9Z" opacity=".5"/></svg>',
+    people:'<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="8.6" cy="8" r="3"/><circle cx="16" cy="8.6" r="2.6" opacity=".8"/><path d="M3.4 19c0-2.9 2.3-5 5.2-5s5.2 2.1 5.2 5Z"/><path d="M14.2 19c.1-2.4 1.5-4.3 3.5-4.9 2 .6 3.3 2.4 3.3 4.9Z" opacity=".8"/></svg>'
+  };
+  var bSel=-1,bucketDay=0,tubBuilt=false,bView=0,bManual={},bIntroTimer=null,bMore=false;
   var TUB={N:7,R:142,H:232};TUB.a=TUB.R*Math.cos(Math.PI/TUB.N);TUB.s=2*TUB.R*Math.sin(Math.PI/TUB.N);TUB.step=360/TUB.N;
   TUB.wood=0.14;                 // 아래 나무 바닥 비율(높이 0 지점)
   TUB.waterMax=TUB.H*(1-TUB.wood-0.04);  // 물이 찰 수 있는 최대 높이
@@ -3949,7 +4000,7 @@
       // 물만 (요청: 연한 바탕색 제거). 처음 0 → 그날 집중량으로 차오름.
       var water=document.createElement('div');water.className='water';water.style.cssText='position:absolute;left:0;right:0;bottom:'+(TUB.wood*100)+'%;height:0px;transition:height .8s cubic-bezier(.4,0,.2,1);will-change:height';wall.appendChild(water);
       var lab=document.createElement('div');lab.className='wlabel';
-      lab.innerHTML='<div class="wn">'+esc(side.name)+'</div><div class="ws">'+esc(side.sub)+'</div><div class="wlv"></div>';
+      lab.innerHTML='<div class="wic">'+(SIDE_ICONS[side.id]||'')+'</div><div class="wn">'+esc(side.name)+'</div><div class="ws">'+esc(coachTier(side.id).w)+'</div><div class="wlv"></div>';
       wall.appendChild(lab);
       tub.appendChild(wall);
     });
@@ -3962,6 +4013,7 @@
       var lv=sideLevel(SIDES[+w.dataset.i].id);sum+=lv;
       var wt=w.querySelector('.water');if(wt)wt.style.height=(lv/10)*TUB.waterMax+'px';
       var lvl=w.querySelector('.wlv');if(lvl)lvl.textContent=Math.round(lv);
+      var wsx=w.querySelector('.ws');if(wsx)wsx.textContent=coachFor(SIDES[+w.dataset.i].id,lv).w;
     });
     var wp=document.getElementById('waterPlane');
     if(wp){var avg=sum/SIDES.length;
@@ -3984,7 +4036,7 @@
     if(bSel>=0){badge.classList.add('on');badge.textContent=Math.round(sideLevel(SIDES[bSel].id))+' / 10';badge.style.background=catColor(SIDES[bSel].id);}
     else badge.classList.remove('on');
   }
-  function selectSide(i){if(bSel===i){bSel=-1;}else{bSel=i;bView=-i*TUB.step;}applyTub();renderBInfo();}
+  function selectSide(i){bMore=false;if(bSel===i){bSel=-1;}else{bSel=i;bView=-i*TUB.step;}applyTub();renderBInfo();}
   // 물통 좌우 드래그로 회전 + 선택면 세로 드래그로 물 조절 (요청).
   // 드래그 중엔 회전뿐 아니라 **물 높이 transition(.8s)도 끈다** — 그래야 물이
   // 손가락을 즉시 따라오고, 윗변에서 물이 끊기며 떨어지는 렉이 사라진다 (요청).
@@ -4080,12 +4132,19 @@
   function shiftBucketDay(n){bucketDay=Math.min(0,bucketDay+n);bManual={};renderBucket();}   // 미래 없음, 수동조절 초기화
   function renderBInfo(){
     var info=document.getElementById('bInfo');if(!info)return;
-    var side=SIDES[bSel<0?0:bSel],col=catColor(side.id),lv=Math.round(sideLevel(side.id));
-    // 오른쪽 막대그래프 제거 (요청): 이름·레벨·메시지만.
+    var side=SIDES[bSel<0?0:bSel],col=catColor(side.id),lvN=sideLevel(side.id),ct=coachFor(side.id,lvN),lv=Math.round(lvN);
+    // 앱 리플렉션 카드: 이름·상태어·레벨 + 방향문 + '더보기'(이 점수가 말하는 것) + 채우러 가기 4버튼.
+    var act=function(go,label){return '<button data-go="'+go+'" style="background:'+hexA(col,.16)+';border:1px solid '+hexA(col,.4)+'">'+label+'</button>';};
     info.innerHTML=
-      '<div class="bi-top"><span class="bi-dot" style="background:'+col+'"></span><div><div class="bi-name">'+esc(side.name)+'</div><div class="bi-sub">'+esc(side.sub)+'</div></div><span class="bi-lv" style="background:'+col+'">'+lv+' / 10</span></div>'+
-      '<div class="bi-msg">↗ '+esc(side.msg)+'</div>'+
+      '<div class="bi-top"><span class="bi-dot" style="background:'+col+'"></span><div><div class="bi-name">'+esc(side.name)+'</div><div class="bi-sub">'+esc(ct.w)+'</div></div><span class="bi-lv" style="background:'+col+'">'+lv+' / 10</span></div>'+
+      '<div class="bi-msg">↗ '+esc(ct.d)+'</div>'+
+      (bMore
+        ? '<div class="bi-mean"><b>이 점수가 말하는 것</b><p>'+esc(ct.m)+'</p></div><button class="bi-more" data-more="0">원래대로</button>'
+        : (ct.m?'<button class="bi-more" data-more="1">더보기</button>':''))+
+      '<div class="bi-acts">'+act('timeline','타임라인')+act('todo','할 일')+act('matrix','매트릭스')+act('routine','루틴')+'</div>'+
       '<div class="bi-hint">'+(bSel<0?'물통을 좌우로 드래그해 돌려보세요. 옆면을 누르면 자세히 보여요.':'선택한 면을 아래로 끌면 물이 줄어요. 다시 누르면 전체 보기.')+'</div>';
+    var mb=info.querySelector('.bi-more');if(mb)mb.addEventListener('click',function(){bMore=this.dataset.more==='1';renderBInfo();});
+    info.querySelectorAll('.bi-acts button').forEach(function(b){b.addEventListener('click',function(){bMore=false;setTab(b.dataset.go);});});
   }
   function renderBucket(){if(!tubBuilt)buildTub();applyTub();updateWater();updateCloud();renderBInfo();}
 
