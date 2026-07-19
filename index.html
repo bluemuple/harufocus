@@ -54,24 +54,31 @@
   .tl-donebtn{height:48px;border-radius:999px;border:0;background:#3D51C4;color:#fff;font-family:inherit;
     font-size:15px;font-weight:800;padding:0 22px;cursor:pointer;box-shadow:0 8px 20px rgba(20,40,120,.35);display:none}
   body[data-m="timeline"].batch-adjust .tl-donebtn{display:block}
-  /* 편집 bar v2 (D2-3) */
-  .edit-bar{position:fixed;left:0;right:0;bottom:0;z-index:62;background:rgba(255,255,255,.97);
-    border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(20,40,80,.18);
-    padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:12px;align-items:stretch}
-  .eb-left{flex:1;min-width:0}
-  .eb-row{display:flex;gap:8px;margin-bottom:7px}
-  .eb-row button{flex:1;height:38px;border:1px solid var(--line);border-radius:11px;background:var(--card-2);
-    font-family:inherit;font-size:15px;cursor:pointer;color:var(--ink)}
-  .eb-row button:disabled{opacity:.35}
-  .eb-danger{color:#E0453A!important}
-  .eb-done{background:var(--ink)!important;color:#fff!important;border-color:var(--ink)!important;font-weight:800}
-  .eb-title{font-size:12.5px;font-weight:700;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .eb-slider{flex:0 0 51px;height:86px;align-self:center;border:1px solid var(--line);border-radius:13px;background:var(--card-2);
-    display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:6px 0;
-    cursor:ns-resize;touch-action:none;color:var(--ink-soft);font-size:11px;user-select:none}
-  .eb-slider i{flex:1;width:4px;border-radius:2px;background:var(--line);margin:4px 0}
-  .dueline.selected::after{content:"";position:absolute;left:44px;right:-6px;top:-26px;height:40px;
-    border:1px solid rgba(255,255,255,.95);border-radius:12px;pointer-events:none}
+  /* 편집 bar v2 (D2-3) — 앱 파리티: 다크 플로팅 패널 (DueEditBar.swift) */
+  .edit-bar{position:fixed;left:10px;right:10px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:62;
+    background:rgba(0,0,0,.78);border:1px solid rgba(255,255,255,.10);border-radius:18px;box-shadow:none;
+    padding:13px 10px;display:flex;gap:8px;align-items:center}
+  .eb-col{display:flex;flex-direction:column;gap:10px;flex:0 0 auto}
+  .eb-col button{width:38px;height:61px;border:0;border-radius:10px;background:rgba(255,255,255,.10);
+    font-family:inherit;cursor:pointer;color:rgba(255,255,255,.95);display:grid;place-items:center;padding:0}
+  .eb-col button svg{width:17px;height:17px}
+  .eb-col button:disabled{opacity:.3}
+  .eb-danger{color:#FF3B30!important}
+  .eb-done{background:rgba(255,255,255,.92)!important;color:#000!important}
+  .eb-title{flex:1;min-width:0;font-size:13px;font-weight:600;color:rgba(255,255,255,.95);cursor:pointer;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .eb-title.eb-empty{color:rgba(255,255,255,.55);cursor:default}
+  .eb-title .eb-pencil{width:12px;height:12px;vertical-align:-1px;margin-left:3px;opacity:.8}
+  .eb-slider{flex:0 0 51px;height:138px;align-self:center;border:0;border-radius:999px;background:rgba(255,255,255,.12);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0;
+    cursor:ns-resize;touch-action:none;color:rgba(255,255,255,.8);font-size:10px;font-weight:700;user-select:none}
+  .eb-slider i{flex:0 0 3px;width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.8)}
+  .eb-slider span{line-height:1}
+  .eb-slider.drag{background:rgba(255,255,255,.22);color:#fff}
+  .eb-slider.drag i{background:#fff}
+  @media(min-width:1100px){.edit-bar{left:10px;right:auto;width:380px;bottom:74px}}
+  .dueline.selected::after{content:"";position:absolute;left:8px;right:-6px;top:-27px;height:44px;
+    border:1px solid var(--dueSel,rgba(245,247,255,.55));border-radius:18px;pointer-events:none}
   /* 마감집게 (D2-3) */
   .due-clamp{position:absolute;left:15%;width:70%;z-index:5;text-align:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
   .due-clamp .dc-label{background:rgba(107,107,107,.92);border-radius:11px;height:40px;line-height:40px;padding:0 10px;font-size:11px;font-weight:600;color:#fff;overflow:hidden;white-space:nowrap;margin-bottom:0}
@@ -172,6 +179,11 @@
   .dueline .dl-cap{position:absolute;right:0;top:-9px;background:var(--tl-accent,#80CDE9);color:var(--tl-onaccent,#141827);font-size:11px;font-weight:800;
     border-radius:999px;padding:2px 6px;box-shadow:0 3px 8px rgba(20,40,80,.22);cursor:ns-resize;touch-action:none;user-select:none}
   .tl-night .dl-cap{background:#273B9E;color:#F5F7FF}
+  /* 편집 모드 마감 캡슐 드래그 어포던스 (앱 TimelineScrollView 파리티) */
+  .dueline .dl-chev{position:absolute;left:50%;transform:translateX(-50%);font-style:normal;font-size:12px;
+    font-weight:800;line-height:1;color:var(--onSky,#141827);opacity:.85;pointer-events:none;text-shadow:0 1px 2px rgba(255,255,255,.35)}
+  .dueline .dl-chev.up{top:-15px}
+  .dueline .dl-chev.dn{bottom:-15px}
   .dueline .dl-radio{position:absolute;left:63px;top:-22px;width:22px;height:22px;border-radius:50%;
     border:2px solid var(--onSky,#141827);background:transparent;cursor:pointer;color:#fff;font-size:12px;
     font-weight:800;display:grid;place-items:center;box-shadow:0 1px 4px rgba(20,40,80,.25)}
@@ -1252,22 +1264,26 @@
   <button class="tl-batchbtn" id="tlBatch" title="한 번에 계획하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3.5" width="13" height="13" rx="2.5"/><path d="M4 8v9.5A3.5 3.5 0 0 0 7.5 21H17"/><path d="M13.5 7v6M10.5 10h6"/></svg></button>
   <button class="tl-plusbtn" id="tlFab" title="작업 추가"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
 </div>
-<!-- 편집 bar v2 (D2-3): 마감선 선택·이동·undo/redo·재정비 -->
+<!-- 편집 bar v2 (D2-3): [▲/▽][undo/재정비][redo/균일화][완료✓/휴지통]+작업명+슬라이더 (앱 DueEditBar 파리티) -->
 <div class="edit-bar" id="editBar" style="display:none">
-  <div class="eb-left">
-    <div class="eb-row">
-      <button id="ebUp" title="위 선택">▲</button><button id="ebDown" title="아래 선택">▽</button>
-      <button id="ebUndo" title="되돌리기">↩︎</button><button id="ebRedo" title="다시">↪︎</button>
-    </div>
-    <div class="eb-row">
-      <button id="ebPencil" title="작업 편집">✏️</button>
-      <button id="ebTrash" title="마감선만 삭제" class="eb-danger">🗑</button>
-      <button id="ebRealign" title="마감 재정비"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/><path d="M19 3l2 2-2 2"/></svg></button>
-      <button id="ebDone" class="eb-done">완료</button>
-    </div>
-    <div class="eb-title" id="ebTitle"></div>
+  <div class="eb-col">
+    <button id="ebUp" title="위 선택"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15l7-7 7 7"/></svg></button>
+    <button id="ebDown" title="아래 선택"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"/></svg></button>
   </div>
-  <div class="eb-slider" id="ebSlider" title="1분 단위 이동"><span>▲</span><i></i><span>▼</span></div>
+  <div class="eb-col">
+    <button id="ebUndo" title="되돌리기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7L4 12l5 5"/><path d="M4 12h10a5 5 0 0 1 5 5"/></svg></button>
+    <button id="ebRealign" title="마감 재정비"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/><path d="M19 3l2 2-2 2"/></svg></button>
+  </div>
+  <div class="eb-col">
+    <button id="ebRedo" title="다시"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7l5 5-5 5"/><path d="M20 12H10a5 5 0 0 0-5 5"/></svg></button>
+    <button id="ebEqualize" title="길이 균일화"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 10h7M8.5 14h7"/></svg></button>
+  </div>
+  <div class="eb-col">
+    <button id="ebDone" class="eb-done" title="편집 완료"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></button>
+    <button id="ebTrash" title="마감선만 삭제" class="eb-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M10 11v6M14 11v6"/></svg></button>
+  </div>
+  <div class="eb-title" id="ebTitle"></div>
+  <div class="eb-slider" id="ebSlider" title="1분 단위 이동"><span>▲</span><i></i><i></i><i></i><span>▼</span></div>
 </div>
 <div class="sheet-scrim" id="batchScrim" style="bottom:0">
   <div class="sheet batch-sheet">
@@ -1876,6 +1892,7 @@
     r.setProperty('--tl-accent',night?'#273B9E':'#80CDE9');
     r.setProperty('--tl-onaccent',night?'#F5F7FF':'#141827');
     r.setProperty('--onSky',night?'#F5F7FF':'#141827');
+    r.setProperty('--dueSel',night?'rgba(245,247,255,.55)':'rgba(20,24,39,.55)');   // 선택 마감선 아웃라인 (앱 onSky@0.55)
   }
   // 스크롤은 rAF로 스로틀 — CSS 변수만 갱신해 빠릿하게 (요청).
   (function(){var sc=document.getElementById('tlScroll'),tick=false;
@@ -2091,9 +2108,12 @@
   }
   function paintEditBar(){
     var t=taskByID(selDueId);
-    document.getElementById('ebTitle').textContent=t?(t.title+' · '+('0'+taskDueAt(t).getHours()).slice(-2)+':'+('0'+taskDueAt(t).getMinutes()).slice(-2)+'까지'):'선택된 마감선 없음';
+    var et=document.getElementById('ebTitle');
+    if(t){et.innerHTML=esc(t.title)+'<svg class="eb-pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/></svg>';et.classList.remove('eb-empty');}
+    else{et.textContent='마감선을 골라 주세요';et.classList.add('eb-empty');}
     document.getElementById('ebUndo').disabled=!dueUndo.length;
     document.getElementById('ebRedo').disabled=!dueRedo.length;
+    document.getElementById('ebEqualize').disabled=!hasFutureDues();
   }
   function ebMove(dir){
     var lines=todayDueLines(true);if(!lines.length)return;
@@ -2123,6 +2143,27 @@
     });
     renderAll();pushSnapshot();
     appToast('마감 재정비 완료 — ↩︎로 되돌릴 수 있어요 ('+past.length+'개)');
+  }
+  // 균일화 버튼 활성 조건 (앱 hasFutureDues): 지금 아래 마감선 존재.
+  function hasFutureDues(){var now=Date.now();return todayDueLines(true).some(function(t){return taskDueAt(t).getTime()>now;});}
+  // 균일화 (앱 equalizeFutureDueLines): 지금 아래 마감선들을 설정의 기본 길이 간격으로 재배열.
+  function equalizeDues(){
+    var now=Date.now();
+    var fut=todayDueLines(true).filter(function(t){return taskDueAt(t).getTime()>now;});
+    if(!fut.length)return;
+    var d=(DATA.settings&&DATA.settings.defaultDurationMin)||30;
+    duePushUndo();
+    var cursor=now;
+    fut.forEach(function(t){
+      cursor+=d*60000;
+      t.planDueAt=new Date(cursor).toISOString();
+      if((t.actualFocusedSec||0)===0&&!t.isDone){         // 계획-전용만 길이·시작 동기 (마감 재정비와 같은 규칙)
+        t.durationMin=d;
+        t.scheduledStart=new Date(cursor-d*60000).toISOString();
+      }
+    });
+    renderAll();pushSnapshot();paintEditBar();
+    appToast('길이를 '+d+'분으로 똑같이 맞췄어요 — ↩︎로 되돌릴 수 있어요 ('+fut.length+'개)');
   }
   function todayFocusSec(tid){
     var t0=todayKey(),sum=0;
@@ -2296,7 +2337,7 @@
       dl.innerHTML='<div class="dl-wire"></div>'+
         '<button class="dl-radio'+(t.isDone?' on':'')+'" title="완료" style="--dc:'+catColor(t.categoryID)+'">'+(t.isDone?'✓':'')+'</button>'+
         (covered?'':'<div class="dl-text'+(t.isDone?' done':'')+'"><span class="dl-title">'+esc(t.title)+'</span><span>&nbsp;· '+lenTxt+'</span><button class="dl-play" title="집중 시작">'+IC.play+'</button></div>')+
-        '<span class="dl-cap">'+('0'+due.getHours()).slice(-2)+':'+('0'+due.getMinutes()).slice(-2)+'까지</span>'+
+        '<span class="dl-cap">'+(editBarOn?'<i class="dl-chev up">⌃</i><i class="dl-chev dn">⌄</i>':'')+('0'+due.getHours()).slice(-2)+':'+('0'+due.getMinutes()).slice(-2)+'까지</span>'+
         '<button class="dl-x" title="마감선만 삭제">✕</button>';
       var pb=dl.querySelector('.dl-play');if(pb)pb.addEventListener('click',function(e){e.stopPropagation();startFocus(t);});
       // D2-2 마감 동그라미: 완료 토글 (보상 지급 + 취소선)
@@ -2341,8 +2382,9 @@
     if(!dueUndo.length)return;dueRedo.push(dueSnapshot());dueRestore(dueUndo.pop());paintEditBar();});
   document.getElementById('ebRedo').addEventListener('click',function(){
     if(!dueRedo.length)return;dueUndo.push(dueSnapshot());dueRestore(dueRedo.pop());paintEditBar();});
-  document.getElementById('ebPencil').addEventListener('click',function(){
+  document.getElementById('ebTitle').addEventListener('click',function(){   // 제목 탭 = 작업 수정 (앱: 예전 연필 버튼 역할)
     var t=taskByID(selDueId);if(t)openEditor(t);});
+  document.getElementById('ebEqualize').addEventListener('click',equalizeDues);
   document.getElementById('ebTrash').addEventListener('click',function(){
     var t=taskByID(selDueId);if(!t)return;
     duePushUndo();t.scheduledStart=null;t.planDueAt=null;      // 마감선만 삭제 (기록 유지)
@@ -2354,7 +2396,7 @@
     var sl=document.getElementById('ebSlider');
     sl.addEventListener('pointerdown',function(e){
       var t=taskByID(selDueId);if(!t||t.isDone)return;
-      e.preventDefault();
+      e.preventDefault();sl.classList.add('drag');
       var y0=e.clientY,due0=taskDueAt(t).getTime(),pushed=false;
       function move(ev){
         if(!pushed){duePushUndo();pushed=true;}
@@ -2363,7 +2405,7 @@
         paintEditBar();renderBig();ev.preventDefault();
       }
       function up(){document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);
-        if(pushed){renderAll();pushSnapshot();}}
+        sl.classList.remove('drag');if(pushed){renderAll();pushSnapshot();}}
       document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
     });
   })();
