@@ -601,10 +601,12 @@
     display:flex;align-items:center;gap:10px;margin:18px 2px 10px}
   .d-month::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.35)}
   .d-day{display:flex;gap:12px;margin-bottom:14px}
-  .d-badge{flex:0 0 44px;text-align:center;color:#fff;padding-top:2px}
-  .d-badge .dn{font-size:21px;font-weight:800;line-height:1.1;text-shadow:0 1px 3px rgba(20,40,80,.4)}
+  .d-badge{flex:0 0 44px;align-self:flex-start;text-align:center;color:var(--ink);padding:7px 0;
+    background:rgba(255,255,255,.55);border:1px solid rgba(27,36,54,.10);border-radius:12px}
+  .d-badge .dn{font-size:21px;font-weight:800;line-height:1.1}
   .d-badge .dw{font-size:11px;opacity:.85}
-  .d-badge.today .dn{background:var(--sky-blue);border-radius:12px;padding:2px 0;text-shadow:none}
+  .d-badge.dark{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.10);color:#f5f7ff}
+  .d-badge.today{background:var(--sky-blue);border-color:transparent;color:#fff}
   .d-cards{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px}
   .d-card{position:relative;background:rgba(255,255,255,.95);border-radius:14px;padding:10px 12px 10px 15px;
     box-shadow:0 4px 12px rgba(20,40,80,.12);cursor:pointer;overflow:hidden}
@@ -622,10 +624,10 @@
   .d-card:has(.d-elewrap) .d-body{padding-right:44px}
   .d-eye{margin-left:auto;border:0;background:none;cursor:pointer;color:var(--ink-soft);padding:2px}
   .d-eye.on{color:var(--sky-blue)}
-  .d-body{font-size:13.5px;line-height:1.6;color:var(--ink);word-break:break-word;
+  .d-body{font-size:15px;line-height:1.6;color:var(--ink);word-break:break-word;
     display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
   .d-card.dark .d-body{color:#e8ecf6}
-  .d-body h4{font-size:15.5px;margin:0 0 2px}
+  .d-body h4{font-size:20px;margin:0 0 2px}
   .d-photos{margin-left:auto;flex:0 0 62px;height:62px;border-radius:10px;background:var(--card-2);
     background-size:cover;background-position:center;position:relative;overflow:hidden}
   .d-pbadge{position:absolute;right:3px;bottom:3px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;
@@ -662,6 +664,17 @@
     font-family:inherit;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer}
   .d-tagbar input{flex:0 0 96px;border:1px solid var(--line);border-radius:999px;padding:6px 10px;
     font-family:inherit;font-size:12px;outline:none}
+  /* 새 태그 3×3 아이콘 그리드 (앱 tagIconGrid 파리티) */
+  .d-tagbar .tb-addbox{flex:0 0 auto;display:flex;flex-direction:column;gap:6px}
+  .d-tagbar .tb-addrow{display:flex;gap:6px;align-items:center}
+  .tb-icongrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:174px}
+  .tb-ic{display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:var(--card-2);
+    border-radius:10px;padding:6px 2px;font-family:inherit;cursor:pointer;color:var(--ink)}
+  .tb-ic .tb-ice{font-size:16px;line-height:1}
+  .tb-ic .tb-icl{font-size:9px;font-weight:700;color:var(--ink-soft)}
+  .tb-ic.on{background:rgba(255,123,74,.18)}
+  .modal.dark .tb-ic{background:#2c3552;color:#e8ecf6}
+  .modal.dark .tb-ic .tb-icl{color:#aab4cc}
   .d-seltags{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px}
   .d-seltags button{border:0;background:var(--card-2);border-radius:999px;padding:5px 11px;
     font-family:inherit;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer}
@@ -675,8 +688,8 @@
   .d-promptdd button:hover{background:rgba(0,0,0,.05)}
   .modal.dark .d-promptdd{background:#2c3552;border-color:#3a466b}
   .modal.dark .d-promptdd button{color:#e8ecf6}
-  .d-view-body{font-size:14.5px;line-height:1.7;min-height:80px;white-space:pre-wrap;word-break:break-word}
-  .d-view-body h4{font-size:17px;margin:2px 0 6px}
+  .d-view-body{font-size:17px;line-height:1.55;min-height:80px;white-space:pre-wrap;word-break:break-word}
+  .d-view-body h4{font-size:20px;margin:2px 0 6px}
   #diaryEditTa{width:100%;min-height:180px;font-family:inherit;font-size:17px;line-height:1.6;
     padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card-2);resize:vertical;box-sizing:border-box}
   .modal.dark{background:#232b44;color:#e8ecf6}
@@ -1169,7 +1182,7 @@
           <button class="page-fab" id="habitFab" title="루틴 추가"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         </section>
         <section class="view" id="view-diary">
-          <h2>일기</h2>
+          <h2>한 줄 일기</h2>
           <div class="d-chips" id="diaryChips"></div>
           <div class="d-list" id="diaryList"></div>
           <button class="page-fab" id="diaryFab" title="새 일기"><svg viewBox="0 0 24 24" style="width:30px;height:30px" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -1271,12 +1284,16 @@
       <div class="d-toolbar" id="diaryToolbar">
         <button class="cap-fmt" id="diaryPromptBtn" title="프롬프트">💡</button>
         <button class="cap-fmt" id="diaryTagBtn" title="태그">🏷</button>
+        <button class="cap-fmt" data-df="undo" title="실행 취소">↶</button>
+        <button class="cap-fmt" data-df="redo" title="다시 실행">↷</button>
         <button class="cap-fmt" data-df="h">#</button>
         <button class="cap-fmt" data-df="bold"><b>B</b></button>
         <button class="cap-fmt" data-df="under"><u>U</u></button>
         <button class="cap-fmt" data-df="italic"><i>I</i></button>
         <button class="cap-fmt" data-df="bullet">•</button>
         <button class="cap-fmt" data-df="numbered">1.</button>
+        <button class="cap-fmt" data-df="indent" title="들여쓰기">⇥</button>
+        <button class="cap-fmt" data-df="outdent" title="내어쓰기">⇤</button>
         <button class="cap-fmt" data-df="link">🔗</button>
       </div>
       <div class="d-tagbar" id="diaryTagBar" style="display:none"></div>
@@ -3796,7 +3813,7 @@
 
   /* ── 엘리 인터랙션 (앱 §2 축약: 코끝→등장→감정→일기) ── */
   var ELE_RESP={love:'나도야. 그 마음 오래 기억하자 💗',joy:'오늘의 기쁨, 같이 담아둘까? ✨',
-    tangled:'괜찮아, 천천히 풀면 돼 🌀',blue:'곁에 있을게. 잠깐 쉬어도 돼 🌧',tired:'수고했어. 오늘은 여기까지도 충분해 😴'};
+    tangled:'괜찮아, 천천히 풀면 돼 🌀',gloom:'곁에 있을게. 잠깐 쉬어도 돼 🌧',tired:'수고했어. 오늘은 여기까지도 충분해 😴'};
   function applyEleTint(){document.documentElement.style.setProperty('--ele',eleTint());}
   function eleOpen(){applyEleTint();document.getElementById('eleStage').classList.add('open');
     document.getElementById('eleBubble').style.display='none';
@@ -3895,6 +3912,11 @@
     local.unshift(name);                                   // 맨 왼쪽(앞)에 추가
     localStorage.setItem('hfDiaryTagCatalog',JSON.stringify(local));
   }
+  // 태그 아이콘 (앱 tagIcons 파리티): 태그명→이모지 로컬 맵. 새 태그 생성 시 3×3 그리드에서 선택.
+  var TAG_ICONS=[['📚','공부'],['⭐','칭찬'],['❤️','감사'],['👨‍👧','육아'],['💼','일'],['🏃','운동'],['🍴','음식'],['✈️','나들이'],['🎯','목표']];
+  function tagIconMap(){try{return JSON.parse(localStorage.getItem('hfDiaryTagIcons')||'{}')||{};}catch(_){return {};}}
+  function getTagIcon(t){var ic=tagIconMap()[t];return ic?ic+' ':'';}   // 표시 접두(고정 리스트라 esc 불필요)
+  function setTagIcon(t,ic){var m=tagIconMap();if(ic)m[t]=ic;else delete m[t];localStorage.setItem('hfDiaryTagIcons',JSON.stringify(m));}
   function setPhotos(e,arr){if(arr&&arr.length)e.photos=JSON.stringify(arr);else delete e.photos;}
   // 표시: signed URL(1시간) — <img>는 헤더를 못 실으므로 sign 엔드포인트 사용.
   function diaryPhotoUrl(name,cb){
@@ -3951,16 +3973,18 @@
   }
 
   /* ── 일기 페이지 (앱 핸드오프 §3) ── */
-  var EMO={love:{k:'사랑',c:'#F07A9E',e:'💗'},joy:{k:'기쁨',c:'#FAB82E',e:'😊'},tangled:{k:'엉킴',c:'#9E80E6',e:'🌀'},
-    blue:{k:'우울',c:'#7394BD',e:'🌧'},tired:{k:'피곤',c:'#7A85D9',e:'😴'}};
+  var EMO={love:{k:'편안해요',c:'#F07A9E',e:'💗'},joy:{k:'신나요',c:'#FAB82E',e:'😊'},tangled:{k:'복잡해요',c:'#9E80E6',e:'🌀'},
+    gloom:{k:'마음이 무거워요',c:'#7394BD',e:'🌧'},tired:{k:'지쳤어요',c:'#7A85D9',e:'😴'}};
   var diaryFilter='all',diaryTagFilter=null,diaryCur=null;
   function eleName(){var n=(DATA.settings&&DATA.settings.eleName||'').trim();return n||'엘리';}
   function eleTint(){return (DATA.settings&&DATA.settings.eleTintHex)||'#D4C1D2';}
   function dKindMeta(e){
-    if(e.kind==='emotion'){var m=EMO[e.emotionKind]||{k:'마음',c:'#E85A8A',e:'💗'};return {label:'마음 · '+m.k,color:m.c,icon:m.e};}
-    if(e.kind==='word')return {label:'한마디',color:eleTint(),icon:'💬'};
-    if(e.kind==='bucket')return {label:'물통',color:catColor(e.categoryID||'focus'),icon:'💧'};
-    return {label:'일기',color:'#9AA3B2',icon:'📝'};
+    // label=모달 제목(textContent, 이스케이프 불필요) / head=카드 헤더(innerHTML, esc 필수·아이콘만이면 '')
+    if(e.kind==='emotion'){var m=EMO[e.emotionKind==='blue'?'gloom':e.emotionKind]||{k:'마음',c:'#E85A8A',e:'💗'};return {label:'마음 · '+m.k,head:'',color:m.c,icon:m.e};}  // blue=과거 웹 데이터 별칭
+    if(e.kind==='focus'){var FC={proud:'#F2C259',relieved:'#8CC79E',wistful:'#9EADDB'};var fl=e.prompt||'집중';return {label:fl,head:esc(fl),color:FC[e.emotionKind]||'#5b93e6',icon:'⏱'};}
+    if(e.kind==='word')return {label:'한마디',head:esc(eleName())+'에게 한마디',color:eleTint(),icon:'💬'};
+    if(e.kind==='bucket')return {label:'물통',head:esc(catName(e.categoryID||'focus')),color:catColor(e.categoryID||'focus'),icon:'💧'};
+    return {label:'일기',head:'',color:'#9AA3B2',icon:'📝'};
   }
   // 일기 마크다운: # 제목, **굵게**, _기울임_, ++밑줄++, 불릿/번호
   function dMd(src){
@@ -4003,10 +4027,10 @@
   function renderDiary(){
     var wrap=document.getElementById('diaryList');if(!wrap)return;
     // 필터 칩
-    var chips=[['all','전체'],['free','일기'],['emotion','마음'],['word','한마디'],['bucket','물통']];
+    var chips=[['all','전체'],['free','일기'],['emotion','마음'],['word','한마디'],['focus','집중'],['bucket','물통']];
     // D5-1: 유저 태그 칩이 범주 칩보다 앞(맨 왼쪽). 태그 필터는 범주와 배타.
     var tagChips=tagCatalog().map(function(tg){
-      return '<button class="d-chip tagchip'+(diaryTagFilter===tg?' on':'')+'" data-t="'+esc(tg)+'">'+esc(tg)+'</button>';}).join('');
+      return '<button class="d-chip tagchip'+(diaryTagFilter===tg?' on':'')+'" data-t="'+esc(tg)+'">'+getTagIcon(tg)+esc(tg)+'</button>';}).join('');
     document.getElementById('diaryChips').innerHTML=tagChips+chips.map(function(c){
       return '<button class="d-chip'+(diaryFilter===c[0]&&!diaryTagFilter?' on':'')+'" data-f="'+c[0]+'">'+c[1]+'</button>';}).join('');
     document.querySelectorAll('#diaryChips .d-chip').forEach(function(b){
@@ -4017,7 +4041,8 @@
     var all=diaryEntries().filter(function(e){
       if(diaryTagFilter)return getTags(e).indexOf(diaryTagFilter)>=0;
       return diaryFilter==='all'||(e.kind||'free')===diaryFilter;});
-    if(!all.length){wrap.innerHTML='<div class="empty" style="color:#fff;text-shadow:0 1px 2px rgba(20,40,80,.4)">아직 기록이 없어요. + 로 오늘을 남겨보세요.</div>';return;}
+    if(!all.length){var fullEmpty=diaryTagFilter||diaryFilter==='all';   // 앱: 태그칩 탭=kindFilter nil(DiaryView.swift:256)이라 태그 필터 중에도 전체 문구
+      wrap.innerHTML='<div class="empty" style="color:#fff;text-shadow:0 1px 2px rgba(20,40,80,.4)">'+(fullEmpty?'<div style="font-size:34px;line-height:1;margin-bottom:10px">📖</div>아직 일기가 없어요.<br>'+esc(eleName())+'에게 감정을 남기거나 + 로 시작해 보세요.':'이 범주의 글이 아직 없어요.')+'</div>';return;}
     var night=isNightNow();
     var html='',lastMonth='',lastDayKey='',today=new Date();today.setHours(0,0,0,0);
     var dayGroups=[];   // [{day,entries[]}]
@@ -4033,7 +4058,7 @@
         var ml=(d.getFullYear()===new Date().getFullYear()?'':d.getFullYear()+'년 ')+(d.getMonth()+1)+'월';
         html+='<div class="d-month">'+ml+'</div>';}
       var isToday=calSameDay(d,today);
-      html+='<div class="d-day"><div class="d-badge'+(isToday?' today':'')+'">'+
+      html+='<div class="d-day"><div class="d-badge'+(isToday?' today':(night?' dark':''))+'">'+
         '<div class="dn">'+d.getDate()+'</div><div class="dw">'+(isToday?'오늘':['일','월','화','수','목','금','토'][d.getDay()])+'</div></div>'+
         '<div class="d-cards">'+
         g.entries.map(function(e){
@@ -4043,10 +4068,10 @@
           var ph=getPhotos(e),photos='';
           if(ph.length)photos='<div class="d-photos" data-ph="'+esc(ph[0])+'">'+(ph.length>1?'<span class="d-pbadge">+'+(ph.length-1)+'</span>':'')+'</div>';
           return '<div class="d-card'+(night?' dark':'')+'" data-id="'+e.id+'" style="--dc:'+m.color+'">'+
-            '<div class="d-head">'+m.icon+' '+m.label+
-            getTags(e).slice(0,3).map(function(tg){return '<span class="d-tag">'+esc(tg)+'</span>';}).join('')+
+            '<div class="d-head">'+m.icon+(m.head?' '+m.head:'')+
+            getTags(e).slice(0,3).map(function(tg){return '<span class="d-tag">'+getTagIcon(tg)+esc(tg)+'</span>';}).join('')+
             (getTags(e).length>3?'<span class="d-tag">+'+(getTags(e).length-3)+'</span>':'')+
-            ' · '+time+'</div>'+
+            (e.kind==='bucket'?'':' '+time)+'</div>'+
             '<div class="d-row"><div class="d-main"><div class="d-body">'+dMd(e.text)+'</div></div>'+photos+'</div>'+
             (e.kind==='word'?
               '<div class="d-elewrap">'+
@@ -4118,7 +4143,7 @@
   function renderSelTags(){
     var w=document.getElementById('diarySelTags');if(!w||!diaryCur)return;
     w.innerHTML=getTags(diaryCur).map(function(tg){
-      return '<button data-t="'+esc(tg)+'">'+esc(tg)+' ✕</button>';}).join('');
+      return '<button data-t="'+esc(tg)+'">'+getTagIcon(tg)+esc(tg)+' ✕</button>';}).join('');
     w.querySelectorAll('button').forEach(function(b){
       b.addEventListener('click',function(){
         var arr=getTags(diaryCur).filter(function(x){return x!==b.dataset.t;});
@@ -4129,18 +4154,24 @@
   function renderTagBar(adding){
     var w=document.getElementById('diaryTagBar');
     var caps=tagCatalog().map(function(tg){
-      return '<button class="tb-cap" data-t="'+esc(tg)+'">'+esc(tg)+'</button>';}).join('');
-    w.innerHTML=(adding
-      ?'<input id="tbNew" placeholder="새 태그" maxlength="12"><button class="tb-add" id="tbOk">✓</button><button class="tb-add" id="tbNo">✕</button>'
-      :'<button class="tb-add" id="tbPlus">＋ 태그 추가</button>')+caps;
+      return '<button class="tb-cap" data-t="'+esc(tg)+'">'+getTagIcon(tg)+esc(tg)+'</button>';}).join('');
     if(adding){
+      // 새 태그 + 3×3 아이콘 그리드 (앱 tagIconGrid 파리티): 선택 후 ✓ 저장.
+      var grid=TAG_ICONS.map(function(p){return '<button type="button" class="tb-ic" data-ic="'+p[0]+'"><span class="tb-ice">'+p[0]+'</span><span class="tb-icl">'+p[1]+'</span></button>';}).join('');
+      w.innerHTML='<div class="tb-addbox"><div class="tb-addrow"><input id="tbNew" placeholder="새 태그" maxlength="12"><button class="tb-add" id="tbOk">✓</button><button class="tb-add" id="tbNo">✕</button></div><div class="tb-icongrid">'+grid+'</div></div>'+caps;
       var inp=document.getElementById('tbNew');inp.focus();
+      var pickedIcon='';
+      w.querySelectorAll('.tb-ic').forEach(function(g){g.addEventListener('click',function(){
+        var was=g.classList.contains('on');
+        w.querySelectorAll('.tb-ic').forEach(function(x){x.classList.remove('on');});
+        if(was){pickedIcon='';}else{g.classList.add('on');pickedIcon=g.dataset.ic;}});});
       document.getElementById('tbOk').addEventListener('click',function(){
         var v=(inp.value||'').trim().replace(/^#+/,'');
-        if(v)tagCatalogAdd(v);                              // 카탈로그 맨 앞, 자동 선택 안 됨
+        if(v){tagCatalogAdd(v);if(pickedIcon)setTagIcon(v,pickedIcon);}   // 카탈로그 맨 앞, 자동 선택 안 됨
         renderTagBar(false);});
       document.getElementById('tbNo').addEventListener('click',function(){renderTagBar(false);});
     }else{
+      w.innerHTML='<button class="tb-add" id="tbPlus">＋ 태그 추가</button>'+caps;
       document.getElementById('tbPlus').addEventListener('click',function(){renderTagBar(true);});
     }
     w.querySelectorAll('.tb-cap').forEach(function(b){
@@ -4152,13 +4183,13 @@
         w.style.display='none';                             // 탭하면 붙고 bar 닫힘 (D4-2)
       });});
   }
-  // 프롬프트 (D5-2): 5범주×7 — 선택하면 첫 줄이 '# 프롬프트', 커서 다음 줄.
+  // 프롬프트 (D5-2): 5범주×7 — 선택하면 첫 줄이 '# 프롬프트', 커서 다음 줄. (앱 promptGroups 미러)
   var DIARY_PROMPTS={
-    '하루 돌아보기':['오늘 가장 잘한 일','오늘 나를 웃게 한 순간','내일의 나에게 한마디','오늘 배운 것 하나','오늘 아쉬웠던 순간','오늘의 에너지 점수','오늘 가장 오래 머문 생각'],
-    '공부':['오늘 공부에서 얻은 것','가장 어려웠던 문제','내일 제일 먼저 볼 것','집중이 잘 된 시간대','외우고 싶은 한 줄','시험까지 남은 것 정리','오늘의 공부 환경 점검'],
-    '감정':['지금 마음을 색으로 표현하면','오늘 가장 컸던 감정','그 감정은 어디서 왔을까','엘리에게 들려주고 싶은 말','지금 몸의 느낌','오늘 나를 지치게 한 것','스스로에게 건네는 위로'],
-    '계획':['내일 꼭 끝낼 한 가지','이번 주 가장 중요한 일','미루고 있는 일 하나','내일 아침 첫 30분','이번 달 목표 점검','다음 휴식 계획','해 보고 싶은 일 리스트'],
-    '감사':['오늘 고마웠던 사람','당연하지만 감사한 것','오늘의 작은 행운','내 몸에게 감사한 점','오늘 가장 맛있던 것','나를 도와준 도구와 환경','지금 이 순간 감사한 것']};
+    '오늘 한 줄':['오늘 가장 잘한 일 하나는?','오늘 나를 웃게 한 순간','오늘 배운 것 한 가지','오늘의 나에게 점수를 준다면?','내일의 나에게 남기고 싶은 말','오늘 가장 오래 머문 생각','오늘에서 지우고 싶은 순간 하나'],
+    '감사':['오늘 고마웠던 사람','당연하게 여겼지만 사실 고마운 것','오늘 내 몸이 해준 일 중 고마운 것','지금 곁에 있어서 다행인 것','오늘 먹은 것 중 최고','나 자신에게 고마운 점 하나','오늘 스쳐 간 작은 행운'],
+    '공부·해낸 일':['오늘 공부한 것 중 설명할 수 있는 것','오늘 집중이 제일 잘 된 시간과 이유','막혔던 문제, 지금 어디까지 왔나','오늘 해치운 일 중 제일 뿌듯한 것','내일 딱 하나만 끝낸다면?','오늘 딴짓과 싸운 이야기','시험·마감까지 남은 시간, 지금 기분'],
+    '마음':['지금 마음 날씨는?','요즘 나를 무겁게 하는 것','오늘 참았던 말','사실은 듣고 싶은 말','요즘 나의 에너지는 몇 %?','지금 걱정을 한 문장으로 줄이면?','오늘 나에게 해 주고 싶은 위로'],
+    '만약에':['만약 내일 하루가 통째로 비었다면?','10년 뒤 내가 지금의 나를 본다면?','만약 실패가 없다면 뭘 해 볼까?','오늘 하루를 영화 제목으로 짓는다면?','엘리가 말을 할 수 있다면 뭐라고 할까?','지금 이 순간을 사진 한 장으로 남긴다면?','일주일 뒤의 나에게 소원 하나를 빈다면?']};
   function renderPromptDD(){
     var w=document.getElementById('diaryPromptDD'),html='';
     Object.keys(DIARY_PROMPTS).forEach(function(cat){
@@ -4725,11 +4756,16 @@
     b.addEventListener('click',function(){
       var ta=document.getElementById('diaryEditTa'),f=b.dataset.df;
       if(f==='h')mdLinePrefix(ta,'# ');
+      else if(f==='undo'){ta.focus();try{document.execCommand('undo');}catch(_){}}
+      else if(f==='redo'){ta.focus();try{document.execCommand('redo');}catch(_){}}
       else if(f==='bold')mdWrap(ta,'**','**');
       else if(f==='under')mdWrap(ta,'++','++');
       else if(f==='italic')mdWrap(ta,'_','_');
       else if(f==='bullet')mdLinePrefix(ta,'- ');
       else if(f==='numbered')mdLinePrefix(ta,'1. ');
+      else if(f==='indent')mdLinePrefix(ta,'\t');
+      else if(f==='outdent'){var v=ta.value,s=ta.selectionStart,ls=v.lastIndexOf('\n',s-1)+1;
+        if(v[ls]==='\t'){ta.value=v.slice(0,ls)+v.slice(ls+1);ta.selectionStart=ta.selectionEnd=Math.max(ls,s-1);}}
       else if(f==='link'){var u=prompt('링크 주소');if(u)mdWrap(ta,'[',']('+u+')');}
     });
   });
@@ -5550,16 +5586,20 @@
       ['bold','italic','bullet','numbered','indent','outdent','link'].map(function(k){return '<button class="cap-fmt" data-f="'+k+'">'+IC[k]+'</button>';}).join('')+
       '</div></div>';
   }
+  // insertText 경로로 편집 → 네이티브 undo/redo 스택에 기록(툴바 undo 버튼 동작). 구형은 value 직접 대입 폴백.
   function mdWrap(ta,before,after){
-    var s=ta.selectionStart,e=ta.selectionEnd,v=ta.value,sel=v.slice(s,e)||'';
-    var nv=v.slice(0,s)+before+sel+after+v.slice(e);
-    ta.value=nv;ta.focus();ta.selectionStart=s+before.length;ta.selectionEnd=s+before.length+sel.length;
+    var s=ta.selectionStart,e=ta.selectionEnd,v=ta.value,sel=v.slice(s,e)||'',ins=before+sel+after;
+    ta.focus();ta.setSelectionRange(s,e);
+    var ok=false;try{ok=document.execCommand('insertText',false,ins);}catch(_){}
+    if(!ok||ta.value===v)ta.value=v.slice(0,s)+ins+v.slice(e);
+    ta.selectionStart=s+before.length;ta.selectionEnd=s+before.length+sel.length;
   }
   function mdLinePrefix(ta,prefix){
-    var s=ta.selectionStart,v=ta.value;
-    var lineStart=v.lastIndexOf('\n',s-1)+1;
-    ta.value=v.slice(0,lineStart)+prefix+v.slice(lineStart);
-    ta.focus();ta.selectionStart=ta.selectionEnd=s+prefix.length;
+    var s=ta.selectionStart,v=ta.value,lineStart=v.lastIndexOf('\n',s-1)+1;
+    ta.focus();ta.setSelectionRange(lineStart,lineStart);
+    var ok=false;try{ok=document.execCommand('insertText',false,prefix);}catch(_){}
+    if(!ok||ta.value===v)ta.value=v.slice(0,lineStart)+prefix+v.slice(lineStart);
+    ta.selectionStart=ta.selectionEnd=s+prefix.length;
   }
   function wireNotePanel(){
     var ta=document.getElementById('capNoteArea');
