@@ -70,13 +70,13 @@
     display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:6px 0;
     cursor:ns-resize;touch-action:none;color:var(--ink-soft);font-size:11px;user-select:none}
   .eb-slider i{flex:1;width:4px;border-radius:2px;background:var(--line);margin:4px 0}
-  .dueline.selected::after{content:"";position:absolute;left:8px;right:-6px;top:-26px;height:40px;
+  .dueline.selected::after{content:"";position:absolute;left:44px;right:-6px;top:-26px;height:40px;
     border:1px solid rgba(255,255,255,.95);border-radius:12px;pointer-events:none}
   /* 마감집게 (D2-3) */
-  .due-clamp{position:absolute;left:15%;width:70%;z-index:5;text-align:center}
-  .due-clamp .dc-label{font-size:11.5px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(20,40,80,.5);margin-bottom:3px}
-  .due-clamp .dc-grip{height:16px;cursor:ns-resize;touch-action:none}
-  .due-clamp svg{width:100%;height:16px;display:block}
+  .due-clamp{position:absolute;left:15%;width:70%;z-index:5;text-align:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
+  .due-clamp .dc-label{background:rgba(107,107,107,.92);border-radius:11px;height:40px;line-height:40px;padding:0 10px;font-size:11px;font-weight:600;color:#fff;overflow:hidden;white-space:nowrap;margin-bottom:0}
+  .due-clamp .dc-grip{width:46px;height:24px;margin:0 auto;background:rgba(107,107,107,.92);border-radius:0 0 17px 17px;cursor:ns-resize;touch-action:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3.5px;padding-bottom:1px}
+  .due-clamp .dc-grip i{display:block;width:22px;height:2.5px;border-radius:2px;background:rgba(255,255,255,.8)}
   /* 한 번에 계획하기 패널 (첨부1) */
   .batch-head{display:flex;align-items:center;padding:10px 6px 18px}
   .batch-head b{flex:1;text-align:center;font-size:18px}
@@ -151,9 +151,9 @@
   .tl-moon{position:absolute;left:64%;width:34px;height:34px;pointer-events:none;z-index:0;
     filter:drop-shadow(0 0 10px rgba(210,225,255,.5))}
   .tl-scroll{position:absolute;inset:0;overflow-y:auto;padding:14px 0 190px}
-  .hour{position:relative;height:74px;padding-left:52px}
-  .hour .lbl{position:absolute;left:14px;top:-8px;font-size:12px;color:#fff;opacity:.85;font-variant-numeric:tabular-nums;text-shadow:0 1px 2px rgba(0,0,0,.3)}
-  .hour .rule{position:absolute;left:46px;right:14px;top:0;height:1px;background:rgba(255,255,255,.22)}
+  .hour{position:relative;height:120px;padding-left:52px}
+  .hour .lbl{position:absolute;left:14px;top:-8px;font-size:12px;color:var(--onSky,#141827);opacity:.75;font-variant-numeric:tabular-nums}
+  .hour .rule{position:absolute;left:46px;right:14px;top:0;height:1px;background:var(--onSky,#141827);opacity:.14}
   /* 지금 라인 = 빨강, x=56 시작 (델타 §2·§7) */
   .now{position:absolute;left:8px;right:12px;z-index:4;display:flex;align-items:center;gap:8px}
   .now .pill{background:#E34238;color:#fff;font-weight:800;font-size:11px;padding:3px 8px;border-radius:8px}
@@ -161,33 +161,34 @@
   .now .wire::before{content:"";position:absolute;left:-2px;top:-1.5px;width:5px;height:5px;border-radius:50%;background:#E34238}
   /* 마감선 (델타 §2): 계획 = 가로 선. 텍스트는 선의 밑줄처럼 위에. */
   .dueline{position:absolute;left:0;right:8px;height:0;z-index:4}
-  .dueline .dl-wire{position:absolute;left:56px;right:0;top:-1px;height:2px;background:var(--sky-blue);border-radius:2px;opacity:.85}
-  .dueline .dl-play{position:absolute;left:14px;top:-15px;width:31px;height:31px;border-radius:50%;border:0;
-    background:var(--sky-blue);color:#fff;cursor:pointer;display:grid;place-items:center;box-shadow:0 3px 8px rgba(20,40,80,.25)}
-  .dueline .dl-play svg{width:14px;height:14px}
-  .dueline .dl-text{position:absolute;left:56px;top:-20px;font-size:12.5px;font-weight:700;color:var(--onSky,#16233c);
-    text-shadow:0 1px 2px rgba(255,255,255,.35);white-space:nowrap;max-width:55%;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
-  .tl-night .dl-text{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
-  .dueline .dl-cap{position:absolute;right:0;top:-11px;background:#fff;color:var(--ink);font-size:11px;font-weight:800;
-    border-radius:999px;padding:4px 10px;box-shadow:0 3px 8px rgba(20,40,80,.22);cursor:ns-resize;touch-action:none;user-select:none}
-  .dueline .dl-radio{position:absolute;left:93px;top:-22px;width:22px;height:22px;border-radius:50%;
-    border:2px solid rgba(255,255,255,.85);background:transparent;cursor:pointer;color:#fff;font-size:12px;
+  .dueline .dl-wire{position:absolute;left:56px;right:0;top:-0.75px;height:1.5px;background:var(--tl-accent,#5b93e6);border-radius:2px;opacity:.9}
+  .dueline .dl-wire::before{content:"";position:absolute;left:-2px;top:-1.75px;width:5px;height:5px;border-radius:50%;background:inherit}
+  .dueline .dl-play{width:22px;height:22px;border-radius:50%;border:0;flex:none;margin-left:5px;
+    background:var(--tl-accent,var(--sky-blue));color:var(--tl-onaccent,#fff);cursor:pointer;display:inline-grid;place-items:center;vertical-align:middle;pointer-events:auto}
+  .dueline .dl-play svg{width:10px;height:10px;margin-left:1px}
+  .dueline .dl-text{position:absolute;left:89px;top:-22px;font-size:12.5px;font-weight:700;color:var(--onSky,#141827);
+    white-space:nowrap;max-width:calc(100% - 130px);display:flex;align-items:center;pointer-events:none}
+  .dueline .dl-text .dl-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .dueline .dl-cap{position:absolute;right:0;top:-9px;background:var(--tl-accent,#80CDE9);color:var(--tl-onaccent,#141827);font-size:11px;font-weight:800;
+    border-radius:999px;padding:2px 6px;box-shadow:0 3px 8px rgba(20,40,80,.22);cursor:ns-resize;touch-action:none;user-select:none}
+  .tl-night .dl-cap{background:#273B9E;color:#F5F7FF}
+  .dueline .dl-radio{position:absolute;left:63px;top:-22px;width:22px;height:22px;border-radius:50%;
+    border:2px solid var(--onSky,#141827);background:transparent;cursor:pointer;color:#fff;font-size:12px;
     font-weight:800;display:grid;place-items:center;box-shadow:0 1px 4px rgba(20,40,80,.25)}
   .dueline .dl-radio.on{background:var(--dc,#4585D6);border-color:var(--dc,#4585D6)}
-  .dueline .dl-text{left:124px}
-  .dueline .dl-text.done{text-decoration:line-through;opacity:.65}
+  .dueline .dl-text.done span{text-decoration:line-through;opacity:.65}
   .dueline.done .dl-wire{opacity:.45}
   .dueline .dl-x{position:absolute;right:-4px;top:-30px;width:22px;height:22px;border-radius:50%;border:0;
     background:rgba(30,38,60,.9);color:#fff;font-size:12px;cursor:pointer;display:none;place-items:center}
   .dueline.armed .dl-x{display:grid}
   /* 기록 블록 (델타 §3): 들여쓰기 26px, 실색 채움 + 쉼=빗금(위치 그대로). */
-  .block.rec{left:78px;cursor:pointer}
+  .block.rec{left:64px;right:62px;cursor:pointer}
   .block.rec .bhatch{position:absolute;left:0;right:0;z-index:1;pointer-events:none;
     background:repeating-linear-gradient(45deg,rgba(120,130,150,.45) 0 6px,rgba(235,240,248,.5) 6px 12px)}
   .block.rec.active{box-shadow:0 0 0 2px rgba(255,255,255,.65);z-index:6}
-  .block{position:absolute;left:52px;right:14px;border-radius:12px;padding:8px 12px;z-index:3;color:#fff;
+  .block{position:absolute;left:52px;right:14px;border-radius:10px;padding:8px 12px;z-index:3;color:#fff;
     font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px;overflow:hidden;
-    border:1px solid rgba(255,255,255,.32)}
+    border:1px solid rgba(255,255,255,.32);box-shadow:0 1px 5px rgba(0,0,0,.22)}
   .block .belapsed{position:absolute;left:0;right:0;top:0;z-index:0;pointer-events:none;border-radius:11px 11px 0 0}
   .block>.bic,.block>.btitle,.block>.bplay,.block>.bx,.block>small{position:relative;z-index:1}
   .block .btitle{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -203,7 +204,7 @@
   .block .bx{display:none}
   .block.armed .bx{display:grid}
   .block.armed{box-shadow:0 0 0 2px rgba(255,255,255,.75),0 8px 20px rgba(10,20,50,.35)}
-  .block-resize{position:absolute;left:0;right:0;bottom:0;height:14px;cursor:ns-resize;border-radius:0 0 12px 12px;
+  .block-resize{position:absolute;left:0;right:0;bottom:0;height:14px;cursor:ns-resize;border-radius:0 0 10px 10px;
     pointer-events:none;touch-action:none}
   .block.armed .block-resize,#tlScroll.editing .block-resize{pointer-events:auto}
   .block-resize::after{content:"";position:absolute;left:50%;bottom:3px;transform:translateX(-50%);width:34px;height:5px;border-radius:3px;background:rgba(255,255,255,.9);opacity:0}
@@ -1681,7 +1682,7 @@
   var DATA=DEMO;
 
   /* ---------- big timeline (today only) ---------- */
-  var TS=6,TE=24,PPH=74,dayOffset=0;
+  var TS=6,TE=24,PPH=120,dayOffset=0;
   function yFor(h){return 14+(h-TS)*PPH;}
   function selDate(){var d=new Date();d.setDate(d.getDate()+dayOffset);return d;}
   function selKey(){var d=selDate();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
@@ -1854,10 +1855,10 @@
   }
   // 시간대별 하늘 3색 (앱 SkyPalette 근사): top/mid/bot.
   function tlSkyFor(h){
-    var K=[[0,0x141a2b,0x24304f,0x353f5c],[5,0x2f3e77,0x6a5a86,0xb4657f],
+    var K=[[0,0x0a0e24,0x0d1229,0x10152e],[5,0x2f3e77,0x6a5a86,0xb4657f],
            [6.5,0x5e7fb4,0x9fb6d8,0xffd79a],[9,0x2e86d8,0x77a7dd,0xafdbf2],
-           [16,0x2e86d8,0x77a7dd,0xafdbf2],[18,0x5e7fb4,0x8f88b0,0xff9e8c],
-           [19.5,0x2f3e77,0x4a4570,0xb4657f],[21,0x141a2b,0x24304f,0x353f5c],[24,0x141a2b,0x24304f,0x353f5c]];
+           [16,0x2e86d8,0x77a7dd,0xafdbf2],[18,0x5e7fb4,0x8f88b0,0xff7b4a],
+           [19.5,0x2f3e77,0x4a4570,0xb4657f],[21,0x0a0e24,0x0d1229,0x10152e],[24,0x0a0e24,0x0d1229,0x10152e]];
     var i=0;while(i<K.length-1&&h>K[i+1][0])i++;
     var a=K[i],b=K[Math.min(i+1,K.length-1)],t=(h-a[0])/Math.max(0.001,b[0]-a[0]);
     return [lerpHex(a[1],b[1],t),lerpHex(a[2],b[2],t),lerpHex(a[3],b[3],t)];
@@ -1867,8 +1868,14 @@
     // 화면 중앙에 보이는 시각으로 하늘색을 정한다.
     var centerY=sc.scrollTop+sc.clientHeight/2;
     var h=TS+(centerY-14)/PPH;h=Math.max(0,Math.min(24,h));
-    var c=tlSkyFor(h),r=document.getElementById('view-big').style;
+    var c=tlSkyFor(h),vb=document.getElementById('view-big'),r=vb.style;
     r.setProperty('--tl-top',c[0]);r.setProperty('--tl-mid',c[1]);r.setProperty('--tl-bot',c[2]);
+    // 타임라인 고정 2단계 액센트·잉크 (앱 SkyTheme.timelineFixed 파리티) — 밤=태양고도 -4°의 시각 근사.
+    var night=h<6.5||h>=19.5;
+    vb.classList.toggle('tl-night',night);
+    r.setProperty('--tl-accent',night?'#273B9E':'#80CDE9');
+    r.setProperty('--tl-onaccent',night?'#F5F7FF':'#141827');
+    r.setProperty('--onSky',night?'#F5F7FF':'#141827');
   }
   // 스크롤은 rAF로 스로틀 — CSS 변수만 갱신해 빠릿하게 (요청).
   (function(){var sc=document.getElementById('tlScroll'),tick=false;
@@ -2139,13 +2146,12 @@
       label=doneCnt?'축하해요! '+doneCnt+'개 작업을 '+durLabel(Math.max(1,spent))+' 만에 끝냈어요!':'';
     }else{
       var totalMin=Math.round((taskDueAt(fut[fut.length-1]).getTime()-Date.now())/60000);
-      label=('0'+lastDue.getHours()).slice(-2)+'시 '+('0'+lastDue.getMinutes()).slice(-2)+'분까지 '+fut.length+'개를 끝낼 수 있어요 · '+durLabel(Math.max(1,totalMin));
+      var lastFut=taskDueAt(fut[fut.length-1]);
+      label=('0'+lastFut.getHours()).slice(-2)+':'+('0'+lastFut.getMinutes()).slice(-2)+'까지 '+fut.length+'개를 끝낼 수 있어요 · '+totalMin+'분';
     }
     if(!label)return;
     wrap.innerHTML='<div class="dc-label">'+esc(label)+'</div>'+
-      '<div class="dc-grip"><svg viewBox="0 0 100 16" preserveAspectRatio="none">'+
-      '<path d="M2 2h96M2 2v9a3 3 0 0 0 3 3h12M98 2v9a3 3 0 0 1-3 3H83" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2.4" stroke-linecap="round"/>'+
-      '<path d="M42 8h16M42 11h16M42 14h16" stroke="rgba(255,255,255,.9)" stroke-width="1.6"/></svg></div>';
+      '<div class="dc-grip"><i></i><i></i><i></i></div>';
     // 손잡이 드래그 (1분 스냅, 비율 스케일)
     var grip=wrap.querySelector('.dc-grip');
     grip.addEventListener('pointerdown',function(e){
@@ -2245,7 +2251,7 @@
       var el=document.createElement('div');el.className='block rec'+(b.active?' active':'');
       el.style.top=yFor(hf)+'px';
       var hpx=Math.max(20,(hfe-hf)*PPH-1);el.style.height=hpx+'px';
-      el.style.background=hexA(col,0.9);el.style.borderColor=hexA(col,0.5);
+      el.style.background=hexA(col,0.9);el.style.border='1.7px solid '+hexA(col,0.9);
       var span=b.end-b.start;
       var hatches=b.rest.map(function(r){
         return '<div class="bhatch" style="top:'+((r.s-b.start)/span*100)+'%;height:'+((r.e-r.s)/span*100)+'%"></div>';
@@ -2286,14 +2292,13 @@
         return y>=y1-2&&y<=y2+18;});
       // D2-2: 길이 'n시간 n분', 당일·과거·미완료면 'n시간 n분 지남'.
       var lenTxt=durLabel(dispMin);
-      if(dayOffset===0&&due.getTime()<nowMs&&!t.isDone)lenTxt=lenTxt+' 지남';
+      if(dayOffset===0&&due.getTime()<nowMs&&!t.isDone){var over=Math.floor((nowMs-due.getTime())/60000);if(over>=1)lenTxt=durLabel(over)+' 지남';}
       dl.innerHTML='<div class="dl-wire"></div>'+
-        '<button class="dl-play" title="집중 시작">'+IC.play+'</button>'+
         '<button class="dl-radio'+(t.isDone?' on':'')+'" title="완료" style="--dc:'+catColor(t.categoryID)+'">'+(t.isDone?'✓':'')+'</button>'+
-        (covered?'':'<div class="dl-text'+(t.isDone?' done':'')+'">'+esc(t.title)+' · '+lenTxt+'</div>')+
+        (covered?'':'<div class="dl-text'+(t.isDone?' done':'')+'"><span class="dl-title">'+esc(t.title)+'</span><span>&nbsp;· '+lenTxt+'</span><button class="dl-play" title="집중 시작">'+IC.play+'</button></div>')+
         '<span class="dl-cap">'+('0'+due.getHours()).slice(-2)+':'+('0'+due.getMinutes()).slice(-2)+'까지</span>'+
         '<button class="dl-x" title="마감선만 삭제">✕</button>';
-      dl.querySelector('.dl-play').addEventListener('click',function(e){e.stopPropagation();startFocus(t);});
+      var pb=dl.querySelector('.dl-play');if(pb)pb.addEventListener('click',function(e){e.stopPropagation();startFocus(t);});
       // D2-2 마감 동그라미: 완료 토글 (보상 지급 + 취소선)
       dl.querySelector('.dl-radio').addEventListener('click',function(e){e.stopPropagation();
         t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;
@@ -2318,7 +2323,7 @@
     // (요청) 태양·달 제거 — 동적 하늘색만 유지.
     updateTlSky();
     if(prevScroll!=null){sc.scrollTop=prevScroll;}
-    else setTimeout(function(){sc.scrollTop=Math.max(0,yFor(nf)-150);updateTlSky();},30);
+    else setTimeout(function(){sc.scrollTop=Math.max(0,yFor(nf)-60);updateTlSky();},30);
     var lbl=dayOffset===0?'오늘':dayOffset===-1?'어제':dayOffset===1?'내일':'';
     try{document.getElementById('tlDate').textContent=selDate().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'})+(lbl?' · '+lbl:'');}catch(e){}
   }
