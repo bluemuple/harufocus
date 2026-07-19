@@ -134,6 +134,26 @@
   .seg button{font-family:inherit;font-size:12.5px;font-weight:600;border:none;background:transparent;color:var(--ink-soft);
     padding:6px 12px;border-radius:8px;cursor:pointer}
   .seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .bseg{margin:8px 0 14px;width:100%}.bseg button{flex:1}
+  .wl-guide{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;margin-bottom:14px;position:relative}
+  .wl-guide h4{margin:0 0 8px;font-size:15px}
+  .wl-steps{font-size:13px;color:var(--ink-soft);line-height:1.65;margin-bottom:11px}
+  .wl-quote{font-size:12.5px;font-style:italic;color:var(--ink-soft);line-height:1.55;border-left:2px solid var(--line);padding-left:10px}
+  .wl-x{position:absolute;top:9px;right:11px;background:transparent;border:0;color:var(--ink-soft);font-size:15px;cursor:pointer}
+  .wl-bal{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center;margin-bottom:12px}
+  .wl-bal-label{font-size:12px;color:var(--ink-soft);margin-bottom:4px}
+  .wl-bal-amt{font-size:26px;font-weight:800;color:#9E780F}.wl-bal-amt.neg{color:#D9594D}
+  .wl-spend{display:flex;gap:7px;margin-bottom:8px}
+  .wl-spend input{border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-family:inherit;font-size:14px;background:var(--card-2);color:var(--ink);box-sizing:border-box}
+  .wl-spend #wlAmt{flex:0 0 96px}.wl-spend #wlLabel{flex:1;min-width:0}
+  .wl-spend button{flex:0 0 auto;border:0;border-radius:10px;background:var(--ink);color:var(--card);font-weight:700;padding:0 16px;cursor:pointer}
+  .wl-warn{font-size:12px;color:#D9594D;margin-bottom:12px;min-height:0}
+  .wl-list{margin-top:6px}
+  .wl-item{display:flex;align-items:center;gap:9px;padding:10px 2px;border-bottom:1px solid var(--line)}
+  .wl-item .wl-lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px}
+  .wl-item .wl-when{font-size:11px;color:var(--ink-soft);flex:0 0 auto}
+  .wl-item .wl-amt{font-weight:700;font-size:13.5px;flex:0 0 auto}
+  .wl-item .wl-amt.earn{color:#9E780F}.wl-item .wl-amt.spend{color:#D9594D}
   /* 루틴 편집 시트 (요청). */
   .hseg{margin-left:0;width:100%;margin:6px 0}
   .hseg button{flex:1}
@@ -1243,6 +1263,8 @@
         <section class="view" id="view-bucket">
           <h2>물통 <span id="bMoney" class="bmoney"></span>
             <button class="app-banner" id="bucketTimeBtn" style="float:right">📱 내 시간이 간 곳</button></h2>
+          <div class="seg bseg" id="bSeg"><button class="on" data-bt="bucket">물통</button><button data-bt="stats">통계</button><button data-bt="wallet">용돈</button></div>
+          <div id="bPane-bucket">
           <div class="bucket-wrap">
             <div class="bucket-col">
               <div class="bucket-nav"><button id="bPrev">‹</button><span id="bDate">오늘</span><button id="bNext">›</button></div>
@@ -1273,6 +1295,9 @@
             </div>
             <div class="bucket-info" id="bInfo"></div>
           </div>
+          </div>
+          <div id="bPane-stats" style="display:none"><div class="elabel" style="margin-top:2px">한눈에 보기</div><div id="bStatsPanel"></div></div>
+          <div id="bPane-wallet" style="display:none"><div id="bWallet"></div></div>
         </section>
       </div>
     </section>
@@ -2792,7 +2817,7 @@
     t.rewardGranted=true;
     if((t.rewardMoney||0)>0){
       if(!DATA.settings)DATA.settings={};
-      DATA.settings.rewardMoneyTotal=(DATA.settings.rewardMoneyTotal||0)+t.rewardMoney;
+      DATA.settings.rewardMoneyTotal=(DATA.settings.rewardMoneyTotal||0)+t.rewardMoney;walletLedgerAdd(t.title,t.rewardMoney);
       try{updateCloud();}catch(e){}
       showCelebration('축하해요! 🎉','‘'+t.title+'’을(를) 끝내고 '+moneyStr(t.rewardMoney)+'을(를) 받았어요.');
     }else if(t.rewardText){
@@ -3366,7 +3391,7 @@
   // 통계 (요청 재설계): 어제·지난주와 비교해 "잘 하고 있구나"를 느끼게.
   function sumRange(d0,d1){var t=0;allSessions().forEach(function(x){
     var d=new Date(x.start);if(d>=d0&&d<d1)t+=x.focusedSec||0;});return t;}
-  function openStats(){
+  function statsBodyHTML(){
     var st=focusStats(),goal=((DATA.settings&&DATA.settings.focusGoalMinutes)||240)*60;
     var maxCat=Math.max(1,Object.keys(st.byCat).reduce(function(m,k){return Math.max(m,st.byCat[k]);},0));
     var streak=(DATA.habits||[]).reduce(function(m,h){return Math.max(m,habitStreak(h));},0);
@@ -3398,8 +3423,7 @@
     var bars=Object.keys(st.byCat).sort(function(a,b){return st.byCat[b]-st.byCat[a];}).map(function(k){
       return '<div class="bi-side"><span class="nm">'+esc(catName(k))+'</span><div class="bar"><div class="fill" style="width:'+Math.round(st.byCat[k]/maxCat*100)+'%;background:'+catColor(k)+'"></div></div><span class="v">'+hm(st.byCat[k])+'</span></div>';}).join('')
       ||'<div class="stat-note">아직 집중 기록이 없어요.</div>';
-    var body=document.getElementById('statsBody');
-    body.innerHTML=
+    return (
       '<div class="stat-big">오늘 <b>'+hm(todaySec)+'</b> 집중 · '+dayCmp+'</div>'+
       '<div class="stat-prog"><div style="width:'+Math.min(100,Math.round(todaySec/Math.max(1,goal)*100))+'%"></div></div>'+
       '<div class="stat-note">하루 목표 '+hm(goal)+'</div>'+
@@ -3408,9 +3432,9 @@
       '<div class="stat-cheer">'+wMsg+'</div>'+
       '<div class="elabel">카테고리별 (7일)</div><div class="bi-sides">'+bars+'</div>'+
       '<div class="elabel">최고 연속</div><div class="stat-big">🔥 '+streak+'일</div>'+
-      (st.demo?'<div class="stat-note">로그인하면 내 기록으로 채워져요.</div>':'');
-    document.getElementById('statsScrim').classList.add('open');
+      (st.demo?'<div class="stat-note">로그인하면 내 기록으로 채워져요.</div>':''));
   }
+  function openStats(){document.getElementById('statsBody').innerHTML=statsBodyHTML();document.getElementById('statsScrim').classList.add('open');}
 
   // 작업 막대 좌우 스와이프 → 뒤에 숨은 액션 버튼 노출 (요청: 폰).
   var swipeOpen=null;
@@ -4151,7 +4175,52 @@
     var mb=info.querySelector('.bi-more');if(mb)mb.addEventListener('click',function(){bMore=this.dataset.more==='1';renderBInfo();});
     info.querySelectorAll('.bi-acts button').forEach(function(b){b.addEventListener('click',function(){bMore=false;setTab(b.dataset.go);});});
   }
-  function renderBucket(){if(!tubBuilt)buildTub();applyTub();updateWater();updateCloud();renderBInfo();}
+  // ── 용돈(지갑) 탭 (앱 RewardWalletView 파리티) ──
+  // 잔액=DATA.settings.rewardMoneyTotal(양방향 동기). 원장은 웹 로컬(앱 rewardLedgerJSON은 스냅샷 미동기).
+  function walletLedger(){try{var l=JSON.parse(localStorage.getItem('hfWalletLedger')||'[]');return Array.isArray(l)?l:[];}catch(_){return [];}}
+  function walletLedgerAdd(label,amount){var l=walletLedger();l.unshift({t:Date.now(),label:label||'',amount:amount});if(l.length>400)l=l.slice(0,400);try{localStorage.setItem('hfWalletLedger',JSON.stringify(l));}catch(_){}}
+  function walletWhen(ts){try{var d=new Date(ts);return (d.getMonth()+1)+'월 '+d.getDate()+'일';}catch(_){return '';}}
+  function renderWallet(){
+    var el=document.getElementById('bWallet');if(!el)return;
+    var bal=(DATA.settings&&DATA.settings.rewardMoneyTotal)||0;
+    var guideOff=localStorage.getItem('hfWalletGuide')==='off';
+    var ledger=walletLedger();
+    var guide=guideOff?'':
+      '<div class="wl-guide"><button class="wl-x" id="wlGuideX" title="닫기">✕</button>'+
+      '<h4>내가 나에게 주는 용돈</h4>'+
+      '<div class="wl-steps">작업 추가 → 보상 🎁 선택 → 돈 ₩ 선택 →<br>그 작업을 끝내면 여기 쌓여요.</div>'+
+      '<div class="wl-quote">“만족스러운 결과가 뒤따르는 행동은 다시 일어나기 쉽다.”<br>— 심리학자 에드워드 손다이크, ‘효과의 법칙’</div></div>';
+    var list=ledger.length
+      ? ledger.map(function(e){var earn=e.amount>=0;
+          return '<div class="wl-item"><span class="wl-when">'+walletWhen(e.t)+'</span><span class="wl-lbl">'+esc(e.label||(earn?'보상':'지출'))+'</span>'+
+            '<span class="wl-amt '+(earn?'earn':'spend')+'">'+(earn?'+':'−')+moneyStr(Math.abs(e.amount))+'</span></div>';}).join('')
+      : '<div class="stat-note">아직 내역이 없어요 — 돈 보상 작업을 끝내면 여기 쌓여요.</div>';
+    el.innerHTML=guide+
+      '<div class="wl-bal"><div class="wl-bal-label">모은 돈</div><div class="wl-bal-amt'+(bal<0?' neg':'')+'">'+moneyStr(bal)+'</div></div>'+
+      '<div class="wl-spend"><input id="wlAmt" inputmode="numeric" placeholder="금액"><input id="wlLabel" placeholder="무엇에 썼나요?" maxlength="40"><button id="wlRec">기록</button></div>'+
+      '<div class="wl-warn" id="wlWarn"></div>'+
+      '<div class="wl-list">'+list+'</div>';
+    var gx=document.getElementById('wlGuideX');if(gx)gx.addEventListener('click',function(){localStorage.setItem('hfWalletGuide','off');renderWallet();});
+    document.getElementById('wlRec').addEventListener('click',function(){
+      var amt=parseInt((document.getElementById('wlAmt').value||'').replace(/[^0-9]/g,''),10)||0;
+      var lbl=(document.getElementById('wlLabel').value||'').trim();
+      var warn=document.getElementById('wlWarn');
+      if(amt<=0){warn.textContent='금액을 입력해 주세요.';return;}
+      if(amt>bal){warn.textContent='잔액보다 많이 쓸 수 없어요 — 지금 모은 돈은 '+moneyStr(bal)+'이에요.';return;}
+      DATA.settings.rewardMoneyTotal=bal-amt;                 // 잔액 차감 (양방향 동기)
+      walletLedgerAdd(lbl||'지출',-amt);
+      renderAll();pushSnapshot();renderWallet();
+    });
+  }
+  function bSeg(name){
+    ['bucket','stats','wallet'].forEach(function(n){var p=document.getElementById('bPane-'+n);if(p)p.style.display=(n===name)?'':'none';});
+    document.querySelectorAll('#bSeg button').forEach(function(b){b.classList.toggle('on',b.dataset.bt===name);});
+    if(name==='stats')document.getElementById('bStatsPanel').innerHTML=statsBodyHTML();
+    else if(name==='wallet')renderWallet();
+  }
+  (function(){var seg=document.getElementById('bSeg');if(seg)seg.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){bSeg(b.dataset.bt);});});})();
+  function renderBucket(){if(!tubBuilt)buildTub();applyTub();updateWater();updateCloud();renderBInfo();
+    var wp=document.getElementById('bPane-wallet');if(wp&&wp.style.display!=='none')renderWallet();}
 
   // 앱 하늘색을 시간대로 재현 (요청: 할일 등 배경을 앱과 동일하게).
   function hx(v){return '#'+('000000'+v.toString(16)).slice(-6);}
