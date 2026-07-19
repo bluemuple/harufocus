@@ -958,6 +958,9 @@
   .bi-mean{margin-top:11px;font-size:13px;line-height:1.62}.bi-mean b{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:3px;font-weight:700}.bi-mean p{margin:0}
   .bi-acts{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:13px}
   .bi-acts button{min-height:40px;border-radius:10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--ink)}
+  .bi-memo{width:100%;box-sizing:border-box;margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-family:inherit;font-size:13.5px;background:var(--card-2);color:var(--ink)}
+  .bi-rec-t{margin-top:10px;background:transparent;border:0;color:var(--ink-soft);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;padding:2px 0}
+  .bi-rec{margin-top:5px;font-size:13px;line-height:1.75;color:var(--ink-soft)}
   .bi-sides{margin-top:14px;border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:4px}
   .bi-side{display:flex;align-items:center;gap:9px;font-size:13px;cursor:pointer;padding:6px;border-radius:9px}
   .bi-side:hover{background:var(--card-2)}.bi-side.sel{background:var(--card-2);font-weight:600}
@@ -3979,7 +3982,7 @@
     focus:'<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect x="4" y="4" width="4" height="16" rx="1"/><rect x="9.5" y="4" width="4" height="16" rx="1" opacity=".72"/><path d="M15.2 5.3 19.4 6.4 16.4 21 12.2 19.9Z" opacity=".5"/></svg>',
     people:'<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="8.6" cy="8" r="3"/><circle cx="16" cy="8.6" r="2.6" opacity=".8"/><path d="M3.4 19c0-2.9 2.3-5 5.2-5s5.2 2.1 5.2 5Z"/><path d="M14.2 19c.1-2.4 1.5-4.3 3.5-4.9 2 .6 3.3 2.4 3.3 4.9Z" opacity=".8"/></svg>'
   };
-  var bSel=-1,bucketDay=0,tubBuilt=false,bView=0,bManual={},bIntroTimer=null,bMore=false;
+  var bSel=-1,bucketDay=0,tubBuilt=false,bView=0,bManual={},bIntroTimer=null,bMore=false,bRecOpen=false;
   var TUB={N:7,R:142,H:232};TUB.a=TUB.R*Math.cos(Math.PI/TUB.N);TUB.s=2*TUB.R*Math.sin(Math.PI/TUB.N);TUB.step=360/TUB.N;
   TUB.wood=0.14;                 // 아래 나무 바닥 비율(높이 0 지점)
   TUB.waterMax=TUB.H*(1-TUB.wood-0.04);  // 물이 찰 수 있는 최대 높이
@@ -4158,9 +4161,29 @@
     var mn=document.getElementById('bMoney');if(mn){var tot=(DATA.settings&&DATA.settings.rewardMoneyTotal)||0;mn.innerHTML=tot>0?(IC.coin+' '+moneyStr(tot)):'';}
   }
   function shiftBucketDay(n){bucketDay=Math.min(0,bucketDay+n);bManual={};renderBucket();}   // 미래 없음, 수동조절 초기화
+  // 물통 한 줄 메모 (앱 리플렉션 카드: bucketNotesJSON[yyyy-MM-dd]=텍스트 + faces=면 id, 일기 피드와 병합).
+  function bnKey(){var d=bucketDate();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+  function bucketNote(){try{return (JSON.parse((DATA.settings||{}).bucketNotesJSON||'{}'))[bnKey()]||'';}catch(_){return '';}}
+  function saveBucketNote(txt,faceId){
+    var S=DATA.settings=DATA.settings||{},notes={},faces={};
+    try{notes=JSON.parse(S.bucketNotesJSON||'{}');}catch(_){}
+    try{faces=JSON.parse(S.bucketNoteFacesJSON||'{}');}catch(_){}
+    var k=bnKey();
+    if((txt||'').trim()){notes[k]=txt;faces[k]=faceId;}else{delete notes[k];delete faces[k];}
+    S.bucketNotesJSON=JSON.stringify(notes);S.bucketNoteFacesJSON=JSON.stringify(faces);pushSnapshot();
+  }
+  // 그 날·그 면의 기록: 완료 작업 '✓ 제목' + 세션 '⏱ 제목 N분' (앱 recordLines, 최대 5).
+  function bucketRecords(cid){
+    var d=bucketDate(),out=[];
+    (DATA.tasks||[]).forEach(function(t){if(t.categoryID===cid&&t.isDone&&t.completedAt&&sameDayISO(t.completedAt,d))out.push('✓ '+t.title);});
+    bucketSessions().filter(function(x){return x.categoryID===cid;}).forEach(function(x){
+      out.push('⏱ '+(x.taskTitle||'집중')+' '+Math.max(1,Math.round((x.focusedSec||0)/60))+'분');});
+    return out.slice(0,5);
+  }
   function renderBInfo(){
     var info=document.getElementById('bInfo');if(!info)return;
     var side=SIDES[bSel<0?0:bSel],col=catColor(side.id),lvN=sideLevel(side.id),ct=coachFor(side.id,lvN),lv=Math.round(lvN);
+    var recs=bucketRecords(side.id);
     // 앱 리플렉션 카드: 이름·상태어·레벨 + 방향문 + '더보기'(이 점수가 말하는 것) + 채우러 가기 4버튼.
     var act=function(go,label){return '<button data-go="'+go+'" style="background:'+hexA(col,.16)+';border:1px solid '+hexA(col,.4)+'">'+label+'</button>';};
     info.innerHTML=
@@ -4170,9 +4193,14 @@
         ? '<div class="bi-mean"><b>이 점수가 말하는 것</b><p>'+esc(ct.m)+'</p></div><button class="bi-more" data-more="0">원래대로</button>'
         : (ct.m?'<button class="bi-more" data-more="1">더보기</button>':''))+
       '<div class="bi-acts">'+act('timeline','타임라인')+act('todo','할 일')+act('matrix','매트릭스')+act('routine','루틴')+'</div>'+
+      '<input class="bi-memo" id="biMemo" placeholder="오늘 하루를 한 줄로" maxlength="140" value="'+esc(bucketNote())+'">'+
+      (recs.length?('<button class="bi-rec-t" id="biRecT">'+esc(side.name)+' 기록 '+recs.length+' '+(bRecOpen?'▴':'▾')+'</button>'+
+        (bRecOpen?'<div class="bi-rec">'+recs.map(function(l){return '<div>'+esc(l)+'</div>';}).join('')+'</div>':'')):'')+
       '<div class="bi-hint">'+(bSel<0?'물통을 좌우로 드래그해 돌려보세요. 옆면을 누르면 자세히 보여요.':'선택한 면을 아래로 끌면 물이 줄어요. 다시 누르면 전체 보기.')+'</div>';
     var mb=info.querySelector('.bi-more');if(mb)mb.addEventListener('click',function(){bMore=this.dataset.more==='1';renderBInfo();});
     info.querySelectorAll('.bi-acts button').forEach(function(b){b.addEventListener('click',function(){bMore=false;setTab(b.dataset.go);});});
+    var memo=info.querySelector('#biMemo');if(memo)memo.addEventListener('change',function(){saveBucketNote(this.value,side.id);renderDiary();});
+    var rt=info.querySelector('#biRecT');if(rt)rt.addEventListener('click',function(){bRecOpen=!bRecOpen;renderBInfo();});
   }
   // ── 용돈(지갑) 탭 (앱 RewardWalletView 파리티) ──
   // 잔액=DATA.settings.rewardMoneyTotal(양방향 동기). 원장은 웹 로컬(앱 rewardLedgerJSON은 스냅샷 미동기).
