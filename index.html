@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>엘리의 하루 — Elly Day</title>
+<title>엘리의 하루: 내 안의 코끼리를 위한 플래너</title>
 <meta name="description" content="마음을 돌보는 하루 플래너 · A Planner for Your Inner Elephant">
 <meta name="description" content="시간을 하늘 색으로 보여주는 세로 타임라인 플래너.">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
@@ -18,6 +18,9 @@
   *{box-sizing:border-box;margin:0;padding:0}
   *{overscroll-behavior-x:none}
   html,body{height:100%;overflow-x:hidden;touch-action:pan-y}
+  /* 더블탭 확대 방지 (요청): iOS Safari는 user-scalable=no를 무시하므로
+     탭 대상에 manipulation을 줘서 double-tap zoom만 끈다(스크롤·핀치 유지). */
+  button,a,input,select,textarea,label,.chip,.mbtn,.task,.mtask,.seg button{touch-action:manipulation}
   .tabbody,.tl-scroll,.tl-body,.matrix.fit .quad,.routines,.todo{touch-action:pan-y}
   body{font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
   /* Safari 주소바가 하단 바를 덮지 않게 (요청): 화면을 고정 프레임으로. */
@@ -777,7 +780,6 @@
   .cap-dot-badge svg{width:8px;height:8px;display:block}
   .cap-icon{width:34px;height:34px;border:0;background:none;color:var(--ink-soft);cursor:pointer;flex:0 0 auto;display:grid;place-items:center}
   #capMore.on{color:var(--sky-blue)}
-  #capMic.on{color:#E34238}
   .cap-icon .ic{width:26px;height:26px}
   .cap-input textarea{flex:1;border:0;background:none;font-family:inherit;font-size:16px;color:var(--ink);min-width:0;
     resize:none;line-height:1.45;max-height:calc(2 * 1.45em + 4px);overflow-y:auto;padding:2px 0}
@@ -1474,7 +1476,6 @@
     <button class="cap-dot" id="capDot"></button>
     <button class="cap-icon" id="capIconBtn"></button>
     <textarea id="capText" placeholder="빠르게 담기…" maxlength="240" rows="1"></textarea>
-    <button class="cap-icon" id="capMic" title="음성 입력"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg></button>
     <button class="cap-icon" id="capMore" title="자세히"><svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg></button>
     <button class="cap-submit" id="capSubmit" disabled><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
   </div>
@@ -5550,50 +5551,99 @@
     {k:'indigo.0',c:'#8F84DB'},{k:'purple.0',c:'#B57FDB'},{k:'plum.0',c:'#E082C9'},{k:'stone.0',c:'#BDB0A2'}];
   function capColorHex(key){if(!key)return null;for(var i=0;i<CAP_COLORS.length;i++)if(CAP_COLORS[i].k===key)return CAP_COLORS[i].c;return key;}
   // 작업명→기호·범주 라이브 자동 제안 (앱 IconCatalog 파리티, 웹 아이콘 셋으로 축약 매핑).
+  // 앱 IconCatalog 전문 이식 (요청: 한국어·영어 인식, 수험생·직장인·중고생 어휘).
+  // 한글 단어는 토큰 '안'에서도 매칭('조깅하기'←'조깅'), 라틴은 토큰 단위.
+  // 먼저 적힌 항목이 이긴다.
   var CAP_KEYWORDS=[
-    ['meditate','mind',['명상','마음챙김','meditate','meditation','mindfulness']],
+    // 마음
+    ['meditate','mind',['명상','마음챙김','멘탈','meditate','meditation','mindfulness']],
     ['heart','mind',['감사','사랑','gratitude','love']],
-    ['moonzzz','mind',['휴식','낮잠','relax','nap']],
+    ['moonzzz','mind',['휴식','낮잠','relax','nap','rest']],
     ['leaf','mind',['힐링','자연','healing','nature']],
     ['clap','mind',['기도','pray','prayer']],
-    ['book','mind',['일기','저널','diary','journal']],
-    ['run','health',['달리기','러닝','조깅','뛰기','마라톤','run','running','jog','jogging']],
-    ['dumbbell','health',['헬스','운동','근력','웨이트','홈트','스쿼트','플랭크','workout','gym','exercise','fitness']],
+    ['book','mind',['일기','저널','diary','journal','journaling']],
+    // 몸
+    ['run','health',['달리기','러닝','조깅','뛰기','마라톤','run','running','jog','jogging','marathon']],
+    ['dumbbell','health',['헬스','운동','근력','웨이트','홈트','크로스핏','피티','스쿼트','푸시업','플랭크','유산소','체력','workout','gym','weights','lifting','exercise','fitness','crossfit','hiit','cardio','squat','pushup','plank']],
     ['walk','health',['산책','걷기','하이킹','등산','walk','walking','hike','hiking']],
     ['yoga','health',['요가','스트레칭','필라테스','yoga','stretch','stretching','pilates']],
-    ['drop','health',['물마시기','수분','hydrate']],
+    ['drop','health',['물마시기','수분','water','hydrate']],
     ['bike','health',['자전거','라이딩','bike','cycling','biking']],
     ['swim','health',['수영','swim','swimming']],
     ['steps','health',['걸음','만보','steps']],
-    ['game','rest',['게임','game','gaming']],
+    ['dumbbell','health',['축구','풋살','농구','야구','캐치볼','배드민턴','테니스','탁구','스쿼시','골프','클라이밍','볼더링','복싱','킥복싱','태권도','유도','검도','주짓수','합기도','줄넘기','soccer','football','futsal','basketball','baseball','badminton','tennis','pingpong','squash','golf','climbing','bouldering','boxing','kickboxing','karate','judo','taekwondo','jiujitsu','jumprope','skipping']],
+    ['meal','health',['다이어트','식단','체중','체지방','diet']],
+    // 기쁨
+    ['game','rest',['게임','롤','옵치','스팀','game','gaming']],
     ['music','rest',['음악','노래','music','song','singing']],
-    ['palette','rest',['그림','드로잉','미술','paint','painting','draw','drawing','sketch']],
-    ['film','rest',['영화','넷플릭스','드라마','movie','film','netflix','drama']],
+    ['palette','rest',['그림','드로잉','미술','paint','painting','draw','drawing','art','sketch']],
+    ['film','rest',['영화','넷플릭스','드라마','유튜브','브이로그','웹툰','만화','애니','애니메이션','movie','film','netflix','drama','show','youtube','vlog','webtoon','manga','anime']],
     ['camera','rest',['사진','촬영','photo','photography']],
-    ['guitar','rest',['기타','피아노','악기','연주','guitar','piano']],
-    ['money','life',['가계부','예산','재테크','budget','money','finance']],
+    ['guitar','rest',['기타연습','기타','피아노','악기','연주','guitar','piano','instrument','ukulele']],
+    ['music','rest',['춤','댄스','안무','노래방','콘서트','공연','덕질','dance','choreography','karaoke','concert']],
+    ['cake','rest',['베이킹','빵굽기','baking','bake']],
+    ['game','rest',['보드게임','체스','퍼즐','레고','boardgame','chess','puzzle','lego']],
+    ['leaf','rest',['낚시','캠핑','fishing','camping']],
+    ['plane','rest',['여행','여행계획','휴가','travel','trip','vacation']],
+    // 돈
+    ['money','life',['가계부','예산','재테크','알바','아르바이트','budget','money','finance','parttime']],
     ['banknote','life',['저축','적금','saving','savings']],
-    ['chartup','life',['주식','투자','코인','stock','stocks','invest','crypto']],
-    ['card','life',['카드','결제','공과금','세금','bill','payment']],
-    ['cart','life',['장보기','쇼핑','마트','편의점','shopping','grocery']],
-    ['openbook','study',['독서','읽기','read','reading']],
-    ['pencil','study',['글쓰기','필사','블로그','에세이','write','writing','blog','essay']],
-    ['globe','study',['영어','언어','외국어','회화','일본어','중국어','토익','토플','english','language','vocab','toeic','toefl','ielts']],
+    ['chartup','life',['주식','투자','코인','stock','stocks','invest','investing','crypto']],
+    ['card','life',['카드','결제','공과금','세금','bill','bills','payment','tax','taxes']],
+    ['cart','life',['장보기','쇼핑','마트','편의점','다이소','shopping','grocery','groceries']],
+    // 성장
+    ['openbook','study',['독서','책','읽기','read','reading','book']],
+    ['pencil','study',['글쓰기','쓰기','필사','블로그','에세이','write','writing','blog','essay','essays']],
+    ['globe','study',['영어','언어','외국어','회화','단어','일본어','중국어','스페인어','히라가나','한자','토익','토플','아이엘츠','오픽','텝스','english','language','vocab','vocabulary','spanish','french','japanese','chinese','korean','toeic','toefl','ielts','opic','teps','jlpt','hsk','duolingo']],
     ['keyboard','study',['코딩','개발','프로그래밍','coding','code','programming','dev']],
+    ['news','study',['뉴스','신문','기사','news','newspaper']],
+    ['bulb','study',['아이디어','브레인스토밍','idea','ideas','brainstorm']],
+    ['badge','study',['자격증','기사시험','certificate','certification']],
+    // 공부 / 일 — 과목·시험·과제·취준
+    ['sqrt','focus',['수학','매쓰','미적분','미적','확통','기하','대수','정수','math','maths','calculus','calc','algebra','geometry','trig','trigonometry','statistics','stats']],
+    ['atom','focus',['과학','물리','물리학','지구과학','science','physics']],
+    ['flask','focus',['화학','생물','생명과학','생명','chemistry','chem','biology','bio','anatomy']],
+    ['textbook','focus',['국어','문학','비문학','독해','문법','언매','화작','literature','grammar']],
+    ['scroll','focus',['역사','한국사','세계사','근현대사','history']],
+    ['map','focus',['사회','지리','일반사회','geography','sociology']],
+    ['piechart','focus',['경제','회계','경영','마케팅','economics','econ','accounting','marketing','business']],
+    ['brain','focus',['심리학','심리','철학','윤리','사문','psychology','psych','philosophy']],
+    ['clipboard','focus',['시험','모의고사','모고','수능','내신','중간고사','기말고사','쪽지시험','단원평가','평가원','exam','exams','test','tests','quiz','midterm','midterms','final','finals','sat','act','gcse','ncea','suneung']],
+    ['ruler','focus',['숙제','과제','homework','hw','assignment','assignments']],
+    ['edit','focus',['문제집','기출','문풀','문제풀이','오답','오답노트','연습문제','워크북','workbook','problems','pastpaper']],
+    ['cards','focus',['암기','외우기','단어장','플래시카드','memorize','memorise','flashcard','flashcards','anki']],
+    ['note','focus',['필기','노트정리','개념정리','요약','요약정리','notetaking','summary']],
+    ['gradcap','focus',['강의','수업','인강','인터넷강의','특강','세미나','lecture','class','course','seminar','tutorial','webinar']],
+    ['building','focus',['학원','과외','튜터','academy','tutoring','tutor','hagwon']],
+    ['code','focus',['코딩테스트','코테','알고리즘','백준','프로그래머스','리트코드','algorithm','algorithms','leetcode','codingtest']],
+    ['idcard','focus',['자소서','자기소개서','이력서','포트폴리오','지원서','입사지원','원서접수','resume','cv','coverletter','application']],
+    ['people','focus',['면접','인터뷰','팀플','조별과제','조모임','interview','interviews','teamproject','groupproject']],
+    ['doc','focus',['논문','연구','실험','랩미팅','보고서','문서','서류','레포트','리포트','결재','thesis','dissertation','research','lab','report','reports','document','docs','paper']],
+    ['mic2','focus',['발표','스피치','피피티','슬라이드','speech','presentation','ppt','keynote','slides']],
+    ['book2','focus',['공부','자습','복습','예습','벼락치기','열공','스터디','공무원','공시','임용','study','studying','review','revision','revise','cram','ncs']],
     ['laptop','focus',['컴퓨터','노트북','laptop','computer']],
-    ['briefcase','focus',['업무','출근','회사','회의','미팅','재택','야근','work','job','office','meeting']],
-    ['clock','focus',['일정','계획','plan','planning','schedule']],
-    ['book2','focus',['공부','자습','복습','예습','스터디','study','studying','review','revision']],
-    ['people','people',['친구','모임','약속','동아리','friend','friends','meetup']],
+    ['briefcase','focus',['업무','출근','회사','회의','미팅','재택','야근','work','job','office','meeting','meetings','overtime']],
+    ['calendar','focus',['일정','계획','plan','planning','schedule']],
+    ['mail','focus',['메일','이메일','편지','mail','email','emails','letter']],
+    ['check','focus',['체크리스트','checklist','todo']],
+    ['camera','focus',['영상편집','프리미어','editing','premiere']],
+    // 사람
+    ['people','people',['친구','모임','약속','동아리','동호회','friend','friends','meetup','hangout']],
+    ['phone','people',['전화','통화','call','phone']],
     ['gift','people',['선물','생일','gift','birthday','present']],
-    ['chat','people',['대화','상담','통화','전화','chat','talk','call']],
+    ['chat','people',['대화','상담','chat','talk','counseling']],
+    ['family','people',['가족','부모님','엄마','아빠','할머니','할아버지','family','parents']],
+    ['heart','people',['데이트','연애','dating']],
+    // 생활 (면 지정 없음)
     ['meal',null,['밥','식사','점심','저녁','아침밥','요리','lunch','dinner','breakfast','meal','cook','cooking']],
-    ['bed',null,['취침','수면','sleep','bedtime']],
-    ['shower',null,['샤워','목욕','shower','bath']],
-    ['pills',null,['영양제','비타민','pill','pills','medicine','vitamin']],
+    ['bed',null,['잠','취침','수면','sleep','bed','bedtime']],
+    ['shower',null,['샤워','목욕','양치','이닦기','shower','bath','teeth']],
+    ['pills',null,['약','영양제','비타민','병원','진료','치과','검진','안과','피부과','pill','pills','medicine','vitamin','vitamins','hospital','doctor','dentist','clinic','checkup']],
     ['alarm',null,['기상','wake','wakeup']],
-    ['trash',null,['청소','정리','분리수거','clean','cleaning','tidy']],
-    ['coffee',null,['커피','카페','coffee','cafe']]
+    ['trash',null,['청소','정리','분리수거','clean','cleaning','tidy','declutter']],
+    ['coffee',null,['커피','카페','coffee','cafe','tea']],
+    ['dishes',null,['빨래','세탁','설거지','laundry','dishes']],
+    ['building',null,['은행','관공서','주민센터','등본','bank']]
   ];
   function matchCapKeyword(title){
     var low=(title||'').toLowerCase();if(!low)return null;
@@ -5627,6 +5677,8 @@
       ['lift','<circle cx="12" cy="6.3" r="2"/><path d="M3 3.5h2.2v5H3zM18.8 3.5H21v5h-2.2zM6 5h12v1.8H6z"/><path d="M10 9h4l1 4.5-1.4.9V19l1.9 2.4c.3.4.2 1-.2 1.3-.4.3-1 .3-1.3-.2L12 20.3l-2 2.2c-.3.5-.9.5-1.3.2-.4-.3-.5-.9-.2-1.3L10.4 19v-4.6L9 13.5z"/>'],
       ['steps','<path d="M9.4 2.5c1.6.3 2.6 2.2 2.3 4.7-.15 1.2-.3 2-.9 2.6-.9.9-3 .8-3.8-.4-.5-.8-.6-1.7-.5-3 .2-2.4 1.4-4.2 2.9-3.9zM7 11.5h4.2c.2 1.4-.3 2.9-2.1 2.9S6.9 12.9 7 11.5zM16 8.5c-1.6.3-2.6 2.2-2.3 4.7.15 1.2.3 2 .9 2.6.9.9 3 .8 3.8-.4.5-.8.6-1.7.5-3-.2-2.4-1.4-4.2-2.9-3.9zM18.5 17.5h-4.2c-.2 1.4.3 2.9 2.1 2.9s2.2-1.5 2.1-2.9z"/>']],
     rest:[
+      ['plane','<path d="M21 15.4 13.4 10.9V4.7a1.5 1.5 0 0 0-3 0v6.2L2.8 15.4v2.1l7.6-2.3v4.3l-2.3 1.5v1.3l3.8-1 3.8 1v-1.3l-2.3-1.5v-4.3l7.6 2.3z"/>'],
+      ['cake','<path d="M11.2 2.4c1 1.3 1.5 2.1.4 3.1-.8.7-1.8.1-1.4-1.1.2-.7.6-1.3 1-2z"/><path d="M5 11.2h14a2 2 0 0 1 2 2v1.9c-1.4 0-1.4 1.2-2.8 1.2s-1.4-1.2-2.8-1.2-1.4 1.2-2.8 1.2-1.4-1.2-2.8-1.2-1.4 1.2-2.8 1.2S4.4 15.1 3 15.1v-1.9a2 2 0 0 1 2-2z"/><path d="M3 17.3c1.4 0 1.4 1.2 2.8 1.2s1.4-1.2 2.8-1.2 1.4 1.2 2.8 1.2 1.4-1.2 2.8-1.2 1.4 1.2 2.8 1.2 1.4-1.2 2.8-1.2v2.2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M10.6 6.4h1.6v4.8h-1.6z"/>'],
       ['game','<path d="M21 6H3a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2zM11 13H8.5v2.5h-2V13H4v-2h2.5V8.5h2V11H11v2zm4.5 3a1.5 1.5 0 1 1 1.5-1.5 1.5 1.5 0 0 1-1.5 1.5zm4-3A1.5 1.5 0 1 1 21 11.5 1.5 1.5 0 0 1 19.5 13z"/>'],
       ['music','<path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/>'],
       ['palette','<path d="M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.42-4.03-8-9-8zm-5.5 9A1.5 1.5 0 1 1 8 10.5 1.5 1.5 0 0 1 6.5 12zm3-4A1.5 1.5 0 1 1 11 6.5 1.5 1.5 0 0 1 9.5 8zm5 0A1.5 1.5 0 1 1 16 6.5 1.5 1.5 0 0 1 14.5 8zm3 4A1.5 1.5 0 1 1 19 10.5 1.5 1.5 0 0 1 17.5 12z"/>'],
@@ -5641,18 +5693,41 @@
       ['card','<path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>'],
       ['cart','<path d="M7 18a2 2 0 1 0 2 2 2 2 0 0 0-2-2zM1 2v2h2l3.6 7.59-1.35 2.45A2 2 0 0 0 7 17h12v-2H7.42a.25.25 0 0 1-.22-.37L8.1 13h7.45a2 2 0 0 0 1.75-1.03l3.58-6.49A1 1 0 0 0 20 4H5.21l-.94-2H1zm16 16a2 2 0 1 0 2 2 2 2 0 0 0-2-2z"/>']],
     study:[
+      ['news','<path d="M3 5.5h13v15H5a2 2 0 0 1-2-2z"/><path d="M17 8.5h3a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2h-2z" opacity=".7"/><path d="M5.5 8h8v3.2h-8zM5.5 13h8v1.4h-8zM5.5 16h5v1.4h-5z" fill="#fff" opacity=".6"/>'],
+      ['bulb','<path d="M12 2.2A6.8 6.8 0 0 0 8.2 14.6c.5.4.8 1 .8 1.6v.8h6v-.8c0-.6.3-1.2.8-1.6A6.8 6.8 0 0 0 12 2.2z"/><path d="M9.5 18.6h5v1.5h-5zM10.3 21h3.4v1.2h-3.4z"/>'],
       ['openbook','<path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .42.44.66.75.5C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.31.16.75-.08.75-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/>'],
       ['gradcap','<path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/>'],
       ['pencil','<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>'],
       ['globe','<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1a2 2 0 0 0 2 2v1.93zm6.9-2.54A2 2 0 0 0 16 16h-1v-3a1 1 0 0 0-1-1H8v-2h2a1 1 0 0 0 1-1V7h2a2 2 0 0 0 2-2v-.41a7.98 7.98 0 0 1 2.9 12.8z"/>'],
       ['keyboard','<path d="M20 5H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/>']],
     focus:[
+      ['sqrt','<path d="M2.8 11.8h2.6l2.5 6.4 4-13.7H21.2v2h-7.8l-4.7 15.6h-2L4 13.8H2.8z"/>'],
+      ['atom','<circle cx="12" cy="12" r="2.3"/><g fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="12" cy="12" rx="9.2" ry="3.7"/><ellipse cx="12" cy="12" rx="9.2" ry="3.7" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9.2" ry="3.7" transform="rotate(120 12 12)"/></g>'],
+      ['flask','<path d="M9 2.5h6v2h-1v4.4l4.7 8.7A2.5 2.5 0 0 1 16.5 21.4h-9A2.5 2.5 0 0 1 5.3 17.6L10 8.9V4.5H9z"/>'],
+      ['textbook','<path d="M5.2 3.4h11a2.4 2.4 0 0 1 2.4 2.4v14.8H7.6a2.4 2.4 0 0 1-2.4-2.4z"/><path d="M8.2 7.4h7v1.6h-7zM8.2 11h7v1.6h-7z" fill="#fff" opacity=".6"/>'],
+      ['scroll','<path d="M6 3.4h11a2 2 0 0 1 2 2v12a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V5.4a2 2 0 0 1 2-2z"/><path d="M8 8h8v1.5H8zM8 12h8v1.5H8zM8 15.6h5v1.5H8z" fill="#fff" opacity=".6"/>'],
+      ['map','<path d="M9 3l6 2.2 5-1.8v15.4l-5 1.8-6-2.2-5 1.8V4.8z"/>'],
+      ['piechart','<path d="M12.9 2.6v8.5h8.5a8.6 8.6 0 0 0-8.5-8.5z" opacity=".6"/><path d="M11 4.3a8.8 8.8 0 1 0 8.7 8.8H11z"/>'],
+      ['clipboard','<path d="M9 2.4h6A1.6 1.6 0 0 1 16.6 4H18a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1.4A1.6 1.6 0 0 1 9 2.4z"/><path d="M8 11h8v1.6H8zM8 15h5v1.6H8z" fill="#fff" opacity=".6"/>'],
+      ['ruler','<path d="M3.3 15.5 15.5 3.3a2 2 0 0 1 2.8 0l2.4 2.4a2 2 0 0 1 0 2.8L8.5 20.7a2 2 0 0 1-2.8 0l-2.4-2.4a2 2 0 0 1 0-2.8z"/><path d="M7 12.6l1.6 1.6M9.8 9.8l1.6 1.6M12.6 7l1.6 1.6" stroke="#fff" opacity=".6" stroke-width="1.4"/>'],
+      ['edit','<path d="M5 4.4h8.2v2H7v11.2h11.2V12h2v7.6H5z"/><path d="M18.6 3 21 5.4l-7.5 7.5H11v-2.5z"/>'],
+      ['cards','<rect x="2.6" y="7" width="13" height="14" rx="2.2" opacity=".5"/><rect x="7.4" y="3" width="13" height="14" rx="2.2"/>'],
+      ['note','<path d="M5 3.4h14v17.2H5z"/><path d="M8 8h8v1.5H8zM8 12h8v1.5H8zM8 15.8h5v1.5H8z" fill="#fff" opacity=".6"/>'],
+      ['building','<path d="M4 21.4V6.6l7-3.2v3l7-2v17z"/><path d="M6.8 9.2h2.2v2.2H6.8zM6.8 13.4h2.2v2.2H6.8zM12.8 9h2.2v2.2h-2.2zM12.8 13.2h2.2v2.2h-2.2z" fill="#fff" opacity=".6"/>'],
+      ['code','<path d="M8.7 6.3 3 12l5.7 5.7 1.5-1.5L5.9 12l4.3-4.2zM15.3 6.3l-1.5 1.5 4.3 4.2-4.3 4.2 1.5 1.5L21 12z"/>'],
+      ['idcard','<rect x="2.4" y="4.4" width="19.2" height="15.2" rx="2.6"/><circle cx="8.4" cy="10.6" r="2.4" fill="#fff" opacity=".6"/><path d="M4.7 16.8c.5-2 1.9-3 3.7-3s3.2 1 3.7 3zM14 9h5.2v1.6H14zM14 12.6h5.2v1.6H14z" fill="#fff" opacity=".6"/>'],
+      ['doc','<path d="M6 2.4h7.6L19 8v13.6H6z"/><path d="M8.4 11.6h7.2v1.5H8.4zM8.4 15.2h7.2v1.5H8.4zM8.4 18h4.6v1.5H8.4z" fill="#fff" opacity=".6"/>'],
+      ['mic2','<rect x="9" y="2.4" width="6" height="11" rx="3"/><path d="M5.4 11.4a6.6 6.6 0 0 0 13.2 0h2a8.6 8.6 0 0 1-7.6 8.5v2.1h-3v-2.1a8.6 8.6 0 0 1-7.6-8.5z"/>'],
+      ['calendar','<rect x="3" y="5" width="18" height="16.2" rx="2.6"/><path d="M3 10h18v1.6H3z" fill="#fff" opacity=".6"/><path d="M7 2.4h2v4.2H7zM15 2.4h2v4.2h-2z"/>'],
+      ['mail','<path d="M3 6.4h18v11.2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="m3.7 6 8.3 5.9L20.3 6z" fill="#fff" opacity=".6"/>'],
       ['book2','<path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM9 4h2v6L10 8.8 9 10V4z"/>'],
       ['laptop','<path d="M20 15V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9H1.5c0 1.4 1.1 2.5 2.5 2.5h16c1.4 0 2.5-1.1 2.5-2.5H20zM6 6h12v9H6V6z"/>'],
       ['briefcase','<path d="M20 7h-4V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM10 5h4v2h-4V5z"/>'],
       ['clock','<path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 13.2l-5.2-3.1V7h1.9v4.2l4.3 2.5-1 1.5z"/>'],
       ['check','<path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.8 14.5L5.7 12l1.6-1.6 2.9 2.9 6.5-6.5 1.6 1.6-8.1 8.1z"/>']],
     people:[
+      ['phone','<path d="M6.6 3.4c.7 0 1.4.4 1.7 1.1l1.2 2.8c.3.7.1 1.5-.5 2L7.7 10.4a12.2 12.2 0 0 0 5.9 5.9l1.1-1.3c.5-.6 1.3-.8 2-.5l2.8 1.2c.7.3 1.1.9 1.1 1.7v2.4c0 1-.9 1.8-1.9 1.7C9.6 21 3 14.4 2.4 5.3c-.1-1 .7-1.9 1.7-1.9z"/>'],
+      ['family','<circle cx="6.8" cy="6.4" r="2.6"/><circle cx="16.6" cy="6.4" r="2.6"/><path d="M2.4 16.6c.4-2.7 2.1-4.2 4.4-4.2s4 1.5 4.4 4.2zM12.6 16.6c.4-2.7 2.1-4.2 4.4-4.2s4 1.5 4.4 4.2z"/><circle cx="11.8" cy="14.4" r="2"/><path d="M8.9 21.6c.3-2 1.4-3 2.9-3s2.6 1 2.9 3z"/>'],
       ['people','<path d="M9 11a3.2 3.2 0 1 0-3.2-3.2A3.2 3.2 0 0 0 9 11zm0 1.8c-2.7 0-6 1.3-6 4V19h12v-2.2c0-2.7-3.3-4-6-4zM16.8 11a2.7 2.7 0 1 0-2.7-2.7A2.7 2.7 0 0 0 16.8 11zm.2 1.9c-.4 0-.8 0-1.2.1a4.7 4.7 0 0 1 1.7 3.8V19H22v-2c0-2.4-3-4.1-5-4.1z"/>'],
       ['chat','<path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/>'],
       ['hand','<path d="M21 7c-.55 0-1 .45-1 1v4.34a.66.66 0 0 1-1.33 0V4a1 1 0 0 0-2 0v7.34a.66.66 0 0 1-1.33 0V2.5a1 1 0 0 0-2 0v8.84a.66.66 0 0 1-1.33 0V4.5a1 1 0 0 0-2 0v11.41l-4.12-2.35a.94.94 0 0 0-1.19.19c-.34.38-.32.96.04 1.32l6.55 6.55A4.68 4.68 0 0 0 14.6 23H17a5 5 0 0 0 5-5V8c0-.55-.45-1-1-1z"/>'],
@@ -5700,7 +5775,7 @@
       scheduledStart:opts.scheduledStart||null,reminderOffsets:[],nudgeEnabled:false,dueDate:null,
       notes:'',repeatDaysMask:0,rewardIsMoney:false,rewardText:'',rewardToQ4:false};
     var _cta=document.getElementById('capText');_cta.value='';
-    _cta.placeholder=origin==='timeline'?'예: 35분 영어\n🎙 "엔터"라고 말하면 여러 개 추가':(origin==='matrix'?'‘'+quadHint(cap.quadrant)+'’에 담기…':'예: 30분 달리기');
+    _cta.placeholder=origin==='timeline'?'예: 35분 영어':(origin==='matrix'?'‘'+quadHint(cap.quadrant)+'’에 담기…':'예: 30분 달리기');
     var wrap=document.getElementById('capWrap');wrap.classList.add('open');
     _cta.style.height='';   // 타임라인 2줄 placeholder가 잘리지 않게 (rows="1" 보정)
     if(origin==='timeline'){_cta.style.height='auto';_cta.style.height=Math.max(46,Math.min(_cta.scrollHeight,52))+'px';}
@@ -6165,31 +6240,6 @@
   }
 
   document.getElementById('capWrap').addEventListener('click',function(e){if(e.target===this)closeCapture();});
-  // 딕테이션 (D2-7): "엔터/줄바꿈/다음 줄"(en: enter/new line/next line) = 줄바꿈.
-  var capRec=null;
-  document.getElementById('capMic').addEventListener('click',function(){
-    var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){appToast('이 브라우저는 음성 입력을 지원하지 않아요 — 📱 앱에서 쓸 수 있어요');return;}
-    var btn=this;
-    if(capRec){try{capRec.stop();}catch(_){}capRec=null;btn.classList.remove('on');return;}
-    var rec=new SR();capRec=rec;
-    rec.lang=(navigator.language||'ko-KR');rec.continuous=true;rec.interimResults=false;
-    btn.classList.add('on');
-    rec.onresult=function(ev){
-      var ta=document.getElementById('capText');
-      for(var i=ev.resultIndex;i<ev.results.length;i++){
-        if(!ev.results[i].isFinal)continue;
-        var txt=ev.results[i][0].transcript;
-        // 음성 명령 → 줄바꿈 (앱 파리티)
-        txt=txt.replace(/\s*(엔터|줄\s*바꿈|다음\s*줄|enter|new line|next line)\s*/gi,'\n');
-        ta.value=(ta.value+txt).replace(/\n{2,}/g,'\n');
-        ta.dispatchEvent(new Event('input'));
-      }
-    };
-    rec.onend=function(){capRec=null;btn.classList.remove('on');};
-    rec.onerror=function(){capRec=null;btn.classList.remove('on');};
-    try{rec.start();}catch(_){capRec=null;btn.classList.remove('on');}
-  });
   // 캡처바 안 버튼을 눌러도 키보드가 안 내려가게 (요청): 입력란이 아닌 요소가
   // 포커스를 뺏지 못하도록 pointerdown 기본동작을 막는다. 스크롤·클릭·슬라이더는
   // 그대로 동작한다 (input/textarea는 제외해 이동 포커스 허용).
@@ -6433,8 +6483,10 @@
   // 데스크톱 브랜드: 시스템 한글=한글, 그 외=영어 (요청)
   (function(){
     var ko=(navigator.language||'').toLowerCase().indexOf('ko')===0;
+    // 요청: 시스템 한국어면 한국어 제목, 그 외 영어.
+    document.title=ko?'엘리의 하루: 내 안의 코끼리를 위한 플래너':'Elly Day: A Planner for Your Inner Elephant';
     document.getElementById('brandName').textContent=ko?'엘리의 하루':'Elly Day';
-    document.getElementById('brandTag').textContent=ko?'마음을 돌보는 하루 플래너':'A planner for your inner elephant';
+    document.getElementById('brandTag').textContent=ko?'내 안의 코끼리를 위한 플래너':'A Planner for Your Inner Elephant';
   })();
   // 데스크톱 원형 네비 배선
   document.querySelectorAll('#deskNav>button[data-nav]').forEach(function(b){
