@@ -1089,6 +1089,30 @@
   .reward-title{font-size:19px;font-weight:800;margin-top:8px;color:#1a2340}
   .reward-sub{font-size:14px;color:#4a556e;margin-top:8px;line-height:1.5}
   .reward-ok{margin-top:16px;font-family:inherit;font-size:15px;font-weight:800;border:0;border-radius:999px;padding:11px 30px;background:#f7c948;color:#5a4600;cursor:pointer}
+  /* 집중 씬 시각 레이어 (앱 FocusScenes 파리티): 배경 위·컨트롤 아래. */
+  .fm-scene{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+  /* 집중 종료 확인 시트 (앱 confirmationDialog 파리티). */
+  .fc-pop{position:fixed;inset:0;z-index:6100;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.34);padding:0 12px calc(24px + env(safe-area-inset-bottom))}
+  .fc-card{background:#fff;border-radius:20px;padding:20px 20px 14px;width:min(400px,94vw);text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+  .fc-title{font-size:17px;font-weight:800;color:#1b2436}
+  .fc-msg{font-size:13.5px;color:#5a6478;margin-top:8px;line-height:1.5}
+  .fc-btns{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+  .fc-btn{font-family:inherit;font-size:15px;font-weight:700;border:0;border-radius:12px;padding:13px;cursor:pointer;background:#eef1f6;color:#1b2436}
+  .fc-btn.danger{background:#E5484D;color:#fff}
+  /* 집중 후 기분 체크인 카드 (앱 PostFocusMoodCard 파리티). */
+  .mood-card{position:fixed;left:0;right:0;bottom:0;z-index:6050;display:flex;justify-content:center;padding:0 20px calc(90px + env(safe-area-inset-bottom));pointer-events:none}
+  .mood-inner{pointer-events:auto;position:relative;width:min(360px,92vw);background:#F2EDFA;border-radius:20px;padding:16px;box-shadow:0 5px 24px rgba(0,0,0,.16);border:1px solid rgba(255,255,255,.6)}
+  .mood-head{font-size:14px;font-weight:700;color:#2a2440;text-align:center}
+  .mood-sum{font-size:11px;color:#6b6480;text-align:center;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mood-row{display:flex;justify-content:center;gap:18px;margin-top:12px}
+  .mood-btn{display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:none;cursor:pointer;font-family:inherit}
+  .mood-chip{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px}
+  .mood-lbl{font-size:11px;font-weight:700;color:rgba(42,36,64,.75)}
+  .mood-inrow{display:flex;align-items:center;gap:8px;margin-top:12px;background:rgba(255,255,255,.75);border-radius:999px;padding:8px 12px}
+  .mood-pen{color:#8a8398;font-size:13px}
+  .mood-inrow input{flex:1;border:0;background:none;font-family:inherit;font-size:13px;color:#2a2440;min-width:0;outline:none}
+  .mood-x{position:absolute;top:10px;right:10px;border:0;background:none;color:#8a8398;font-size:12px;cursor:pointer}
+  .mood-count{position:absolute;top:11px;right:30px;font-size:11px;color:#8a8398;font-weight:700}
 </style>
 </head>
 <body data-m="todo">
@@ -1407,6 +1431,7 @@
 
 <!-- 집중 모드 (요청) -->
 <div class="focusScrim" id="focusScrim">
+  <canvas class="fm-scene" id="fmCanvas"></canvas>
   <button class="fx" id="ftClose" title="끝내기">✕</button>
   <!-- 세부 기능은 ⋯ 뒤로 (요청: 처음엔 단순, 눌러야 세세하게). -->
   <button class="fm" id="ftMore" title="더보기"><svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
@@ -2831,12 +2856,13 @@
   function fmScene(){return localStorage.getItem('hfScene')||'none';}
   function fmStop(){if(fmTimer){clearTimeout(fmTimer);fmTimer=null;}
     fmNodes.forEach(function(n){try{n.stop&&n.stop();}catch(e){}});fmNodes=[];
-    if(fmCtx){try{fmCtx.close();}catch(e){}fmCtx=null;}}
+    if(fmCtx){try{fmCtx.close();}catch(e){}fmCtx=null;}fmSceneStop();}
   function fmBuf(ctx,sec,brown){var b=ctx.createBuffer(1,ctx.sampleRate*sec,ctx.sampleRate),d=b.getChannelData(0),last=0;
     for(var i=0;i<d.length;i++){var w=Math.random()*2-1;
       if(brown){last=(last+0.02*w)/1.02;d[i]=last*3.5;}else d[i]=w;}return b;}
   function fmStart(id){
     fmStop();localStorage.setItem('hfScene',id);paintFm();
+    fmSceneStart(id);   // 시각 씬 (WebAudio 미지원과 무관하게 — 앱 FocusScenes 파리티)
     if(id==='none')return;
     var C=window.AudioContext||window.webkitAudioContext;if(!C)return;
     fmCtx=new C();var ctx=fmCtx,out=ctx.createGain();out.gain.value=0.5;out.connect(ctx.destination);
@@ -2865,6 +2891,80 @@
     wrap.innerHTML=FM_LIST.map(function(p){return '<button class="fm-chip'+(fmScene()===p[0]?' on':'')+'" data-s="'+p[0]+'">'+IC[p[0]]+' '+p[1]+'</button>';}).join('');
     wrap.querySelectorAll('.fm-chip').forEach(function(el){el.addEventListener('click',function(){
       fmStart(el.dataset.s);wrap.style.display='none';});});
+  }
+
+  /* ---------- 집중 씬 시각 레이어 (앱 FocusScenes 파리티) ----------
+     fire=땅 위 모닥불(교차 장작+3겹 불꽃+연기), rain=흰 빗줄기. 캔버스 rAF로
+     그린다 — 오디오와 별개라 WebAudio 미지원에서도 보인다. 휴식/일시정지엔
+     불꽃 대신 잔불·비는 가늘게 (앱 resting 분기). waves·plane 시각은 미이식. */
+  var fmSceneRAF=null,fmResize=null,fmDrops=null;
+  function fmSceneStop(){
+    if(fmSceneRAF){cancelAnimationFrame(fmSceneRAF);fmSceneRAF=null;}
+    if(fmResize){window.removeEventListener('resize',fmResize);fmResize=null;}
+    var cv=document.getElementById('fmCanvas');if(cv){var g=cv.getContext('2d');if(g)g.clearRect(0,0,cv.width,cv.height);}
+  }
+  function fmSceneRest(){return fPaused||!!(fTask&&focusPhase(focusElapsed()).rest);}
+  function fmRoundRect(g,x,y,w,h,r){
+    if(g.roundRect){g.beginPath();g.roundRect(x,y,w,h,r);return;}
+    g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);
+    g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();
+  }
+  function fmFlame(g,bx,by,w,h,fill){
+    g.beginPath();g.moveTo(bx,by-h);
+    g.quadraticCurveTo(bx+w*0.55,by-h*0.45,bx+w/2,by);
+    g.quadraticCurveTo(bx,by+h*0.16,bx-w/2,by);
+    g.quadraticCurveTo(bx-w*0.55,by-h*0.45,bx,by-h);
+    g.closePath();g.fillStyle=fill;g.fill();
+  }
+  function fmDrawFire(g,W,H,t,rest){
+    var bx=W*0.5,by=H*0.865,s=0.6,i;
+    // 연기: 위로 흐르는 흰 퍼프 7개 (앱 0.16·휴식 0.24).
+    for(i=0;i<7;i++){var p=((t*0.045+i/7)%1+1)%1;
+      var y=by-34-p*H*0.34,x=bx+Math.sin(t*0.35+i*2.1)*9+p*22,r=5+p*15;
+      g.beginPath();g.arc(x,y,r,0,6.2832);g.fillStyle='rgba(255,255,255,'+((1-p)*(rest?0.24:0.16)).toFixed(3)+')';g.fill();}
+    // 바닥 글로우 (앱 radial rgb(1,.62,.3)).
+    var glow=g.createRadialGradient(bx,by,2,bx,by,80*s);
+    glow.addColorStop(0,'rgba(255,158,77,'+(rest?0.16:0.30)+')');glow.addColorStop(1,'rgba(255,158,77,0)');
+    g.fillStyle=glow;g.beginPath();g.ellipse(bx,by,70*s,26*s,0,0,6.2832);g.fill();
+    // 교차 장작 (#5C4230 ±14°).
+    [14,-14].forEach(function(deg){g.save();g.translate(bx,by+4*s);g.rotate(deg*Math.PI/180);
+      g.fillStyle='#5C4230';fmRoundRect(g,-26*s,-4*s,52*s,8*s,4*s);g.fill();g.restore();});
+    if(rest){
+      // 잔불: 장작 틈 붉은 점 4개가 숨 쉬듯 (앱 #F26B26).
+      for(i=0;i<4;i++){var br=0.5+0.5*Math.sin(t*1.3+i*1.9);
+        var ex=bx-14*s+i*9*s,er=(2.0+br*1.6)*s;
+        g.beginPath();g.arc(ex,by-2*s,er,0,6.2832);g.fillStyle='rgba(242,107,38,'+(0.35+br*0.35).toFixed(3)+')';g.fill();}
+    }else{
+      // 3겹 불꽃 (앱 #F27D2E .9 / #FCB847 .95 / #FFF0B8) + 플리커.
+      var f1=1+0.10*Math.sin(t*7.3)+0.05*Math.sin(t*12.7),f2=1+0.13*Math.sin(t*9.1+1.7);
+      fmFlame(g,bx,by,34*s,44*s*f1,'rgba(242,125,46,0.9)');
+      fmFlame(g,bx,by,22*s,32*s*f2,'rgba(252,184,71,0.95)');
+      fmFlame(g,bx,by,11*s,18*s*f1,'rgb(255,240,184)');
+    }
+  }
+  function fmSceneStart(id){
+    fmSceneStop();
+    if(id!=='fire'&&id!=='rain')return;
+    var cv=document.getElementById('fmCanvas');if(!cv)return;
+    var g=cv.getContext('2d');if(!g)return;
+    var dpr=Math.max(1,window.devicePixelRatio||1),W=0,H=0;
+    function resize(){W=window.innerWidth;H=window.innerHeight;cv.width=W*dpr;cv.height=H*dpr;g.setTransform(dpr,0,0,dpr,0,0);}
+    resize();fmResize=resize;window.addEventListener('resize',fmResize);
+    if(!fmDrops){fmDrops=[];for(var i=0;i<70;i++)fmDrops.push({x:Math.random(),phase:Math.random(),speed:0.55+Math.random()*0.5,length:10+Math.random()*8});}
+    function frame(){
+      var t=performance.now()/1000,rest=fmSceneRest();
+      g.clearRect(0,0,W,H);
+      if(id==='rain'){
+        var count=Math.round(70*(rest?0.15:0.5));   // 앱 intensity: 집중 0.5(35방울)·휴식 0.15(10)
+        g.globalAlpha=0.85;g.strokeStyle='rgba(255,255,255,.30)';g.lineWidth=1.1;
+        for(var d=0;d<count;d++){var dr=fmDrops[d];
+          var y=(((dr.phase+t*dr.speed)%1.12)+1.12)%1.12*H-dr.length;
+          g.beginPath();g.moveTo(dr.x*W,y);g.lineTo(dr.x*W-2,y+dr.length);g.stroke();}
+        g.globalAlpha=1;
+      }else{fmDrawFire(g,W,H,t,rest);}
+      fmSceneRAF=requestAnimationFrame(frame);
+    }
+    fmSceneRAF=requestAnimationFrame(frame);
   }
 
   // 포모도로 (앱 파리티): 켜면 25·5 리듬, 실시간(0분)도 25분 카운트다운.
@@ -2912,6 +3012,47 @@
     html+='<circle id="ftArc" cx="150" cy="150" r="114" fill="none" stroke="'+color+'" stroke-width="10" stroke-linecap="round" transform="rotate(-90 150 150)"/>';
     html+='<g id="ftKnob"><circle cx="150" cy="36" r="10" fill="'+color+'" stroke="#fff" stroke-width="3.5"/></g>';
     svg.innerHTML=html;
+  }
+  // 2색 포모도로 링 (앱 FocusTimerRing segmentArcs 파리티): 링 한 바퀴 = 세션 계획
+  // 전체. 작업 호=테마색·휴식 호=하늘색을 미리 칠하고, 바늘(el/plan)이 계획 전체를
+  // 쉼 없이 돈다 — 지나간 자리는 작업 0.28·휴식 0.20으로 연하게 남고 중앙은 위상 잔여.
+  var ring2Arcs=[];
+  function pomo2Arcs(planSec){
+    var segs=pomoSegments(Math.round(planSec/60)),arcs=[],acc=0;
+    segs.forEach(function(s){arcs.push({from:acc/planSec,to:Math.min(1,(acc+s.len)/planSec),rest:s.rest});acc+=s.len;});
+    return arcs;
+  }
+  function buildRing2(planSec){
+    var svg=document.getElementById('ftRing');if(!svg)return;
+    var cx=150,cy=150,r=114,html='',mins=Math.max(1,Math.round(planSec/60));
+    var labEvery=mins<=30?5:(mins<=60?10:15),step=mins<=40?1:5;   // buildRing과 동일 눈금
+    for(var m=0;m<mins;m+=step){var a=(m/mins)*2*Math.PI-Math.PI/2,major=(m%labEvery===0);
+      var r1=major?r+5:r+6,r2=major?r+11:r+10;
+      html+='<line x1="'+(cx+Math.cos(a)*r1).toFixed(1)+'" y1="'+(cy+Math.sin(a)*r1).toFixed(1)+'" x2="'+(cx+Math.cos(a)*r2).toFixed(1)+'" y2="'+(cy+Math.sin(a)*r2).toFixed(1)+'" style="stroke:rgba(255,255,255,'+(major?'.38':'.18')+')" stroke-width="'+(major?1.4:1)+'"/>';
+      if(major){var lr=r+24;html+='<text class="ftlabel" x="'+(cx+Math.cos(a)*lr).toFixed(1)+'" y="'+(cy+Math.sin(a)*lr+4.2).toFixed(1)+'" text-anchor="middle">'+m+'</text>';}
+    }
+    ring2Arcs=pomo2Arcs(planSec);var cat=catColor(fTask.categoryID);
+    // 세그먼트별 지나간(연한)·남은(불투명) butt-cap 호 2개씩 — 값은 paintRing2에서 매 틱 갱신.
+    ring2Arcs.forEach(function(ar,i){var base=ar.rest?'#6BC2FA':cat;
+      html+='<circle class="ft2p" data-i="'+i+'" cx="150" cy="150" r="114" fill="none" stroke="'+hexA(base,ar.rest?0.20:0.28)+'" stroke-width="10" stroke-linecap="butt" transform="rotate(-90 150 150)" stroke-dasharray="0 100000"/>';
+      html+='<circle class="ft2l" data-i="'+i+'" cx="150" cy="150" r="114" fill="none" stroke="'+base+'" stroke-width="10" stroke-linecap="butt" transform="rotate(-90 150 150)" stroke-dasharray="0 100000"/>';
+    });
+    html+='<g id="ftKnob"><circle cx="150" cy="36" r="10" fill="'+cat+'" stroke="#fff" stroke-width="3.5"/></g>';
+    svg.innerHTML=html;
+  }
+  function paintRing2(planSec,el,ph){
+    var svg=document.getElementById('ftRing');if(!svg)return;
+    var C=2*Math.PI*114,prog=Math.min(1,el/planSec),cat=catColor(fTask.categoryID);
+    ring2Arcs.forEach(function(ar,i){
+      var live=svg.querySelector('.ft2l[data-i="'+i+'"]'),past=svg.querySelector('.ft2p[data-i="'+i+'"]');
+      if(live){if(ar.to>prog){var f0=Math.max(ar.from,prog);live.setAttribute('stroke-dasharray',((ar.to-f0)*C)+' '+C);live.setAttribute('stroke-dashoffset',(-f0*C));}
+        else live.setAttribute('stroke-dasharray','0 '+C);}
+      if(past){if(ar.from<prog){var p1=Math.min(ar.to,prog);past.setAttribute('stroke-dasharray',((p1-ar.from)*C)+' '+C);past.setAttribute('stroke-dashoffset',(-ar.from*C));}
+        else past.setAttribute('stroke-dasharray','0 '+C);}
+    });
+    var kn=document.getElementById('ftKnob');
+    if(kn){kn.setAttribute('transform','rotate('+(prog*360)+' 150 150)');
+      var kc=kn.querySelector('circle');if(kc)kc.setAttribute('fill',ph.rest?'#6BC2FA':cat);}
   }
   // 전환 차임 (§5 start4 근사 — WebAudio 두 음).
   function playChime(){
@@ -3033,15 +3174,25 @@
         }
       }
     }
-    var col=ph.rest?'#6BC1F9':catColor(fTask.categoryID);
-    var key=ph.total+'|'+col+'|'+ph.countdown;
-    if(key!==ftKey){ftKey=key;buildRing(ph.total,col,ph.countdown);}
-    var prog=ph.countdown?1-(ph.left/ph.total):((el%3600)/3600);
-    var C=2*Math.PI*114,arc=document.getElementById('ftArc');
-    if(arc){if(ph.countdown){arc.setAttribute('stroke-dasharray',((1-prog)*C)+' '+C);arc.setAttribute('stroke-dashoffset',String(-prog*C));}
-      else{arc.setAttribute('stroke-dasharray',(Math.max(0.001,prog)*C)+' '+C);arc.setAttribute('stroke-dashoffset','0');}}
-    var kn=document.getElementById('ftKnob');if(kn)kn.setAttribute('transform','rotate('+(prog*360)+' 150 150)');
-    document.getElementById('ftTimer').textContent=fmtMS(ph.countdown?ph.left:el);
+    var planS=(fTask.durationMin||0)*60;
+    if(pomoOn()&&planS>0&&el<planS){
+      // 2색 포모도로 링 (앱 FocusTimerRing segmentArcs 파리티): 작업·휴식 호를 미리
+      // 칠하고 바늘이 계획 전체를 연속 주행, 중앙은 현재 위상 잔여 카운트다운.
+      var key2='2c|'+planS+'|'+catColor(fTask.categoryID);
+      if(key2!==ftKey){ftKey=key2;buildRing2(planS);}
+      paintRing2(planS,el,ph);
+      document.getElementById('ftTimer').textContent=fmtMS(ph.left);
+    }else{
+      var col=ph.rest?'#6BC2FA':catColor(fTask.categoryID);
+      var key=ph.total+'|'+col+'|'+ph.countdown;
+      if(key!==ftKey){ftKey=key;buildRing(ph.total,col,ph.countdown);}
+      var prog=ph.countdown?1-(ph.left/ph.total):((el%3600)/3600);
+      var C=2*Math.PI*114,arc=document.getElementById('ftArc');
+      if(arc){if(ph.countdown){arc.setAttribute('stroke-dasharray',((1-prog)*C)+' '+C);arc.setAttribute('stroke-dashoffset',String(-prog*C));}
+        else{arc.setAttribute('stroke-dasharray',(Math.max(0.001,prog)*C)+' '+C);arc.setAttribute('stroke-dashoffset','0');}}
+      var kn=document.getElementById('ftKnob');if(kn)kn.setAttribute('transform','rotate('+(prog*360)+' 150 150)');
+      document.getElementById('ftTimer').textContent=fmtMS(ph.countdown?ph.left:el);
+    }
     // 휴식 문구: 휴식 진입 에지에서만 랜덤 재추첨(위상 index 대체) — 앱 restLines·수동 일시정지 폴백.
     if(ph.rest&&!fWasRest)fRestMsg=fRestLines[Math.floor(Math.random()*fRestLines.length)];
     fWasRest=ph.rest;
@@ -3066,8 +3217,80 @@
     if(el>=5){if(!DATA.sessions)DATA.sessions=[];DATA.sessions.push({id:uuid(),taskID:fTask.id,taskTitle:fTask.title||'',categoryID:fTask.categoryID||'focus',start:new Date(fStart).toISOString(),end:new Date().toISOString(),focusedSec:el});}
   }
   function finishFocus(){if(!fTask)return;
+    var el=focusElapsed(),title=fTask.title||'집중';   // fTask=null 되기 전 캡처 (앱 파리티)
     endFocusSession();
-    document.getElementById('focusScrim').classList.remove('open');fTask=null;fmStop();renderAll();pushSnapshot();}
+    document.getElementById('focusScrim').classList.remove('open');fTask=null;fmStop();renderAll();pushSnapshot();
+    // 집중 후 기분 체크인 (앱 maybeMoodCheckIn): 10분+ · 하루 2회 · 다른 팝업 없을 때.
+    if(el>=600&&moodDayCount()<2&&!document.getElementById('rewardPop'))
+      showMoodCard(title,Math.max(1,Math.floor(el/60)));
+  }
+  // '완료로 끝내기' (앱 endSession(markDone:true) 파리티): 완료 규약대로 completedAt
+  // 세팅 + 보상 지급 후 세션 종료 (isDone만 세우면 completedAt 기준 통계·보상 누락).
+  function finishFocusDone(){
+    if(!fTask)return;var t=fTask;
+    t.isDone=true;t.completedAt=new Date().toISOString();
+    grantReward(t);
+    finishFocus();
+  }
+  // 집중 종료 확인 시트 (앱 confirmationDialog 파리티): 하단 카드 + [실행/계속하기].
+  function showFocusConfirm(title,message,okLabel,danger,onOk){
+    var old=document.getElementById('fcPop');if(old)old.remove();
+    var d=document.createElement('div');d.id='fcPop';d.className='fc-pop';
+    d.innerHTML='<div class="fc-card"><div class="fc-title"></div>'+(message?'<div class="fc-msg"></div>':'')
+      +'<div class="fc-btns"><button class="fc-btn ok'+(danger?' danger':'')+'"></button><button class="fc-btn cancel">계속하기</button></div></div>';
+    d.querySelector('.fc-title').textContent=title;
+    if(message)d.querySelector('.fc-msg').textContent=message;
+    d.querySelector('.ok').textContent=okLabel;
+    function close(){d.remove();}
+    d.querySelector('.cancel').addEventListener('click',close);
+    d.addEventListener('click',function(e){if(e.target===d)close();});
+    d.querySelector('.ok').addEventListener('click',function(){close();onOk();});
+    document.body.appendChild(d);
+  }
+  // 집중 후 기분 체크인 카드 (앱 PostFocusMoodCard 파리티): 반응 3개 + 한 줄 메모,
+  // 10초 자동닫힘(적는 중엔 멈춤). 고른/적은 건 일기 '집중' 항목으로 남는다.
+  var MOODS=[['proud','뿌듯해요','뿌듯했어요','#F2C259','✨'],
+             ['relieved','후련해요','후련했어요','#8CC79E','🍃'],
+             ['wistful','아직 아쉬워요','아직 아쉬웠어요','#9EADDB','🌙']];
+  var moodTimer=null;
+  function moodDayCount(){
+    return localStorage.getItem('hfMoodDay')===todayKey()?(parseInt(localStorage.getItem('hfMoodCount')||'0',10)||0):0;
+  }
+  function bumpMoodCount(){
+    if(localStorage.getItem('hfMoodDay')!==todayKey()){localStorage.setItem('hfMoodDay',todayKey());localStorage.setItem('hfMoodCount','0');}
+    localStorage.setItem('hfMoodCount',String(moodDayCount()+1));
+  }
+  function showMoodCard(title,minutes){
+    var old=document.getElementById('moodCard');if(old){old.remove();if(moodTimer){clearInterval(moodTimer);moodTimer=null;}}
+    bumpMoodCount();   // 표시 시점에 증가 (앱 MainTabView.swift:733)
+    var meta=title+' · '+minutes+'분 집중';
+    var chips=MOODS.map(function(m){
+      return '<button class="mood-btn" data-k="'+m[0]+'"><span class="mood-chip" style="background:'+hexA(m[3],0.22)+'">'+m[4]+'</span><span class="mood-lbl">'+esc(m[1])+'</span></button>';}).join('');
+    var wrap=document.createElement('div');wrap.id='moodCard';wrap.className='mood-card';
+    wrap.innerHTML='<div class="mood-inner"><button class="mood-x" id="moodX">✕</button>'
+      +'<span class="mood-count" id="moodCount">10</span>'
+      +'<div class="mood-head">방금 집중, 어땠어요?</div>'
+      +'<div class="mood-sum">'+esc(title)+' · '+minutes+'분</div>'
+      +'<div class="mood-row">'+chips+'</div>'
+      +'<div class="mood-inrow"><span class="mood-pen">✎</span><input id="moodNote" maxlength="120" placeholder="한 줄로 남겨도 좋아요"></div></div>';
+    document.body.appendChild(wrap);
+    var note=wrap.querySelector('#moodNote'),badge=wrap.querySelector('#moodCount');
+    function close(){if(moodTimer){clearInterval(moodTimer);moodTimer=null;}wrap.remove();}
+    function save(kind){
+      var memo=(note.value||'').trim();
+      var body=memo||(kind?(MOODS.filter(function(m){return m[0]===kind;})[0][2]):'');
+      newDiaryEntry('focus',{emotionKind:kind||undefined,prompt:meta,text:body});
+      close();renderDiary();pushSnapshot();
+    }
+    wrap.querySelectorAll('.mood-btn').forEach(function(b){b.addEventListener('click',function(){save(b.dataset.k);});});
+    wrap.querySelector('#moodX').addEventListener('click',close);
+    note.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();if(note.value.trim())save(null);}});
+    var left=10;
+    moodTimer=setInterval(function(){
+      if(document.activeElement===note||note.value.trim())return;   // 적는 중엔 멈춤 (앱 paused)
+      left--;badge.textContent=left;if(left<=0)close();
+    },1000);
+  }
 
   /* ---------- 설정 (요청: 웹 이식) ---------- */
   function minToHHMM(m){m=((m%1440)+1440)%1440;return ('0'+Math.floor(m/60)).slice(-2)+':'+('0'+(m%60)).slice(-2);}
@@ -5046,14 +5269,19 @@
     if(this.checked)showRewardTip(this,'이 일을 끝내면 이 보상이 매트릭스 ‘사소·여유·보상’ 칸에 자동으로 담겨요. 스스로에게 주는 즐길 거리 목록이 돼요.');
   });
   document.getElementById('ftPause').addEventListener('click',togglePauseFocus);
-  document.getElementById('ftFinish').addEventListener('click',finishFocus);
+  document.getElementById('ftFinish').addEventListener('click',function(){
+    if(!fTask)return;
+    showFocusConfirm("'"+(fTask.title||'집중')+"'을(를) 끝낼까요?",'','완료로 끝내기',false,finishFocusDone);
+  });
   document.getElementById('ftMore').addEventListener('click',function(){
     var p=document.getElementById('ftMorePanel');
     var open=p.style.display==='none';
     p.style.display=open?'flex':'none';
     if(!open)document.getElementById('fmChips').style.display='none';
   });
-  document.getElementById('ftClose').addEventListener('click',finishFocus);
+  document.getElementById('ftClose').addEventListener('click',function(){
+    showFocusConfirm('집중을 끝낼까요?','나가면 집중이 멈춰요. 지금까지 한 시간은 기록에 남아요.','끝내기',true,finishFocus);
+  });
   document.getElementById('fmBtn').addEventListener('click',function(){
     var w=document.getElementById('fmChips');w.style.display=w.style.display==='none'?'flex':'none';});
   document.querySelector('.bcloud').addEventListener('click',rainBucket);
