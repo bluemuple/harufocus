@@ -4168,8 +4168,22 @@
   applySky();setInterval(applySky,60000);
 
   /* ── 엘리 인터랙션 (앱 §2 축약: 코끝→등장→감정→일기) ── */
-  var ELE_RESP={love:'나도야. 그 마음 오래 기억하자 💗',joy:'오늘의 기쁨, 같이 담아둘까? ✨',
-    tangled:'괜찮아, 천천히 풀면 돼 🌀',gloom:'곁에 있을게. 잠깐 쉬어도 돼 🌧',tired:'수고했어. 오늘은 여기까지도 충분해 😴'};
+  // 앱 EleView 원문: statements=공감 말풍선(랜덤), prompts=연필 누르면 일기 질문(랜덤).
+  var ELE_STMT={
+    love:['이 잔잔함, 오늘 조금 더 길게 누려요.','지금 페이스 그대로면 충분해요.','편안할 때의 호흡을 기억해 둬요.'],
+    joy:['이 기분, 다음 일에도 얹어 가요!','신날 때가 시작하기 제일 좋은 때예요.','이 에너지로 하나만 더 해볼까요?','웃음이 남아 있을 때 몸도 같이 움직여요.'],
+    tangled:['엉킨 실은 한 가닥부터예요. 같이 천천히.','복잡한 건 머리가 열심히 일하고 있다는 뜻이에요.','다 풀지 않아도 돼요 — 오늘은 한 가닥만.'],
+    gloom:['무거운 날도 있어요. 곁에 있을게요.','그 무게, 혼자 들지 않아도 돼요.','오늘은 버틴 것만으로도 충분해요.'],
+    tired:['지친 건 게으른 게 아니라 애쓴 흔적이에요.','쉼도 하루의 일부예요. 잠깐 내려놓아요.','몸이 보내는 신호를 들어줘서 고마워요.']
+  };
+  var ELE_PROMPT={
+    love:['지금 마음을 편안하게 해주는 건 무엇인가요?','오늘의 잔잔함을 한 장면으로 남긴다면?','이 평온을 내일도 만나려면 무엇을 지키면 될까요?'],
+    joy:['무엇이 오늘 이렇게 신나게 했나요?','이 기분을 사진처럼 글로 찍어 둔다면?','이 에너지로 해보고 싶은 것 하나는?'],
+    tangled:['머릿속에 뭐가 제일 크게 자리하고 있나요?','엉킨 것들을 종이 위에 한 줄씩 꺼내 본다면?','지금 당장 풀 수 있는 가장 작은 매듭은?'],
+    gloom:['마음을 무겁게 하는 것에게 편지를 쓴다면?','오늘의 무게를 색이나 날씨로 표현해 본다면?','지금 나에게 해주고 싶은 말은?'],
+    tired:['오늘 나를 가장 지치게 한 순간은 언제였나요?','몸이 지금 바라는 것은 무엇일까요?','내일의 나를 위해 오늘 덜어낼 수 있는 것은?']
+  };
+  function elePick(a){return a&&a.length?a[Math.floor(Math.random()*a.length)]:'';}
   function applyEleTint(){document.documentElement.style.setProperty('--ele',eleTint());}
   function eleOpen(){applyEleTint();document.getElementById('eleStage').classList.add('open');
     document.getElementById('eleBubble').style.display='none';
@@ -4200,9 +4214,10 @@
       w.style.display='flex';
       w.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){
         var k=b.dataset.e;w.style.display='none';
-        var entry=newDiaryEntry('emotion',{emotionKind:k,prompt:ELE_RESP[k]});
+        var stmt=elePick(ELE_STMT[k]),prm=elePick(ELE_PROMPT[k]);
+        var entry=newDiaryEntry('emotion',{emotionKind:k,prompt:prm});
         var bub=document.getElementById('eleBubble');
-        bub.innerHTML=esc(ELE_RESP[k])+'<button class="eb-pencil">✏️ 일기에 적어볼까요?</button>';
+        bub.innerHTML=esc(stmt)+'<button class="eb-pencil">✏️ 일기에 적어볼까요?</button>';
         bub.style.display='block';
         // 칭찬 하트 3개 (§5)
         var st=document.getElementById('eleStage');
