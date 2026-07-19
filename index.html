@@ -1071,18 +1071,22 @@
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   @keyframes fncIn{0%{opacity:0;transform:translate(-50%,-50%) scale(.8)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
   /* 딴짓 포스트잇 (§5): 우측 가장자리, 탭=뒤집기, 우로 밀면 숨김. 앱 DistractionPostIt 파리티. */
-  .postit{position:absolute;right:10px;top:38%;width:150px;height:128px;z-index:4;
+  /* 요청: 포스트잇 1·2·3 모두 포모도로 링 '아래'로. 1=작은 앞면, 2=큰 안내(ⓘ),
+     3=뒷변(적는 면). 2는 우측으로 밀어 절반만 보이게 한다. */
+  .postit{position:absolute;right:10px;top:60%;width:150px;height:128px;z-index:4;
     background:#FFEC8C;border-radius:6px;box-shadow:0 6px 14px rgba(0,0,0,.25);transform:rotate(-6deg);
     cursor:pointer;transition:transform .25s;touch-action:none}
   .focusScrim.night .postit{background:#B39F5C}
   .pi-front{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:6px;
     height:100%;padding:12px 0 12px 12px;text-align:left;font-size:13px;font-weight:700;color:#4D3D0D;line-height:1.5}
   .focusScrim.night .pi-front{color:#3D300D}
+  .pi-pencil{display:block;line-height:0;opacity:.75}
+  .pi-pencil svg{width:17px;height:17px}
   .pi-badge{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border-radius:50%;
     background:rgba(77,61,13,.75);color:#FFEC8C;font-size:11px;font-weight:800}
   .focusScrim.night .pi-badge{color:#B39F5C}
   .pi-back{display:none;flex-direction:column;gap:8px;padding:12px;color:#4D3D0D}
-  .postit.flip{width:250px;height:auto;border-radius:8px}
+  .postit.flip{width:250px;height:auto;border-radius:8px}   /* 3 = 뒷변: 1과 같은 자리 */
   .pi-bhead{font-size:13px;font-weight:800;line-height:1.3}
   .pi-bcap{display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(77,61,13,.85)}
   .pi-bcap #piInfo{border:0;background:none;color:rgba(77,61,13,.6);font-size:12px;cursor:pointer;padding:0}
@@ -1103,14 +1107,14 @@
   .pi-bfoot{display:flex;align-items:center;gap:8px}
   .pi-bfoot #piHint{flex:1;font-size:9px;color:rgba(77,61,13,.55)}
   .pi-bfoot #piDone{border:0;background:none;font-family:inherit;font-size:12px;font-weight:800;color:#4D3D0D;cursor:pointer;padding:0}
-  .postit2{width:250px;height:auto;min-height:150px;border-radius:8px;right:26px;top:calc(38% + 24px);transform:rotate(3deg);z-index:5;cursor:pointer}
+  .postit2{width:250px;height:auto;min-height:150px;border-radius:8px;right:-125px;top:calc(60% + 24px);transform:rotate(3deg);z-index:5;cursor:pointer}
   .pi2-body{padding:12px;font-size:11px;font-weight:700;color:#4D3D0D;line-height:1.5}
   .pi2-title{font-size:13px;font-weight:800;margin-bottom:6px}
   .pi2-body p{font-size:11px;font-weight:700;margin:0 0 7px;line-height:1.5;color:rgba(77,61,13,.85)}
   .pi2-ok{text-align:right;font-size:11px;font-weight:800;cursor:pointer;color:#4D3D0D}
   .postit.flip .pi-front{display:none}
   .postit.flip .pi-back{display:flex}
-  .postit-edge{position:absolute;right:0;top:40%;width:26px;height:52px;border:0;border-radius:8px 0 0 8px;
+  .postit-edge{position:absolute;right:0;top:62%;width:26px;height:52px;border:0;border-radius:8px 0 0 8px;
     background:rgba(255,236,140,.85);font-size:14px;cursor:pointer;z-index:4}
   .ft-chip{font-family:inherit;font-size:14px;font-weight:700;border:0;border-radius:999px;padding:11px 20px;cursor:pointer;background:rgba(255,255,255,.14);color:#fff}
   .ft-chip.on{color:#ffd76a;background:rgba(255,255,255,.26)}
@@ -1502,7 +1506,7 @@
   </div>
   <div class="ft-sub" id="ftSub"></div>
   <div class="postit" id="postit" style="display:none">
-    <div class="pi-front" id="piFront"><span class="pi-ftext" id="piFtext">엘리야<br>조금만<br>기다려</span><span class="pi-badge" id="piBadge" style="display:none"></span></div>
+    <div class="pi-front" id="piFront"><span class="pi-pencil"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.6 14.9 5.7l3.4 3.4L6.4 21H3z"/><path d="M16.1 4.5 17.6 3a1.6 1.6 0 0 1 2.3 0l1.1 1.1a1.6 1.6 0 0 1 0 2.3l-1.5 1.5z"/><path d="M3 22.4h18v1.2H3z" opacity=".45"/></svg></span><span class="pi-ftext" id="piFtext">엘리야<br>조금만<br>기다려</span><span class="pi-badge" id="piBadge" style="display:none"></span></div>
     <div class="pi-back">
       <div class="pi-bhead" id="piBhead">엘리가 딴짓하고 싶은가 봐요</div>
       <div class="pi-bcap"><span>적어 두고 이따 해요</span><button id="piInfo">ⓘ</button></div>
@@ -5444,6 +5448,12 @@
   });
   document.getElementById('ftPause').addEventListener('click',togglePauseFocus);
   // 요청: 아래 '끝내기' 폐지 — 제목 옆 체크 동그라미로 완료 확인 후 닫힘.
+  // 요청: 포스트잇 이외 화면을 터치하면 접혀서 포스트잇1(작은 앞면)로 돌아간다.
+  document.getElementById('focusScrim').addEventListener('pointerdown',function(e){
+    if(e.target.closest('.postit,.postit-edge'))return;
+    var p=document.getElementById('postit');if(p)p.classList.remove('flip');
+    var pi=document.getElementById('postitInfo');if(pi)pi.style.display='none';
+  },true);
   document.getElementById('ftCheck').addEventListener('click',function(){
     if(!fTask)return;
     showFocusConfirm("'"+(fTask.title||'집중')+"'을(를) 완료할까요?",'','완료',false,finishFocusDone);
