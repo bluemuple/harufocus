@@ -213,10 +213,9 @@
   .dueline .dl-x{position:absolute;right:-4px;top:-30px;width:22px;height:22px;border-radius:50%;border:0;
     background:rgba(30,38,60,.9);color:#fff;font-size:12px;cursor:pointer;display:none;place-items:center}
   .dueline.armed .dl-x{display:grid}
-  /* 기록 블록 (델타 §3): 들여쓰기 26px, 실색 채움 + 쉼=빗금(위치 그대로). */
+  /* 기록 블록 (델타 §3): 들여쓰기 26px, 실색 채움 + 쉼=solid 하늘색 (앱 e1c402d⑤: 빗금 폐지, restBlue). */
   .block.rec{left:64px;right:62px;cursor:pointer}
-  .block.rec .bhatch{position:absolute;left:0;right:0;z-index:1;pointer-events:none;
-    background:repeating-linear-gradient(45deg,rgba(120,130,150,.45) 0 6px,rgba(235,240,248,.5) 6px 12px)}
+  .block.rec .bhatch{position:absolute;left:0;right:0;z-index:1;pointer-events:none;background:#6BC2FA}
   .block.rec.active{box-shadow:0 0 0 2px rgba(255,255,255,.65);z-index:6}
   .block{position:absolute;left:52px;right:14px;border-radius:10px;padding:8px 12px;z-index:3;color:#fff;
     font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px;overflow:hidden;
