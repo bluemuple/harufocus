@@ -190,12 +190,17 @@
   .dueline{position:absolute;left:0;right:8px;height:0;z-index:4}
   .dueline .dl-wire{position:absolute;left:56px;right:0;top:-0.75px;height:1.5px;background:var(--tl-accent,#5b93e6);border-radius:2px;opacity:.9}
   .dueline .dl-wire::before{content:"";position:absolute;left:-2px;top:-1.75px;width:5px;height:5px;border-radius:50%;background:inherit}
-  .dueline .dl-play{width:22px;height:22px;border-radius:50%;border:0;flex:none;margin-left:5px;
+  .dueline .dl-play{width:30px;height:30px;border-radius:50%;border:0;flex:none;
     background:var(--tl-accent,var(--sky-blue));color:var(--tl-onaccent,#fff);cursor:pointer;display:inline-grid;place-items:center;vertical-align:middle;pointer-events:auto}
-  .dueline .dl-play svg{width:10px;height:10px;margin-left:1px}
-  .dueline .dl-text{position:absolute;left:89px;top:-22px;font-size:12.5px;font-weight:700;color:var(--onSky,#141827);
-    white-space:nowrap;max-width:calc(100% - 130px);display:flex;align-items:center;pointer-events:none}
+  .dueline .dl-play svg{width:13px;height:13px;margin-left:1px}
+  .dueline .dl-text{position:absolute;left:108px;top:-27px;font-size:20px;font-weight:600;color:var(--onSky,#141827);
+    white-space:nowrap;max-width:calc(100% - 150px);display:flex;align-items:center;gap:4px;pointer-events:none}
   .dueline .dl-text .dl-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  /* 심볼 색 = 작업명 글자색 상속 (앱 6e4e3de①: 선·캡슐·▶가 이미 테마색, 작업색은 포모도로 링 담당) */
+  .dueline .dl-text .dl-ic{flex:none;display:inline-flex;align-items:center;color:inherit}
+  .dueline .dl-text .dl-ic svg{width:17px;height:17px}
+  /* duration = 캡슐 'hh:mm까지'와 같은 크기 (앱 dueDurationFont .caption2 + durationOpacity .75) */
+  .dueline .dl-text .dl-dur{flex:none;font-size:11px;font-weight:600;opacity:.75}
   .dueline .dl-cap{position:absolute;right:0;top:-9px;background:var(--tl-accent,#80CDE9);color:var(--tl-onaccent,#141827);font-size:11px;font-weight:800;
     border-radius:999px;padding:2px 6px;box-shadow:0 3px 8px rgba(20,40,80,.22);cursor:ns-resize;touch-action:none;user-select:none}
   .tl-night .dl-cap{background:#273B9E;color:#F5F7FF}
@@ -204,18 +209,23 @@
     font-weight:800;line-height:1;color:var(--onSky,#141827);opacity:.85;pointer-events:none;text-shadow:0 1px 2px rgba(255,255,255,.35)}
   .dueline .dl-chev.up{top:-15px}
   .dueline .dl-chev.dn{bottom:-15px}
-  .dueline .dl-radio{position:absolute;left:63px;top:-22px;width:22px;height:22px;border-radius:50%;
-    border:2px solid var(--onSky,#141827);background:transparent;cursor:pointer;color:#fff;font-size:12px;
+  .dueline .dl-radio{position:absolute;left:72px;top:-22px;width:30px;height:30px;border-radius:50%;
+    border:2px solid var(--onSky,#141827);background:transparent;cursor:pointer;color:#fff;font-size:16px;
     font-weight:800;display:grid;place-items:center;box-shadow:0 1px 4px rgba(20,40,80,.25)}
   .dueline .dl-radio.on{background:var(--dc,#4F8AD1);border-color:var(--dc,#4F8AD1)}
-  .dueline .dl-text.done span{text-decoration:line-through;opacity:.65}
+  .dueline .dl-text.done .dl-title{text-decoration:line-through;opacity:.65}
   .dueline.done .dl-wire{opacity:.45}
   .dueline .dl-x{position:absolute;right:-4px;top:-30px;width:22px;height:22px;border-radius:50%;border:0;
     background:rgba(30,38,60,.9);color:#fff;font-size:12px;cursor:pointer;display:none;place-items:center}
   .dueline.armed .dl-x{display:grid}
-  /* 기록 블록 (델타 §3): 들여쓰기 26px, 실색 채움 + 쉼=solid 하늘색 (앱 e1c402d⑤: 빗금 폐지, restBlue). */
+  /* 기록 블록 (델타 §3): 들여쓰기 26px, 실색 채움.
+     쉼 컬러코딩 (앱 f9cd0c1②, e1c402d⑤ 개정): 세션 '안'의 쉼(포모도로 휴식·일시정지)
+     = solid 하늘색(.brest), 정지로 나갔다 재개한 '갭' = 빗금(.bhatch).
+     웹 dayRecordBlocks의 rest는 전부 세션 사이 갭이라 현재는 .bhatch만 쓴다. */
   .block.rec{left:64px;right:62px;cursor:pointer}
-  .block.rec .bhatch{position:absolute;left:0;right:0;z-index:1;pointer-events:none;background:#6BC2FA}
+  .block.rec .bhatch{position:absolute;left:0;right:0;z-index:1;pointer-events:none;
+    background:repeating-linear-gradient(45deg,rgba(120,130,150,.45) 0 6px,rgba(235,240,248,.5) 6px 12px)}
+  .block.rec .brest{position:absolute;left:0;right:0;z-index:1;pointer-events:none;background:rgba(107,194,250,.9)}
   .block.rec.active{box-shadow:0 0 0 2px rgba(255,255,255,.65);z-index:6}
   .block{position:absolute;left:52px;right:14px;border-radius:10px;padding:8px 12px;z-index:3;color:#fff;
     font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px;overflow:hidden;
@@ -224,7 +234,11 @@
   .block>.bic,.block>.btitle,.block>.bplay,.block>.bx,.block>small{position:relative;z-index:1}
   .block .btitle{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .block>small{margin-left:6px;order:9}
-  .block small{font-weight:700;opacity:.95;font-size:11.5px}
+  .block small{font-weight:700;opacity:.75;font-size:11px}
+  /* 확대 티어 (앱 8833b9e): h>=44 = big — 제목 .title3(20)·심볼 .body(17)·duration .subheadline(15) */
+  .block.big{font-size:20px}
+  .block.big .bic svg{width:17px;height:17px}
+  .block.big small{font-size:15px}
   /* 블록 액션 (요청: 이동·삭제·재생) — 호버 시 노출, 모바일은 항상. */
   .block .bplay,.block .bx{border:0;background:rgba(255,255,255,.28);color:#fff;width:22px;height:22px;border-radius:50%;
     font-size:11px;line-height:1;cursor:pointer;flex:0 0 auto;opacity:0;transition:opacity .15s;display:grid;place-items:center}
@@ -2469,9 +2483,9 @@
       var ef=new Date(b.end),hfe=ef.getHours()+ef.getMinutes()/60;if(ef.getDate()!==d.getDate())hfe=24;
       if(hfe<TS||hf>TE)return;
       any=true;var col=catColor(b.categoryID);
-      var el=document.createElement('div');el.className='block rec'+(b.active?' active':'');
-      el.style.top=yFor(hf)+'px';
+      var el=document.createElement('div');el.style.top=yFor(hf)+'px';
       var hpx=Math.max(20,(hfe-hf)*PPH-1);el.style.height=hpx+'px';
+      el.className='block rec'+(b.active?' active':'')+(hpx>=44?' big':'');
       el.style.background=hexA(col,0.9);el.style.border='1.7px solid '+hexA(col,0.9);
       var span=b.end-b.start;
       var hatches=b.rest.map(function(r){
@@ -2498,10 +2512,6 @@
       any=true;
       // 표시 n분 = 이전 마감선(지나갔으면 지금)→이 마감선 (§2, 파생값).
       // now 보정은 내 마감이 미래일 때만 (앱 규칙) — 지난 선은 durationMin 폴백.
-      var anchor=prevDue?prevDue.getTime():null;
-      if(dayOffset===0&&due.getTime()>nowMs&&(anchor==null||anchor<nowMs))anchor=nowMs;
-      if(anchor==null||anchor>=due.getTime())anchor=due.getTime()-(t.durationMin||0)*60000;
-      var dispMin=Math.max(1,Math.round((due.getTime()-anchor)/60000));
       prevDue=due;
       var y=yFor(hf);
       var dl=document.createElement('div');dl.className='dueline'+(t.isDone?' done':'');
@@ -2511,12 +2521,12 @@
         var bs=new Date(b.start),be=new Date(b.end);
         var y1=yFor(bs.getHours()+bs.getMinutes()/60),y2=yFor(be.getHours()+be.getMinutes()/60);
         return y>=y1-2&&y<=y2+18;});
-      // D2-2: 길이 'n시간 n분', 당일·과거·미완료면 'n시간 n분 지남'.
-      var lenTxt=durLabel(dispMin);
-      if(dayOffset===0&&due.getTime()<nowMs&&!t.isDone){var over=Math.floor((nowMs-due.getTime())/60000);if(over>=1)lenTxt=durLabel(over)+' 지남';}
+      // 앱 3009b09('지남' 삭제) + 6e4e3de③(dueDisplayMin 배선 제거): 마감선엔
+      // 작업명 + 작업 자체 길이만. 0분이면 생략.
+      var lenTxt=(t.durationMin||0)>0?durLabel(t.durationMin):'';
       dl.innerHTML='<div class="dl-wire"></div>'+
         '<button class="dl-radio'+(t.isDone?' on':'')+'" title="완료" style="--dc:'+catColor(t.categoryID)+'">'+(t.isDone?'✓':'')+'</button>'+
-        (covered?'':'<div class="dl-text'+(t.isDone?' done':'')+'"><span class="dl-title">'+esc(t.title)+'</span><span>&nbsp;· '+lenTxt+'</span><button class="dl-play" title="집중 시작">'+IC.play+'</button></div>')+
+        (covered?'':'<div class="dl-text'+(t.isDone?' done':'')+'"><span class="dl-ic">'+catIcon(t.categoryID)+'</span><span class="dl-title">'+esc(t.title)+'</span>'+(lenTxt?'<span class="dl-dur">'+lenTxt+'</span>':'')+'<button class="dl-play" title="집중 시작">'+IC.play+'</button></div>')+
         '<span class="dl-cap">'+(editBarOn?'<i class="dl-chev up">⌃</i><i class="dl-chev dn">⌄</i>':'')+('0'+due.getHours()).slice(-2)+':'+('0'+due.getMinutes()).slice(-2)+'까지</span>'+
         '<button class="dl-x" title="마감선만 삭제">✕</button>';
       var pb=dl.querySelector('.dl-play');if(pb)pb.addEventListener('click',function(e){e.stopPropagation();startFocus(t);});
