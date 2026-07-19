@@ -1045,23 +1045,23 @@
   .focusScrim.night{background:linear-gradient(180deg,#2a3654 0%,#1a2340 62%,#141a2b 100%)}
   .focusScrim.open{display:flex}
   .focusScrim .fx{position:absolute;top:16px;right:16px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(0,0,0,.18);color:#fff;font-size:16px;cursor:pointer;z-index:3}
-  .focusScrim .fm{position:absolute;top:16px;left:16px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(0,0,0,.18);color:#fff;font-size:16px;cursor:pointer;z-index:3;display:grid;place-items:center}
-  .fm-chips{position:absolute;top:64px;left:12px;right:12px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;z-index:3}
+  /* 음악 옵션 = 집중 음악 캡슐 '위'로 가로 배치 (요청) */
+  .fm-chips{position:absolute;bottom:calc(76px + env(safe-area-inset-bottom));left:12px;right:12px;display:flex;justify-content:center;gap:8px;z-index:4}
   .fm-chip{font-family:inherit;font-size:13px;font-weight:700;border:0;border-radius:999px;padding:9px 14px;cursor:pointer;background:rgba(0,0,0,.3);color:#fff;display:flex;align-items:center;gap:5px}
   .fm-chip.on{background:rgba(255,255,255,.32);color:#ffd76a}
-  .ft-title{margin-top:44px;font-size:28px;font-weight:800;max-width:84%;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.3)}
-  @media(max-height:760px){.ft-ringwrap{width:262px;height:262px}.ft-timer{font-size:38px}.ft-title{margin-top:40px;font-size:20px}}
+  .ft-titlerow{margin-top:44px;display:flex;align-items:center;gap:12px;max-width:88%}
+  .ft-title{font-size:56px;line-height:1.1;font-weight:800;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.3);min-width:0;overflow-wrap:anywhere}
+  .ft-check{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:2.5px solid rgba(255,255,255,.85);background:transparent;cursor:pointer}
+  .ft-check:active{background:rgba(255,255,255,.25)}
+  @media(max-height:760px){.ft-ringwrap{width:262px;height:262px}.ft-timer{font-size:38px}.ft-titlerow{margin-top:34px}.ft-title{font-size:40px}.ft-check{width:32px;height:32px}}
   .ft-stats{font-size:13.5px;opacity:.92;margin-top:8px;text-shadow:0 1px 2px rgba(0,0,0,.25)}
   .ft-ringwrap{position:relative;width:300px;height:300px;margin-top:18px;max-width:86vw;max-height:86vw}
   .ft-ringwrap svg{width:100%;height:100%}
   .ft-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
   .ft-timer{font-size:43px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.02em;text-shadow:0 1px 3px rgba(0,0,0,.3)}
-  .ft-pausebtn{width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.14);color:#fff;font-size:19px;cursor:pointer}
+  .ft-pausebtn{width:46px;height:26px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.14);color:#fff;font-size:13px;line-height:1;cursor:pointer;padding:0}
   .ft-sub{font-size:13px;opacity:.9;margin-top:10px;min-height:18px;text-shadow:0 1px 2px rgba(0,0,0,.2)}
-  .ft-bottom{position:absolute;bottom:calc(18px + env(safe-area-inset-bottom));left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:2}
-  .ft-finish{font-family:inherit;font-size:16px;font-weight:800;border:0;border-radius:999px;padding:14px 44px;cursor:pointer;
-    background:rgba(255,255,255,.2);color:#fff;backdrop-filter:blur(4px)}
-  .ft-morepanel{position:absolute;top:64px;left:14px;display:flex;flex-direction:column;gap:8px;z-index:4}
+  .ft-morepanel{position:absolute;bottom:calc(20px + env(safe-area-inset-bottom));left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:4}
   /* 전환 카드 (§5): 링 안 원형 크롭 엘리 그림 5초, 종이 위 다음 작업명. */
   .ft-nextcard{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:78%;aspect-ratio:1;
     border-radius:50%;overflow:hidden;z-index:6;box-shadow:0 10px 30px rgba(0,0,0,.3);animation:fncIn .5s ease}
@@ -1114,7 +1114,6 @@
     background:rgba(255,236,140,.85);font-size:14px;cursor:pointer;z-index:4}
   .ft-chip{font-family:inherit;font-size:14px;font-weight:700;border:0;border-radius:999px;padding:11px 20px;cursor:pointer;background:rgba(255,255,255,.14);color:#fff}
   .ft-chip.on{color:#ffd76a;background:rgba(255,255,255,.26)}
-  .ft-tree{position:absolute;bottom:0;left:5%;height:165px;pointer-events:none;z-index:1}
   .ftlabel{fill:rgba(255,255,255,.62);font-size:12px;font-weight:600}
   /* 보상 (요청) */
   .rewardrow{align-items:center;gap:8px;flex-wrap:wrap}
@@ -1484,15 +1483,15 @@
 <!-- 집중 모드 (요청) -->
 <div class="focusScrim" id="focusScrim">
   <canvas class="fm-scene" id="fmCanvas"></canvas>
-  <button class="fx" id="ftClose" title="끝내기">✕</button>
-  <!-- 세부 기능은 ⋯ 뒤로 (요청: 처음엔 단순, 눌러야 세세하게). -->
-  <button class="fm" id="ftMore" title="더보기"><svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
-  <div class="ft-morepanel" id="ftMorePanel" style="display:none">
+  <button class="fx" id="ftClose" title="닫기">✕</button>
+  <!-- 요청: ⋯ 폐지 — 포모도로·집중 음악 캡슐을 화면 아래에 상시 노출. -->
+  <div class="fm-chips" id="fmChips" style="display:none"></div>
+  <div class="ft-morepanel" id="ftMorePanel">
     <button class="ft-chip" id="ftPomo">⏱ 포모도로</button>
     <button class="ft-chip" id="fmBtn">♪ 집중 음악</button>
   </div>
-  <div class="fm-chips" id="fmChips" style="display:none"></div>
-  <div class="ft-title" id="ftTitle"></div>
+  <audio id="fmAudio" loop preload="none"></audio>
+  <div class="ft-titlerow"><button class="ft-check" id="ftCheck" title="완료"></button><div class="ft-title" id="ftTitle"></div></div>
   <div class="ft-stats" id="ftStats"></div>
   <div class="ft-ringwrap">
     <svg id="ftRing" viewBox="0 0 300 300"></svg>
@@ -1502,9 +1501,6 @@
     </div>
   </div>
   <div class="ft-sub" id="ftSub"></div>
-  <div class="ft-bottom">
-    <button class="ft-finish" id="ftFinish">끝내기</button>
-  </div>
   <div class="postit" id="postit" style="display:none">
     <div class="pi-front" id="piFront"><span class="pi-ftext" id="piFtext">엘리야<br>조금만<br>기다려</span><span class="pi-badge" id="piBadge" style="display:none"></span></div>
     <div class="pi-back">
@@ -1525,7 +1521,6 @@
     </div>
   </div>
   <button class="postit-edge" id="postitEdge" style="display:none">📝</button>
-  <img class="ft-tree" src="assets/tree.png" alt="">
 </div>
 
 <!-- 설정 (요청: 웹 이식) -->
@@ -1778,6 +1773,7 @@
     rain:svgI('<path d="M7 15a4 4 0 0 1-.6-7.95A5.5 5.5 0 0 1 17 5.6 4.2 4.2 0 0 1 16.8 15z"/><path d="M8 18l-1 2.5M12 18l-1 2.5M16 18l-1 2.5"/>'),
     waves:svgI('<path d="M3 9.5c2 0 2 1.6 4 1.6s2-1.6 4-1.6 2 1.6 4 1.6 2-1.6 4-1.6M3 15c2 0 2 1.6 4 1.6s2-1.6 4-1.6 2 1.6 4 1.6 2-1.6 4-1.6"/>'),
     plane:svgI('<path d="M21 3.5L3.3 10.8l5.9 2.3L12 20.7l3.4-6.2L21 3.5z"/><path d="M9.2 13.1L21 3.5"/>'),
+    fire:svgI('<path d="M12 2.6c2.6 3 3.4 5 2.6 6.6-.6 1.2-2 1.4-2.4.2-.3-.9 0-1.9.5-2.9-2.6 1.4-4.5 3.9-4.5 6.7a5.8 5.8 0 0 0 11.6 0c0-2.3-1-4-2.2-5.6.2 1.3.1 2.5-.7 3.3-.9.9-2.2.3-2.1-.9.2-2.5-.9-5-2.8-7.4z"/>'),
     none:svgI('<circle cx="12" cy="12" r="8"/><path d="M6.5 6.5l11 11"/>'),
     schedule:svgI('<circle cx="12" cy="12" r="8"/><path d="M9 12.3l2 2 4-4.2"/>'),
     bell:svgI('<path d="M6 10.5a6 6 0 0 1 12 0c0 4 1.4 5.4 1.4 5.4H4.6S6 14.5 6 10.5z"/><path d="M10 18.5a2 2 0 0 0 4 0"/>'),
@@ -2904,36 +2900,28 @@
   function fmScene(){return localStorage.getItem('hfScene')||'none';}
   function fmStop(){if(fmTimer){clearTimeout(fmTimer);fmTimer=null;}
     fmNodes.forEach(function(n){try{n.stop&&n.stop();}catch(e){}});fmNodes=[];
-    if(fmCtx){try{fmCtx.close();}catch(e){}fmCtx=null;}fmSceneStop();}
+    if(fmCtx){try{fmCtx.close();}catch(e){}fmCtx=null;}
+    var au=document.getElementById('fmAudio');if(au){try{au.pause();}catch(_){}}
+    fmSceneStop();}
   function fmBuf(ctx,sec,brown){var b=ctx.createBuffer(1,ctx.sampleRate*sec,ctx.sampleRate),d=b.getChannelData(0),last=0;
     for(var i=0;i<d.length;i++){var w=Math.random()*2-1;
       if(brown){last=(last+0.02*w)/1.02;d[i]=last*3.5;}else d[i]=w;}return b;}
+  // 요청: 집중 음악은 비·장작불만. 앱 Resources/Audio 원본에서 45초 루프를
+  // 잘라 모노 AAC로 담았다(assets/focus-*.m4a) — WebAudio 합성음 대신 실제 소리.
+  var FM_SRC={rain:'assets/focus-rain.m4a',fire:'assets/focus-fire.m4a'};
   function fmStart(id){
     fmStop();localStorage.setItem('hfScene',id);paintFm();
-    fmSceneStart(id);   // 시각 씬 (WebAudio 미지원과 무관하게 — 앱 FocusScenes 파리티)
-    if(id==='none')return;
-    var C=window.AudioContext||window.webkitAudioContext;if(!C)return;
-    fmCtx=new C();var ctx=fmCtx,out=ctx.createGain();out.gain.value=0.5;out.connect(ctx.destination);
-    function src(buf){var x=ctx.createBufferSource();x.buffer=buf;x.loop=true;return x;}
-    if(id==='rain'){var s1=src(fmBuf(ctx,2,false)),f=ctx.createBiquadFilter(),f2=ctx.createBiquadFilter();
-      f.type='bandpass';f.frequency.value=2300;f.Q.value=0.55;f2.type='lowpass';f2.frequency.value=6500;
-      s1.connect(f);f.connect(f2);f2.connect(out);s1.start();fmNodes.push(s1);}
-    else if(id==='waves'){var s2=src(fmBuf(ctx,4,true)),lp=ctx.createBiquadFilter(),g=ctx.createGain(),lfo=ctx.createOscillator(),la=ctx.createGain();
-      lp.type='lowpass';lp.frequency.value=520;g.gain.value=0.45;lfo.frequency.value=0.085;la.gain.value=0.33;
-      lfo.connect(la);la.connect(g.gain);s2.connect(lp);lp.connect(g);g.connect(out);s2.start();lfo.start();fmNodes.push(s2,lfo);}
-    else if(id==='fire'){var s3=src(fmBuf(ctx,3,true)),lp3=ctx.createBiquadFilter();
-      lp3.type='lowpass';lp3.frequency.value=330;s3.connect(lp3);lp3.connect(out);s3.start();fmNodes.push(s3);
-      var s4=src(fmBuf(ctx,2,false)),hp=ctx.createBiquadFilter(),cg=ctx.createGain();
-      hp.type='highpass';hp.frequency.value=2600;cg.gain.value=0;s4.connect(hp);hp.connect(cg);cg.connect(out);s4.start();fmNodes.push(s4);
-      (function crack(){if(!fmCtx||fmScene()!=='fire')return;var t=fmCtx.currentTime;
-        cg.gain.setValueAtTime(0,t);cg.gain.linearRampToValueAtTime(0.18+Math.random()*0.5,t+0.008);
-        cg.gain.exponentialRampToValueAtTime(0.001,t+0.05+Math.random()*0.08);
-        fmTimer=setTimeout(crack,120+Math.random()*550);})();}
-    else if(id==='plane'){var s5=src(fmBuf(ctx,4,true)),lp5=ctx.createBiquadFilter(),g5=ctx.createGain();
-      lp5.type='lowpass';lp5.frequency.value=240;g5.gain.value=0.95;
-      s5.connect(lp5);lp5.connect(g5);g5.connect(out);s5.start();fmNodes.push(s5);}
+    fmSceneStart(id);   // 시각 씬 (앱 FocusScenes 파리티)
+    var au=document.getElementById('fmAudio');if(!au)return;
+    if(id==='none'||!FM_SRC[id]){try{au.pause();}catch(_){}return;}
+    try{
+      var want=FM_SRC[id];
+      if(au.getAttribute('data-s')!==id){au.setAttribute('data-s',id);au.src=want;}
+      au.loop=true;au.volume=0.55;
+      var p=au.play();if(p&&p.catch)p.catch(function(){});
+    }catch(_){}
   }
-  var FM_LIST=[['rain','비'],['waves','파도'],['fire','장작불'],['plane','비행'],['none','없음']];
+  var FM_LIST=[['rain','비'],['fire','장작불'],['none','없음']];
   function paintFm(){
     var wrap=document.getElementById('fmChips');if(!wrap)return;
     wrap.innerHTML=FM_LIST.map(function(p){return '<button class="fm-chip'+(fmScene()===p[0]?' on':'')+'" data-s="'+p[0]+'">'+IC[p[0]]+' '+p[1]+'</button>';}).join('');
@@ -3249,7 +3237,7 @@
   }
   function paintPomoChip(){var b=document.getElementById('ftPomo');if(b){b.classList.toggle('on',pomoOn());b.innerHTML=IC.timer+(pomoOn()?' 포모도로 켜짐':' 포모도로');}}
   function startFocus(t){closeEditor();fTask=t;fStart=Date.now();fPausedAcc=0;fPauseAt=0;fPaused=false;ftKey='';fAdvanced=false;fWasRest=false;fRestMsg='';
-    document.getElementById('ftTitle').innerHTML='<span style="opacity:.9">○</span> '+catIcon(t.categoryID)+' '+esc(t.title||'집중');
+    document.getElementById('ftTitle').innerHTML=catIcon(t.categoryID)+' '+esc(t.title||'집중');
     document.getElementById('ftStats').textContent=focusStatsText();   // 제목 아래 정보 한 줄 (앱 statsRow 파리티)
     var h=new Date().getHours();
     document.getElementById('focusScrim').classList.toggle('night',h<6||h>=18);
@@ -5455,15 +5443,10 @@
     if(this.checked)showRewardTip(this,'이 일을 끝내면 이 보상이 매트릭스 ‘사소·여유·보상’ 칸에 자동으로 담겨요. 스스로에게 주는 즐길 거리 목록이 돼요.');
   });
   document.getElementById('ftPause').addEventListener('click',togglePauseFocus);
-  document.getElementById('ftFinish').addEventListener('click',function(){
+  // 요청: 아래 '끝내기' 폐지 — 제목 옆 체크 동그라미로 완료 확인 후 닫힘.
+  document.getElementById('ftCheck').addEventListener('click',function(){
     if(!fTask)return;
-    showFocusConfirm("'"+(fTask.title||'집중')+"'을(를) 끝낼까요?",'','완료로 끝내기',false,finishFocusDone);
-  });
-  document.getElementById('ftMore').addEventListener('click',function(){
-    var p=document.getElementById('ftMorePanel');
-    var open=p.style.display==='none';
-    p.style.display=open?'flex':'none';
-    if(!open)document.getElementById('fmChips').style.display='none';
+    showFocusConfirm("'"+(fTask.title||'집중')+"'을(를) 완료할까요?",'','완료',false,finishFocusDone);
   });
   document.getElementById('ftClose').addEventListener('click',function(){
     showFocusConfirm('집중을 끝낼까요?','나가면 집중이 멈춰요. 지금까지 한 시간은 기록에 남아요.','끝내기',true,finishFocus);
