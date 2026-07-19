@@ -717,8 +717,8 @@
   .cal-num{width:34px;height:34px;line-height:34px;margin:0 auto;border-radius:50%;font-size:15px;font-weight:600;
     text-shadow:0 1px 2px rgba(20,40,80,.35)}
   .cal-cell.dim .cal-num{opacity:.35}
-  .cal-cell.sel .cal-num{background:rgba(255,255,255,.32);font-weight:800}
-  .cal-cell.today .cal-num{color:#0d2a52;background:#bfe0ff}
+  .cal-cell.today .cal-num{box-shadow:inset 0 0 0 1.5px var(--sky-blue)}
+  .cal-cell.sel .cal-num{background:var(--sky-blue);color:#fff;font-weight:800;box-shadow:none;text-shadow:none}
   .cal-dots{display:flex;gap:2px;justify-content:center;height:5px;margin-top:1px}
   .cal-dots i{width:4px;height:4px;border-radius:50%}
   .cal-toggle{display:block;margin:-2px auto 0;padding:0;border:0;background:none;color:#fff;opacity:.75;cursor:pointer;font-size:15px;line-height:1;height:16px}
@@ -805,7 +805,12 @@
   .mbtn{position:relative;flex:1;border:none;background:transparent;font-family:inherit;cursor:pointer;padding:5px 2px;
     display:flex;flex-direction:column;align-items:center;gap:3px;color:#9aa3b2;font-size:10.5px;font-weight:600}
   .mbtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-  .mbtn.on{color:var(--sky-blue)}.mbtn.on svg{stroke:var(--sky-blue)}
+  .mbtn.on{color:var(--ink)}.mbtn.on svg{stroke:var(--ink)}
+  body.night .mbar{background:rgba(26,30,44,.92);border-top-color:rgba(255,255,255,.08)}
+  body.night .mbtn{color:rgba(235,235,245,.5)}
+  body.night .mbtn.on{color:#fff}body.night .mbtn.on svg{stroke:#fff}
+  body.night .topcap{background:rgba(30,34,50,.72);color:#f2f4f8}body.night .topcap .tc-ic{color:rgba(235,235,245,.62)}
+  body.night .util .acct{background:rgba(30,34,50,.72);color:#f2f4f8}
 
   /* ---------- responsive ---------- */
   /* 단일 컬럼(한 번에 한 페이지) — 모바일·데스크톱 공통. 데스크톱은 아래 프레임으로 감싼다. */
@@ -4163,7 +4168,7 @@
     var top=lerpHex(a[1],b[1],t),bot=lerpHex(a[2],b[2],t);
     var r=document.documentElement.style;r.setProperty('--sky-top',top);r.setProperty('--sky-bot',bot);
     // 밤엔 하늘이 남색 → 매트릭스 회색 요소(‘+ 추가’)를 앱 colorScheme 강제처럼 밝게 (앱 파리티).
-    var nt=isNightNow();r.setProperty('--sec',nt?'rgba(235,235,245,.6)':'rgba(60,60,67,.6)');r.setProperty('--sec-bd',nt?'rgba(235,235,245,.3)':'rgba(60,60,67,.3)');
+    var nt=isNightNow();r.setProperty('--sec',nt?'rgba(235,235,245,.6)':'rgba(60,60,67,.6)');r.setProperty('--sec-bd',nt?'rgba(235,235,245,.3)':'rgba(60,60,67,.3)');document.body.classList.toggle('night',nt);
   }
   applySky();setInterval(applySky,60000);
 
@@ -6094,11 +6099,11 @@
   // ── 동적 하단 네비 + 메뉴 편집 (요청: 첨부2/3) ──
   var NAV_DEF={
     timeline:{label:'타임라인',svg:'<path d="M3 19h18M7.5 19a4.5 4.5 0 0 1 9 0M12 9.8v2.4M5.9 12.6l1.5 1.5M18.1 12.6l-1.5 1.5M3.5 16h1.8M18.7 16h1.8"/>',type:'tab'},
-    todo:{label:'할일',svg:'<path d="M3.3 6.8l1.4 1.4 2.5-2.7"/><circle cx="5" cy="16.6" r="2.1"/><path d="M10.5 7h9.5M10.5 16.6h9.5"/>',type:'tab'},
+    todo:{label:'할 일',svg:'<path d="M3.3 6.8l1.4 1.4 2.5-2.7"/><circle cx="5" cy="16.6" r="2.1"/><path d="M10.5 7h9.5M10.5 16.6h9.5"/>',type:'tab'},
     bucket:{label:'물통',svg:'<path d="M12 3.4s6.2 6.5 6.2 11a6.2 6.2 0 0 1-12.4 0c0-4.5 6.2-11 6.2-11z" fill="currentColor" stroke="none"/>',type:'tab'},
     matrix:{label:'매트릭스',svg:'<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',type:'tab'},
     routine:{label:'루틴',svg:'<path d="M17 3.5l3 3-3 3"/><path d="M20 6.5H8.5A4.5 4.5 0 0 0 4 11v.5"/><path d="M7 20.5l-3-3 3-3"/><path d="M4 17.5h11.5A4.5 4.5 0 0 0 20 13v-.5"/>',type:'tab'},
-    diary:{label:'일기',svg:'<path d="M5 4h13a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5z"/><path d="M5 4v16M9 2.5v3M9 11h6M9 15h4"/>',type:'tab'},
+    diary:{label:'한 줄 일기',svg:'<path d="M5 4h13a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5z"/><path d="M5 4v16M9 2.5v3M9 11h6M9 15h4"/>',type:'tab'},
     lock:{label:'약속',svg:'<rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/>',type:'action'},
     about:{label:'아이폰 앱',svg:'<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10.5 5h3M11 18.5h2"/>',type:'action'},
     friends:{label:'함께',svg:'<circle cx="9" cy="8" r="3"/><path d="M3.6 20c.6-3.3 2.6-4.9 5.4-4.9s4.8 1.6 5.4 4.9"/><circle cx="17" cy="9" r="2.4"/><path d="M15.6 14.7c2.6.3 4.2 1.7 4.8 4.2"/>',type:'action'},
@@ -6267,7 +6272,8 @@
       return {ic:IC.note,txt:eleName()+'에게 한마디'};
     }
     if(k==='focusSum'){var st=focusStats();var sec=st?st.today:0;var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);
-      return {ic:IC.timer,txt:'오늘 집중 '+(h?h+'시간 ':'')+m+'분'};}
+      var ft=(h===0)?('오늘 '+m+'분 집중'):(m===0?('오늘 '+h+'시간 집중'):('오늘 '+h+'시간 '+m+'분 집중'));
+      return {ic:IC.timer,txt:ft};}
     if(k==='sunset'||k==='sunrise'){
       // D2-2: 문구 없이 아이콘(해+↑/↓) + 남은 시간 카운트다운만.
       var lat=S.lat!=null?S.lat:-43.53,lng=S.lng!=null?S.lng:172.63;
