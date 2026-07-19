@@ -258,7 +258,7 @@
   .todo{display:flex;flex-direction:column;gap:9px}
   .task{position:relative;display:flex;align-items:stretch;background:transparent;border:0;border-radius:16px;box-shadow:0 4px 14px rgba(20,40,80,.10);overflow:hidden}
   .check{width:22px;height:22px;border-radius:50%;border:2px solid var(--ink-soft);flex:0 0 auto;cursor:pointer;display:grid;place-items:center}
-  .check.done{background:#6bbf7a;border-color:#6bbf7a}
+  /* 완료 채움색은 작업 색으로 buildTodoRow에서 인라인 지정 (앱 displayColor 파리티). */
   .check.done::after{content:"✓";color:#fff;font-size:13px;font-weight:800}
   .swatch{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
   .t-icon{flex:0 0 auto;display:grid;place-items:center;width:20px;height:20px}
@@ -270,19 +270,19 @@
   .task.sw-left .swipe-grp.lead,.task.sw-right .swipe-grp.trail{visibility:visible}
   /* 둥근 코너 노치 채움 (요청): inner 코너 뒤 레이어가 인접 버튼 색으로 보이게
      그룹을 안쪽으로 14px 연장한다 (닫힘 상태에선 inner가 덮는다). */
-  .swipe-grp.trail::before{content:"";position:absolute;top:0;bottom:0;left:-14px;width:15px;background:#2E7DF6}
-  .swipe-grp.lead::after{content:"";position:absolute;top:0;bottom:0;right:-14px;width:15px;background:#0E90A6}
-  .mtask .swipe-grp.trail::before{background:#F5352B}
-  .mtask .swipe-grp.lead::after{background:#2E7DF6}
+  .swipe-grp.trail::before{content:"";position:absolute;top:0;bottom:0;left:-14px;width:15px;background:#007AFF}
+  .swipe-grp.lead::after{content:"";position:absolute;top:0;bottom:0;right:-14px;width:15px;background:#30B0C7}
+  .mtask .swipe-grp.trail::before{background:#FF3B30}
+  .mtask .swipe-grp.lead::after{background:#007AFF}
   .sa{flex:1;height:100%;border:0;color:#fff;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:3px}
   .sa b{font-size:10px;font-weight:800}
   .sa svg{width:22px;height:22px}
-  .sa-tomorrow{background:#9B4DDB}.sa-matrix{background:#0E90A6}
-  .sa-timeline{background:#2E7DF6}.sa-delete{background:#F5352B}
-  .mx-pick{position:absolute;inset:0;z-index:3;display:none;grid-template-columns:repeat(4,1fr)}
-  .task.mx-open .mx-pick{display:grid}
-  .mx-pick button{border:0;color:#fff;font-family:inherit;font-size:11px;font-weight:800;cursor:pointer;line-height:1.2}
+  .sa-tomorrow{background:#AF52DE}.sa-matrix{background:#30B0C7}
+  .sa-timeline{background:#007AFF}.sa-delete{background:#FF3B30}
+  .mx-pick{position:absolute;inset:0;z-index:3;display:none;align-items:center;gap:10px;padding:0 12px;background:rgba(242,242,247,.97);border-radius:10px}
+  .task.mx-open .mx-pick{display:flex}
+  .mx-pick button{border:0;background:transparent;padding:0;font-family:inherit;cursor:pointer;line-height:0}
   .t-main{flex:1;min-width:0}
   .t-title{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .task.done .t-title{text-decoration:line-through;color:var(--ink-soft)}
@@ -355,6 +355,23 @@
   .r-streakbox{display:flex;align-items:center;gap:4px;font-size:15px;font-weight:800;color:#e8912a}
   .r-streakbox svg{width:16px;height:16px}
   .play{width:31px;height:31px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:11px;margin-left:6px;cursor:pointer}
+  /* 할일 행 재생 = 작업 색 채움 원판(앱 play.circle.fill displayColor 파리티), 배경 없음. */
+  .task .play{width:26px;height:26px;flex:0 0 auto;background:none;border:0;padding:0;margin-left:2px}
+  .task .play svg{width:22px;height:22px;display:block}
+  /* 할일 행 부속 버튼: 횟수 +1, 하위작업 ↳ 토글. */
+  .t-plus{width:26px;height:26px;flex:0 0 auto;border:0;background:none;padding:0;cursor:pointer;display:grid;place-items:center}
+  .t-plus svg{width:22px;height:22px;display:block}
+  .subtog{width:28px;height:28px;flex:0 0 auto;border:0;background:none;padding:0;cursor:pointer;display:grid;place-items:center}
+  .subtog svg{width:20px;height:20px;display:block}
+  /* 인라인 하위작업 목록 (앱 SubtaskListEditor 파리티). */
+  .subpanel{padding:8px 13px 12px;display:flex;flex-direction:column;gap:7px}
+  .subrow{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:10px}
+  .subrow .subck{width:20px;height:20px;border-radius:50%;border:2px solid var(--ink-soft);flex:0 0 auto;cursor:pointer;display:grid;place-items:center}
+  .subrow .subck.done::after{content:"✓";color:#fff;font-size:12px;font-weight:800}
+  .subrow .st{flex:1;min-width:0;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .subrow.done .st{text-decoration:line-through;color:var(--ink-soft)}
+  .subadd{display:flex;align-items:center;gap:8px;padding-left:4px}
+  .subadd input{flex:1;border:0;background:transparent;font-family:inherit;font-size:14px;padding:4px 0;color:var(--ink)}
   .r-daycol{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
   .r-daycol .wl{font-size:12px;font-weight:700;color:var(--ink-soft)}
   .rday{width:100%;max-width:44px;aspect-ratio:1;border-radius:50%;border:2px solid var(--rc,#7fc6cc);
@@ -1582,6 +1599,30 @@
   var CATS={focus:{name:'공부/일',color:'#4585D6'},study:{name:'성장',color:'#27AFC1'},health:{name:'몸',color:'#F0863D'},mind:{name:'마음',color:'#E85A8A'},life:{name:'돈',color:'#43B96B'},rest:{name:'기쁨',color:'#EAB81E'},people:{name:'사람',color:'#9A5BD8'}};
   function catColor(id){return (CATS[id]||CATS.focus).color;}
   function catName(id){return (CATS[id]||CATS.focus).name;}
+  // 작업 대표색 (앱 BlockPalette.displayColor 파리티): colorKey('family.shade')
+  // → HSB, 없으면 카테고리 색. 앱 BlockPalette.families(HSB)를 그대로 이식.
+  var BP={rose:[[354,.52,.90],[340,.42,.94],[8,.50,.88],[348,.32,.95]],
+    coral:[[22,.55,.92],[14,.46,.93],[30,.52,.90],[24,.36,.95]],
+    amber:[[42,.60,.92],[48,.52,.93],[36,.56,.90],[45,.40,.95]],
+    lime:[[85,.48,.82],[75,.44,.86],[95,.42,.80],[85,.30,.89]],
+    green:[[140,.45,.78],[150,.42,.81],[130,.40,.82],[145,.28,.87]],
+    teal:[[172,.48,.78],[181,.44,.81],[164,.42,.80],[173,.30,.87]],
+    sky:[[200,.50,.88],[208,.46,.90],[193,.44,.88],[200,.32,.93]],
+    blue:[[220,.48,.88],[228,.44,.90],[213,.46,.88],[221,.30,.93]],
+    indigo:[[248,.40,.86],[256,.36,.88],[241,.38,.86],[249,.24,.92]],
+    purple:[[275,.42,.86],[283,.38,.88],[268,.40,.86],[276,.26,.92]],
+    plum:[[315,.42,.88],[323,.38,.90],[306,.40,.88],[315,.26,.93]],
+    stone:[[32,.14,.74],[210,.10,.74],[45,.18,.80],[0,0,.77]]};
+  function bpColor(k){var p=String(k).split('.'),f=BP[p[0]];if(!f)return null;
+    var s=f[Math.min(parseInt(p[1],10)||0,f.length-1)],br=s[2],sb=s[1],
+    l=br*(1-sb/2),sl=(l<=0||l>=1)?0:(br-l)/Math.min(l,1-l);
+    return 'hsl('+s[0]+' '+Math.round(sl*100)+'% '+Math.round(l*100)+'%)';}
+  function taskDisplayColor(t){var k=t.colorKey||'';if(k.charAt(0)==='#')return k;var c=bpColor(k);if(c)return c;return catColor(t.categoryID);}
+  function parseSubs(t){try{return JSON.parse(t.subtasksJSON||'[]');}catch(e){return [];}}
+  function colAlpha(c,a){if(c.indexOf('hsl(')===0)return c.replace(')',' / '+a+')');
+    if(c.charAt(0)==='#'){var h=c.slice(1);if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+      return 'rgba('+parseInt(h.slice(0,2),16)+','+parseInt(h.slice(2,4),16)+','+parseInt(h.slice(4,6),16)+','+a+')';}
+    return c;}
   // 앱(SF Symbol) 스타일 라인 아이콘 (요청: 웹 아이콘을 앱과 동일 톤으로).
   function svgI(p,fill){return '<svg class="ic" viewBox="0 0 24 24" fill="'+(fill||'none')+'" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';}
   var CAT_IC={
@@ -1636,11 +1677,18 @@
   function taskMetaHTML(t){
     var out='';
     var dur=t.durationMin||0;
-    out+='<span class="t-dur">'+(dur>0?(dur>=60?(Math.floor(dur/60)+'시간'+(dur%60?(' '+(dur%60)+'분'):'')):(dur+'분')):'실시간')+'</span>';
+    // 앱 TodoView 파리티: 항상 '\(durationMin)분' (0분도 '0분', 시간 합성·'실시간' 없음).
+    out+='<span class="t-dur">'+dur+'분</span>';
     if(t.matrixQuadrant&&!t.isRewardItem)out+='<span class="t-hint">'+quadHint(t.matrixQuadrant)+'</span>';
     if(t.isRewardItem)out+='<span class="t-reward">'+IC.gift+'<span class="rtext"> 보상</span></span>';
     else if((t.rewardMoney||0)>0)out+='<span class="t-reward">'+IC.gift+'<span class="rtext"> '+moneyStr(t.rewardMoney)+'</span></span>';
     else if(t.rewardText)out+='<span class="t-reward">'+IC.gift+'<span class="rtext"> '+esc(t.rewardText)+'</span></span>';
+    // 앱 taskRow 메타 부속 (요청): 횟수·넛지 종·미룸 화살표·하위작업 단계.
+    if(t.countTarget>0)out+='<span class="t-dur">· '+(t.countDone||0)+'/'+t.countTarget+'</span>';
+    if(t.nudgeEnabled)out+='<span class="t-dur" style="display:inline-flex;align-items:center">'+IC.bell+'</span>';
+    if(t.deferredUntil)out+='<span class="t-dur" style="display:inline-flex;align-items:center;color:#AF52DE"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 17H10a4 4 0 0 1 0-8h9"/><path d="M16 5l4 4-4 4"/></svg></span>';
+    var subs=parseSubs(t);
+    if(subs.length>0)out+='<span class="t-dur">· 단계 '+subs.filter(function(s){return s.isDone;}).length+'/'+subs.length+'</span>';
     return out;
   }
   // 메모가 있으면 메모 아이콘 (요청). 클릭 시 편집 모달의 메모로.
@@ -1774,7 +1822,7 @@
   function wireCalStrip(el){
     el.querySelectorAll('.cal-cell').forEach(function(c){c.addEventListener('click',function(){
       calSel=new Date(+c.dataset.t);calSel.setHours(0,0,0,0);renderCalStrips();renderTodo();renderMatrix();});});
-    el.querySelector('.cal-toggle').addEventListener('click',function(){calMonthly=!calMonthly;renderCalStrips();});
+    el.querySelector('.cal-toggle').addEventListener('click',function(){calMonthly=!calMonthly;renderCalStrips();renderTodo();renderMatrix();});
     // 주간: 슬라이더가 손가락을 1:1 따라오고, 놓으면 스냅 (요청).
     var wrap=el.querySelector('.cal-wrap');
     if(wrap){
@@ -3068,14 +3116,19 @@
       closeSwipe();renderTodo();renderBig();renderMosaic();pushSnapshot();});
     row.querySelector('.sa-delete').addEventListener('click',function(){deleteTask(t);});
   }
-  // 매트릭스 버튼 → 행이 4등분 사분면 선택지로 (앱 파리티, 요청).
+  // 매트릭스 버튼 → 행이 '어느 칸으로?' 캡션 + 미니 2×2 그리드 4개로 (앱 matrixQuadrantPicker 파리티).
   function showMxPick(row,t){
     var pick=row.querySelector('.mx-pick');
-    var QS=[[1,'중요·긴급','#EF6461'],[2,'중요·여유','#4585D6'],[3,'긴급·사소','#F0863D'],[4,'사소·여유','#9A5BD8']];
-    pick.innerHTML=QS.map(function(q){return '<button data-q="'+q[0]+'" style="background:'+q[2]+'">'+q[1]+'</button>';}).join('');
+    function mini(q){var cells='';
+      for(var c=1;c<=4;c++){cells+='<span style="width:17px;height:15px;border-radius:3px;display:grid;place-items:center;'+(c===q?'background:#30B0C7;color:#fff;font-size:10px;font-weight:700':'background:rgba(90,100,120,.18)')+'">'+(c===q?q:'')+'</span>';}
+      return '<button data-q="'+q+'" style="display:grid;grid-template-columns:repeat(2,17px);gap:2px">'+cells+'</button>';}
+    pick.innerHTML='<span style="font-size:12px;font-weight:600;color:var(--ink-soft)">어느 칸으로?</span>'+
+      '<span style="flex:1"></span>'+[1,2,3,4].map(mini).join('')+
+      '<button class="mx-close" style="color:var(--ink-soft);font-size:17px;line-height:1">✕</button>';
     row.classList.add('mx-open');
-    pick.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){
+    pick.querySelectorAll('button[data-q]').forEach(function(b){b.addEventListener('click',function(){
       t.matrixQuadrant=+b.dataset.q;row.classList.remove('mx-open');closeSwipe();renderAll();pushSnapshot();});});
+    pick.querySelector('.mx-close').addEventListener('click',function(){row.classList.remove('mx-open');closeSwipe();});
   }
 
   // D2-5: '타임라인N' 회색 캡슐 — N = 그 작업의 오늘 기록 블록 수.
@@ -3086,36 +3139,77 @@
     if(!hasPlan&&!n)return '';
     return '<span class="t-hint" style="background:var(--card-2)">타임라인'+(n||'')+'</span>';
   }
+  // 인라인 하위작업 펼침 상태 — renderTodo 재렌더에도 유지 (앱 expandedTask 파리티).
+  var expandedTaskId=null;
   // 할일 한 줄 (스와이프 4버튼 포함) — 여러 섹션이 공유한다 (요청 리팩터).
-  function buildTodoRow(t){
+  // inDone=true → '완료됨' 섹션 행: 회색 채움 체크, 별·재생·부속 버튼 없음 (앱 doneRow 파리티).
+  function buildTodoRow(t,inDone){
     var placed=t.scheduledStart&&t.durationMin;
+    var col=taskDisplayColor(t);              // 앱 displayColor: colorKey ?? 카테고리 색
+    var chk=inDone?'#8a93a5':col;             // 완료됨 섹션 = 회색(.secondary 근사), 그 외 = 작업 색
+    var subs=parseSubs(t);
+    var expanded=!inDone&&expandedTaskId===t.id;
     var row=document.createElement('div');row.className='task'+(t.isDone?' done':'');row.dataset.id=t.id;
     row.innerHTML=
       '<div class="swipe-grp lead">'+
         '<button class="sa sa-tomorrow">'+IC.curve+'<b>내일로</b></button>'+
-        '<button class="sa sa-matrix">'+IC.grid+'<b>매트릭스</b></button></div>'+
+        '<button class="sa sa-matrix">'+IC.grid+'<b>매트릭스로</b></button></div>'+
       '<div class="swipe-grp trail">'+
         '<button class="sa sa-timeline">'+IC.sunrise+'<b>타임라인</b></button>'+
         '<button class="sa sa-delete">'+IC.trash+'<b>삭제</b></button></div>'+
       '<div class="mx-pick"></div>'+
       '<div class="task-inner">'+
-        '<span class="check'+(t.isDone?' done':'')+'"></span>'+
+        '<span class="check'+(t.isDone?' done':'')+'" style="border-color:'+chk+(t.isDone?';background:'+chk:'')+'"></span>'+
         (t.iconName
           ?'<span class="t-icon" style="color:'+(iconTint(t.iconName)||catColor(t.categoryID))+'">'+findIconSvg(t.iconName)+'</span>'
           :'<span class="swatch" style="background:'+catColor(t.categoryID)+'"></span>')+
         '<div class="t-main"><div class="t-title">'+esc(t.title)+'</div>'+
           '<div class="t-meta">'+(placed?'<span class="t-time">'+fmtTime(t.scheduledStart)+'</span>':'')+taskMetaHTML(t)+tlBadgeHTML(t)+'</div></div>'+
         memoIconHTML(t)+
-        '<span class="star'+(t.isStarred?' on':'')+'">'+(t.isStarred?'★':'☆')+'</span>'+
-        '<button class="play" title="집중 시작">'+IC.play+'</button>'+
+        (inDone?'':
+          ((t.countTarget>0?'<button class="t-plus" title="1회 완료" style="color:'+col+'">'+svgI('<circle cx="12" cy="12" r="9"/><path d="M12 8.5v7M8.5 12h7"/>')+'</button>':'')+
+           '<button class="subtog" title="하위 작업" style="color:'+(expanded||subs.length>0?col:'rgba(90,100,120,.4)')+'">'+svgI('<path d="M6 5v6a3 3 0 0 0 3 3h9"/><path d="M15 11l4 3-4 3"/>')+'</button>'+
+           '<span class="star'+(t.isStarred?' on':'')+'">'+(t.isStarred?'★':'☆')+'</span>'+
+           '<button class="play" title="집중 시작" style="color:'+col+'"><svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M9.8 7.6v8.8L17 12z" fill="#fff"/></svg></button>'))+
       '</div>';
     var tl=row.querySelector('.t-title');tl.style.cursor='pointer';tl.addEventListener('click',function(){openEditor(t);});
-    row.querySelector('.play').addEventListener('click',function(){startFocus(t);});
     var mi=row.querySelector('.t-memo');if(mi)mi.addEventListener('click',function(e){e.stopPropagation();openMemoPopup(t);});
-    row.querySelector('.check').addEventListener('click',function(){t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;if(t.isDone)grantReward(t);renderTodo();pushSnapshot();});
-    row.querySelector('.star').addEventListener('click',function(){t.isStarred=!t.isStarred;renderTodo();pushSnapshot();});
+    if(inDone){
+      row.querySelector('.check').addEventListener('click',function(){t.isDone=false;t.completedAt=null;renderTodo();pushSnapshot();});
+    }else{
+      row.querySelector('.play').addEventListener('click',function(){startFocus(t);});
+      row.querySelector('.check').addEventListener('click',function(){t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;if(t.isDone)grantReward(t);renderTodo();pushSnapshot();});
+      row.querySelector('.star').addEventListener('click',function(){t.isStarred=!t.isStarred;renderTodo();pushSnapshot();});
+      row.querySelector('.subtog').addEventListener('click',function(e){e.stopPropagation();expandedTaskId=expandedTaskId===t.id?null:t.id;renderTodo();});
+      var pb=row.querySelector('.t-plus');if(pb)pb.addEventListener('click',function(e){e.stopPropagation();
+        t.countDone=(t.countDone||0)+1;
+        if(t.countDone>=t.countTarget){t.isDone=true;t.completedAt=new Date().toISOString();grantReward(t);}
+        renderTodo();pushSnapshot();});
+      if(expanded)row.appendChild(buildSubPanel(t,col));
+    }
     attachSwipe(row,t,!!placed);
     return row;
+  }
+  // 인라인 하위작업 목록 (앱 SubtaskListEditor 파리티): 체크 토글 + 단계 추가.
+  function buildSubPanel(t,col){
+    var panel=document.createElement('div');panel.className='subpanel';
+    parseSubs(t).forEach(function(s,i){
+      var r=document.createElement('div');r.className='subrow'+(s.isDone?' done':'');r.style.background=colAlpha(col,0.10);
+      r.innerHTML='<span class="subck'+(s.isDone?' done':'')+'" style="border-color:'+(s.isDone?'#8a93a5':col)+(s.isDone?';background:#8a93a5':'')+'"></span>'+
+        '<span class="st">'+esc(s.title)+'</span>';
+      r.querySelector('.subck').addEventListener('click',function(e){e.stopPropagation();
+        var a=parseSubs(t);if(!a[i])return;a[i].isDone=!a[i].isDone;t.subtasksJSON=JSON.stringify(a);renderTodo();pushSnapshot();});
+      panel.appendChild(r);
+    });
+    var add=document.createElement('div');add.className='subadd';
+    add.innerHTML='<span style="color:var(--ink-soft);font-size:16px;line-height:1">＋</span><input type="text" placeholder="단계 추가">';
+    var inp=add.querySelector('input');
+    inp.addEventListener('keydown',function(e){if(e.key!=='Enter')return;var v=(inp.value||'').trim();if(!v)return;
+      var a=parseSubs(t);a.push({id:uuid(),title:v,isDone:false});t.subtasksJSON=JSON.stringify(a);renderTodo();pushSnapshot();
+      var np=document.querySelector('.task[data-id="'+t.id+'"] .subadd input');if(np)np.focus();});
+    add.addEventListener('click',function(e){e.stopPropagation();});
+    panel.appendChild(add);
+    return panel;
   }
   // 첫 방문 안내 (요청): 핵심 3단계만, 닫으면 다시 안 보임.
   function welcomeHTML(){
@@ -3129,7 +3223,8 @@
   }
   function renderTodo(){
     var dow=document.getElementById('todoDow');
-    if(dow)dow.textContent=calSel.toLocaleDateString('ko-KR',{weekday:'short'});
+    // 앱 TodoView 헤더 파리티: 주간=요일 전체(‘토요일’), 월간=월 이름(‘7월’).
+    if(dow)dow.textContent=calMonthly?calSel.toLocaleDateString('ko-KR',{month:'long'}):calSel.toLocaleDateString('ko-KR',{weekday:'long'});
     var list=document.getElementById('todoList');
     // FLIP: 재정렬 전 각 행의 위치를 기억해 이동을 애니메이션한다 (요청:
     // 완료 → 아래로, 별표 → 위로 움직이는 게 보이도록).
@@ -3168,10 +3263,18 @@
       list.insertAdjacentHTML('beforeend','<div class="sec-h">'+mon+'월 '+day+'일 일정</div>');
       scheduled.forEach(function(t){list.appendChild(buildTodoRow(t));});
     }
-    var bkOpen=backlog.filter(function(t){return !t.isDone;}).length;
-    if(backlog.length){
+    // 완료된 미배치 작업은 '완료됨' 섹션으로 분리 (앱 doneTasks/doneSection 파리티).
+    // 일정이 있는 완료 작업은 앱처럼 담아둔 일에 남긴다.
+    var bkDone=backlog.filter(function(t){return !t.scheduledStart&&t.isDone;});
+    var bkList=backlog.filter(function(t){return t.scheduledStart||!t.isDone;});
+    var bkOpen=bkList.filter(function(t){return !t.isDone;}).length;
+    if(bkList.length){
       list.insertAdjacentHTML('beforeend','<div class="sec-h">담아둔 일 '+bkOpen+'</div>');
-      backlog.forEach(function(t){list.appendChild(buildTodoRow(t));});
+      bkList.forEach(function(t){list.appendChild(buildTodoRow(t));});
+    }
+    if(bkDone.length){
+      list.insertAdjacentHTML('beforeend','<div class="sec-h">완료됨</div>');
+      bkDone.slice(0,20).forEach(function(t){list.appendChild(buildTodoRow(t,true));});
     }
     // FLIP 적용: 이전 위치→새 위치로 부드럽게.
     list.querySelectorAll('.task[data-id]').forEach(function(el){
@@ -3276,7 +3379,7 @@
   function renderMatrix(){
     var mxLongL=false,mxLongR=false;
     var mdow=document.getElementById('matrixDow');
-    if(mdow)mdow.textContent=calSel.toLocaleDateString('ko-KR',{weekday:'short'});
+    if(mdow)mdow.textContent=calMonthly?calSel.toLocaleDateString('ko-KR',{month:'long'}):calSel.toLocaleDateString('ko-KR',{weekday:'long'});
     var g=document.getElementById('matrixGrid');g.innerHTML='';g.classList.add('fit');
     var cnt={1:0,2:0,3:0,4:0};
     [{q:1,cls:'q1',h:'중요 · 긴급'},{q:2,cls:'q2',h:'중요 · 여유'},{q:3,cls:'q3',h:'긴급 · 사소'},{q:4,cls:'q4',h:'사소 · 여유 · 보상'}].forEach(function(qd){
