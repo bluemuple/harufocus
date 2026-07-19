@@ -272,8 +272,8 @@
      그룹을 안쪽으로 14px 연장한다 (닫힘 상태에선 inner가 덮는다). */
   .swipe-grp.trail::before{content:"";position:absolute;top:0;bottom:0;left:-14px;width:15px;background:#007AFF}
   .swipe-grp.lead::after{content:"";position:absolute;top:0;bottom:0;right:-14px;width:15px;background:#30B0C7}
-  .mtask .swipe-grp.trail::before{background:#FF3B30}
-  .mtask .swipe-grp.lead::after{background:#007AFF}
+  .mtask .swipe-grp.trail::before{background:#007AFF}
+  .mtask .swipe-grp.lead::after{background:#AF52DE}
   .sa{flex:1;height:100%;border:0;color:#fff;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:3px}
   .sa b{font-size:10px;font-weight:800}
@@ -316,24 +316,27 @@
   /* matrix */
   .matrix{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   /* 매트릭스 셀 — 앱처럼 하늘 위 반투명 카드 (요청). */
-  .quad{border-radius:16px;padding:12px;min-height:120px;border:1px solid rgba(255,255,255,.55);
-    background:rgba(255,255,255,.18)!important;backdrop-filter:blur(2px)}
+  .quad{border-radius:14px;padding:10px;min-height:120px;border:1px solid rgba(255,255,255,.55);
+    backdrop-filter:blur(2px)}
   /* 매트릭스 제목 (요청): 쉐이드 대신 흰 1px 아웃라인 — 진한 잉크 글자가
      어떤 그라데이션 배경에서도 또렷하게 보인다. */
-  .quad h3{font-size:12.5px;font-weight:800;margin-bottom:8px;color:#22314f;
+  .quad h3{font-size:12.5px;font-weight:800;margin-bottom:8px;color:rgba(60,60,67,.6);display:flex;align-items:center;gap:8px;min-width:0;
     text-shadow:-1px 0 0 rgba(255,255,255,.85),1px 0 0 rgba(255,255,255,.85),0 -1px 0 rgba(255,255,255,.85),0 1px 0 rgba(255,255,255,.85)}
-  .mtask{position:relative;background:transparent;border-radius:11px;font-size:12.5px;margin-bottom:6px;box-shadow:0 3px 10px rgba(20,40,80,.12);overflow:hidden}
-  .mtask-inner{display:flex;align-items:center;gap:7px;background:#fff;border-radius:11px;padding:8px 10px;position:relative;z-index:1;touch-action:pan-y}
+  .qtitle{white-space:nowrap;flex:0 0 auto}
+  .qdash{flex:1 1 9px;min-width:9px;border-top:1px dashed rgba(60,60,67,.21)}
+  .qhint{font-size:11px;font-weight:600;color:rgba(60,60,67,.5);white-space:nowrap;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis}
+  .mtask{position:relative;background:transparent;border-radius:10px;font-size:15px;margin-bottom:6px;box-shadow:0 3px 10px rgba(20,40,80,.12);overflow:hidden}
+  .mtask-inner{display:flex;align-items:center;gap:7px;background:#fff;border-radius:10px;padding:12px 10px;min-height:52px;box-sizing:border-box;position:relative;z-index:1;touch-action:pan-y}
   .swipe-grp.sm{width:auto}
-  .swipe-grp.sm .sa{width:38px;flex:0 0 38px}
+  .swipe-grp.sm .sa{width:58px;flex:0 0 58px}
   .swipe-grp.sm .sa svg{width:17px;height:17px}
   .mtask.sw-left .swipe-grp.lead,.mtask.sw-right .swipe-grp.trail{visibility:visible}
   .mx-ghost{position:fixed;z-index:95;pointer-events:none;opacity:.9;box-shadow:0 12px 30px rgba(0,0,0,.3);list-style:none}
   .mx-ghost .swipe-grp{display:none}
   .mx-dragsrc{opacity:.3}
   .mx-dropline{position:fixed;height:3px;border-radius:2px;background:var(--sky-blue);z-index:94;display:none;box-shadow:0 0 6px rgba(70,133,214,.6)}
-  .q1,.q2,.q3,.q4{background:rgba(255,255,255,.18)}
-  .q1 h3{color:#c0455f}.q2 h3{color:#3f9a58}.q3 h3{color:#c58a1e}.q4 h3{color:#6b7688}
+  .q1,.q2{background:rgba(255,255,255,.27)}.q3,.q4{background:rgba(255,255,255,.19)}
+  .q4-coach{font-size:11px;color:var(--ink-soft);opacity:.85;text-align:center;padding-top:10px;margin-bottom:6px}
 
   /* routine */
   .routines{display:flex;flex-direction:column;gap:11px}
@@ -396,13 +399,13 @@
   .addrow button{font-family:inherit;font-weight:700;font-size:13.5px;border:0;border-radius:10px;padding:0 16px;background:var(--accent);color:#3a2c05;cursor:pointer}
   .task .del{margin-left:6px;border:0;background:transparent;color:var(--ink-soft);font-size:18px;line-height:1;cursor:pointer;opacity:.55;padding:0 2px}
   .task .del:hover{opacity:1;color:#e0564e}
-  .quad .qadd{margin-top:8px;width:100%;font-family:inherit;font-size:12.5px;font-weight:700;color:#fff;background:rgba(255,255,255,.14);border:1px dashed rgba(255,255,255,.6);border-radius:9px;padding:8px 0;cursor:pointer}
+  .quad .qadd{margin-top:8px;width:100%;font-family:inherit;font-size:12px;font-weight:400;color:var(--sec,rgba(60,60,67,.6));background:transparent;border:1px dashed var(--sec-bd,rgba(60,60,67,.3));border-radius:8px;padding:12px 0;cursor:pointer}
   .quad .mtask{display:block}
   .mtask-inner{width:100%;box-sizing:border-box}
-  .mck{width:18px;height:18px;border-radius:50%;border:2px solid var(--ink-soft);flex:0 0 auto;cursor:pointer;display:grid;place-items:center;font-size:11px;color:#fff}
-  .mck.on{background:#6bbf7a;border-color:#6bbf7a}
+  .mck{width:20px;height:20px;border-radius:50%;border:2px solid var(--dc,var(--ink-soft));flex:0 0 auto;cursor:pointer;display:grid;place-items:center;font-size:11px;color:#fff}
+  .mck.on{background:var(--dc,#6bbf7a);border-color:var(--dc,#6bbf7a)}
   .mt-main{flex:1;min-width:0}
-  .mt-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mt-title{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .mtask.done .mt-title{text-decoration:line-through;color:var(--ink-soft)}
   .mtask .play{width:26px;height:26px;font-size:10px;margin-left:0}
   .quad .mtask .del{margin-left:auto;border:0;background:transparent;color:var(--ink-soft);font-size:16px;line-height:1;cursor:pointer;opacity:.5}
@@ -3292,22 +3295,26 @@
 
   // 매트릭스 행 스와이프 (요청: 할일처럼, 버튼 폭 최소). 오른쪽=내일로+타임라인, 왼쪽=삭제.
   function attachMxSwipe(el,t){
-    var inner=el.querySelector('.mtask-inner'),sx=0,sy=0,cur=0,startCur=0,drag=false,lock='';
-    var LW=76,RW=38;
+    var inner=el.querySelector('.mtask-inner'),sx=0,sy=0,cur=0,startCur=0,drag=false,lock='',raw=0;
+    var LW=60,RW=116;   // 오른쪽 스와이프=내일로(풀스와이프 즉시 실행) · 왼쪽=타임라인+삭제 (앱 파리티)
     function set(x){cur=x;inner.style.transform='translateX('+x+'px)';
       el.classList.toggle('sw-left',x>4);el.classList.toggle('sw-right',x<-4);}
+    function doTomorrow(){var d=new Date();d.setDate(d.getDate()+1);d.setHours(0,0,0,0);t.deferredUntil=d.toISOString();renderAll();pushSnapshot();}
     inner.addEventListener('pointerdown',function(e){if(e.pointerType==='mouse')return;
-      sx=e.clientX;sy=e.clientY;startCur=cur;drag=true;lock='';inner.style.transition='none';});
+      sx=e.clientX;sy=e.clientY;startCur=cur;raw=cur;drag=true;lock='';inner.style.transition='none';});
     inner.addEventListener('pointermove',function(e){if(!drag||mxDragging)return;
       var dx=e.clientX-sx,dy=e.clientY-sy;
       if(!lock){if(Math.abs(dx)<6&&Math.abs(dy)<6)return;lock=Math.abs(dx)>Math.abs(dy)?'x':'y';}
       if(lock!=='x')return;e.preventDefault();
-      set(Math.max(-RW,Math.min(LW,startCur+dx)));});
+      raw=startCur+dx;
+      var x=Math.max(-RW,Math.min(LW,raw));
+      if(raw>LW)x=LW+(raw-LW)*0.3;   // 내일로 풀스와이프 오버드래그 (저항)
+      set(x);});
     function end(){if(!drag)return;drag=false;inner.style.transition='transform .2s cubic-bezier(.3,0,.2,1)';
+      if(raw>LW+40){set(0);doTomorrow();return;}   // 풀스와이프 → 내일로 즉시 실행 (앱 파리티)
       if(cur>LW*0.5)set(LW);else if(cur<-RW*0.5)set(-RW);else set(0);}
     inner.addEventListener('pointerup',end);inner.addEventListener('pointercancel',end);
-    var bt=el.querySelector('.sa-tomorrow');if(bt)bt.addEventListener('click',function(){
-      var d=new Date();d.setDate(d.getDate()+1);d.setHours(0,0,0,0);t.deferredUntil=d.toISOString();renderAll();pushSnapshot();});
+    var bt=el.querySelector('.sa-tomorrow');if(bt)bt.addEventListener('click',doTomorrow);
     var bl=el.querySelector('.sa-timeline');if(bl)bl.addEventListener('click',function(){
       var slot=nextSlotToday();t.scheduledStart=todayAt(Math.floor(slot),(slot%1)*60);if(!t.durationMin)t.durationMin=50;
       setPlanFromSchedule(t);renderAll();pushSnapshot();});
@@ -3387,17 +3394,17 @@
         .sort(function(a,b){return (a.isDone?1:0)-(b.isDone?1:0);});   // 완료는 맨 아래 (§5)
       cnt[qd.q]=items.length;
       var b=document.createElement('div');b.className='quad '+qd.cls;b.dataset.q=qd.q;
-      b.innerHTML='<h3>'+qd.h+'</h3>'+
+      b.innerHTML='<h3><span class="qtitle">'+qd.h+'</span><i class="qdash"></i><span class="qhint">'+quadHint(qd.q)+'</span></h3>'+
         items.map(function(t){return '<div class="mtask'+(t.isDone?' done':'')+'">'+
-          '<div class="swipe-grp lead sm"><button class="sa sa-tomorrow">'+IC.curve+'</button><button class="sa sa-timeline">'+IC.sunrise+'</button></div>'+
-          '<div class="swipe-grp trail sm"><button class="sa sa-delete">'+IC.trash+'</button></div>'+
+          '<div class="swipe-grp lead sm"><button class="sa sa-tomorrow">'+IC.curve+'<b>내일로</b></button></div>'+
+          '<div class="swipe-grp trail sm"><button class="sa sa-timeline">'+IC.sunrise+'<b>타임라인</b></button><button class="sa sa-delete">'+IC.trash+'<b>삭제</b></button></div>'+
           '<div class="mtask-inner">'+
-          '<span class="mck'+(t.isDone?' on':'')+'" title="완료">'+(t.isDone?'✓':'')+'</span>'+
+          '<span class="mck'+(t.isDone?' on':'')+'" style="--dc:'+taskDisplayColor(t)+'" title="완료">'+(t.isDone?'✓':'')+'</span>'+
           (t.iconName?'<span class="t-icon" style="color:'+(iconTint(t.iconName)||catColor(t.categoryID))+'">'+findIconSvg(t.iconName)+'</span>':'')+
           '<div class="mt-main"><div class="mt-title">'+esc(t.title)+'</div></div>'+
           memoIconHTML(t)+'</div></div>';}).join('')+
-        '<button class="qadd" data-q="'+qd.q+'">+ 추가</button>'+
-        (qd.q===4?'<button class="app-banner q4time">📱 내 시간이 간 곳</button>':'');
+        (qd.q===4&&items.length===0?'<div class="q4-coach">하고 싶은 걸 담아두면 작업에 보상으로 걸 수 있어요 🎁</div>':'')+
+        '<button class="qadd" data-q="'+qd.q+'">+ 추가</button>';
       b.querySelectorAll('.mtask').forEach(function(el,k){
         var t=items[k];
         el.querySelector('.mck').addEventListener('click',function(){t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;if(t.isDone)grantReward(t);renderAll();pushSnapshot();});
@@ -3407,8 +3414,6 @@
         attachMxDrag(el,t);       // 꾹 눌러 셀 간 이동 (요청: 고스트+가로선)
       });
       b.querySelector('.qadd').addEventListener('click',function(){openCapture('matrix',{quadrant:qd.q});});
-      var q4t=b.querySelector('.q4time');
-      if(q4t)q4t.addEventListener('click',appNudge);   // Screen Time은 웹 불가 (§9)
       items.forEach(function(t){if((t.title||'').length>12){if(qd.q===1||qd.q===3)mxLongL=true;else mxLongR=true;}});
       g.appendChild(b);
     });
@@ -3741,6 +3746,8 @@
     var a=K[i],b=K[Math.min(i+1,K.length-1)],t=(h-a[0])/Math.max(0.001,b[0]-a[0]);
     var top=lerpHex(a[1],b[1],t),bot=lerpHex(a[2],b[2],t);
     var r=document.documentElement.style;r.setProperty('--sky-top',top);r.setProperty('--sky-bot',bot);
+    // 밤엔 하늘이 남색 → 매트릭스 회색 요소(‘+ 추가’)를 앱 colorScheme 강제처럼 밝게 (앱 파리티).
+    var nt=isNightNow();r.setProperty('--sec',nt?'rgba(235,235,245,.6)':'rgba(60,60,67,.6)');r.setProperty('--sec-bd',nt?'rgba(235,235,245,.3)':'rgba(60,60,67,.3)');
   }
   applySky();setInterval(applySky,60000);
 
