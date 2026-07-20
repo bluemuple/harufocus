@@ -690,11 +690,43 @@
     vertical-align:3px;text-shadow:0 1px 2px rgba(20,40,80,.3);line-height:1}
   .dow-toggle::after{content:" ⌄";font-size:11px}
   .dow-toggle.open::after{content:" ⌃"}
-  .calstrip{margin:12px 0 10px;color:#fff;display:none}
+  /* 요일 캡슐 옆에 붙는 달력 툴팁 (요청). 폭·위치는 placeCal()이 캡슐과
+     우상단 버튼 사이 빈 공간을 재서 그 절반쯤으로 잡는다. */
+  .calstrip{position:fixed;z-index:48;display:none;color:#fff;
+    background:rgba(28,36,58,.94);border-radius:14px;padding:9px 11px 11px;
+    box-shadow:0 14px 36px rgba(10,16,34,.4)}
+  .calstrip.open{display:block}
+  .calstrip::before{content:"";position:absolute;left:18px;top:-6px;width:12px;height:12px;
+    background:inherit;transform:rotate(45deg);border-radius:2px}
+  .cal-head{display:flex;align-items:center;gap:6px;margin-bottom:7px}
+  .cal-head .cal-nav{width:24px;height:24px;flex:0 0 auto;border:0;border-radius:50%;
+    background:rgba(255,255,255,.12);color:#fff;font-family:inherit;font-size:13px;line-height:1;
+    cursor:pointer;display:grid;place-items:center}
+  .cal-head .cal-nav:hover{background:rgba(255,255,255,.22)}
+  .cal-head .cal-title{flex:1;min-width:0;text-align:center;font-size:12.5px;font-weight:800;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* 주간↔월간 전환 — 툴팁 안(가장 가까운 자리)에 둔다 (요청). */
+  .cal-head .cal-toggle{flex:0 0 auto;border:0;border-radius:999px;background:rgba(255,255,255,.14);
+    color:#fff;font-family:inherit;font-size:11px;font-weight:700;padding:4px 9px;cursor:pointer;
+    display:flex;align-items:center;gap:4px}
+  .cal-head .cal-toggle:hover{background:rgba(255,255,255,.24)}
   .cal-wrap{overflow:hidden;touch-action:pan-y}
   .cal-slider{display:flex;width:300%;transform:translateX(-33.3333%)}
   .cal-pane{width:33.3333%;flex:0 0 33.3333%}
-  .calstrip.open{display:block}
+  /* 이번 주(달)에서 벗어나면 화면 아래에 '오늘로' (요청). */
+  .cal-today{position:fixed;left:50%;transform:translateX(-50%);z-index:49;display:none;
+    bottom:calc(96px + env(safe-area-inset-bottom));
+    border:0;border-radius:999px;background:rgba(28,36,58,.94);color:#fff;font-family:inherit;
+    font-size:12.5px;font-weight:700;padding:9px 16px;cursor:pointer;
+    box-shadow:0 10px 26px rgba(10,16,34,.36)}
+  .cal-today.on{display:block}
+  @media(min-width:1100px){.cal-today{bottom:26px}}
+  /* 지난 날을 고르면 매트릭스는 '그날 끝낸 일' 보기 전용 (요청). */
+  /* #view-matrix가 세로 flex라 그냥 두면 가로로 쭉 늘어난다 → 내용 폭만. */
+  .mx-pastnote{margin:0 0 8px;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.9);
+    background:rgba(255,255,255,.16);border-radius:999px;padding:5px 11px;
+    display:inline-block;align-self:flex-start}
+  .quad.readonly .qadd-top,.quad.readonly .qinfo{display:none}
   .sec-h{font-size:13px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(20,40,80,.4);margin:14px 2px 8px}
   /* ── 평원 유기 요소 (앱 §1: 들풀·들꽃/반딧불) + 장소 ── */
   .meadow{position:absolute;left:0;right:0;bottom:0;height:110px;pointer-events:none;z-index:2;overflow:hidden}
@@ -1399,6 +1431,7 @@
   <button class="topcap" id="topCap"><span class="tc-ic" id="tcIc"></span><span class="tc-txt" id="tcTxt"></span></button>
   <!-- 방금 한 일 + 실행 취소 (요청 첨부4·5) -->
   <!-- 편집 모드에서만 (요청): 무슨 키를 쓸 수 있는지 -->
+  <button class="cal-today" id="calToday">오늘로</button>
   <div class="sc-panel" id="scPanel">
     <b>단축키</b>
     <div><kbd>↑</kbd><kbd>↓</kbd> 마감선 고르기</div>
@@ -2173,18 +2206,80 @@
   function calWeekStart(d){var s=new Date(d);s.setDate(s.getDate()-s.getDay());s.setHours(0,0,0,0);return s;}
   function renderCalStrips(){
     document.querySelectorAll('.calstrip').forEach(function(el){el.innerHTML=buildCalHTML();wireCalStrip(el);});
+    placeCal();paintCalToday();
   }
+  /* 다시 그리고 화면도 맞춘다 — 달력에서 뭘 누르든 이 하나만 부르면 된다. */
+  function calRefresh(){renderCalStrips();renderTodo();renderMatrix();}
+  function calIsToday(){
+    var t=new Date();t.setHours(0,0,0,0);
+    return calMonthly
+      ? (calSel.getFullYear()===t.getFullYear()&&calSel.getMonth()===t.getMonth())
+      : (calWeekStart(calSel).getTime()===calWeekStart(t).getTime());
+  }
+  function paintCalToday(){
+    var b=document.getElementById('calToday');if(!b)return;
+    var anyOpen=!!document.querySelector('.calstrip.open');
+    b.classList.toggle('on',anyOpen&&!calIsToday());
+  }
+  /* 툴팁을 요일 캡슐 옆에 놓는다 (요청): 캡슐 오른쪽 빈 공간의 절반쯤 폭. */
+  function placeCal(){
+    document.querySelectorAll('.calstrip.open').forEach(function(el){
+      var page=el.dataset.cal;
+      var btn=document.querySelector('.dow-toggle[data-cal="'+page+'"]');
+      if(!btn)return;
+      var r=btn.getBoundingClientRect();
+      var nav=document.querySelector('.desk-nav');
+      var rightEdge=(nav&&window.innerWidth>=1100)?nav.getBoundingClientRect().left-14:window.innerWidth-14;
+      var free=Math.max(0,rightEdge-(r.right+12));
+      var w=Math.max(268,Math.min(460,free>0?free/2:320));
+      if(window.innerWidth<1100)w=Math.min(340,window.innerWidth-32);
+      el.style.width=w+'px';
+      var left=Math.min(Math.max(12,r.right+12),window.innerWidth-w-12);
+      el.style.left=left+'px';
+      el.style.top=(r.bottom+10)+'px';
+    });
+  }
+  window.addEventListener('resize',placeCal);
   // 요일 칩 탭 → 해당 페이지 캘린더 스트립 펼치기/접기 (요청).
   document.addEventListener('click',function(e){
     var t=e.target.closest('.dow-toggle');if(!t)return;
     var page=t.dataset.cal,strip=document.querySelector('.calstrip[data-cal="'+page+'"]');
     if(!strip)return;
+    // 한 번에 하나만 열린다.
+    document.querySelectorAll('.calstrip.open').forEach(function(o){
+      if(o!==strip){o.classList.remove('open');
+        var ob=document.querySelector('.dow-toggle[data-cal="'+o.dataset.cal+'"]');
+        if(ob)ob.classList.remove('open');}});
     var open=strip.classList.toggle('open');t.classList.toggle('open',open);
+    placeCal();paintCalToday();
   });
+  // 바깥을 누르면 닫는다.
+  document.addEventListener('pointerdown',function(e){
+    if(e.target.closest('.calstrip,.dow-toggle,.cal-today'))return;
+    var any=false;
+    document.querySelectorAll('.calstrip.open').forEach(function(o){any=true;o.classList.remove('open');
+      var ob=document.querySelector('.dow-toggle[data-cal="'+o.dataset.cal+'"]');
+      if(ob)ob.classList.remove('open');});
+    if(any)paintCalToday();
+  },true);
   function calCellHTML(d,dim,today){
     var cls='cal-cell'+(dim?' dim':'')+(calSameDay(d,calSel)?' sel':'')+(calSameDay(d,today)?' today':'');
     var dots=calDayDots(d).map(function(c){return '<i style="background:'+c+'"></i>';}).join('');
     return '<div class="'+cls+'" data-t="'+d.getTime()+'"><div class="cal-num">'+d.getDate()+'</div><div class="cal-dots">'+dots+'</div></div>';
+  }
+  /* 툴팁 머리: ‹ 제목 › + 주간/월간 전환. 전환 버튼을 툴팁 안에 두어
+     '주간뷰에 붙어 있게' 한다 (요청). */
+  function calHeadHTML(){
+    var t=calMonthly
+      ? (calSel.getFullYear()+'년 '+(calSel.getMonth()+1)+'월')
+      : (function(){var ws=calWeekStart(calSel),we=new Date(ws);we.setDate(ws.getDate()+6);
+          return (ws.getMonth()+1)+'월 '+ws.getDate()+'일 – '+(we.getMonth()+1)+'월 '+we.getDate()+'일';})();
+    return '<div class="cal-head">'+
+      '<button class="cal-nav" data-d="-1" title="이전">‹</button>'+
+      '<span class="cal-title">'+t+'</span>'+
+      '<button class="cal-nav" data-d="1" title="다음">›</button>'+
+      '<button class="cal-toggle">'+(calMonthly?'▤ 주간':'▦ 월간')+'</button>'+
+    '</div>';
   }
   function buildCalHTML(){
     var wl=['일','월','화','수','목','금','토'],today=new Date();today.setHours(0,0,0,0);
@@ -2198,7 +2293,7 @@
       for(var k=0;k<42;k++){var d=new Date(gridStart);d.setDate(gridStart.getDate()+k);
         html+=calCellHTML(d,d.getMonth()!==calSel.getMonth(),today);}
       html+='</div>';
-      return head+html+'<button class="cal-toggle">⌃</button>';
+      return calHeadHTML()+head+html;
     }
     // 주간 = 3-pane 슬라이더 (요청: 손가락 1:1 추종 드래그).
     function pane(base){
@@ -2208,13 +2303,18 @@
     }
     var prev=new Date(calSel);prev.setDate(prev.getDate()-7);
     var next=new Date(calSel);next.setDate(next.getDate()+7);
-    return head+'<div class="cal-wrap"><div class="cal-slider">'+pane(prev)+pane(calSel)+pane(next)+'</div></div>'+
-      '<button class="cal-toggle">⌄</button>';
+    return calHeadHTML()+head+'<div class="cal-wrap"><div class="cal-slider">'+pane(prev)+pane(calSel)+pane(next)+'</div></div>';
   }
   function wireCalStrip(el){
     el.querySelectorAll('.cal-cell').forEach(function(c){c.addEventListener('click',function(){
-      calSel=new Date(+c.dataset.t);calSel.setHours(0,0,0,0);renderCalStrips();renderTodo();renderMatrix();});});
-    el.querySelector('.cal-toggle').addEventListener('click',function(){calMonthly=!calMonthly;renderCalStrips();renderTodo();renderMatrix();});
+      calSel=new Date(+c.dataset.t);calSel.setHours(0,0,0,0);calRefresh();});});
+    el.querySelector('.cal-toggle').addEventListener('click',function(e){
+      e.stopPropagation();calMonthly=!calMonthly;calRefresh();});
+    // ‹ › = 이전/다음 주(월) — 손가락 스와이프와 같은 이동을 버튼으로도 (요청).
+    el.querySelectorAll('.cal-nav').forEach(function(b){b.addEventListener('click',function(e){
+      e.stopPropagation();var d=+b.dataset.d;
+      if(calMonthly)calSel.setMonth(calSel.getMonth()+d);else calSel.setDate(calSel.getDate()+d*7);
+      calSel.setHours(0,0,0,0);calRefresh();});});
     // 주간: 슬라이더가 손가락을 1:1 따라오고, 놓으면 스냅 (요청).
     var wrap=el.querySelector('.cal-wrap');
     if(wrap){
@@ -2233,8 +2333,7 @@
         slider.style.transition='transform .2s ease-out';
         slider.style.transform='translateX('+(dir===1?'-66.6666%':dir===-1?'0%':'-33.3333%')+')';
         if(dir!==0)setTimeout(function(){
-          calSel.setDate(calSel.getDate()+dir*7);calSel.setHours(0,0,0,0);
-          renderCalStrips();renderTodo();renderMatrix();},210);
+          calSel.setDate(calSel.getDate()+dir*7);calSel.setHours(0,0,0,0);calRefresh();},210);
       }
       wrap.addEventListener('pointerup',calEnd);wrap.addEventListener('pointercancel',calEnd);
     }else{
@@ -2245,8 +2344,7 @@
         if(!mswiping)return;mswiping=false;
         var dx=e.clientX-msx,dy=e.clientY-msy;
         if(Math.abs(dx)<40||Math.abs(dx)<Math.abs(dy)*1.5)return;
-        calSel.setMonth(calSel.getMonth()+(dx<0?1:-1));calSel.setHours(0,0,0,0);
-        renderCalStrips();renderTodo();renderMatrix();});
+        calSel.setMonth(calSel.getMonth()+(dx<0?1:-1));calSel.setHours(0,0,0,0);calRefresh();});
     }
   }
 
@@ -4484,15 +4582,30 @@
     var mdow=document.getElementById('matrixDow');
     if(mdow)mdow.textContent=calMonthly?calSel.toLocaleDateString('ko-KR',{month:'long'}):calSel.toLocaleDateString('ko-KR',{weekday:'long'});
     var g=document.getElementById('matrixGrid');g.innerHTML='';g.classList.add('fit');
+    // 지난 날을 고르면 그날 '끝낸' 일만 보여 주는 기록 뷰가 된다 (요청).
+    // 오늘·앞날은 예전 그대로 계획 뷰.
+    var _t0=new Date();_t0.setHours(0,0,0,0);
+    var mxPast=calSel<_t0;
+    var note=document.querySelector('.mx-pastnote');
+    if(note)note.remove();
+    if(mxPast){
+      var nb=document.createElement('div');nb.className='mx-pastnote';
+      nb.textContent=(calSel.getMonth()+1)+'월 '+calSel.getDate()+'일에 끝낸 일 · 보기 전용';
+      g.parentNode.insertBefore(nb,g);
+    }
     var cnt={1:0,2:0,3:0,4:0};
     [{q:1,cls:'q1',h:'중요 · 긴급'},{q:2,cls:'q2',h:'중요 · 여유'},{q:3,cls:'q3',h:'긴급 · 사소'},{q:4,cls:'q4',h:'사소 · 여유 · 보상'}].forEach(function(qd){
-      var items=(DATA.tasks||[]).filter(function(t){return t.matrixQuadrant===qd.q;})
-        .sort(function(a,b){return (a.isDone?1:0)-(b.isDone?1:0);});   // 완료는 맨 아래 (§5)
+      var items=mxPast
+        ? (DATA.tasks||[]).filter(function(t){
+            return t.matrixQuadrant===qd.q&&t.isDone&&t.completedAt&&
+                   calSameDay(new Date(t.completedAt),calSel);})
+        : (DATA.tasks||[]).filter(function(t){return t.matrixQuadrant===qd.q;})
+            .sort(function(a,b){return (a.isDone?1:0)-(b.isDone?1:0);});   // 완료는 맨 아래 (§5)
       cnt[qd.q]=items.length;
-      var b=document.createElement('div');b.className='quad '+qd.cls;b.dataset.q=qd.q;
+      var b=document.createElement('div');b.className='quad '+qd.cls+(mxPast?' readonly':'');b.dataset.q=qd.q;
       b.innerHTML='<h3><span class="qtitle">'+qd.h+'</span>'+
-        (qd.q===4?'<button class="qinfo" title="이 칸은 뭔가요?">i</button>':'')+
-        '<button class="qadd-top" data-q="'+qd.q+'" title="추가">+</button></h3>'+
+        (!mxPast&&qd.q===4?'<button class="qinfo" title="이 칸은 뭔가요?">i</button>':'')+
+        (mxPast?'':'<button class="qadd-top" data-q="'+qd.q+'" title="추가">+</button>')+'</h3>'+
         '<div class="qbody">'+
         items.map(function(t){return '<div class="mtask'+(t.isDone?' done':'')+'">'+
           '<div class="swipe-grp lead sm"><button class="sa sa-tomorrow">'+IC.curve+'<b>내일로</b></button>'+
@@ -4512,6 +4625,8 @@
         '</div><div class="qhint-big">'+quadHintBig(qd.q)+'</div>';
       b.querySelectorAll('.mtask').forEach(function(el,k){
         var t=items[k];
+        // 기록 뷰는 보기 전용 — 체크·재생·별표·스와이프·드래그를 붙이지 않는다 (요청).
+        if(mxPast)return;
         el.querySelector('.mck').addEventListener('click',function(){t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;if(t.isDone)grantReward(t);renderAll();pushSnapshot();});
         var mi=el.querySelector('.t-memo');if(mi)mi.addEventListener('click',function(e){e.stopPropagation();openMemoPopup(t);});
         var mt=el.querySelector('.mt-title');mt.style.cursor='pointer';mt.addEventListener('click',function(){openEditor(t);});
@@ -4525,7 +4640,8 @@
         attachMxSwipe(el,t);      // 좌우 스와이프 (요청: 폭 최소화)
         attachMxDrag(el,t);       // 꾹 눌러 셀 간 이동 (요청: 고스트+가로선)
       });
-      b.querySelector('.qadd-top').addEventListener('click',function(){openCapture('matrix',{quadrant:qd.q});});
+      var qa=b.querySelector('.qadd-top');
+      if(qa)qa.addEventListener('click',function(){openCapture('matrix',{quadrant:qd.q});});
       var qi=b.querySelector('.qinfo');
       if(qi)qi.addEventListener('click',function(e){e.stopPropagation();
         showQTip(qi,'하고 싶은 걸 담아두면 작업에 보상으로 걸 수 있어요 🎁');});
@@ -6837,6 +6953,9 @@
      ⌘/Ctrl+Z = 실행 취소. 편집 모드(연필)에서는 ↑↓로 마감선을 고르고,
      ⌘/Ctrl+↑↓로 5분씩 옮기고, Delete로 지우고, Esc로 나간다.
      글을 쓰는 중(input·textarea)에는 전부 비켜선다 — 브라우저 기본 동작 우선. */
+  (function(){var b=document.getElementById('calToday');if(!b)return;
+    b.addEventListener('click',function(){
+      calSel=new Date();calSel.setHours(0,0,0,0);calRefresh();});})();
   var IS_MAC=/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent||'');
   (function(){var k=document.getElementById('scMod');if(k)k.textContent=IS_MAC?'⌘':'Ctrl';})();
   var dueKeyUndoAt=0;
