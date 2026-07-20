@@ -235,6 +235,11 @@
     transform:translate(-50%,-50%);opacity:0;transition:opacity .4s linear;
     background:radial-gradient(circle at 50% 45%,#fff9e0,#ffe79a 46%,rgba(255,224,150,0) 72%);
     filter:drop-shadow(0 0 22px rgba(255,231,150,.55))}
+  /* 달 — 해와 같은 투영(시간각 x·고도 y). 위상은 moonSVG, 위치·투명도는 JS. */
+  #tlMoon{position:absolute;width:34px;height:34px;pointer-events:none;z-index:0;
+    transform:translate(-50%,-50%);opacity:0;transition:opacity .4s linear;
+    filter:drop-shadow(0 0 9px rgba(210,225,255,.5))}
+  #tlMoon svg{width:34px;height:34px;display:block}
   /* 시간축에 고정된 해·달 — 스크롤하면 함께 움직인다 (요청). */
   .tl-sun{position:absolute;left:50%;width:64px;height:64px;border-radius:50%;transform:translateX(-50%);
     background:radial-gradient(circle at 50% 45%,#fff8dc,#ffe89a 45%,rgba(255,224,150,0) 72%);
@@ -2507,6 +2512,21 @@
     var alt=Math.asin(Math.sin(phi)*Math.sin(dec)+Math.cos(phi)*Math.cos(dec)*Math.cos(H));
     return {alt:alt/rad,H:H,dec:dec};
   }
+  // 달 고도(도)·시간각 H(라디안) — SunCalc 축약 월력(황경/황위→적경/적위→고도).
+  // 해와 같은 투영에 얹으려는 것이라 좌표계는 sunAltAt과 동일하게 맞춘다.
+  function moonAltAt(date,lat,lng){
+    var rad=Math.PI/180,dayMs=86400000,J1970=2440588,J2000=2451545,e=rad*23.4397;
+    var d=date.getTime()/dayMs-0.5+J1970-J2000;
+    var L=rad*(218.316+13.176396*d), M=rad*(134.963+13.064993*d), F=rad*(93.272+13.229350*d);
+    var lambda=L+rad*6.289*Math.sin(M);        // 달 황경
+    var beta=rad*5.128*Math.sin(F);            // 달 황위
+    var ra=Math.atan2(Math.sin(lambda)*Math.cos(e)-Math.tan(beta)*Math.sin(e),Math.cos(lambda));
+    var dec=Math.asin(Math.sin(beta)*Math.cos(e)+Math.cos(beta)*Math.sin(e)*Math.sin(lambda));
+    var lw=rad*-lng,phi=rad*lat,th=rad*(280.16+360.9856235*d)-lw,H=th-ra;
+    while(H>Math.PI)H-=2*Math.PI;while(H<=-Math.PI)H+=2*Math.PI;
+    var alt=Math.asin(Math.sin(phi)*Math.sin(dec)+Math.cos(phi)*Math.cos(dec)*Math.cos(H));
+    return {alt:alt/rad,H:H,dec:dec,ra:ra};
+  }
   // 앱 SkyPalette.palette 포팅: 고도(도)+새벽여부 → top/horizon/별알파/글로우.
   function skyPalette(alt,isDawn){
     var KF=[[50,0x2E86D8,0xAFDBF2,0xAFDBF2,0.00],[30,0x4E98DE,0xC3E4F3,0xC3E4F3,0.00],
@@ -2592,6 +2612,19 @@
     var sunY=0.82*skH-(p.alt/90)*0.775*skH;
     sun.style.left=sunX.toFixed(2)+'%'; sun.style.top=sunY.toFixed(1)+'px';
     sun.style.opacity=Math.max(0,Math.min(1,(p.alt+1.5)/3)).toFixed(2);   // 지평선서 부드럽게 사라짐
+    // 달 — 해와 같은 투영. 위치는 이 순간의 달 고도·시간각, 위상은 오늘 것.
+    var moon=document.getElementById('tlMoon');
+    if(!moon){moon=document.createElement('div');moon.id='tlMoon';vb.insertBefore(moon,glow.nextSibling);}
+    var mdt=new Date();mdt.setHours(0,0,0,0);
+    mdt=new Date(mdt.getTime()+h*3600000+dayOffset*dayMs());
+    var mp=moonAltAt(mdt,obsLat(),obsLng());
+    var mtan=mp.H/(Math.PI/2), moonX=Math.max(4,Math.min(96,50+42*mtan));
+    var moonY=0.82*skH-(mp.alt/90)*0.775*skH;
+    moon.style.left=moonX.toFixed(2)+'%'; moon.style.top=moonY.toFixed(1)+'px';
+    moon.style.opacity=Math.max(0,Math.min(1,(mp.alt+1.5)/3)).toFixed(2);
+    if(!moon.dataset.day||moon.dataset.day!==mdt.toDateString()){   // 위상은 하루 한 번만 갱신
+      moon.innerHTML=moonSVG(new Date());moon.dataset.day=mdt.toDateString();
+    }
     // 고정 2단계 액센트·잉크 (앱 SkyTheme.timelineFixed): 밤 = 태양고도 −3° 밑.
     var night=p.alt<-3;
     vb.classList.toggle('tl-night',night);
