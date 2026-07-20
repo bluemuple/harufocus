@@ -364,6 +364,10 @@
   .sa svg{width:22px;height:22px}
   .sa-tomorrow{background:#AF52DE}.sa-matrix{background:#30B0C7}
   .sa-timeline{background:#007AFF}.sa-delete{background:#FF3B30}
+  /* 폰 매트릭스: 별표를 행에서 빼고 오른쪽 스와이프의 왼쪽 버튼으로 (요청).
+     색은 별표 그대로(--accent) — 밝은 금색이라 흰 글씨 대신 진한 잉크. */
+  .sa-star{background:var(--accent);color:#453309}
+  .sa-star.on svg{fill:currentColor}
   .mx-pick{position:absolute;inset:0;z-index:3;display:none;align-items:center;gap:10px;padding:0 12px;background:rgba(242,242,247,.97);border-radius:10px}
   .task.mx-open .mx-pick{display:flex}
   .mx-pick button{border:0;background:transparent;padding:0;font-family:inherit;cursor:pointer;line-height:0}
@@ -425,7 +429,7 @@
   .mtask{position:relative;background:transparent;border-radius:10px;font-size:15px;margin-bottom:6px;box-shadow:0 3px 10px rgba(20,40,80,.12);overflow:hidden}
   .mtask-inner{display:flex;align-items:center;gap:7px;background:#fff;border-radius:10px;padding:12px 10px;min-height:52px;box-sizing:border-box;position:relative;z-index:1;touch-action:pan-y}
   .swipe-grp.sm{width:auto}
-  .swipe-grp.sm .sa{width:58px;flex:0 0 58px}
+  .swipe-grp.sm .sa{width:50px;flex:0 0 50px}   /* 좁은 매트릭스 셀: 카드가 조금이라도 남게 */
   .swipe-grp.sm .sa svg{width:17px;height:17px}
   .mtask.sw-left .swipe-grp.lead,.mtask.sw-right .swipe-grp.trail{visibility:visible}
   /* 순서가 아니라 명시도로 이기게 (위 .nav-ghost와 같은 이유). */
@@ -474,7 +478,7 @@
   @media(hover:none),(max-width:860px){
     .task .kebab,.mtask .kebab{display:none}
     .task-inner .play,.mtask-inner .play{order:2;opacity:.9}
-    .mtask-inner .star{order:3}   /* 매트릭스만 별표가 맨 오른쪽 — 할일은 재생이 맨 오른쪽(기존 요청 유지) */
+    .mtask-inner .star{display:none}   /* 폰에선 별표를 오른쪽 스와이프 버튼으로 옮겼다 (요청) */
     /* 재생·별표가 폭을 가져가 좁은 셀에서 제목이 '책 정/리'처럼 낱글자로
        끊겼다 — 한글은 단어 단위로 끊고, 행 여백을 조금 줄여 폭을 돌려준다. */
     .mtask-inner{gap:5px;padding:10px 8px}
@@ -4204,7 +4208,7 @@
   // 매트릭스 행 스와이프 (요청: 할일처럼, 버튼 폭 최소). 오른쪽=내일로+타임라인, 왼쪽=삭제.
   function attachMxSwipe(el,t){
     var inner=el.querySelector('.mtask-inner'),sx=0,sy=0,cur=0,startCur=0,drag=false,lock='',raw=0;
-    var LW=60,RW=116;   // 오른쪽 스와이프=내일로(풀스와이프 즉시 실행) · 왼쪽=타임라인+삭제 (앱 파리티)
+    var LW=100,RW=100;  // 오른쪽=내일로+별표(풀스와이프는 내일로) · 왼쪽=타임라인+삭제 (50px x 2)
     function set(x){cur=x;inner.style.transform='translateX('+x+'px)';
       el.classList.toggle('sw-left',x>4);el.classList.toggle('sw-right',x<-4);}
     function doTomorrow(){var d=new Date();d.setDate(d.getDate()+1);d.setHours(0,0,0,0);t.deferredUntil=d.toISOString();renderAll();pushSnapshot();}
@@ -4223,6 +4227,8 @@
       if(cur>LW*0.5)set(LW);else if(cur<-RW*0.5)set(-RW);else set(0);}
     inner.addEventListener('pointerup',end);inner.addEventListener('pointercancel',end);
     var bt=el.querySelector('.sa-tomorrow');if(bt)bt.addEventListener('click',doTomorrow);
+    var bs=el.querySelector('.sa-star');if(bs)bs.addEventListener('click',function(){
+      t.isStarred=!t.isStarred;renderAll();pushSnapshot();});
     var bl=el.querySelector('.sa-timeline');if(bl)bl.addEventListener('click',function(){
       var slot=nextSlotToday();t.scheduledStart=todayAt(Math.floor(slot),(slot%1)*60);if(!t.durationMin)t.durationMin=50;
       setPlanFromSchedule(t);renderAll();pushSnapshot();});
@@ -4352,7 +4358,8 @@
       b.innerHTML='<h3><span class="qtitle">'+qd.h+'</span><button class="qadd-top" data-q="'+qd.q+'" title="추가">+</button></h3>'+
         '<div class="qbody">'+
         items.map(function(t){return '<div class="mtask'+(t.isDone?' done':'')+'">'+
-          '<div class="swipe-grp lead sm"><button class="sa sa-tomorrow">'+IC.curve+'<b>내일로</b></button></div>'+
+          '<div class="swipe-grp lead sm"><button class="sa sa-tomorrow">'+IC.curve+'<b>내일로</b></button>'+
+          '<button class="sa sa-star'+(t.isStarred?' on':'')+'">'+IC.star+'<b>'+(t.isStarred?'별표 해제':'별표')+'</b></button></div>'+
           '<div class="swipe-grp trail sm"><button class="sa sa-timeline">'+IC.sunrise+'<b>타임라인</b></button><button class="sa sa-delete">'+IC.trash+'<b>삭제</b></button></div>'+
           '<div class="mtask-inner">'+
           '<span class="mck'+(t.isDone?' on':'')+'" style="--dc:'+taskDisplayColor(t)+'" title="완료">'+(t.isDone?'✓':'')+'</span>'+
