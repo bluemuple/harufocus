@@ -2790,7 +2790,8 @@
     if(hit){t.categoryID=hit.categoryID;t.colorKey=hit.colorKey||'';   // 유사 문구=완전 동일 색(빈 값 포함 승계)
       if(hit.iconName&&!t.iconName)t.iconName=hit.iconName;}
   }
-  function deleteTask(t){DATA.tasks=(DATA.tasks||[]).filter(function(x){return x!==t;});renderAll();pushSnapshot();}
+  function deleteTask(t){tombAdd([t.id]);   // 되살아나지 않게 (요청)
+    DATA.tasks=(DATA.tasks||[]).filter(function(x){return x!==t;});renderAll();pushSnapshot();}
   function doTodoAdd(){var el=document.getElementById('todoAdd');var v=(el.value||'').trim();if(!v)return;addTask({title:v});el.value='';}
 
   /* ---------- 루틴(습관) 추가/체크/연속 (요청: 웹 이식) ---------- */
@@ -3042,7 +3043,9 @@
     var wrap=document.getElementById('fmChips');if(!wrap)return;
     wrap.innerHTML=FM_LIST.map(function(p){return '<button class="fm-chip'+(fmScene()===p[0]?' on':'')+'" data-s="'+p[0]+'">'+IC[p[0]]+' '+p[1]+'</button>';}).join('');
     wrap.querySelectorAll('.fm-chip').forEach(function(el){el.addEventListener('click',function(){
-      fmStart(el.dataset.s);wrap.style.display='none';});});
+      fmStart(el.dataset.s);wrap.style.display='none';
+      // 집중 중 고른 씬은 다른 기기·웹에도 곧 반영돼야 한다 (요청 동기화).
+      if(fTask)pushFocusState();});});
   }
 
   /* ---------- 집중 씬 시각 레이어 (앱 FocusScenes 파리티) ----------
@@ -3399,11 +3402,16 @@
   }
   /* 다른 기기(앱)의 세션을 채택·추종·해제. 앱 FocusManager.reconcileRemote 대응.
       · 세션 없음 + 원격 있음 → 포커스 페이지를 열고 시계를 맞춘다
-      · 같은 세션      → 일시정지·계획만 따라간다
-      · 따라 보던 세션 + 원격 소멸 → 조용히 닫는다 (기록은 끝낸 기기가 씀) */
+      · 같은 세션      → 일시정지·계획·씬(포커스뮤직)을 따라간다
+      · 진행 중 세션 + 원격 소멸 → 닫는다 (요청: 어느 쪽에서 끝냈든 — 웹이
+        시작했든 앱이 시작했든 — 모두 닫힌다. 기록은 끝낸 쪽이 이미 씀) */
   function adoptRemoteFocus(af){
     if(!af||!af.taskID){
-      if(fTask&&fRemote)closeRemoteFocus();
+      // ⚠ 예전엔 fRemote(따라 보던 세션)일 때만 닫아, 웹이 직접 시작한
+      // 세션은 앱에서 끝내도 안 닫혔다(요청 버그). 방금(2초 안) 시작한
+      // 세션은 내 push가 아직 서버에 안 올라갔을 수 있어, 그 사이 낀
+      // 무관한 폴이 들고 온 '활성 없음'에 지워지지 않게 짧은 유예를 둔다.
+      if(fTask&&(Date.now()-fStart)>2000)closeRemoteFocus();
       return;
     }
     if(af.deviceID===webDeviceId())return;              // 내가 올린 것의 메아리
@@ -3415,7 +3423,7 @@
       fStart=now-el*1000;fPausedAcc=0;fPaused=!!af.isPaused;fPauseAt=now;
       fPlanMin=af.planMin||0;fPomo=!!af.pomodoro;
       document.getElementById('ftPause').innerHTML=fPaused?IC.play:IC.pause;
-      paintPomoChip();ftKey='';tickFocus();
+      paintPomoChip();applyRemoteScene(af.sceneRaw);ftKey='';tickFocus();
       return;
     }
     var t=taskByID(af.taskID)||{id:af.taskID,title:af.taskTitle||'집중',
@@ -3424,6 +3432,14 @@
     fPlanMin=af.planMin||0;fPomo=!!af.pomodoro;
     startFocus(t,{remote:true,elapsed:el,paused:!!af.isPaused,
                   planMin:af.planMin||0,pomodoro:!!af.pomodoro,scene:af.sceneRaw});
+  }
+  /* 원격 씬을 반영 (요청 동기화) — 웹은 불·비만 실제로 재생하고, 그 외
+     (앱만 있는 비행기·파도·없음)는 조용히 멈춘다("웹에 없는 건 아무
+     포커스뮤직도 안 나옴"). sceneRaw가 없거나 이미 같으면 손대지 않는다. */
+  function applyRemoteScene(sceneRaw){
+    if(!sceneRaw||sceneRaw===fmScene())return;
+    if(sceneRaw==='rain'||sceneRaw==='fire')fmStart(sceneRaw);
+    else fmStart('none');
   }
   function closeRemoteFocus(){
     clearInterval(fTimer);fTimer=null;
@@ -5428,17 +5444,46 @@
   /* 서버 스냅샷을 통째로 보관 (schemaVersion·sessions 등 앱 전용 필드 보존).
      DATA.tasks는 serverSnap.tasks와 같은 참조라 편집이 그대로 반영된다. */
   var serverSnap=null;
+  /* 전송이 '날아가는 중'인지 (요청 버그: 웹 삭제가 되살아남).
+     doPush는 fetch를 걸기 전에 pushTimer를 비운다 — 그 사이에 탭 복귀
+     (visibilitychange)나 폴이 서버를 내려받으면 아직 삭제 이전 스냅샷으로
+     화면을 덮어써 방금 지운 작업이 되살아났다. 디바운스뿐 아니라 왕복이
+     끝날 때까지 내려받기를 막는다. */
+  var pushing=false;
+  /* 삭제 무덤 (요청 버그: 웹에서 지워도 앱에 반영 안 되고 되살아남).
+     동기화가 스냅샷 통째 last-writer-wins라, 반대쪽이 '삭제 전' 스냅샷을
+     올리면 지운 작업이 그대로 돌아온다. 웹에서 지운 id를 잠시 기억해 두고
+     ① 내려받은 스냅샷에서 걸러내고 ② 걸러냈으면 그 상태를 다시 올려
+     서버와 앱까지 삭제가 따라오게 한다. id는 UUID라 오인 삭제는 없다. */
+  var TOMB_KEY='harufocusTombs',TOMB_TTL=7*24*3600*1000;
+  function tombLoad(){try{return JSON.parse(localStorage.getItem(TOMB_KEY)||'{}')||{};}catch(_){return {};}}
+  function tombPrune(m){var now=Date.now();
+    Object.keys(m).forEach(function(k){if(!(now-m[k]<TOMB_TTL))delete m[k];});return m;}
+  function tombSave(m){try{localStorage.setItem(TOMB_KEY,JSON.stringify(m));}catch(_){}}
+  function tombAdd(ids){var m=tombLoad(),now=Date.now();
+    (ids||[]).forEach(function(id){if(id)m[id]=now;});tombSave(tombPrune(m));}
+  /* 내려받은 스냅샷에서 지운 작업을 걷어낸다. 뭔가 걷어냈으면 true. */
+  function tombApply(o){
+    var m=tombPrune(tombLoad());tombSave(m);
+    if(!o||!o.tasks||!o.tasks.length)return false;
+    var before=o.tasks.length;
+    o.tasks=o.tasks.filter(function(t){return !t||!t.id||!m[t.id];});
+    return o.tasks.length!==before;
+  }
   function fetchSnapshot(){if(!session)return;
     freshToken().then(function(tok){if(!tok)throw 0;
       return fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=snapshot',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok}});})
     .then(function(r){if(r.status===401){signOut();throw 0;}return r.json();})
     .then(function(rows){
       serverSnap=(rows&&rows.length&&rows[0].snapshot)||{schemaVersion:1,tasks:[],habits:[],sessions:[],settings:null};
+      var revived=tombApply(serverSnap);   // 반대쪽이 되살린 삭제분 제거 (요청)
       DATA=normalize(serverSnap);
       // fTask는 옛 DATA.tasks를 가리키던 참조 — 새 배열에서 다시 찾지 않으면
       // 이후 편집이 버려진 객체에 쓰인다 (집중 중 pull의 잠복 버그).
       if(fTask){var again=taskByID(fTask.id);if(again)fTask=again;}
       renderAll();
+      // 되살아난 게 있었으면 지운 상태를 다시 올린다 — 그래야 앱도 따라 지운다.
+      if(revived)pushSnapshot();
       adoptRemoteFocus(serverSnap.activeFocus);
     })
     .catch(function(){});
@@ -5464,11 +5509,13 @@
   var pushTimer=null;
   function pushSnapshot(){if(!session)return;clearTimeout(pushTimer);pushTimer=setTimeout(doPush,1200);}
   function doPush(){pushTimer=null;if(!session)return;
+    pushing=true;
     var body=[{user_id:session.user.id,snapshot:currentSnap(),device_id:webDeviceId(),updated_at:new Date().toISOString()}];
     freshToken().then(function(tok){if(!tok)throw new Error('auth');
       return fetch(SUPA_URL+'/rest/v1/sundial_state',{method:'POST',headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});})
     .then(function(r){if(r.status===401)signOut();else if(!r.ok)r.text().then(function(t){console.warn('[harufocus] 저장 실패',r.status,t);});})
-    .catch(function(e){console.warn('[harufocus] 저장 네트워크 오류',e);});
+    .catch(function(e){console.warn('[harufocus] 저장 네트워크 오류',e);})
+    .then(function(){pushing=false;});   // 성공·실패 무관하게 반드시 푼다
   }
   function saveSession(j){session={access_token:j.access_token,
     // 토큰 갱신 재료 (버그 수정: 이걸 안 저장해 1시간 뒤 모든 쓰기가 401 →
@@ -5667,6 +5714,7 @@
   function clearSel(){selIds=Object.create(null);paintSel();}
   function deleteSelected(){
     var ids=Object.keys(selIds);if(!ids.length)return;
+    tombAdd(ids);   // 되살아나지 않게 (요청)
     DATA.tasks=(DATA.tasks||[]).filter(function(t){return ids.indexOf(t.id)<0;});
     clearSel();renderAll();pushSnapshot();
   }
@@ -6058,13 +6106,13 @@
   // 탭이 다시 보이면 서버에서 새로 받아 앱 변경을 반영 (요청: 동기화). 단,
   // 아직 안 올린 웹 편집(디바운스 대기)이 있으면 덮어쓰지 않고 건너뛴다.
   document.addEventListener('visibilitychange',function(){
-    if(!document.hidden && session && !pushTimer) fetchSnapshot();
+    if(!document.hidden && session && !pushTimer && !pushing) fetchSnapshot();
   });
   // 몇 초마다 아주 가벼운 updated_at만 조회(≈100바이트)해서, 다른 기기가
   // 바꿨을 때만 전체 스냅샷을 받아온다 (요청: 몇 초 뒤 반영 + egress 최소화).
   var lastSeenUpdated=null;
   function pollSync(){
-    if(document.hidden||!session||pushTimer)return;
+    if(document.hidden||!session||pushTimer||pushing)return;
     freshToken().then(function(tok){if(!tok)throw 0;
       return fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=updated_at,device_id',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok}});})
     .then(function(r){return r.json();}).then(function(rows){
@@ -7108,6 +7156,11 @@
     var inv=new URLSearchParams(location.search).get('invite');
     if(inv){pendingInvite=normCode(inv);if(pendingInvite)openInvite();}
   }catch(_){}
+  // TEMP TEST HOOK — verification only, removed before commit.
+  window.__test={adoptRemoteFocus:adoptRemoteFocus,applyRemoteScene:applyRemoteScene,
+    closeRemoteFocus:closeRemoteFocus,fmScene:fmScene,
+    getFTask:function(){return fTask;},getFRemote:function(){return fRemote;},
+    setFStart:function(v){fStart=v;}};
 })();
 </script>
 </body>
