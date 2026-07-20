@@ -426,6 +426,14 @@
     background:rgba(255,255,255,.55);color:rgba(60,60,67,.8);font-family:inherit;font-size:21px;
     font-weight:700;line-height:1;cursor:pointer;display:grid;place-items:center;transition:background .13s}
   .qadd-top:hover{background:rgba(255,255,255,.82)}
+  /* Q4 안내는 셀 안에 늘 깔려 있던 글이었다 → 제목 옆 ⓘ를 눌렀을 때만 (요청). */
+  .qinfo{flex:0 0 auto;width:20px;height:20px;border-radius:50%;border:0;
+    background:rgba(255,255,255,.55);color:rgba(60,60,67,.85);font-family:inherit;
+    font-size:12px;font-weight:800;line-height:1;cursor:pointer;display:grid;place-items:center}
+  .qinfo:hover{background:rgba(255,255,255,.82)}
+  .qtip{position:fixed;z-index:130;max-width:250px;background:rgba(30,38,60,.95);color:#fff;
+    font-size:12.5px;font-weight:600;line-height:1.5;border-radius:10px;padding:10px 12px;
+    box-shadow:0 8px 24px rgba(0,0,0,.28);transition:opacity .2s}
   .mtask{position:relative;background:transparent;border-radius:10px;font-size:15px;margin-bottom:6px;box-shadow:0 3px 10px rgba(20,40,80,.12);overflow:hidden}
   .mtask-inner{display:flex;align-items:center;gap:7px;background:#fff;border-radius:10px;padding:12px 10px;min-height:52px;box-sizing:border-box;position:relative;z-index:1;touch-action:pan-y}
   .swipe-grp.sm{width:auto}
@@ -438,7 +446,6 @@
   .mx-dragsrc{opacity:.3}
   .mx-dropline{position:fixed;height:3px;border-radius:2px;background:var(--sky-blue);z-index:94;display:none;box-shadow:0 0 6px rgba(70,133,214,.6)}
   .q1,.q2{background:rgba(255,255,255,.27)}.q3,.q4{background:rgba(255,255,255,.19)}
-  .q4-coach{font-size:11px;color:var(--ink-soft);opacity:.85;text-align:center;padding-top:10px;margin-bottom:6px}
 
   /* routine */
   .routines{display:flex;flex-direction:column;gap:14px}
@@ -1021,9 +1028,14 @@
       display:flex;align-items:center;gap:10px;font-size:27px;letter-spacing:-.03em}
     .undobar{bottom:18px}          /* 데스크톱엔 하단 바가 없다 */
     /* 매트릭스는 화면 높이에 꽉 차되 페이지 스크롤은 만들지 않는다 (요청):
-       넘치는 셀은 .qbody 안에서만 스크롤한다. */
+       넘치는 셀은 .qbody 안에서만 스크롤한다.
+       아래 여백은 18px만 남겨 Q3·Q4 밑변이 화면 끝까지 내려온다 (요청).
+       그리드 높이를 '달력이 닫힌 상태' 기준으로 못박아 두었기 때문에,
+       월요일을 눌러 달력을 펼치면 그리드가 쪼그라드는 대신 페이지가
+       아래로 밀려 스크롤이 생긴다 (요청). */
+    .tabbody.matrix-mode{padding-bottom:18px}
     #view-matrix.on{display:flex;flex-direction:column;min-height:100%}
-    #view-matrix.on>.matrix{flex:1 1 auto;min-height:0}
+    #view-matrix.on>.matrix{flex:0 0 auto;min-height:calc(100dvh - 82px)}
     body[data-m] .topcap{display:flex}          /* 데스크톱에선 항상 (타임라인 상시 표시) */
     /* 우상단 원형 네비 */
     .desk-nav{display:flex;gap:10px;position:fixed;top:14px;right:16px;z-index:45}   /* 윗줄 3요소 세로 가운데 (요청) */
@@ -4344,6 +4356,20 @@
     }
   }
 
+  /* 눌렀을 때만 떴다 사라지는 안내 (요청): 다시 누르거나, 밖을 누르거나, 4초 뒤. */
+  var qtipEl=null,qtipTimer=null;
+  function hideQTip(){if(qtipEl){qtipEl.remove();qtipEl=null;}clearTimeout(qtipTimer);}
+  document.addEventListener('pointerdown',function(e){
+    if(qtipEl&&!e.target.closest('.qtip,.qinfo'))hideQTip();},true);
+  function showQTip(btn,text){
+    if(qtipEl){hideQTip();return;}                     // 같은 버튼 재탭 = 닫기
+    var d=document.createElement('div');d.className='qtip';d.textContent=text;
+    document.body.appendChild(d);qtipEl=d;
+    var r=btn.getBoundingClientRect(),w=d.offsetWidth,h=d.offsetHeight;
+    d.style.left=Math.max(8,Math.min(window.innerWidth-w-8,r.left+r.width/2-w/2))+'px';
+    d.style.top=(r.bottom+h+8>window.innerHeight?r.top-h-6:r.bottom+6)+'px';
+    qtipTimer=setTimeout(hideQTip,4000);
+  }
   function renderMatrix(){
     var mxLongL=false,mxLongR=false;
     var mdow=document.getElementById('matrixDow');
@@ -4355,7 +4381,9 @@
         .sort(function(a,b){return (a.isDone?1:0)-(b.isDone?1:0);});   // 완료는 맨 아래 (§5)
       cnt[qd.q]=items.length;
       var b=document.createElement('div');b.className='quad '+qd.cls;b.dataset.q=qd.q;
-      b.innerHTML='<h3><span class="qtitle">'+qd.h+'</span><button class="qadd-top" data-q="'+qd.q+'" title="추가">+</button></h3>'+
+      b.innerHTML='<h3><span class="qtitle">'+qd.h+'</span>'+
+        (qd.q===4?'<button class="qinfo" title="이 칸은 뭔가요?">i</button>':'')+
+        '<button class="qadd-top" data-q="'+qd.q+'" title="추가">+</button></h3>'+
         '<div class="qbody">'+
         items.map(function(t){return '<div class="mtask'+(t.isDone?' done':'')+'">'+
           '<div class="swipe-grp lead sm"><button class="sa sa-tomorrow">'+IC.curve+'<b>내일로</b></button>'+
@@ -4372,7 +4400,6 @@
             '<button class="kebab" title="메뉴"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button>')+
           '<span class="star'+(t.isStarred?' on':'')+'">'+(t.isStarred?'★':'☆')+'</span>'+
           '</div></div>';}).join('')+
-        (qd.q===4&&items.length===0?'<div class="q4-coach">하고 싶은 걸 담아두면 작업에 보상으로 걸 수 있어요 🎁</div>':'')+
         '</div><div class="qhint-big">'+quadHintBig(qd.q)+'</div>';
       b.querySelectorAll('.mtask').forEach(function(el,k){
         var t=items[k];
@@ -4390,6 +4417,9 @@
         attachMxDrag(el,t);       // 꾹 눌러 셀 간 이동 (요청: 고스트+가로선)
       });
       b.querySelector('.qadd-top').addEventListener('click',function(){openCapture('matrix',{quadrant:qd.q});});
+      var qi=b.querySelector('.qinfo');
+      if(qi)qi.addEventListener('click',function(e){e.stopPropagation();
+        showQTip(qi,'하고 싶은 걸 담아두면 작업에 보상으로 걸 수 있어요 🎁');});
       items.forEach(function(t){if((t.title||'').length>12){if(qd.q===1||qd.q===3)mxLongL=true;else mxLongR=true;}});
       g.appendChild(b);
     });
@@ -6619,19 +6649,19 @@
 
   // 탭이 다시 보이면 서버에서 새로 받아 앱 변경을 반영 (요청: 동기화). 단,
   // 아직 안 올린 웹 편집(디바운스 대기)이 있으면 덮어쓰지 않고 건너뛴다.
-  /* 상단 캡슐 반투명 (요청): 데스크톱은 캡슐이 타임라인 위에 있으니 타임라인
-     스크롤을, 폰은 페이지(.tabbody) 스크롤을 본다. 맨 위면 다시 또렷해진다. */
+  /* 상단 캡슐 (요청): 스크롤하는 '동안'만 반투명하고, 손을 떼서 멈추면
+     다시 또렷해진다. 어느 칸이 굴러가든(타임라인·페이지) 똑같이 반응한다. */
+  var capFadeTimer=null;
   function capFade(){
     var cap=document.getElementById('topCap');if(!cap)return;
-    var sc=(window.innerWidth>=1100)?document.getElementById('tlScroll')
-                                    :document.querySelector('.tabbody');
-    cap.classList.toggle('faded',!!(sc&&sc.scrollTop>4));
+    cap.classList.add('faded');
+    clearTimeout(capFadeTimer);
+    capFadeTimer=setTimeout(function(){cap.classList.remove('faded');},420);
   }
   ['tlScroll'].forEach(function(id){var e=document.getElementById(id);
     if(e)e.addEventListener('scroll',capFade,{passive:true});});
   (function(){var e=document.querySelector('.tabbody');
     if(e)e.addEventListener('scroll',capFade,{passive:true});})();
-  window.addEventListener('resize',capFade);
   document.addEventListener('visibilitychange',function(){
     // ⚠ egress: 예전엔 조건 없이 fetchSnapshot()(전체)을 불러, 서버가 안
     // 바뀌었어도 탭을 볼 때마다 스냅샷을 통째로 받았다. pollSync가 이미
