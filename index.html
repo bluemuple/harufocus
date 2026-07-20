@@ -980,10 +980,18 @@
     .pane-tabs{display:flex!important;position:relative;inset:auto;flex:1;min-width:0}
     .mbar{display:none!important}
     .tabbody{padding:64px 26px 90px;overflow-y:auto}
-    /* 브랜드는 할일 페이지 하단으로 내려갔다 (요청) — 여기서만 보인다. */
-    .app-foot{display:flex}
+    /* 브랜드는 할일 페이지 하단으로 내려갔다 (요청) — 여기서만 보인다.
+       요청: 작업이 적을 땐 위로 딸려 올라오지 않고 화면 아래에 머물고,
+       작업이 많아지면 목록에 밀려 그 아래 층으로 자연스럽게 흐르게.
+       → 페이지를 세로 flex로 만들고 푸터에 margin-top:auto (남는 공간을
+         푸터 '위'가 전부 먹는다). 목록이 길어지면 남는 공간이 0이 되어
+         평범한 흐름이 된다. 최소 간격은 padding-top이 지킨다. */
+    #view-todo.on{display:flex;flex-direction:column;min-height:100%}
+    #view-todo.on>*{flex:0 0 auto}
+    .app-foot{display:flex;margin-top:auto;padding-top:30px}
     /* 요청: 상단 캡슐을 할일 섹션 왼쪽 끝에 맞춘다 (.tabbody 좌패딩 26px). */
     .topcap{left:calc(400px + 26px);transform:none;right:auto;max-width:min(44vw,420px)}
+    .undobar{bottom:18px}          /* 데스크톱엔 하단 바가 없다 */
     body[data-m] .topcap{display:flex}          /* 데스크톱에선 항상 (타임라인 상시 표시) */
     /* 우상단 원형 네비 */
     .desk-nav{display:flex;gap:10px;position:fixed;top:12px;right:16px;z-index:45}
@@ -1145,6 +1153,15 @@
   /* 음악 옵션 = 집중 음악 캡슐 '위'로 가로 배치 (요청) */
   .fm-chips{position:absolute;bottom:calc(76px + env(safe-area-inset-bottom));left:12px;right:12px;display:flex;justify-content:center;gap:8px;z-index:4}
   .fm-chip{font-family:inherit;font-size:13px;font-weight:700;border:0;border-radius:999px;padding:9px 14px;cursor:pointer;background:rgba(0,0,0,.3);color:#fff;display:flex;align-items:center;gap:5px}
+  /* 시간 조절 줄 (앱 FocusModal.timeAdjustRow 파리티): 캡슐 줄 **위**로 열린다.
+     fm-chips와 같은 슬롯이라 한쪽을 열면 다른 쪽은 닫는다. */
+  .ft-adjrow{position:absolute;bottom:calc(76px + env(safe-area-inset-bottom));left:12px;right:12px;display:flex;justify-content:center;gap:6px;z-index:4}
+  .ft-adjchip{font-family:inherit;font-size:12px;font-weight:600;border:0;border-radius:999px;padding:7px 9px;cursor:pointer;background:rgba(255,255,255,.14);color:#fff;white-space:nowrap}
+  .ft-adjchip.on{background:rgba(255,255,255,.30);color:#ffd966}
+  .ft-adjchip.dim{opacity:.45}
+  /* 말풍선 힌트 — 앱은 조절 줄 위 50px, 2.6초 뒤 사라진다. */
+  .ft-tip{position:absolute;bottom:calc(126px + env(safe-area-inset-bottom));left:12px;right:12px;text-align:center;z-index:5;pointer-events:none}
+  .ft-tip span{display:inline-block;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,.78);border-radius:11px;padding:7px 12px;box-shadow:0 2px 4px rgba(0,0,0,.25)}
   .fm-chip.on{background:rgba(255,255,255,.32);color:#ffd76a}
   .ft-titlerow{margin-top:44px;display:flex;align-items:center;gap:12px;max-width:88%}
   .ft-title{font-size:56px;line-height:1.1;font-weight:800;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.3);min-width:0;overflow-wrap:anywhere}
@@ -1204,11 +1221,15 @@
   .pi-inrow{display:flex;align-items:center;gap:6px;padding:7px 9px;background:rgba(255,255,255,.32);border-radius:8px}
   .pi-inrow input{flex:1;border:0;background:none;font-family:inherit;font-size:13px;color:#4D3D0D;outline:none}
   .pi-inrow input::placeholder{color:rgba(77,61,13,.4)}
-  .pi-inrow #piAdd{border:0;background:none;color:rgba(77,61,13,.8);font-size:22px;line-height:1;cursor:pointer;padding:0}
+  /* 앱 파리티(첨부3): 윤곽 기호 ⊕ 대신 채워진 동그라미 + 안에 밝은 +. */
+  .pi-inrow #piAdd{flex:0 0 auto;width:26px;height:26px;border:0;border-radius:50%;
+    background:rgba(77,61,13,.22);color:#FFF6CE;font-family:inherit;font-size:17px;font-weight:700;
+    line-height:1;cursor:pointer;padding:0;display:grid;place-items:center;transition:background .13s}
+  .pi-inrow #piAdd:hover{background:rgba(77,61,13,.34)}
   .pi-bfoot{display:flex;align-items:center;gap:8px}
   .pi-bfoot #piHint{flex:1;font-size:9px;color:rgba(77,61,13,.55)}
   .pi-bfoot #piDone{border:0;background:none;font-family:inherit;font-size:12px;font-weight:800;color:#4D3D0D;cursor:pointer;padding:0}
-  .postit2{width:250px;height:auto;min-height:150px;border-radius:8px;right:-125px;top:calc(60% + 24px);transform:rotate(3deg);z-index:5;cursor:pointer}
+  .postit2{width:250px;height:auto;min-height:150px;border-radius:8px;right:30px;top:calc(60% + 24px);transform:rotate(3deg);z-index:5;cursor:pointer}
   .pi2-body{padding:12px;font-size:11px;font-weight:700;color:#4D3D0D;line-height:1.5}
   .pi2-title{font-size:13px;font-weight:800;margin-bottom:6px}
   .pi2-body p{font-size:11px;font-weight:700;margin:0 0 7px;line-height:1.5;color:rgba(77,61,13,.85)}
@@ -1217,6 +1238,17 @@
   .postit.flip .pi-back{display:flex}
   .postit-edge{position:absolute;right:0;top:62%;width:26px;height:52px;border:0;border-radius:8px 0 0 8px;
     background:rgba(255,236,140,.85);font-size:14px;cursor:pointer;z-index:4}
+  /* 방금 한 일 + 실행 취소 (요청 첨부4·5): 왼쪽 아래. 폰은 하단 바 위로 띄운다. */
+  .undobar{position:fixed;left:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:60;
+    display:none;align-items:center;gap:12px;max-width:min(400px,calc(100vw - 32px));
+    background:rgba(30,38,60,.95);color:#fff;font-size:13px;font-weight:600;border-radius:12px;
+    padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.3);transition:opacity .25s}
+  .undobar.on{display:flex}
+  .undobar #undoMsg{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .undobar #undoDo{flex:0 0 auto;border:0;background:none;font-family:inherit;font-size:13px;
+    font-weight:800;color:#FF9878;cursor:pointer;padding:0;text-decoration:underline}
+  .undobar #undoX{flex:0 0 auto;border:0;background:none;color:rgba(255,255,255,.55);
+    font-size:14px;cursor:pointer;padding:0 2px}
   .ft-chip{font-family:inherit;font-size:14px;font-weight:700;border:0;border-radius:999px;padding:11px 20px;cursor:pointer;background:rgba(255,255,255,.14);color:#fff}
   .ft-chip.on{color:#ffd76a;background:rgba(255,255,255,.26)}
   .ftlabel{fill:rgba(255,255,255,.62);font-size:12px;font-weight:600}
@@ -1286,6 +1318,8 @@
   </div>
   <!-- 우상단 회전 캡슐 (요청: 다짐·집중합계·해질녘·해돋이·D-day 번갈아, 아래로 전환). -->
   <button class="topcap" id="topCap"><span class="tc-ic" id="tcIc"></span><span class="tc-txt" id="tcTxt"></span></button>
+  <!-- 방금 한 일 + 실행 취소 (요청 첨부4·5) -->
+  <div class="undobar" id="undoBar"><span id="undoMsg"></span><button id="undoDo">실행 취소</button><button id="undoX" aria-label="닫기">✕</button></div>
 
   <div class="layout">
     <!-- LEFT: timeline -->
@@ -1589,8 +1623,11 @@
   <button class="fx" id="ftClose" title="닫기">✕</button>
   <!-- 요청: ⋯ 폐지 — 포모도로·집중 음악 캡슐을 화면 아래에 상시 노출. -->
   <div class="fm-chips" id="fmChips" style="display:none"></div>
+  <div class="ft-adjrow" id="ftAdjRow" style="display:none"></div>
+  <div class="ft-tip" id="ftTip" style="display:none"></div>
   <div class="ft-morepanel" id="ftMorePanel">
     <button class="ft-chip" id="ftPomo">⏱ 포모도로</button>
+    <button class="ft-chip" id="ftAdjust">± 시간 조절</button>
     <button class="ft-chip" id="fmBtn">♪ 집중 음악</button>
   </div>
   <audio id="fmAudio" loop preload="none"></audio>
@@ -1611,7 +1648,7 @@
       <div class="pi-bcap"><span>적어 두고 이따 해요</span><button id="piInfo">ⓘ</button></div>
       <div class="pi-when"><span class="pi-wlab">언제?</span><button class="pi-whenchip on" data-w="finish">이 일 끝내면</button><button class="pi-whenchip" data-w="time">시간 다 채우면</button></div>
       <div class="pi-list" id="piList"></div>
-      <div class="pi-inrow"><input id="piText" maxlength="60" placeholder="예: 웹툰 보기"><button id="piAdd">⊕</button></div>
+      <div class="pi-inrow"><input id="piText" maxlength="60" placeholder="예: 웹툰 보기"><button id="piAdd">+</button></div>
       <div class="pi-bfoot"><span id="piHint">적으면 매트릭스 ‘보상’ 칸에 담겨요</span><button id="piDone">확인</button></div>
     </div>
   </div>
@@ -1653,14 +1690,16 @@
     <div class="elabel">D-day 이름</div><input id="setDdayLabel" placeholder="예: 시험" maxlength="20">
     <div class="elabel">D-day 날짜</div><input type="date" id="setDdayDate">
     <div class="elabel">표시 항목</div>
+    <!-- 앱 SettingsView.swift:470-476과 같은 항목·같은 순서. 앱은 해질녘과
+         해돋이를 'chipDaylight' 하나로 묶으므로 웹도 하나로 합쳤다. -->
     <div class="set-toggles" id="setBarItems">
-      <label><input type="checkbox" data-k="vow"> 한마디</label>
-      <label><input type="checkbox" data-k="focusSum"> 오늘 집중 합계</label>
-      <label><input type="checkbox" data-k="sunset"> 해질녘</label>
-      <label><input type="checkbox" data-k="sunrise"> 해돋이까지</label>
-      <label><input type="checkbox" data-k="dday"> D-day</label>
+      <label><input type="checkbox" data-k="chipMotto"> 오늘 다짐</label>
+      <label><input type="checkbox" data-k="chipFocusTotal"> 오늘 집중 합계</label>
+      <label><input type="checkbox" data-k="chipDaylight"> 해질녘·해돋이까지 남은 시간</label>
+      <label><input type="checkbox" data-k="chipDeadline"> 마감 시각 (마감선)</label>
+      <label><input type="checkbox" data-k="chipDday"> D-day</label>
     </div>
-    <div class="elabel">전환 주기 (초)</div><input type="number" id="setBarPeriod" min="2" max="60" step="1">
+    <div class="elabel">전환 주기 (분)</div><input type="number" id="setBarPeriod" min="1" max="60" step="1">
 
     <div class="set-sec">타임라인</div>
     <div class="elabel">장소</div>
@@ -1669,7 +1708,8 @@
     <div class="set-sec">하루</div>
     <div class="elabel">기상 시각</div><input type="time" id="setWake">
     <div class="elabel">취침 시각</div><input type="time" id="setBed">
-    <div class="elabel">하루 집중 목표 (분)</div><input type="number" id="setGoal" min="0" step="30">
+    <!-- 앱 SettingsView Stepper와 같은 범위 60...720, step 30 -->
+    <div class="elabel">하루 집중 목표 (분)</div><input type="number" id="setGoal" min="60" max="720" step="30">
     <div class="msub" style="margin-top:4px">기상·취침 시각이 타임라인에 보이는 시간대를 정해요.</div>
 
     <div class="set-sec">작업 추가</div>
@@ -2004,9 +2044,9 @@
       {title:'영어 단어',categoryID:'study',weekdaysMask:42,reminderMinutesJSON:'[1260]'},
       {title:'저녁 명상',categoryID:'mind',weekdaysMask:127,reminderMinutesJSON:'[1350]'}
     ],
-    settings:{focusGoalMinutes:240,defaultDurationMin:30,barPeriodSec:300,
-      barItems:{vow:true,focusSum:true,sunset:true,sunrise:true,dday:false},
-      todayVow:'',ddayLabel:'',ddayDate:null,lat:-43.53,lng:172.63}
+    settings:{focusGoalMinutes:240,captureDefaultMin:30,chipIntervalMin:10,
+      chipMotto:true,chipFocusTotal:false,chipDaylight:false,chipDday:false,chipDeadline:true,
+      todayVow:'',ddayTitle:'',ddayDate:null,lat:-43.53,lng:172.63}
   };
 
   var DATA=DEMO;ensureIds(DATA);   // DEMO 시드엔 id가 없다 — 아래 ensureIds 주석 참조
@@ -2401,6 +2441,8 @@
   function dueRestore(snap){
     JSON.parse(snap).forEach(function(r){var t=taskByID(r.id);if(!t)return;
       t.scheduledStart=r.s;t.durationMin=r.d;t.planDueAt=r.p;t.isDone=r.done;});
+    // 편집바엔 자체 ↩ 히스토리가 있다 — 되돌린 걸 두고 또 '실행 취소'를 권하지 않는다.
+    undoSuppress=true;
     renderAll();pushSnapshot();
   }
   function duePushUndo(){dueUndo.push(dueSnapshot());if(dueUndo.length>30)dueUndo.shift();dueRedo=[];paintEditBar();}
@@ -2465,7 +2507,7 @@
     var now=Date.now();
     var fut=todayDueLines(true).filter(function(t){return taskDueAt(t).getTime()>now;});
     if(!fut.length)return;
-    var d=(DATA.settings&&DATA.settings.defaultDurationMin)||30;
+    var d=setCaptureDefaultMin();
     duePushUndo();
     var cursor=now;
     fut.forEach(function(t){
@@ -2587,8 +2629,8 @@
   function renderBig(){
     // 기상·취침 설정이 타임라인 시간대를 정한다 (요청).
     var sset=DATA.settings||{};
-    TS=Math.max(0,Math.floor((sset.wakeMinutes!=null?sset.wakeMinutes:360)/60));
-    TE=Math.min(24,Math.ceil((sset.bedMinutes!=null?sset.bedMinutes:1440)/60));
+    TS=Math.max(0,Math.floor((sset.wakeMinutes!=null?sset.wakeMinutes:420)/60));
+    TE=Math.min(24,Math.ceil((sset.bedMinutes!=null?sset.bedMinutes:1380)/60));
     if(TE<=TS+2)TE=24;
     var sc=document.getElementById('tlScroll');
     var prevScroll=(batchIds!=null||tlDragging)?sc.scrollTop:null;   // 배치/드래그 중 스크롤 유지
@@ -3024,6 +3066,10 @@
      따라야 링이 맞는다. fPomo는 '이 세션'의 포모도로 여부(시작한 기기 기준).
      fRemote = 다른 기기에서 시작돼 여기서는 따라 보는 세션. */
   var fPlanMin=0,fPomo=null,fRemote=false,fRemoteDev='',fSessionID=null;
+  /* (시간 조절 캡슐) 이 세션에서 ± 조정한 누적 분 = '원래대로' 복원 기준,
+     그리고 '마감 고정' 토글 상태. 앱 FocusManager.planAdjustMin /
+     FocusModal.adjustKeepEnd 대응. */
+  var fPlanAdjust=0,fAdjKeepEnd=false,fAdjOpen=false,fTipTimer=null;
   function fPlanSec(){return Math.max(0,fPlanMin)*60;}
   function fPomoOn(){return fPomo===null?pomoOn():!!fPomo;}
   function fmtMS(s){var m=Math.floor(s/60);return ('0'+m).slice(-2)+':'+('0'+(s%60)).slice(-2);}
@@ -3144,7 +3190,19 @@
   // 쉬는 시간 색 (요청): 하늘색은 타임라인 하늘 배경과 겹쳐 구분이 안 됐다
   // — 봄 새싹 연두. 앱 FocusTimerRing.restGreen(0.62,0.84,0.40)과 같은 값.
   var REST_COLOR='#9ED666';
-  function pomoOn(){return localStorage.getItem('hfPomo')==='1';}
+  /* 포모도로 on/off (요청: 한쪽에서 바꾸면 다른 기기·웹도 따라간다).
+     정본은 스냅샷의 settings.pomodoroOn — 앱 AppSettings.pomodoroOn과 짝이다.
+     localStorage 'hfPomo'는 로그인 전·오프라인용 미러로만 남긴다. */
+  function pomoOn(){
+    var S=DATA&&DATA.settings;
+    if(S&&typeof S.pomodoroOn==='boolean')return S.pomodoroOn;
+    return localStorage.getItem('hfPomo')==='1';
+  }
+  function setPomoOn(on){
+    localStorage.setItem('hfPomo',on?'1':'0');          // 미러
+    if(!DATA.settings)DATA.settings={focusGoalMinutes:240};
+    DATA.settings.pomodoroOn=!!on;                       // 정본 → 스냅샷에 실린다
+  }
   // 세그먼트 — 앱 FocusManager.pomodoroSegments 그대로 (요청: 링 일치).
   //   0        → 없음(실시간, 균일 25·5 무한)
   //   ≤19      → 통으로 작업, 휴식 없음
@@ -3485,9 +3543,91 @@
     document.getElementById('focusScrim').classList.remove('open');
     fTask=null;fRemote=false;fRemoteDev='';fPomo=null;fPlanMin=0;fSessionID=null;fmStop();renderAll();
   }
+  /* ---------- 시간 조절 (요청: 앱의 시간 조절 캡슐을 웹에도) ----------
+     앱 FocusManager.adjustSessionPlan(byMinutes:proportional:context:)의 이식.
+     내 마감선을 d분 옮기고, 12시간 지평 안의 뒤 작업 마감선도 함께 옮긴다.
+     · 마감 고정 off → 뒤 작업들도 통째로 d분 밀린다
+     · 마감 고정 on  → 마지막 마감을 그대로 두고 사이를 비례로 재배치
+     반환 false = 거부(하한/공간 부족) — 호출부가 흔들림 없이 무시한다. */
+  function webAdjustSessionPlan(d,proportional){
+    if(!fTask||!d)return false;
+    var newPlan=fPlanMin+d;
+    // 계획 하한 1분. 단 '원래대로'가 실시간(0분) 세션을 되돌리는 건 예외 —
+    // 앱에도 같은 예외를 넣었다(그게 없으면 실시간 세션에서 한 번 늘린 뒤
+    // 영영 실시간으로 못 돌아간다).
+    var originalPlan=fPlanMin-fPlanAdjust;
+    if(!(newPlan>=1||newPlan===originalPlan))return false;
+    var t=taskByID(fTask.id)||fTask;
+    if(t.planDueAt){
+      var myOld=new Date(t.planDueAt).getTime(),myNew=myOld+d*60000;
+      var subs=(DATA.tasks||[]).filter(function(c){
+        if(c.id===t.id||c.isDone||c.isRewardItem)return false;
+        if(!((c.durationMin||0)>0)||!c.scheduledStart)return false;
+        var cd=taskDueAt(c).getTime();
+        return cd>myOld&&(cd-myOld)<12*3600*1000;});
+      if(proportional&&subs.length){
+        var fin=Math.max.apply(null,subs.map(function(c){return taskDueAt(c).getTime();}));
+        var oldSpan=fin-myOld,newSpan=fin-myNew;
+        // 마지막 마감을 고정할 수 없을 만큼 좁아지면 거부 (앱과 동일 기준).
+        if(!(oldSpan>0&&newSpan>=60000))return false;
+        var k=newSpan/oldSpan;
+        subs.forEach(function(c){var cd=taskDueAt(c).getTime();
+          c.planDueAt=new Date(myNew+(cd-myOld)*k).toISOString();});
+      }else{
+        subs.forEach(function(c){var cd=taskDueAt(c).getTime();
+          c.planDueAt=new Date(cd+d*60000).toISOString();});
+      }
+      t.planDueAt=new Date(myNew).toISOString();
+    }
+    fPlanMin=newPlan;fPlanAdjust+=d;
+    ftKey='';tickFocus();renderAll();paintAdjRow();
+    pushFocusState();      // 즉시 동기화 (요청: 웹-앱 즉시)
+    return true;
+  }
+  /* 앱 capsuleHint 대응 — 같은 문구, 2.6초 뒤 사라진다. */
+  function adjTip(kind){
+    var el=document.getElementById('ftTip');if(!el)return;
+    var txt=kind==='adjust'?'작업에 남은 시간을 늘리거나 줄여요'
+      :kind==='reset'?'조절한 시간을 처음으로 되돌려요'
+      :fAdjKeepEnd?'마지막 마감 고정 · 뒤 작업이 비례로 조절돼요'
+      :'뒤 작업 마감도 함께 밀려요';
+    el.innerHTML='<span>'+esc(txt)+'</span>';el.style.display='block';
+    clearTimeout(fTipTimer);
+    fTipTimer=setTimeout(function(){el.style.display='none';},2600);
+  }
+  /* 조절 줄 렌더 — 앱과 같은 7칩 순서. '원래대로'는 조절값이 0이면 흐리다. */
+  function paintAdjRow(){
+    var w=document.getElementById('ftAdjRow');if(!w)return;
+    w.innerHTML=
+      '<button class="ft-adjchip" data-a="end">끝내기</button>'+
+      '<button class="ft-adjchip" data-a="-2">\u22122</button>'+
+      '<button class="ft-adjchip" data-a="-5">\u22125</button>'+
+      '<button class="ft-adjchip'+(fPlanAdjust?'':' dim')+'" data-a="reset">원래대로</button>'+
+      '<button class="ft-adjchip" data-a="2">+2</button>'+
+      '<button class="ft-adjchip" data-a="5">+5</button>'+
+      '<button class="ft-adjchip'+(fAdjKeepEnd?' on':'')+'" data-a="fix">마감 고정</button>';
+    w.querySelectorAll('.ft-adjchip').forEach(function(b){
+      b.addEventListener('click',function(){
+        var a=b.dataset.a;
+        if(a==='end'){finishFocus();return;}
+        if(a==='fix'){fAdjKeepEnd=!fAdjKeepEnd;paintAdjRow();adjTip('fix');return;}
+        if(a==='reset'){adjTip('reset');if(fPlanAdjust)webAdjustSessionPlan(-fPlanAdjust,fAdjKeepEnd);return;}
+        webAdjustSessionPlan(parseInt(a,10),fAdjKeepEnd);
+      });});
+  }
+  function toggleAdjRow(){
+    fAdjOpen=!fAdjOpen;
+    var w=document.getElementById('ftAdjRow');
+    document.getElementById('fmChips').style.display='none';   // 같은 슬롯 — 상호배제
+    document.getElementById('ftAdjust').classList.toggle('on',fAdjOpen);
+    if(fAdjOpen){paintAdjRow();w.style.display='flex';adjTip('adjust');}
+    else{w.style.display='none';document.getElementById('ftTip').style.display='none';}
+  }
   /* 세션 상태만 바뀌었을 때의 즉시 push (시작·종료·일시정지·포모도로 토글). */
   function pushFocusState(){pushSnapshot();}
   function startFocus(t,opt){closeEditor();fTask=t;fStart=Date.now();fPausedAcc=0;fPauseAt=0;fPaused=false;ftKey='';fAdvanced=false;fWasRest=false;fRestMsg='';
+    fPlanAdjust=0;                     // 새 세션 = 조절 누적 초기화 (앱 파리티)
+    if(fAdjOpen)toggleAdjRow();
     // opt = 원격 채택 (요청): 저쪽 시계·계획·포모도로를 그대로 물려받는다.
     if(opt&&opt.remote){
       fStart=Date.now()-(opt.elapsed||0)*1000;fPaused=!!opt.paused;fPauseAt=Date.now();
@@ -3607,7 +3747,7 @@
     document.getElementById('setGoal').value=s.focusGoalMinutes!=null?s.focusGoalMinutes:240;
     document.getElementById('setWake').value=minToHHMM(s.wakeMinutes!=null?s.wakeMinutes:420);
     document.getElementById('setBed').value=minToHHMM(s.bedMinutes!=null?s.bedMinutes:1380);
-    document.getElementById('setDefDur').value=s.defaultDurationMin!=null?s.defaultDurationMin:30;
+    document.getElementById('setDefDur').value=setCaptureDefaultMin();
     document.getElementById('setVow').value=s.motto||s.todayVow||'';
     document.getElementById('setEleName').value=s.eleName||'';
     renderCapIconSettings();
@@ -3622,29 +3762,31 @@
     ecw.innerHTML=ELE_COLORS.map(function(c){return '<button data-c="'+c+'" class="'+(c===cur?'on':'')+'" style="background:'+c+'"></button>';}).join('');
     ecw.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){
       ecw.querySelectorAll('button').forEach(function(x){x.classList.remove('on');});b.classList.add('on');});});
-    document.getElementById('setDdayLabel').value=s.ddayLabel||'';
+    document.getElementById('setDdayLabel').value=setDdayTitle();
     document.getElementById('setDdayDate').value=s.ddayDate?s.ddayDate.slice(0,10):'';
-    document.getElementById('setBarPeriod').value=s.barPeriodSec!=null?s.barPeriodSec:300;
+    document.getElementById('setBarPeriod').value=setChipIntervalMin();
     paintAcctSection();
-    var bi=s.barItems||{};
-    document.querySelectorAll('#setBarItems input').forEach(function(cb){cb.checked=bi[cb.dataset.k]!==false&&bi[cb.dataset.k]!==undefined?!!bi[cb.dataset.k]:!!bi[cb.dataset.k];});
+    document.querySelectorAll('#setBarItems input').forEach(function(cb){cb.checked=setChip(cb.dataset.k);});
     document.getElementById('settingsScrim').classList.add('open');}
   function saveSettings(){if(!DATA.settings)DATA.settings={};var S=DATA.settings;
     S.focusGoalMinutes=parseInt(document.getElementById('setGoal').value,10)||0;
     S.wakeMinutes=hhmmToMin(document.getElementById('setWake').value);
     S.bedMinutes=hhmmToMin(document.getElementById('setBed').value);
-    S.defaultDurationMin=parseInt(document.getElementById('setDefDur').value,10)||0;
+    S.captureDefaultMin=parseInt(document.getElementById('setDefDur').value,10)||0;
+    delete S.defaultDurationMin;      // 옛 웹 키 — 앱과 갈라지지 않게 제거
     S.motto=document.getElementById('setVow').value||'';
     S.eleName=(document.getElementById('setEleName').value||'').trim();
     var scb=document.querySelector('#setScenery button.on');
     if(scb)S.sceneryRaw=scb.dataset.s;
     var selc=document.querySelector('#setEleColors button.on');
     if(selc)S.eleTintHex=selc.dataset.c;
-    S.ddayLabel=document.getElementById('setDdayLabel').value||'';
+    S.ddayTitle=document.getElementById('setDdayLabel').value||'';
+    delete S.ddayLabel;
     var dd=document.getElementById('setDdayDate').value;S.ddayDate=dd?new Date(dd).toISOString():null;
-    S.barPeriodSec=Math.max(2,parseInt(document.getElementById('setBarPeriod').value,10)||300);
-    S.barItems=S.barItems||{};
-    document.querySelectorAll('#setBarItems input').forEach(function(cb){S.barItems[cb.dataset.k]=cb.checked;});
+    S.chipIntervalMin=Math.max(1,parseInt(document.getElementById('setBarPeriod').value,10)||10);
+    delete S.barPeriodSec;            // 앱은 분 단위 chipIntervalMin을 쓴다
+    document.querySelectorAll('#setBarItems input').forEach(function(cb){S[cb.dataset.k]=cb.checked;});
+    delete S.barItems;
     document.getElementById('settingsScrim').classList.remove('open');renderAll();startBarRotation();pushSnapshot();}
 
   /* ---------- 통계 (요청: 웹 이식) ---------- */
@@ -5466,6 +5608,41 @@
       ab.textContent='로그인';ab.style.marginTop='0';
     }
   }
+  /* ---------- 설정 키 (요청: 앱-웹 동기화) ----------
+     정본은 **앱 AppSettings/SettingsDTO의 이름**이다. 웹이 예전에 쓰던 이름
+     (defaultDurationMin / barPeriodSec(초) / ddayLabel / barItems{})은 읽을
+     때만 폴백으로 남긴다 — 기존 사용자의 서버 스냅샷을 잃지 않기 위해서다.
+     ⚠ 전환 주기는 앱이 **분**, 웹이 **초**였다. 정본은 분(chipIntervalMin). */
+  function setCaptureDefaultMin(){
+    var S=DATA.settings||{};
+    if(S.captureDefaultMin!=null)return S.captureDefaultMin;
+    if(S.defaultDurationMin!=null)return S.defaultDurationMin;   // 옛 웹 키
+    return 30;
+  }
+  function setChipIntervalMin(){
+    var S=DATA.settings||{};
+    if(S.chipIntervalMin!=null)return Math.max(1,S.chipIntervalMin);
+    if(S.barPeriodSec!=null)return Math.max(1,Math.round(S.barPeriodSec/60));  // 초 → 분
+    return 10;
+  }
+  function setDdayTitle(){
+    var S=DATA.settings||{};
+    return S.ddayTitle!=null?S.ddayTitle:(S.ddayLabel||'');
+  }
+  /* 상단바 표시 항목: 앱은 개별 Bool(chip*), 웹은 barItems{} 객체였다.
+     앱 키가 있으면 그걸 쓰고, 없으면 옛 barItems에서 옮겨 읽는다.
+     ⚠ 앱은 해질녘·해돋이를 chipDaylight **하나로** 묶는다 — 웹의 sunset/
+     sunrise 둘 중 하나라도 켜져 있었으면 켜진 것으로 본다. */
+  function setChip(key){
+    var S=DATA.settings||{},bi=S.barItems||{};
+    if(S[key]!=null)return !!S[key];
+    if(key==='chipMotto')return bi.vow!=null?!!bi.vow:true;
+    if(key==='chipFocusTotal')return !!bi.focusSum;
+    if(key==='chipDaylight')return !!(bi.sunset||bi.sunrise);
+    if(key==='chipDday')return !!bi.dday;
+    if(key==='chipDeadline')return true;      // 앱 기본값
+    return false;
+  }
   function normalize(s){
     var o={tasks:s.tasks||[],habits:s.habits||[],sessions:s.sessions||[],
       settings:s.settings||{focusGoalMinutes:240},diary:s.diary||[]};
@@ -5504,6 +5681,10 @@
   function tombSave(m){try{localStorage.setItem(TOMB_KEY,JSON.stringify(m));}catch(_){}}
   function tombAdd(ids){var m=tombLoad(),now=Date.now();
     (ids||[]).forEach(function(id){if(id)m[id]=now;});tombSave(tombPrune(m));}
+  /* 실행 취소로 되살린 작업은 무덤에서 빼야 한다 — 안 그러면 다음 동기화가 도로 지운다. */
+  function tombRemove(ids){var m=tombLoad(),n=0;
+    (ids||[]).forEach(function(id){if(id&&m[id]){delete m[id];n++;}});
+    if(n)tombSave(m);}
   /* 내려받은 스냅샷에서 지운 작업을 걷어낸다. 뭔가 걷어냈으면 true. */
   function tombApply(o){
     var m=tombPrune(tombLoad());tombSave(m);
@@ -5520,10 +5701,16 @@
       serverSnap=(rows&&rows.length&&rows[0].snapshot)||{schemaVersion:1,tasks:[],habits:[],sessions:[],settings:null};
       var revived=tombApply(serverSnap);   // 반대쪽이 되살린 삭제분 제거 (요청)
       DATA=normalize(serverSnap);
+      // ⚠여기서 DATA가 통째로 바뀐다 — 대기 중이던 실행 취소 사본은 이제 '옛
+      // 배열'이라, 그대로 되돌리면 저쪽 기기가 방금 한 일까지 지우고 그 상태를
+      // 서버로 밀어 올린다. 그러니 폐기한다. (undoBefore도 같이 — 안 그러면
+      // 아래 revived push를 사용자 행동으로 오인해 엉뚱한 토스트가 뜬다.)
+      undoBefore=null;undoPending=null;undoHide();
       // fTask는 옛 DATA.tasks를 가리키던 참조 — 새 배열에서 다시 찾지 않으면
       // 이후 편집이 버려진 객체에 쓰인다 (집중 중 pull의 잠복 버그).
       if(fTask){var again=taskByID(fTask.id);if(again)fTask=again;}
       renderAll();
+      paintPomoChip();   // 원격에서 포모도로 설정이 바뀌었을 수 있다 (요청)
       // 되살아난 게 있었으면 지운 상태를 다시 올린다 — 그래야 앱도 따라 지운다.
       if(revived)pushSnapshot();
       adoptRemoteFocus(serverSnap.activeFocus,serverSnap.focusEnd);
@@ -5551,8 +5738,142 @@
     var fe=lastFocusEnd();
     if(fe)serverSnap.focusEnd=fe;
     return serverSnap;}
+  /* ── 실행 취소 (요청 첨부4·5) ─────────────────────────────────────────
+     실수로 뭘 눌렀을 때 왼쪽 아래에 '무엇을 했는지 + 실행 취소'를 잠깐 띄운다.
+     되돌릴 수 있는 변경 지점이 64곳이라 자리마다 손대는 대신 중앙에서 잡는다:
+       ① 제스처가 시작될 때(pointerdown·Enter, 캡처 단계) 가벼운 사본을 뜬다
+       ② 모든 변경이 반드시 부르는 pushSnapshot()에서 전/후를 비교해 문구를 뽑는다
+     앞으로 새 동작이 생겨도 자동으로 따라온다.
+     ⚠서버 읽기는 늘지 않는다 — 되돌릴 때 push가 한 번 더 나갈 뿐(업로드).
+     ⚠habit.photosJSON은 사진(base64)이라 직렬화에서 빼고 참조로만 들고 있다가
+       복원할 때 되돌려 붙인다 — 클릭마다 도는 코드라 무거우면 안 된다.
+     ⚠작업/루틴 '추가'는 알리지 않는다 (요청). */
+  var UNDO_LIMIT=4000000,UNDO_MS=6000;   // 4MB — 작업 수천 개까지 넉넉 (실측 클릭당 0.03ms)
+  var undoBefore=null,undoPending=null,undoSuppress=false,undoHideTimer=null;
+  function undoCapture(){
+    try{
+      var ph={},h=(DATA.habits||[]).map(function(x){
+        ph[x.id]=x.photosJSON;
+        var c={};for(var k in x)if(k!=='photosJSON')c[k]=x[k];return c;});
+      var str=JSON.stringify({t:DATA.tasks||[],h:h});
+      return str.length>UNDO_LIMIT?null:{s:str,ph:ph};   // 너무 크면 조용히 포기
+    }catch(_){return null;}
+  }
+  function undoDiffKeys(prev,now,keys){
+    var changed=false;
+    for(var k in now){
+      var a=prev[k],b=now[k];
+      if(a===b)continue;
+      if(a&&b&&typeof a==='object'&&typeof b==='object'&&JSON.stringify(a)===JSON.stringify(b))continue;
+      keys[k]=1;changed=true;
+    }
+    return changed;
+  }
+  /* 무엇이 바뀌었는지 한 줄로. 되돌릴 값어치가 없으면 null(안 띄움). */
+  function undoWhat(a,b){
+    var A={},B={};
+    (a.t||[]).forEach(function(x){A[x.id]=x;});
+    (b.t||[]).forEach(function(x){B[x.id]=x;});
+    if((b.t||[]).some(function(x){return !A[x.id];}))return null;      // 작업 추가 = 조용히
+    var gone=(a.t||[]).filter(function(x){return !B[x.id];});
+    if(gone.length)return gone.length>1?('작업 '+gone.length+'개를 지웠어요')
+      :(jo(gone[0].title||'작업','을','를')+' 지웠어요');
+    var keys={},n=0,doneTo=null,starTo=null;
+    (b.t||[]).forEach(function(x){
+      var p=A[x.id];if(!p)return;
+      if(!undoDiffKeys(p,x,keys))return;
+      n++;if(x.isDone!==p.isDone)doneTo=x.isDone;if(x.isStarred!==p.isStarred)starTo=x.isStarred;
+    });
+    if(n){
+      if(keys.isDone)return doneTo?'완료로 표시했어요':'완료를 되돌렸어요';
+      if(keys.deferredUntil)return '나중으로 미뤘어요';
+      if(keys.planDueAt||keys.scheduledStart||keys.durationMin)return '시간을 옮겼어요';
+      if(keys.matrixQuadrant)return '매트릭스 칸을 옮겼어요';
+      if(keys.ord||keys.matrixSort)return '순서를 바꿨어요';
+      if(keys.isStarred)return starTo?'별표를 달았어요':'별표를 뗐어요';
+      if(keys.subtasksJSON)return '하위 작업을 손봤어요';
+      if(keys.title)return '작업 이름을 바꿨어요';
+      if(keys.notes)return '메모를 고쳤어요';
+      if(keys.categoryID||keys.colorKey||keys.iconName)return '색·아이콘을 바꿨어요';
+      // 집중이 흘러가며 쌓이는 값은 '실수로 누른 것'이 아니다 — 띄우지 않는다.
+      if(keys.actualFocusedSec||keys.cumulativeFocusedSec||keys.lastFocusedAt||
+         keys.restSpansJSON||keys.rewardGranted||keys.verificationCount)return null;
+      return n>1?('작업 '+n+'개를 손봤어요'):'작업을 손봤어요';
+    }
+    var HA={},HB={};
+    (a.h||[]).forEach(function(x){HA[x.id]=x;});
+    (b.h||[]).forEach(function(x){HB[x.id]=x;});
+    if((b.h||[]).some(function(x){return !HA[x.id];}))return null;     // 루틴 추가 = 조용히
+    var hgone=(a.h||[]).filter(function(x){return !HB[x.id];});
+    if(hgone.length)return jo(hgone[0].title||'루틴','을','를')+' 지웠어요';
+    var hk={},hn=0;
+    (b.h||[]).forEach(function(x){var p=HA[x.id];if(p&&undoDiffKeys(p,x,hk))hn++;});
+    if(hn){
+      if(hk.logJSON)return '루틴을 체크했어요';
+      if(hk.weekdaysMask||hk.scheduleKindRaw||hk.intervalDays)return '루틴 반복을 바꿨어요';
+      if(hk.title)return '루틴 이름을 바꿨어요';
+      return '루틴을 손봤어요';
+    }
+    return null;
+  }
+  function undoShow(label,snap){
+    undoPending=snap;
+    var bar=document.getElementById('undoBar');if(!bar)return;
+    document.getElementById('undoMsg').textContent=label;
+    bar.classList.add('on');bar.style.opacity='1';
+    clearTimeout(undoHideTimer);undoHideTimer=setTimeout(undoHide,UNDO_MS);
+  }
+  function undoHide(){
+    var bar=document.getElementById('undoBar');if(!bar)return;
+    bar.style.opacity='0';clearTimeout(undoHideTimer);
+    undoHideTimer=setTimeout(function(){bar.classList.remove('on');undoPending=null;},260);
+  }
+  function undoRun(){
+    if(!undoPending)return;
+    var snap=undoPending;undoPending=null;undoHide();
+    var o;try{o=JSON.parse(snap.s);}catch(_){return;}
+    // 이미 지급된 보상은 되돌리지 않는다 — 잔액·원장은 이 사본 밖이라
+    // rewardGranted만 false로 돌리면 재완료 시 이중 지급된다.
+    var granted={};
+    (DATA.tasks||[]).forEach(function(x){if(x&&x.rewardGranted)granted[x.id]=1;});
+    DATA.tasks=(o.t||[]).map(function(x){if(granted[x.id])x.rewardGranted=true;return x;});
+    DATA.habits=(o.h||[]).map(function(x){
+      x.photosJSON=(snap.ph&&snap.ph[x.id]!=null)?snap.ph[x.id]:(x.photosJSON||'{}');return x;});
+    // ⚠되살린 작업이 삭제 무덤에 남아 있으면 다음 동기화가 도로 지운다 (80baece).
+    tombRemove(DATA.tasks.map(function(x){return x.id;}));
+    // 작업 객체를 붙들고 있는 전역들을 새 배열에서 다시 찾는다 — 안 찾으면
+    // 열려 있던 편집기·메모창이 버려진 객체에 쓰게 된다 (fetchSnapshot과 같은 이유).
+    if(fTask)fTask=taskByID(fTask.id)||null;
+    if(editTask)editTask=taskByID(editTask.id)||null;
+    if(memoTask)memoTask=taskByID(memoTask.id)||null;
+    undoSuppress=true;                 // 이 push는 다시 토스트를 띄우지 않는다
+    renderAll();pushSnapshot();
+  }
+  /* 모든 변경이 여기를 지나간다 — 전/후를 견줘 띄울지 정한다. */
+  function undoConsider(){
+    var before=undoBefore;undoBefore=null;
+    if(undoSuppress){undoSuppress=false;return;}
+    if(!before)return;
+    var now=undoCapture();
+    if(!now||now.s===before.s)return;
+    var label=null;
+    try{label=undoWhat(JSON.parse(before.s),JSON.parse(now.s));}catch(_){return;}
+    // 문구가 없더라도(작업 추가 등) 상태는 바뀌었다 — 낡은 사본을 그대로 두면
+    // 그걸로 되돌릴 때 그 사이에 추가한 것이 조용히 사라진다.
+    if(label)undoShow(label,before);else undoHide();
+  }
+  document.addEventListener('pointerdown',function(){undoBefore=undoCapture();},true);
+  document.addEventListener('keydown',function(e){if(e.key==='Enter')undoBefore=undoCapture();},true);
+  document.getElementById('undoDo').addEventListener('click',function(e){e.stopPropagation();undoRun();});
+  document.getElementById('undoX').addEventListener('click',function(e){e.stopPropagation();undoHide();});
+
   var pushTimer=null;
-  function pushSnapshot(){if(!session)return;clearTimeout(pushTimer);pushTimer=setTimeout(doPush,1200);}
+  /* 마지막 로컬 변경 시각 — 폴 주기를 적응형으로 고르는 데만 쓴다. */
+  var lastLocalChange=0;
+  function pushSnapshot(){
+    lastLocalChange=Date.now();
+    undoConsider();                    // 로그인 여부와 무관하게 실행 취소는 뜬다
+    if(!session)return;clearTimeout(pushTimer);pushTimer=setTimeout(doPush,1200);}
   function doPush(){pushTimer=null;if(!session)return;
     pushing=true;
     var body=[{user_id:session.user.id,snapshot:currentSnap(),device_id:webDeviceId(),updated_at:new Date().toISOString()}];
@@ -6127,11 +6448,18 @@
     showFocusConfirm('집중을 끝낼까요?','나가면 집중이 멈춰요. 지금까지 한 시간은 기록에 남아요.','끝내기',true,finishFocus);
   });
   document.getElementById('fmBtn').addEventListener('click',function(){
-    var w=document.getElementById('fmChips');w.style.display=w.style.display==='none'?'flex':'none';});
+    var w=document.getElementById('fmChips');var open=w.style.display==='none';
+    // 시간 조절 줄과 같은 슬롯이라 한쪽을 열면 다른 쪽은 닫는다.
+    if(open&&fAdjOpen)toggleAdjRow();
+    w.style.display=open?'flex':'none';});
+  document.getElementById('ftAdjust').addEventListener('click',toggleAdjRow);
   document.querySelector('.bcloud').addEventListener('click',rainBucket);
   document.getElementById('ftPomo').addEventListener('click',function(){
-    localStorage.setItem('hfPomo',pomoOn()?'0':'1');
-    if(fTask){fPomo=pomoOn();pushFocusState();}
+    setPomoOn(!pomoOn());
+    if(fTask)fPomo=pomoOn();
+    // 세션 중이면 세션 필드로도 나가고(반대편 링이 즉시 바뀜), 세션이 없어도
+    // **설정**이 바뀐 것이므로 올린다 (요청).
+    pushFocusState();
     ftKey='';paintPomoChip();if(fTask)tickFocus();});
   document.getElementById('bPrev').addEventListener('click',function(){shiftBucketDay(-1);});
   document.getElementById('bNext').addEventListener('click',function(){shiftBucketDay(1);});
@@ -6179,7 +6507,10 @@
   // 탭이 다시 보이면 서버에서 새로 받아 앱 변경을 반영 (요청: 동기화). 단,
   // 아직 안 올린 웹 편집(디바운스 대기)이 있으면 덮어쓰지 않고 건너뛴다.
   document.addEventListener('visibilitychange',function(){
-    if(!document.hidden && session && !pushTimer && !pushing) fetchSnapshot();
+    // ⚠ egress: 예전엔 조건 없이 fetchSnapshot()(전체)을 불러, 서버가 안
+    // 바뀌었어도 탭을 볼 때마다 스냅샷을 통째로 받았다. pollSync가 이미
+    // updated_at 비교로 거르므로 그걸 그대로 쓴다 (바뀌었으면 어차피 받는다).
+    if(!document.hidden && session && !pushTimer && !pushing) pollSync();
   });
   // 몇 초마다 아주 가벼운 updated_at만 조회(≈100바이트)해서, 다른 기기가
   // 바꿨을 때만 전체 스냅샷을 받아온다 (요청: 몇 초 뒤 반영 + egress 최소화).
@@ -6199,17 +6530,32 @@
         }}
     }).catch(function(){});
   }
-  /* 집중 중 전용 경량 폴 (요청): activeFocus만 읽어 반영한다. */
+  /* 집중 중 전용 경량 폴 (요청): 세션 필드만 읽어 반영한다.
+     ⚠ egress: 예전엔 `select=snapshot`으로 **전체 스냅샷(~112KB)**을 받아
+     두 필드만 쓰고 버렸다 — 이름만 '경량 폴'이었다. PostgREST의 jsonb
+     서브패스로 필요한 것만 받는다(앱 SyncEngine.fetchFocusOnly와 같은 URL).
+     **`->>`가 아니라 `->`** — `->>`는 텍스트로 와서 객체가 아니라 JSON
+     문자열이 되고, 그것도 200이라 런타임까지 안 잡힌다. */
   function pollFocusOnly(){
     if(!session)return;
     freshToken().then(function(tok){if(!tok)throw 0;
-      return fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=snapshot',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok}});})
+      return fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=af:snapshot->activeFocus,fe:snapshot->focusEnd',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok}});})
     .then(function(r){return r.json();}).then(function(rows){
-      var snap=(rows&&rows.length&&rows[0].snapshot)||null;
-      if(snap)adoptRemoteFocus(snap.activeFocus,snap.focusEnd);
+      if(rows&&rows.length)adoptRemoteFocus(rows[0].af,rows[0].fe);
     }).catch(function(){});
   }
-  setInterval(pollSync,6000);
+  /* ⚠ egress: 절감안을 다 적용하면 **이 메타 폴이 최대 항목**이 된다
+     (본문 94B에 HTTP 헤더가 ~500B라 페이로드로는 더 못 줄인다). 그래서
+     주기를 적응형으로 — 집중 중이거나 최근 2분 안에 로컬 변경이 있었으면
+     6초 그대로, 아무것도 안 하는 조용한 상태에서만 20초 (요청: "동기화
+     속도는 많이 늦추지 않되 egress는 최대한 적게"). 앱 MainTabView의
+     startPolling과 같은 규칙. */
+  function pollTick(){
+    var quiet=!fTask&&(Date.now()-lastLocalChange)>120000;
+    pollSync();
+    setTimeout(pollTick,quiet?20000:6000);
+  }
+  setTimeout(pollTick,6000);
 
   /* ---------- 공용 캡처바 (앱 CaptureBar 파리티, 요청) ----------
      할일 · 매트릭스 · 타임라인 이 하나의 인라인 캡처바를 공유한다:
@@ -6448,7 +6794,7 @@
     cap.detail=(origin==='timeline'?'duration':'options');cap.iconOpen=false;cap.colorOpen=false;cap.optionsOpen=true;cap.moreIcons=false;
     cap.draft={title:'',categoryID:(opts.categoryID||'focus'),
       colorKey:CAP_COLORS[Math.floor(Math.random()*CAP_COLORS.length)].k,iconName:null,   // 앱: 열 때마다 랜덤 대표색
-      durationMin:(origin==='timeline'?(DATA.settings&&DATA.settings.defaultDurationMin!=null?DATA.settings.defaultDurationMin:30):0),
+      durationMin:(origin==='timeline'?setCaptureDefaultMin():0),
       durEdited:false,durationLocked:false,iconLocked:false,colorLocked:false,
       scheduledStart:opts.scheduledStart||null,reminderOffsets:[],nudgeEnabled:false,dueDate:null,
       notes:'',repeatDaysMask:0,rewardIsMoney:false,rewardText:'',rewardToQ4:false};
@@ -7125,12 +7471,36 @@
   // ── 상단 캡슐 회전 (요청) ──
   var barIdx=0,barTimer=null,barWordTick=0;
   function barEnabledKeys(){
-    var bi=(DATA.settings&&DATA.settings.barItems)||{};
-    var order=['vow','focusSum','sunset','sunrise','dday'];
-    return order.filter(function(k){return bi[k];});
+    // 앱 TopBar.swift:180-186과 같은 순서·같은 조건. 마감(deadline)은 앱과
+    // 마찬가지로 **마감선이 실제로 있을 때만** 회전에 낀다.
+    var out=[];
+    if(setChip('chipMotto'))out.push('vow');
+    if(setChip('chipFocusTotal'))out.push('focusSum');
+    if(setChip('chipDaylight')){out.push('sunset');out.push('sunrise');}
+    if(setChip('chipDday'))out.push('dday');
+    if(setChip('chipDeadline')&&planDeadlineAt())out.push('deadline');
+    return out;
+  }
+  /* 앱 AppState.planDeadline 대응 — 오늘 마지막 마감선 시각 (없으면 null). */
+  function planDeadlineAt(){
+    var t=(DATA.tasks||[]).filter(function(x){
+      return !x.isDone&&!x.isRewardItem&&x.scheduledStart&&(x.durationMin||0)>0;});
+    if(!t.length)return null;
+    var end=new Date();end.setHours(23,59,59,999);
+    var ds=t.map(function(x){return taskDueAt(x).getTime();})
+            .filter(function(d){return d>Date.now()&&d<=end.getTime();});
+    return ds.length?new Date(Math.max.apply(null,ds)):null;
   }
   function barContent(k){
     var S=DATA.settings||{};
+    if(k==='deadline'){
+      // 앱 TopBar.swift:303-309 — 시각이 아니라 '남은 시간'만 보여준다.
+      var tgt=planDeadlineAt();
+      if(!tgt)return {ic:IC.flag,txt:'마감이 지났어요'};
+      var dmin=Math.max(0,Math.round((tgt.getTime()-Date.now())/60000));
+      var dh=Math.floor(dmin/60);
+      return {ic:IC.flag,txt:(dh?dh+'시간 ':'')+(dmin%60)+'분 남음'};
+    }
     if(k==='vow'){
       // 한마디 (앱 §2): shownInBar=true인 diary word들 중 회전 슬롯마다 하나.
       var words=(DATA.diary||[]).filter(function(e){return e.kind==='word'&&e.shownInBar&&(e.text||'').trim();});
@@ -7157,7 +7527,7 @@
       if(!S.ddayDate)return {ic:IC.flag,txt:'D-day 미설정'};
       var dd=new Date(S.ddayDate);dd.setHours(0,0,0,0);var td=new Date();td.setHours(0,0,0,0);
       var diff=Math.round((dd-td)/86400000);
-      var lab=(S.ddayLabel||'').trim();
+      var lab=setDdayTitle().trim();
       var dtxt=diff===0?'D-day':(diff>0?'D-'+diff:'D+'+(-diff));
       return {ic:IC.flag,txt:dtxt+(lab?' '+lab:'')};
     }
@@ -7188,7 +7558,7 @@
     if(barTimer)clearInterval(barTimer);
     barIdx=0;paintBar(false);
     var keys=barEnabledKeys();if(keys.length<2)return;
-    var per=Math.max(2,(DATA.settings&&DATA.settings.barPeriodSec)||300)*1000;
+    var per=setChipIntervalMin()*60000;
     barTimer=setInterval(barAdvance,per);
   }
 
