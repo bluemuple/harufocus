@@ -41,6 +41,9 @@ const harness = `
   var document = { getElementById: document_stub };
   var IC = { play: '', pause: '' };
   function paintPomoChip(){}
+  function setPomoOn(on){ pomoSetting = !!on; }
+  function paintAdjRow(){}
+  var pomoSetting = false, fAdjOpen = false, fPlanAdjust = 0;
   function applyRemoteScene(s){ scene = s; }
   function tickFocus(){}
   function fmStop(){}
