@@ -3192,10 +3192,11 @@
     if(ysec>=60){var yh=Math.floor(ysec/3600),ym=Math.floor((ysec%3600)/60);
       segs.push('🕰 '+(yh>0?(ym>0?'어제 '+yh+'시간 '+ym+'분 집중':'어제 '+yh+'시간 집중'):'어제 '+ym+'분 집중'));}
     // ↪ 다음 마감선 작업 + 마감선 간격 분 (앱 nextCompact).
+    // 다음 과제명 + '그 과제의 duration'. (예전엔 내 마감→다음 마감 '간격'을 썼는데,
+    // 포커스 중인 작업의 마감이 오늘이 아니면 간격이 며칠치로 튀어 '14366분' 같은 값이
+    // 나왔다. 앱도 6e4e3de③에서 파생 duration 배선을 걷어냈으므로 자체 길이로 통일.)
     var nx=nextDueTask();
-    if(nx){var gap=0;try{gap=Math.max(1,Math.round((taskDueAt(nx).getTime()-taskDueAt(t).getTime())/60000));}catch(_){}
-      if(!gap)gap=nx.durationMin||0;
-      segs.push('↪ '+(nx.title||'')+' '+gap+'분');}
+    if(nx&&(nx.durationMin||0)>0)segs.push('↪ '+(nx.title||'')+' '+durLabel(nx.durationMin));
     // 🎁 걸어둔 보상 (앱 hasReward).
     if((t.rewardMoney||0)>0)segs.push('🎁 끝나면 '+moneyStr(t.rewardMoney));
     else if(t.rewardText)segs.push('🎁 끝나면 '+t.rewardText);
