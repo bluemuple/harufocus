@@ -260,10 +260,14 @@
     border-radius:999px;padding:2px 6px;box-shadow:0 3px 8px rgba(20,40,80,.22);cursor:ns-resize;touch-action:none;user-select:none}
   .tl-night .dl-cap{background:#273B9E;color:#F5F7FF}
   /* 편집 모드 마감 캡슐 드래그 어포던스 (앱 TimelineScrollView 파리티) */
-  .dueline .dl-chev{position:absolute;left:50%;transform:translateX(-50%);font-style:normal;font-size:12px;
-    font-weight:800;line-height:1;color:var(--onSky,#141827);opacity:.85;pointer-events:none;text-shadow:0 1px 2px rgba(255,255,255,.35)}
-  .dueline .dl-chev.up{top:-15px}
-  .dueline .dl-chev.dn{bottom:-15px}
+  /* 위·아래 화살표는 **같은 SVG를 뒤집어** 쓴다 — 예전엔 ⌃/⌄ 글리프라
+     서체에 따라 크기와 광학 중심이 서로 달랐다 (요청: 크기 통일). */
+  .dueline .dl-chev{position:absolute;left:50%;font-style:normal;line-height:0;
+    color:var(--onSky,#141827);opacity:.85;pointer-events:none;
+    filter:drop-shadow(0 1px 1px rgba(255,255,255,.35))}
+  .dueline .dl-chev svg{width:13px;height:13px;display:block}
+  .dueline .dl-chev.up{top:-14px;transform:translateX(-50%)}
+  .dueline .dl-chev.dn{bottom:-14px;transform:translateX(-50%) rotate(180deg)}
   .dueline .dl-radio{position:absolute;left:72px;top:-33px;width:30px;height:30px;border-radius:50%;
     border:2px solid var(--onSky,#141827);background:transparent;cursor:pointer;color:#fff;font-size:16px;
     font-weight:800;display:grid;place-items:center;box-shadow:0 1px 4px rgba(20,40,80,.25)}
@@ -1076,7 +1080,18 @@
          평범한 흐름이 된다. 최소 간격은 padding-top이 지킨다. */
     #view-todo.on{display:flex;flex-direction:column;min-height:100%}
     #view-todo.on>*{flex:0 0 auto}
-    .app-foot{display:flex;margin-top:auto;padding-top:30px}
+    /* 요청: 우측 추가 버튼(+)의 **아랫변**과 같은 높이까지 내린다.
+       .page-fab이 bottom:22px·높이 56px이므로 같은 bottom을 쓰면 두 요소의
+       아랫변이 정확히 맞는다. 흐름에서 빼되 클릭은 통과시킨다. */
+    /* 요청: 우측 추가 버튼(+)의 **아랫변**과 같은 높이까지 내린다.
+       .page-fab이 bottom:22px·높이 56px이라 같은 bottom을 주면 아랫변이 맞는다.
+       흐름에서 빼되 클릭은 통과시키고, 목록이 길어 글자가 카드 위에 비치면
+       버그처럼 보이므로 그때는 숨긴다(.app-foot.hide — renderTodo가 판단). */
+    .app-foot{display:flex;margin:0;position:fixed;left:0;right:0;z-index:1;
+      bottom:calc(22px + env(safe-area-inset-bottom));pointer-events:none}
+    /* ⚠display:none으로 숨기면 rect가 0이 돼 다음 판정에서 영영 못 돌아온다
+       (자기 위치를 재서 판단하기 때문) — 박스는 남기고 보이기만 끈다. */
+    .app-foot.hide{visibility:hidden}
     /* 요청: 윗줄 하나에 [엘리에게 한마디] | [페이지 제목] ……… [버튼 4개].
        셋 다 top:14px / height:44px 라 세로 가운데가 정확히 맞는다. */
     /* 캡슐·버튼 높이 = 제목 '글자' 높이(27px 폰트 → 31.5px). 제목 박스는 44로
@@ -2044,6 +2059,8 @@
     people:'<circle cx="9" cy="8" r="3"/><path d="M3.6 20c.6-3.3 2.6-4.9 5.4-4.9s4.8 1.6 5.4 4.9"/><circle cx="17" cy="9" r="2.4"/><path d="M15.6 14.7c2.6.3 4.2 1.7 4.8 4.2"/>'};
   var IC={
     play:'<svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.4v13.2L19 12z"/></svg>',
+    // 마감 캡슐 위·아래 화살표 — 같은 도형을 180° 돌려 쓴다 (요청: 크기 통일).
+    chev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>',
     pause:svgI('<path d="M9 5v14M15 5v14"/>'),
     gift:svgI('<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M12 9v11M4 13.5h16"/><path d="M12 9c-3.8 0-4.9-1.9-3.9-3.3C9.2 4.2 11 4.8 12 7c1-2.2 2.8-2.8 3.9-1.3C16.9 7.1 15.8 9 12 9z"/>'),
     note:svgI('<rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/>'),
@@ -2081,6 +2098,15 @@
     dots9:svgI('<circle cx="6" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="18" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="6" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="6" cy="18" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="18" r="1.3" fill="currentColor" stroke="none"/><circle cx="18" cy="18" r="1.3" fill="currentColor" stroke="none"/>'),
     circleO:svgI('<circle cx="12" cy="12" r="7.5"/>')};
   function catIcon(id){return svgI(CAT_IC[id]||CAT_IC.focus);}
+  /* 작업 심볼 한 곳 (요청: 할일 목록·타임라인 마감선·블록이 같은 아이콘).
+     작업에 지정된 아이콘이 있으면 그것, 없으면 범주 기본 아이콘.
+     ⚠예전엔 타임라인이 catIcon(범주)만 써서, '영어'에 지구본을 지정해도
+     타임라인엔 범주 기본값(공부=새싹)이 떠 좌우가 달라 보였다.
+     ⚠색은 호출한 쪽이 정한다 — 할일은 iconTint를 입히고, 타임라인은 기존
+     색(color:inherit)을 그대로 둔다 (요청: 타임라인 색 유지). */
+  function taskIcon(t){
+    return (t&&t.iconName)?findIconSvg(t.iconName):catIcon(t?t.categoryID:'focus');
+  }
   // 매트릭스 사분면 힌트 (앱 파리티, 요청).
   function quadHint(q){return ['','지금 바로','계획','빨리 처리','나중에'][q]||'';}
   /* 셀 바닥 큰 힌트 (요청): 아이젠하워 매트릭스대로 —
@@ -2883,7 +2909,7 @@
       }).join('');
       var mins=Math.max(1,Math.round(span/60000));
       el.innerHTML=hatches+
-        '<span class="bic">'+catIcon(b.categoryID)+'</span><span class="btitle">'+esc(b.title)+'</span>'+
+        '<span class="bic">'+taskIcon(taskByID(b.taskID)||b)+'</span><span class="btitle">'+esc(b.title)+'</span>'+
         '<small>'+durLabel(mins)+'</small>';
       var task=taskByID(b.taskID);
       if(task)el.addEventListener('click',function(){openEditor(task);});
@@ -2916,8 +2942,8 @@
       var lenTxt=(t.durationMin||0)>0?durLabel(t.durationMin):'';
       dl.innerHTML='<div class="dl-wire"></div>'+
         '<button class="dl-radio'+(t.isDone?' on':'')+'" title="완료" style="--dc:'+catColor(t.categoryID)+'">'+(t.isDone?'✓':'')+'</button>'+
-        (covered?'':'<div class="dl-text'+(t.isDone?' done':'')+'"><span class="dl-ic">'+catIcon(t.categoryID)+'</span><span class="dl-title">'+esc(t.title)+'</span>'+(lenTxt?'<span class="dl-dur">'+lenTxt+'</span>':'')+'<button class="dl-play" title="집중 시작">'+IC.play+'</button></div>')+
-        '<span class="dl-cap">'+(editBarOn?'<i class="dl-chev up">⌃</i><i class="dl-chev dn">⌄</i>':'')+('0'+due.getHours()).slice(-2)+':'+('0'+due.getMinutes()).slice(-2)+'까지</span>'+
+        (covered?'':'<div class="dl-text'+(t.isDone?' done':'')+'"><span class="dl-ic">'+taskIcon(t)+'</span><span class="dl-title">'+esc(t.title)+'</span>'+(lenTxt?'<span class="dl-dur">'+lenTxt+'</span>':'')+'<button class="dl-play" title="집중 시작">'+IC.play+'</button></div>')+
+        '<span class="dl-cap">'+(editBarOn?'<i class="dl-chev up">'+IC.chev+'</i><i class="dl-chev dn">'+IC.chev+'</i>':'')+('0'+due.getHours()).slice(-2)+':'+('0'+due.getMinutes()).slice(-2)+'까지</span>'+
         '<button class="dl-x" title="마감선만 삭제">✕</button>';
       var pb=dl.querySelector('.dl-play');if(pb)pb.addEventListener('click',function(e){e.stopPropagation();startFocus(t);});
       // D2-2 마감 동그라미: 완료 토글 (보상 지급 + 취소선)
@@ -4339,6 +4365,14 @@
     // 완료 → 아래로, 별표 → 위로 움직이는 게 보이도록).
     var oldPos={};
     list.querySelectorAll('.task[data-id]').forEach(function(el){oldPos[el.dataset.id]=el.getBoundingClientRect().top;});
+    // 브랜드 워터마크는 '남는 자리'에만 (요청: + 버튼 아랫변). 목록이 그
+    // 자리까지 내려오면 글자가 카드 위에 비쳐 숨긴다.
+    setTimeout(function(){
+      var foot=document.querySelector('.app-foot');if(!foot)return;
+      var last=list.querySelector('.task:last-child');
+      var fr=foot.getBoundingClientRect();
+      foot.classList.toggle('hide',!!last&&last.getBoundingClientRect().bottom>fr.top-8);
+    },0);
     list.innerHTML='';
     var todayMid=new Date();todayMid.setHours(0,0,0,0);
     // 내일로 미룬 일은 그날이 되기 전엔 숨긴다 (앱 파리티, 요청).
