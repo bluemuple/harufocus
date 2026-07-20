@@ -80,7 +80,9 @@
   .eb-slider.drag{background:rgba(255,255,255,.22);color:#fff}
   .eb-slider.drag i{background:#fff}
   @media(min-width:1100px){.edit-bar{left:10px;right:auto;width:380px;bottom:74px}}
-  .dueline.selected::after{content:"";position:absolute;left:8px;right:-6px;top:-27px;height:44px;
+  /* 체크 동그라미(.dl-radio는 top:-33)가 아웃라인 위로 삐져나와 잘려 보였다
+     → 위로 10px 올리고 그만큼 키워 아래 끝은 그대로 (요청). */
+  .dueline.selected::after{content:"";position:absolute;left:8px;right:-6px;top:-37px;height:54px;
     border:1px solid var(--dueSel,rgba(245,247,255,.55));border-radius:18px;pointer-events:none}
   /* 마감집게 (D2-3) */
   .due-clamp{position:absolute;left:15%;width:70%;z-index:5;text-align:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
@@ -232,9 +234,11 @@
   .hour .bedmark{position:absolute;right:14px;top:-9px;font-size:11px;font-weight:800;color:var(--onSky,#141827);opacity:.85;white-space:nowrap}
   .hour .bedhint{position:absolute;right:14px;top:7px;font-size:10px;font-weight:600;color:var(--onSky,#141827);opacity:.55;white-space:nowrap}
   /* 지금 라인 = 빨강, x=56 시작 (델타 §2·§7) */
-  .now{position:absolute;left:8px;right:12px;z-index:4;display:flex;align-items:center;gap:2px}
+  /* 요청: 빨간선 왼쪽 끝이 '지금' 캡슐에 붙게 — gap을 없애고 캡슐 둥근 모서리
+     밑으로 2px 파고들게 한다. */
+  .now{position:absolute;left:8px;right:12px;z-index:4;display:flex;align-items:center;gap:0}
   .now .pill{background:#E34238;color:#fff;font-weight:800;font-size:11px;padding:3px 8px;border-radius:8px}
-  .now .wire{flex:1;height:2px;background:#E34238;border-radius:2px;position:relative}
+  .now .wire{flex:1;height:2px;background:#E34238;border-radius:2px;position:relative;margin-left:-2px}
   /* 요청: 지금 라인의 작은 동그라미는 왼쪽 → 오른쪽 끝으로 */
   .now .wire::before{content:"";position:absolute;right:-2px;top:-1.5px;width:5px;height:5px;border-radius:50%;background:#E34238}
   /* 마감선 (델타 §2): 계획 = 가로 선. 텍스트는 선의 밑줄처럼 위에. */
@@ -439,6 +443,15 @@
     font-size:12.5px;font-weight:600;line-height:1.5;border-radius:10px;padding:10px 12px;
     box-shadow:0 8px 24px rgba(0,0,0,.28);transition:opacity .2s}
   /* 버튼이 뭘 뜻하는지 (요청): PC는 마우스를 올리면, 폰은 누르면 버튼 '위'에 잠깐. */
+  /* 편집 모드 단축키 안내 (요청): PC 우측 아래. */
+  .sc-panel{position:fixed;right:22px;bottom:96px;z-index:46;display:none;flex-direction:column;gap:6px;
+    background:rgba(22,28,44,.92);color:#fff;border-radius:12px;padding:11px 13px;
+    box-shadow:0 10px 28px rgba(0,0,0,.3);font-size:11.5px;font-weight:600;pointer-events:none}
+  .sc-panel b{font-size:11px;font-weight:800;opacity:.6;letter-spacing:.02em}
+  .sc-panel div{display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .sc-panel kbd{font-family:inherit;font-size:10.5px;font-weight:700;background:rgba(255,255,255,.16);
+    border-radius:5px;padding:2px 5px;min-width:17px;text-align:center}
+  @media(min-width:1100px){.sc-panel.on{display:flex}}
   .btip{position:fixed;z-index:140;max-width:min(260px,86vw);background:rgba(22,28,44,.94);color:#fff;
     font-size:12px;font-weight:600;line-height:1.45;border-radius:9px;padding:7px 10px;text-align:center;
     pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.3)}
@@ -1385,6 +1398,14 @@
   <!-- 우상단 회전 캡슐 (요청: 다짐·집중합계·해질녘·해돋이·D-day 번갈아, 아래로 전환). -->
   <button class="topcap" id="topCap"><span class="tc-ic" id="tcIc"></span><span class="tc-txt" id="tcTxt"></span></button>
   <!-- 방금 한 일 + 실행 취소 (요청 첨부4·5) -->
+  <!-- 편집 모드에서만 (요청): 무슨 키를 쓸 수 있는지 -->
+  <div class="sc-panel" id="scPanel">
+    <b>단축키</b>
+    <div><kbd>↑</kbd><kbd>↓</kbd> 마감선 고르기</div>
+    <div><kbd id="scMod">⌘</kbd>+<kbd>↑</kbd><kbd>↓</kbd> 마감선 5분씩 옮기기</div>
+    <div><kbd>Delete</kbd> 마감선 지우기</div>
+    <div><kbd>Esc</kbd> 편집 끝내기</div>
+  </div>
   <div class="undobar" id="undoBar"><span id="undoMsg"></span><button id="undoDo">실행 취소</button><button id="undoX" aria-label="닫기">✕</button></div>
 
   <div class="layout">
@@ -2533,10 +2554,12 @@
     selDueId=tid||nearestDueId();
     if(!selDueId&&lines.length)selDueId=lines[0].id;
     document.getElementById('editBar').style.display='flex';
+    document.getElementById('scPanel').classList.add('on');
     paintEditBar();renderBig();
   }
   function closeEditBar(){editBarOn=false;selDueId=null;
-    document.getElementById('editBar').style.display='none';renderBig();}
+    document.getElementById('editBar').style.display='none';
+    document.getElementById('scPanel').classList.remove('on');renderBig();}
   function nearestDueId(){
     var lines=todayDueLines(false);if(!lines.length)return null;
     var now=Date.now(),best=lines[0],bd=1/0;
@@ -2657,6 +2680,16 @@
     sc.appendChild(wrap);
   }
 
+  /* 마감선을 그 시각으로 옮긴다 — 앱 dueDrag 규칙 한 곳 (앵커=자기 시작,
+     최소 5분, scheduledStart는 고정). 캡슐 드래그·편집바 슬라이더·단축키가
+     모두 이걸 쓴다 — 예전엔 슬라이더만 길이를 안 바꿔 서로 갈렸다. */
+  function nudgeDueTo(t,ms){
+    t.planDueAt=new Date(ms).toISOString();
+    if(isPlanOnly(t)&&t.scheduledStart){
+      var m=Math.max(5,Math.round((ms-new Date(t.scheduledStart).getTime())/60000));
+      if(t.durationMin!==m)t.durationMin=m;
+    }
+  }
   // 마감선 캡슐 드래그 (§2): 1분 스냅, 자유 이동, 놓을 때 ±8분→아래 10분 스프링.
   function attachDueDrag(dl,t){
     var cap=dl.querySelector('.dl-cap');if(!cap)return;
@@ -2670,15 +2703,8 @@
         if(!moved)return;
         clearTimeout(armTimer);
         var dm=Math.round((ev.clientY-y0)*(60/PPH));          // 1분 스냅
-        var nd=due0+dm*60000;
-        t.planDueAt=new Date(nd).toISOString();
-        // 앱 dueDrag(.onChanged) 파리티: 계획-전용이면 길이를 '끄는 내내' 갱신한다.
-        // 앵커는 자기 scheduledStart — 시작은 고정이고 마감만 움직여 길이가 늘고 준다.
-        // (예전엔 여기서 planDueAt만 바꿔 duration 라벨이 드래그 내내 그대로였다.)
-        if(isPlanOnly(t)&&t.scheduledStart){
-          var lm=Math.max(5,Math.round((nd-new Date(t.scheduledStart).getTime())/60000));
-          if(t.durationMin!==lm)t.durationMin=lm;
-        }
+        // 앱 dueDrag(.onChanged) 파리티: 길이를 '끄는 내내' 갱신한다.
+        nudgeDueTo(t,due0+dm*60000);
         renderBig();ev.preventDefault();
       }
       function up(){
@@ -2698,10 +2724,7 @@
         //   오늘 지난 시각으로 끌면 now 클램프에 눌려 5분으로 주저앉았다.
         // ⚠scheduledStart는 건드리지 않는다 — 앱은 '시작 고정·길이 변동'이고,
         //   웹은 시작을 due−길이로 되밀어 반대 모델이었다.
-        if(isPlanOnly(t)&&t.scheduledStart){
-          var em=Math.max(5,Math.round((due-new Date(t.scheduledStart).getTime())/60000));
-          if(t.durationMin!==em)t.durationMin=em;
-        }
+        nudgeDueTo(t,due);
         renderBig();renderMosaic();pushSnapshot();
       }
       document.addEventListener('pointermove',move);
@@ -2848,7 +2871,7 @@
       function move(ev){
         if(!pushed){duePushUndo();pushed=true;}
         var dm=Math.round((ev.clientY-y0)/2);                  // 2px = 1분
-        t.planDueAt=new Date(due0+dm*60000).toISOString();
+        nudgeDueTo(t,due0+dm*60000);   // 길이도 같이 (앱 규칙 — 예전엔 슬라이더만 빠져 있었다)
         paintEditBar();renderBig();ev.preventDefault();
       }
       function up(){document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);
@@ -6810,6 +6833,66 @@
     if(e)e.addEventListener('scroll',capFade,{passive:true});});
   (function(){var e=document.querySelector('.tabbody');
     if(e)e.addEventListener('scroll',capFade,{passive:true});})();
+  /* ── 단축키 (요청, PC) ────────────────────────────────────────────
+     ⌘/Ctrl+Z = 실행 취소. 편집 모드(연필)에서는 ↑↓로 마감선을 고르고,
+     ⌘/Ctrl+↑↓로 5분씩 옮기고, Delete로 지우고, Esc로 나간다.
+     글을 쓰는 중(input·textarea)에는 전부 비켜선다 — 브라우저 기본 동작 우선. */
+  var IS_MAC=/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent||'');
+  (function(){var k=document.getElementById('scMod');if(k)k.textContent=IS_MAC?'⌘':'Ctrl';})();
+  var dueKeyUndoAt=0;
+  document.addEventListener('keydown',function(e){
+    var mod=e.metaKey||e.ctrlKey;
+    var typing=e.target&&e.target.closest&&e.target.closest('input,textarea,[contenteditable="true"]');
+    if(mod&&(e.key==='z'||e.key==='Z')){
+      if(typing)return;                                // 글 쓰는 중엔 브라우저 되돌리기
+      // 편집 모드에선 편집바의 ↩/↪ 히스토리를 쓴다 — 키보드로 옮기거나 지운 건
+      // 제스처 스냅샷(undoPending)에 안 잡히고 duePushUndo에만 남기 때문.
+      if(editBarOn){
+        if(e.shiftKey){
+          if(!dueRedo.length)return;
+          e.preventDefault();dueUndo.push(dueSnapshot());dueRestore(dueRedo.pop());paintEditBar();return;
+        }
+        if(!dueUndo.length)return;
+        e.preventDefault();dueRedo.push(dueSnapshot());dueRestore(dueUndo.pop());paintEditBar();return;
+      }
+      if(e.shiftKey||!undoPending)return;
+      e.preventDefault();undoRun();return;
+    }
+    if(!editBarOn||typing)return;
+    if(e.key==='Escape'){e.preventDefault();closeEditBar();return;}
+    if(e.key==='Delete'||e.key==='Backspace'){
+      var td=taskByID(selDueId);if(!td)return;
+      e.preventDefault();
+      duePushUndo();td.scheduledStart=null;td.planDueAt=null;   // 마감선만 (기록은 유지)
+      selDueId=nearestDueId();renderAll();pushSnapshot();paintEditBar();return;
+    }
+    if(e.key!=='ArrowUp'&&e.key!=='ArrowDown')return;
+    e.preventDefault();
+    var dir=e.key==='ArrowDown'?1:-1;
+    if(!mod){ebMove(dir);return;}
+    var t=taskByID(selDueId);if(!t||t.isDone)return;
+    // 키를 누르고 있으면 반복 입력이 쏟아진다 — 되돌리기는 한 묶음에 하나만.
+    if(Date.now()-dueKeyUndoAt>600)duePushUndo();
+    dueKeyUndoAt=Date.now();
+    nudgeDueTo(t,taskDueAt(t).getTime()+dir*5*60000);
+    renderBig();renderMosaic();pushSnapshot();paintEditBar();
+  });
+  /* 스크롤을 멈추고 9초가 지나면 '지금'이 위에서 1시간 아래에 오도록 되돌린다 (요청). */
+  var tlIdleTimer=null;
+  function tlArmIdleScroll(){
+    clearTimeout(tlIdleTimer);
+    tlIdleTimer=setTimeout(function(){
+      var sc=document.getElementById('tlScroll');if(!sc)return;
+      if(tlDragging||mxDragging||editBarOn||(typeof cap!=='undefined'&&cap&&cap.open))return;
+      if(dayOffset!==0)return;                       // 오늘이 아니면 '지금'이 없다
+      var n=new Date(),nf=n.getHours()+n.getMinutes()/60;
+      var target=Math.max(0,Math.min(sc.scrollHeight-sc.clientHeight,yFor(nf)-PPH));
+      if(Math.abs(sc.scrollTop-target)<4)return;     // 이미 제자리면 건드리지 않는다
+      try{sc.scrollTo({top:target,behavior:'smooth'});}catch(_){sc.scrollTop=target;}
+    },9000);
+  }
+  (function(){var sc=document.getElementById('tlScroll');
+    if(sc)sc.addEventListener('scroll',tlArmIdleScroll,{passive:true});})();
   document.addEventListener('visibilitychange',function(){
     // ⚠ egress: 예전엔 조건 없이 fetchSnapshot()(전체)을 불러, 서버가 안
     // 바뀌었어도 탭을 볼 때마다 스냅샷을 통째로 받았다. pollSync가 이미
