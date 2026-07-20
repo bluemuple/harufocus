@@ -1045,8 +1045,9 @@
        아래로 밀려 스크롤이 생긴다 (요청). */
     .tabbody.matrix-mode{padding-bottom:18px}
     #view-matrix.on{display:flex;flex-direction:column;min-height:100%}
-    /* ⚠min-height면 작업이 많은 셀이 그리드를 밀어 올려 페이지가 스크롤됐다.
-       height로 못박아야 그리드가 고정되고 넘치는 셀이 .qbody 안에서만 구른다. */
+    /* 높이는 fitMatrixHeight()가 실제 .tabbody 안쪽 높이를 재서 넣는다 —
+       calc(100dvh - …)로 어림하면 실제 여백과 어긋나 화면 밖으로 넘어갔다.
+       (아래는 스크립트가 못 돌았을 때의 대비값) */
     #view-matrix.on>.matrix{flex:0 0 auto;height:calc(100dvh - 82px)}
     body[data-m] .topcap{display:flex}          /* 데스크톱에선 항상 (타임라인 상시 표시) */
     /* 우상단 원형 네비 */
@@ -4457,13 +4458,36 @@
     // rows grow with their content (max of the two cells in the row); page never
     // scrolls — an overloaded cell scrolls internally (요청).
     var r1=Math.max(cnt[1],cnt[2]),r2=Math.max(cnt[3],cnt[4]);
-    g.style.gridTemplateRows=(1+r1*0.7)+'fr '+(1+r2*0.7)+'fr';
+    g.style.gridTemplateRows='minmax(0,'+(1+r1*0.7)+'fr) minmax(0,'+(1+r2*0.7)+'fr)';
     // 시나리오1 (요청, 앱 파리티): 열 너비도 내용(가장 긴 제목)에 따라 —
     // 같은 열(q1/q3, q2/q4)은 너비 공유, 극단 클램프.
     function wNeed(q){var m=0;(DATA.tasks||[]).forEach(function(t){if(t.matrixQuadrant===q)m=Math.max(m,(t.title||'').length);});return Math.min(24,Math.max(8,m));}
     var wl=Math.max(wNeed(1),wNeed(3)),wr=Math.max(wNeed(2),wNeed(4));
     var lf=Math.min(.62,Math.max(.38,wl/(wl+wr)));
     g.style.gridTemplateColumns=lf+'fr '+(1-lf)+'fr';
+    fitMatrixHeight();
+  }
+  /* 네 칸이 한 화면에 다 보이면서 높이는 최대가 되게 (요청).
+     어림한 calc(100dvh - …)는 실제 여백과 어긋나 그리드가 화면 밖으로
+     넘어갔다 — 스크롤 칸(.tabbody)의 '안쪽' 높이를 직접 재서 넣는다.
+     달력을 펼쳤을 땐 그만큼 빼지 않는다: 높이는 그대로 두고 페이지가
+     아래로 스크롤되는 게 요청한 동작이다. */
+  function fitMatrixHeight(){
+    var g=document.getElementById('matrixGrid');if(!g)return;
+    if(window.innerWidth<1100){g.style.height='';return;}   // 폰은 예전 그대로
+    var tb=document.querySelector('.tabbody');if(!tb)return;
+    var cs=getComputedStyle(tb);
+    var avail=tb.clientHeight-parseFloat(cs.paddingTop||0)-parseFloat(cs.paddingBottom||0);
+    if(!(avail>200))return;
+    var px=Math.round(avail)+'px';
+    if(g.style.height!==px)g.style.height=px;   // 같은 값이면 안 써서 되먹임 방지
+  }
+  window.addEventListener('resize',fitMatrixHeight);
+  /* resize 이벤트만 믿으면 창 크기·확대·레이아웃 변화를 놓친다 (실제로 창을
+     줄였을 때 옛 높이가 남았다) → 스크롤 칸의 크기 자체를 지켜본다. */
+  if(window.ResizeObserver){
+    var _tb=document.querySelector('.tabbody');
+    if(_tb)new ResizeObserver(function(){fitMatrixHeight();}).observe(_tb);
   }
   // ── 루틴 편집 시트 (앱 파리티, 요청) ──
   var hEdit=null,hAvoid=0,hColor='study',hRepeat='everyday',hMask=127,hInterval=2,hFromLast=false,hRemindArr=[];
@@ -5748,6 +5772,12 @@
       document.querySelectorAll('.tabrow button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===name);});
       document.querySelectorAll('.tabbody .view').forEach(function(v){v.classList.toggle('on',v.id==='view-'+name);});
     }
+    // ⚠matrix-mode 클래스가 붙으면 .tabbody 아래 여백이 90→18로 바뀐다.
+    // 높이를 다시 재지 않으면 옛 여백(90) 기준 값이 남아 그리드가 화면을
+    // 넘어간다 — 실제로 이 경로로 매트릭스가 화면 밖으로 밀렸다.
+    // 클래스 토글은 이미 DOM에 반영됐으므로 지금 재면 새 여백이 잡힌다.
+    // rAF만 믿으면 탭이 백그라운드일 때 안 돌아 옛 높이가 그대로 남는다.
+    if(typeof fitMatrixHeight==='function'){fitMatrixHeight();requestAnimationFrame(fitMatrixHeight);}
     if(name==='bucket')bucketIntro();   // 처음 열면 살짝 돌려 보여줌 (요청)
     if(name==='routine'&&session){uploadRoutineSnapshot();renderMsgBanner();}   // 소셜 (iOS 파리티)
   }
@@ -7540,6 +7570,9 @@
     settings:{label:'설정',svg:'<path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58z"/><circle cx="12" cy="12" r="3.2"/>',type:'action'}
   };
   var NAV_ALL=['timeline','todo','matrix','routine','bucket','diary','lock','friends','settings','about'];
+  // 앱 TabID에 실제로 있는 것만 — friends/about은 웹 전용이라 barTabsRaw에 실으면
+  // 앱의 compactMap이 조용히 떨어뜨려 폰 탭바가 줄어든다 (§1).
+  var APP_TAB_IDS=['timeline','todo','matrix','routine','bucket','diary','lock','settings'];
   var NAV_MAX=6,navEditMode=false,navPopKey=null;
   function navBarKeys(){
     var s=DATA.settings||{};
@@ -7551,7 +7584,13 @@
     return a.filter(function(k){return NAV_DEF[k];}).slice(0,NAV_MAX);
   }
   function navOverflowKeys(){var bar=navBarKeys();return NAV_ALL.filter(function(k){return bar.indexOf(k)<0;});}
-  function saveNav(bar){if(!DATA.settings)DATA.settings={};DATA.settings.navBar=bar;DATA.settings.barTabsRaw=bar.join(',');pushSnapshot();}
+  // 웹 구성은 navBar(정본), 앱 탭바는 barTabsRaw — 겹치는 것만 앱에 실어 보낸다.
+  // 하나도 안 겹치면 barTabsRaw를 아예 건드리지 않는다: 빈 값을 쓰면 앱이
+  // '설정 없음'으로 읽어 기본 6개로 조용히 되돌린다.
+  function saveNav(bar){if(!DATA.settings)DATA.settings={};DATA.settings.navBar=bar;
+    var shared=bar.filter(function(k){return APP_TAB_IDS.indexOf(k)>=0;});
+    if(shared.length)DATA.settings.barTabsRaw=shared.join(',');
+    pushSnapshot();}
   function navLabel(key){if(key==='account')return (session&&session.user)?'로그아웃':'로그인';return NAV_DEF[key].label;}
   function accountAction(){if(session){if(confirm('로그아웃할까요?'))signOut();}
     else{document.getElementById('settingsScrim').classList.remove('open');   // 설정 뒤에 가려지는 버그 fix
