@@ -573,7 +573,9 @@
   .topcap .tc-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .topcap .tc-txt.slidedown{animation:tcDown .7s cubic-bezier(.25,.8,.3,1)}
   @keyframes tcDown{0%{transform:translateY(-110%);opacity:0}100%{transform:translateY(0);opacity:1}}
-  .topcap{transition:width .45s cubic-bezier(.3,.7,.3,1)}
+  .topcap{transition:width .45s cubic-bezier(.3,.7,.3,1),opacity .2s}
+  /* 스크롤해서 밑으로 콘텐츠가 지나갈 땐 반투명하게 (요청) — 덜 거슬리게. */
+  .topcap.faded{opacity:.42}
   .util{position:fixed;top:calc(8px + env(safe-area-inset-top));right:10px;z-index:40;display:flex;gap:6px}
   .util .acct{background:rgba(255,255,255,.82);backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(20,40,80,.18)}
   body[data-m="timeline"] .topcap{display:none}
@@ -6610,6 +6612,19 @@
 
   // 탭이 다시 보이면 서버에서 새로 받아 앱 변경을 반영 (요청: 동기화). 단,
   // 아직 안 올린 웹 편집(디바운스 대기)이 있으면 덮어쓰지 않고 건너뛴다.
+  /* 상단 캡슐 반투명 (요청): 데스크톱은 캡슐이 타임라인 위에 있으니 타임라인
+     스크롤을, 폰은 페이지(.tabbody) 스크롤을 본다. 맨 위면 다시 또렷해진다. */
+  function capFade(){
+    var cap=document.getElementById('topCap');if(!cap)return;
+    var sc=(window.innerWidth>=1100)?document.getElementById('tlScroll')
+                                    :document.querySelector('.tabbody');
+    cap.classList.toggle('faded',!!(sc&&sc.scrollTop>4));
+  }
+  ['tlScroll'].forEach(function(id){var e=document.getElementById(id);
+    if(e)e.addEventListener('scroll',capFade,{passive:true});});
+  (function(){var e=document.querySelector('.tabbody');
+    if(e)e.addEventListener('scroll',capFade,{passive:true});})();
+  window.addEventListener('resize',capFade);
   document.addEventListener('visibilitychange',function(){
     // ⚠ egress: 예전엔 조건 없이 fetchSnapshot()(전체)을 불러, 서버가 안
     // 바뀌었어도 탭을 볼 때마다 스냅샷을 통째로 받았다. pollSync가 이미
