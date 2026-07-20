@@ -126,6 +126,13 @@
     border-radius:50%;border:0;background:var(--sky-blue);color:#fff;box-shadow:0 8px 20px rgba(20,60,120,.28);
     cursor:pointer;display:grid;place-items:center;z-index:15}
   @media(max-width:860px){.page-fab{bottom:calc(78px + env(safe-area-inset-bottom))}}
+  /* 드래그 다중선택 (요청, PC) */
+  .fab-del{right:90px;background:#FF3B30}
+  .fab-del .fab-n{position:absolute;top:-2px;right:-2px;min-width:20px;height:20px;border-radius:999px;
+    background:#fff;color:#FF3B30;font-size:11px;font-weight:800;display:grid;place-items:center;padding:0 5px}
+  .task.sel .task-inner{box-shadow:inset 0 0 0 2px #3D51C4;background:#EEF1FF}
+  .marquee{position:fixed;z-index:200;border:1.5px solid #3D51C4;background:rgba(61,81,196,.12);
+    border-radius:4px;pointer-events:none}
   h2{position:relative}
   .h2-sub{font-size:16px;font-weight:400;color:var(--ink-soft);margin-left:6px}
   /* 전역: 꾹 눌러 텍스트 선택 금지(입력란 제외) + 확대 금지 (요청). */
@@ -939,6 +946,7 @@
     /* 요청: 편집·추가 버튼은 타임라인 컬럼의 '우측'에 */
     .tl-fabs{display:flex!important;left:auto;right:calc(100vw - 400px + 18px);bottom:18px}
     .page-fab{bottom:26px;right:26px}
+    .fab-del{right:94px}
     .friends-fab{right:96px}
     .cap-wrap{left:auto;right:26px;bottom:26px;width:440px;border-radius:16px;border:1px solid var(--line)}
     /* 긴 세로 나열 → 2컬럼 (요청) */
@@ -1285,6 +1293,7 @@
           <h2>할 일 <button class="dow-toggle" id="todoDow" data-cal="todo"></button></h2>
           <div class="calstrip" data-cal="todo"></div>
           <div class="todo" id="todoList"></div>
+          <button class="page-fab fab-del" id="todoDelFab" title="선택한 할 일 삭제" style="display:none"><svg viewBox="0 0 24 24" style="width:26px;height:26px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7"/><path d="M6.5 7l.9 12.4A1.7 1.7 0 0 0 9.1 21h5.8a1.7 1.7 0 0 0 1.7-1.6L17.5 7"/><path d="M10 11v6M14 11v6"/></svg><b class="fab-n"></b></button>
           <button class="page-fab" id="todoFab" title="할 일 추가"><svg viewBox="0 0 24 24" style="width:30px;height:30px" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         </section>
         <section class="view" id="view-matrix">
@@ -3695,6 +3704,7 @@
       '<button id="welcomeGo">시작하기</button></div>';
   }
   function renderTodo(){
+    if(typeof paintSel==='function')setTimeout(paintSel,0);
     var dow=document.getElementById('todoDow');
     // 앱 TodoView 헤더 파리티: 주간=요일 전체(‘토요일’), 월간=월 이름(‘7월’).
     if(dow)dow.textContent=calMonthly?calSel.toLocaleDateString('ko-KR',{month:'long'}):calSel.toLocaleDateString('ko-KR',{weekday:'long'});
@@ -5297,6 +5307,64 @@
 
   /* ---------- 작업 추가 입력 배선 (요청) ---------- */
   document.getElementById('todoFab').addEventListener('click',function(){openCapture('todo');});
+  /* ── 드래그 다중선택 (요청, 마우스 전용) ────────────────────────────────
+     빈 곳에서 드래그하면 사각형 아웃라인이 그려지고, 거기에 '조금이라도'
+     걸치는 할 일 bar가 모두 선택된다. 선택되면 추가 버튼 왼쪽에 삭제 FAB이
+     뜨고, 키보드 Delete/Backspace로도 지울 수 있다. */
+  var selIds=Object.create(null);
+  function selCount(){return Object.keys(selIds).length;}
+  function paintSel(){
+    document.querySelectorAll('#todoList .task[data-id]').forEach(function(el){
+      el.classList.toggle('sel',!!selIds[el.dataset.id]);});
+    var fab=document.getElementById('todoDelFab'),n=selCount();
+    if(fab){fab.style.display=n?'grid':'none';var b=fab.querySelector('.fab-n');if(b)b.textContent=n||'';}
+  }
+  function clearSel(){selIds=Object.create(null);paintSel();}
+  function deleteSelected(){
+    var ids=Object.keys(selIds);if(!ids.length)return;
+    DATA.tasks=(DATA.tasks||[]).filter(function(t){return ids.indexOf(t.id)<0;});
+    clearSel();renderAll();pushSnapshot();
+  }
+  (function(){
+    var box=null,sx=0,sy=0,active=false;
+    var list=document.getElementById('todoList');
+    if(!list)return;
+    list.addEventListener('pointerdown',function(e){
+      if(e.pointerType!=='mouse'||e.button!==0)return;            // 마우스 좌클릭만
+      if(e.target.closest('.task,.subpanel,.welcome,button,input,textarea'))return;   // 빈 곳에서만
+      active=true;sx=e.clientX;sy=e.clientY;
+      box=document.createElement('div');box.className='marquee';
+      box.style.left=sx+'px';box.style.top=sy+'px';box.style.width='0px';box.style.height='0px';
+      document.body.appendChild(box);
+      if(!e.shiftKey)clearSel();
+    });
+    window.addEventListener('pointermove',function(e){
+      if(!active||!box)return;
+      var x=Math.min(sx,e.clientX),y=Math.min(sy,e.clientY),
+          w=Math.abs(e.clientX-sx),h=Math.abs(e.clientY-sy);
+      box.style.left=x+'px';box.style.top=y+'px';box.style.width=w+'px';box.style.height=h+'px';
+      var r={left:x,top:y,right:x+w,bottom:y+h};
+      document.querySelectorAll('#todoList .task[data-id]').forEach(function(el){
+        var b=el.getBoundingClientRect();
+        // 부분적으로라도 겹치면 선택 (요청)
+        if(b.right>r.left&&b.left<r.right&&b.bottom>r.top&&b.top<r.bottom)selIds[el.dataset.id]=1;
+      });
+      paintSel();
+    });
+    window.addEventListener('pointerup',function(){
+      if(!active)return;active=false;if(box){box.remove();box=null;}paintSel();
+    });
+    // 선택 상태에서 Delete/Backspace = 삭제 (입력 중엔 제외)
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Delete'&&e.key!=='Backspace')return;
+      if(!selCount())return;
+      var tg=e.target;
+      if(tg&&tg.closest&&tg.closest('input,textarea,[contenteditable]'))return;   // 입력 중엔 무시
+      e.preventDefault();deleteSelected();
+    });
+    var df=document.getElementById('todoDelFab');
+    if(df)df.addEventListener('click',function(e){e.stopPropagation();deleteSelected();});
+  })();
   document.getElementById('habitFab').addEventListener('click',function(){openHabitSheet(null);});
   document.getElementById('habitClose').addEventListener('click',function(){document.getElementById('habitScrim').classList.remove('open');});
   document.getElementById('habitScrim').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
