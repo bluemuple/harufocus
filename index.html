@@ -184,11 +184,16 @@
   .hour{position:relative;height:120px;padding-left:52px}
   .hour .lbl{position:absolute;left:14px;top:-8px;font-size:12px;color:var(--onSky,#141827);opacity:.75;font-variant-numeric:tabular-nums}
   .hour .rule{position:absolute;left:46px;right:14px;top:0;height:1px;background:var(--onSky,#141827);opacity:.14}
+  /* 취침(마감) 시각 줄 (요청) */
+  .hour.bed .rule{opacity:.34}
+  .hour .bedmark{position:absolute;right:14px;top:-9px;font-size:11px;font-weight:800;color:var(--onSky,#141827);opacity:.85;white-space:nowrap}
+  .hour .bedhint{position:absolute;right:14px;top:7px;font-size:10px;font-weight:600;color:var(--onSky,#141827);opacity:.55;white-space:nowrap}
   /* 지금 라인 = 빨강, x=56 시작 (델타 §2·§7) */
-  .now{position:absolute;left:8px;right:12px;z-index:4;display:flex;align-items:center;gap:8px}
+  .now{position:absolute;left:8px;right:12px;z-index:4;display:flex;align-items:center;gap:2px}
   .now .pill{background:#E34238;color:#fff;font-weight:800;font-size:11px;padding:3px 8px;border-radius:8px}
   .now .wire{flex:1;height:2px;background:#E34238;border-radius:2px;position:relative}
-  .now .wire::before{content:"";position:absolute;left:-2px;top:-1.5px;width:5px;height:5px;border-radius:50%;background:#E34238}
+  /* 요청: 지금 라인의 작은 동그라미는 왼쪽 → 오른쪽 끝으로 */
+  .now .wire::before{content:"";position:absolute;right:-2px;top:-1.5px;width:5px;height:5px;border-radius:50%;background:#E34238}
   /* 마감선 (델타 §2): 계획 = 가로 선. 텍스트는 선의 밑줄처럼 위에. */
   .dueline{position:absolute;left:0;right:8px;height:0;z-index:4}
   .dueline .dl-wire{position:absolute;left:56px;right:0;top:-0.75px;height:1.5px;background:var(--tl-accent,#5b93e6);border-radius:2px;opacity:.9}
@@ -903,7 +908,8 @@
       text-align:left;padding:11px 13px;border-radius:10px;cursor:pointer}
     .desk-menu button:hover{background:var(--card-2)}
     /* 타임라인 FAB: 좌측 칼럼 하단 */
-    .tl-fabs{display:flex!important;left:14px;right:auto;bottom:18px}
+    /* 요청: 편집·추가 버튼은 타임라인 컬럼의 '우측'에 */
+    .tl-fabs{display:flex!important;left:auto;right:calc(100vw - 400px + 18px);bottom:18px}
     .page-fab{bottom:26px;right:26px}
     .friends-fab{right:96px}
     .cap-wrap{left:auto;right:26px;bottom:26px;width:440px;border-radius:16px;border:1px solid var(--line)}
@@ -1206,13 +1212,9 @@
       </div>
       <div class="tl-body">
         <div id="view-big">
-          <img class="tl-hills" src="assets/hills.png" alt="">
           <div class="tl-scroll" id="tlScroll"></div>
-          <div class="meadow" id="tlMeadow"></div>
-          <div class="sea-layer" id="seaLayer" style="display:none"></div>
-          <div class="city-layer" id="cityLayer" style="display:none"><svg viewBox="0 0 400 90" preserveAspectRatio="none"><path d="M0 90V55h18V38h14v17h10V26h20v29h8V44h16v11h12V18h6l3-8 3 8h6v37h14V40h18v15h10V30h22v25h9V47h15v8h13V22h20v33h11V42h17v13h9V35h21v20h12V50h14v5h11V28h19v27h9V45h16v10h12V33h20v57z" fill="rgba(20,28,52,.55)"/></svg></div>
-          <!-- 엘리 (앱 §2): 평소엔 코끝만, 탭하면 등장 → 감정 피커 → 일기 프롬프트 -->
-          <button class="ele-tip" id="eleTip" title="엘리">
+          <!-- 요청: 타임라인 코끼리 이미지 삭제 — 엘리는 상단 '엘리에게 한마디'로만 -->
+          <button class="ele-tip" id="eleTip" title="엘리" style="display:none">
             <svg viewBox="0 0 80 46"><path d="M-4 46 Q6 40 12 28 Q18 15 34 14 Q52 13 58 26 Q62 36 56 46 Z" fill="var(--ele,#D4C1D2)"/><circle cx="46" cy="24" r="2.6" fill="#3a3242"/></svg>
           </button>
           <div class="ele-stage" id="eleStage">
@@ -1420,7 +1422,6 @@
 <div class="tl-fabs">
   <button class="tl-donebtn" id="batchDone">확인</button>
   <button class="tl-batchbtn" id="dueEditFab" title="마감선 편집" style="display:none;width:44px;height:44px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/></svg></button>
-  <button class="tl-batchbtn" id="tlBatch" title="한 번에 계획하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3.5" width="13" height="13" rx="2.5"/><path d="M4 8v9.5A3.5 3.5 0 0 0 7.5 21H17"/><path d="M13.5 7v6M10.5 10h6"/></svg></button>
   <button class="tl-plusbtn" id="tlFab" title="작업 추가"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
 </div>
 <!-- 편집 bar v2 (D2-3): [▲/▽][undo/재정비][redo/균일화][완료✓/휴지통]+작업명+슬라이더 (앱 DueEditBar 파리티) -->
@@ -2368,6 +2369,7 @@
   // 마감집게 (D2-3): 마지막 선 아래, 드래그 = 미래 미완료 선 간격 비율 스케일.
   function addDueClamp(sc){
     if(dayOffset!==0)return;
+    if(!editBarOn)return;          // 요청: 집게는 편집 모드에서만 보인다
     var fut=todayDueLines(false).filter(function(t){return taskDueAt(t).getTime()>Date.now();});
     var all=todayDueLines(true);
     if(!all.length)return;
@@ -2473,7 +2475,11 @@
     var sc=document.getElementById('tlScroll');
     var prevScroll=(batchIds!=null||tlDragging)?sc.scrollTop:null;   // 배치/드래그 중 스크롤 유지
     sc.innerHTML='';
-    var html='';for(var h=TS;h<=TE;h++){html+='<div class="hour"><span class="lbl">'+(h%24).toString().padStart(2,'0')+':00</span><span class="rule"></span></div>';}
+    // 요청: 취침(마감) 시각 줄엔 오른쪽 끝에 '취침' 표시 + 그 아래 설정 안내.
+    var bedH=Math.floor(((DATA.settings&&DATA.settings.bedMinutes!=null)?DATA.settings.bedMinutes:1380)/60);
+    var html='';for(var h=TS;h<=TE;h++){var isBed=((h%24)===bedH);
+      html+='<div class="hour'+(isBed?' bed':'')+'"><span class="lbl">'+(h%24).toString().padStart(2,'0')+':00</span><span class="rule"></span>'
+        +(isBed?'<span class="bedmark">\u{1F319} 취침</span><span class="bedhint">취침 시각은 설정에서 바꿀 수 있어요</span>':'')+'</div>';}
     sc.insertAdjacentHTML('beforeend',html);
     var tk=selKey(),any=false;
     var nowMs=Date.now();
@@ -2604,7 +2610,6 @@
   document.getElementById('tlScroll').addEventListener('click',function(e){
     if(editBarOn&&!e.target.closest('.dueline,.block,.due-clamp'))closeEditBar();
   });
-  document.getElementById('tlBatch').addEventListener('click',openBatch);
   document.getElementById('batchCancel').addEventListener('click',closeBatch);
   document.getElementById('batchScrim').addEventListener('click',function(e){if(e.target===this)closeBatch();});
   document.getElementById('batchOk').addEventListener('click',confirmBatch);
