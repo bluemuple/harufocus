@@ -3105,6 +3105,9 @@
   }
 
   // 포모도로 (앱 파리티): 켜면 25·5 리듬, 실시간(0분)도 25분 카운트다운.
+  // 쉬는 시간 색 (요청): 하늘색은 타임라인 하늘 배경과 겹쳐 구분이 안 됐다
+  // — 봄 새싹 연두. 앱 FocusTimerRing.restGreen(0.62,0.84,0.40)과 같은 값.
+  var REST_COLOR='#9ED666';
   function pomoOn(){return localStorage.getItem('hfPomo')==='1';}
   // 세그먼트 — 앱 FocusManager.pomodoroSegments 그대로 (요청: 링 일치).
   //   0        → 없음(실시간, 균일 25·5 무한)
@@ -3193,7 +3196,7 @@
     }
     ring2Arcs=pomo2Arcs(planSec);var cat=catColor(fTask.categoryID);
     // 세그먼트별 지나간(연한)·남은(불투명) butt-cap 호 2개씩 — 값은 paintRing2에서 매 틱 갱신.
-    ring2Arcs.forEach(function(ar,i){var base=ar.rest?'#6BC2FA':cat;
+    ring2Arcs.forEach(function(ar,i){var base=ar.rest?REST_COLOR:cat;
       html+='<circle class="ft2p" data-i="'+i+'" cx="150" cy="150" r="114" fill="none" stroke="'+hexA(base,ar.rest?0.20:0.28)+'" stroke-width="10" stroke-linecap="butt" transform="rotate(-90 150 150)" stroke-dasharray="0 100000"/>';
       html+='<circle class="ft2l" data-i="'+i+'" cx="150" cy="150" r="114" fill="none" stroke="'+base+'" stroke-width="10" stroke-linecap="butt" transform="rotate(-90 150 150)" stroke-dasharray="0 100000"/>';
     });
@@ -3212,7 +3215,7 @@
     });
     var kn=document.getElementById('ftKnob');
     if(kn){kn.setAttribute('transform','rotate('+(prog*360)+' 150 150)');
-      var kc=kn.querySelector('circle');if(kc)kc.setAttribute('fill',ph.rest?'#6BC2FA':cat);}
+      var kc=kn.querySelector('circle');if(kc)kc.setAttribute('fill',ph.rest?REST_COLOR:cat);}
   }
   // 전환 차임 (§5 start4 근사 — WebAudio 두 음).
   function playChime(){
@@ -3344,7 +3347,7 @@
       paintRing2(planS,el,ph);
       document.getElementById('ftTimer').textContent=fmtMS(ph.left);
     }else{
-      var col=ph.rest?'#6BC2FA':catColor(fTask.categoryID);
+      var col=ph.rest?REST_COLOR:catColor(fTask.categoryID);
       var key=ph.total+'|'+col+'|'+ph.countdown;
       if(key!==ftKey){ftKey=key;buildRing(ph.total,col,ph.countdown);}
       var prog=ph.countdown?1-(ph.left/ph.total):((el%3600)/3600);
@@ -6007,7 +6010,10 @@
       repeatDaysMask:0,rewardIsMoney:false,rewardText:'',rewardToQ4:false},
     calMonth:null,notePlaceholderShown:false};
   // 앱 BlockPalette 대표 12색(부드러운 톤) + 앱 형식 키("rose.0"…)로 저장해 기기 간 색 동기화 성립.
-  var CAP_COLORS=[{k:'rose.0',c:'#E66E7A'},{k:'coral.0',c:'#EB996A'},{k:'amber.0',c:'#EBC05E'},{k:'lime.0',c:'#A7D16D'},
+  // lime(연두)은 뺐다 (요청): 쉬는 시간 전용색이라 작업색으로 쓰면 블록
+  // 안에서 휴식 구간과 구분이 안 된다. bpColor는 그대로 두어 기존 데이터의
+  // 'lime.N'은 계속 해석된다.
+  var CAP_COLORS=[{k:'rose.0',c:'#E66E7A'},{k:'coral.0',c:'#EB996A'},{k:'amber.0',c:'#EBC05E'},
     {k:'green.0',c:'#6DC78B'},{k:'teal.0',c:'#67C7BA'},{k:'sky.0',c:'#70BBE0'},{k:'blue.0',c:'#7599E0'},
     {k:'indigo.0',c:'#8F84DB'},{k:'purple.0',c:'#B57FDB'},{k:'plum.0',c:'#E082C9'},{k:'stone.0',c:'#BDB0A2'}];
   function capColorHex(key){if(!key)return null;for(var i=0;i<CAP_COLORS.length;i++)if(CAP_COLORS[i].k===key)return CAP_COLORS[i].c;return key;}
