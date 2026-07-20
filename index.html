@@ -136,8 +136,13 @@
   /* 목록 안 reorder 드롭 위치 표시 (요청) */
   .drop-line{position:fixed;z-index:205;height:3px;border-radius:2px;background:#3D51C4;
     box-shadow:0 0 0 3px rgba(61,81,196,.18);pointer-events:none}
-  /* 꾹 눌러 타임라인에 떨어뜨리기 (요청): 고스트 카드 + 5분 단위 고스트 마감선 */
-  .drag-ghost{position:fixed;z-index:210;pointer-events:none;opacity:.9;transform:rotate(-1.5deg);
+  /* 꾹 눌러 타임라인에 떨어뜨리기 (요청): 고스트 카드 + 5분 단위 고스트 마감선.
+     ⚠고스트는 클래스가 'task drag-ghost'라 .task 규칙과 정면으로 부딪힌다.
+     한동안 .drag-ghost(0,1,0)가 뒤에 선언된 .task{position:relative}(같은 0,1,0)에
+     밀려 position:fixed를 잃었고, body 흐름 맨 아래에 깔려 화면에서 사라졌다
+     (가로선은 충돌 클래스가 없어 멀쩡했다). 선언 순서에 기대지 않도록 .task와
+     함께 적어 명시도(0,2,0)로 확실히 이긴다. */
+  .task.drag-ghost{position:fixed;z-index:210;pointer-events:none;opacity:.9;transform:rotate(-1.5deg);
     box-shadow:0 14px 34px rgba(20,40,80,.32);border-radius:16px;overflow:hidden}
   .ghost-due{position:absolute;left:0;right:8px;height:0;z-index:9;pointer-events:none}
   .ghost-due .gd-wire{position:absolute;left:56px;right:0;top:-1px;height:2px;border-radius:2px;
@@ -410,7 +415,8 @@
   .swipe-grp.sm .sa{width:58px;flex:0 0 58px}
   .swipe-grp.sm .sa svg{width:17px;height:17px}
   .mtask.sw-left .swipe-grp.lead,.mtask.sw-right .swipe-grp.trail{visibility:visible}
-  .mx-ghost{position:fixed;z-index:95;pointer-events:none;opacity:.9;box-shadow:0 12px 30px rgba(0,0,0,.3);list-style:none}
+  /* 순서가 아니라 명시도로 이기게 (위 .nav-ghost와 같은 이유). */
+  .mtask.mx-ghost{position:fixed;z-index:95;pointer-events:none;opacity:.9;box-shadow:0 12px 30px rgba(0,0,0,.3);list-style:none}
   .mx-ghost .swipe-grp{display:none}
   .mx-dragsrc{opacity:.3}
   .mx-dropline{position:fixed;height:3px;border-radius:2px;background:var(--sky-blue);z-index:94;display:none;box-shadow:0 0 6px rgba(70,133,214,.6)}
@@ -617,7 +623,10 @@
   .nav-badge.plus{background:#34C759;top:7px;right:7px;left:auto}
   .nav-pop{animation:navPop .34s cubic-bezier(.2,.8,.2,1)}
   @keyframes navPop{0%{transform:translateY(10px) scale(.8);opacity:.15}100%{transform:none;opacity:1}}
-  .nav-ghost{position:fixed;z-index:90;pointer-events:none;opacity:.92;background:var(--card);border-radius:14px;
+  /* 고스트는 원본 클래스(.mbtn)를 그대로 달고 있어 .mbtn 규칙과 부딪힌다. 예전엔
+     .mbtn이 302줄 뒤에 선언돼 같은 명시도로 position·background·color를 전부 덮었고,
+     하단바 고스트가 화면 밖으로 밀려 보이지 않았다(할일 고스트와 똑같은 사고). */
+  .mbtn.nav-ghost{position:fixed;z-index:90;pointer-events:none;opacity:.92;background:var(--card);border-radius:14px;
     box-shadow:0 10px 28px rgba(0,0,0,.28);color:var(--sky-blue)}
   .nav-dragsrc{opacity:.25}
   .dow-toggle{font-family:inherit;font-size:14px;font-weight:700;color:rgba(255,255,255,.95);
@@ -5636,9 +5645,27 @@
       window.addEventListener('pointermove',pre);window.addEventListener('pointerup',cancel);
     });
     function start(sx,sy){
+      // ⚠누른 시점과 여기 사이에는 시간이 흐른다(터치 420ms, 마우스는 8px 이동까지).
+      // 그 사이 renderTodo()가 `list.innerHTML=''`로 목록을 통째로 다시 그리면 이
+      // row는 DOM에서 떨어져 나가고, 분리된 요소의 getBoundingClientRect()는 전부
+      // 0이라 고스트가 폭 0으로 만들어져 화면에 아무것도 안 보였다.
+      // 실제 경로: ⑴하위작업 닫기 핸들러가 **캡처 단계**라 행의 pointerdown보다
+      // 먼저 돌며 renderTodo()를 부른다(하위작업을 열어둔 채 다른 행을 끌면 매번),
+      // ⑵6초 동기화 폴이 원격 변경을 받아 renderAll()을 부른다.
+      // 그러니 살아 있는 행을 다시 찾는다. DATA가 통째로 교체됐을 수 있으므로
+      // 작업 객체도 같이 되찾는다 — 안 그러면 이후 드롭·재정렬이 버려진 객체에 쓰인다.
+      if(!row.isConnected){
+        var live=document.querySelector('#todoList .task[data-id="'+t.id+'"]');
+        if(!live)return;
+        row=live;t=taskByID(t.id)||t;
+      }
       tlDropping=true;clearSel&&clearSel();
       var r=row.getBoundingClientRect();
       ghost=row.cloneNode(true);ghost.className='task drag-ghost';
+      // 스와이프로 열려 있던 행이면 .task-inner에 인라인 transform이 남아 클론에도
+      // 복사된다 — .task{overflow:hidden}에 잘려 카드가 밀린 채 보인다. 되돌린다.
+      var gi=ghost.querySelector('.task-inner');
+      if(gi){gi.style.transition='none';gi.style.transform='translateX(0)';}
       ghost.style.width=r.width+'px';ghost.style.left=r.left+'px';ghost.style.top=r.top+'px';
       document.body.appendChild(ghost);
       window.addEventListener('pointermove',move);
@@ -5649,8 +5676,13 @@
     function move(ev){
       if(!ghost)return;
       var r=ghost.getBoundingClientRect();
-      ghost.style.left=(ev.clientX-r.width/2)+'px';
-      ghost.style.top=(ev.clientY-r.height/2)+'px';
+      // 화면 밖으로 새지 않게 가둔다: 폰은 카드 폭(344)이 화면(375)과 비슷해
+      // 손가락 한가운데 두면 한쪽이 통째로 잘려 나갔다. 판정은 아래에서 계속
+      // ev.clientX/Y(손가락)로 하므로 타임라인 드롭·가로선은 영향 없다.
+      var M=6,
+          gx=Math.max(M,Math.min(ev.clientX-r.width/2,window.innerWidth-r.width-M)),
+          gy=Math.max(M,Math.min(ev.clientY-r.height/2,window.innerHeight-r.height-M));
+      ghost.style.left=gx+'px';ghost.style.top=gy+'px';
       var sc=document.getElementById('tlScroll');
       var over=false;
       if(sc){var b=sc.getBoundingClientRect();
