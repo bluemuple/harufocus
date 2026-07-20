@@ -417,6 +417,21 @@
     padding:10px 12px;border-radius:8px;cursor:pointer}
   .kmenu button:hover{background:var(--card-2)}
   .kmenu button.danger{color:#FF3B30}
+  /* 매트릭스 선택 팝업 (요청) */
+  .mxpop{position:fixed;z-index:130;width:214px;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;box-shadow:0 12px 32px rgba(20,40,80,.24);padding:10px}
+  .mxp-t{font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:8px}
+  .mxp-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .mxp-grid button{position:relative;aspect-ratio:1.3;border:1px solid var(--line);border-radius:10px;
+    background:var(--card-2);cursor:pointer;font-family:inherit;display:grid;place-items:center;padding:3px;overflow:hidden}
+  .mxp-grid button b{font-size:15px;font-weight:800;color:var(--ink-soft)}
+  .mxp-grid button span{position:absolute;inset:0;display:grid;place-items:center;padding:4px;background:var(--card);
+    font-size:11px;font-weight:700;color:var(--ink);text-align:center;line-height:1.35}
+  .mxp-grid button.on{border-color:#30B0C7;box-shadow:0 0 0 2px rgba(48,176,199,.25)}
+  @media(hover:hover) and (pointer:fine){
+    .mxp-grid button span{opacity:0;transition:opacity .12s}
+    .mxp-grid button:hover span{opacity:1}
+  }
   .subtog svg{width:20px;height:20px;display:block}
   /* 인라인 하위작업 목록 (앱 SubtaskListEditor 파리티). */
   /* 하위 작업 = 부모 bar '아래'의 형제 블록 (요청). 보통 bar보다 살짝 낮다. */
@@ -3551,18 +3566,27 @@
     });});
   }
   // 매트릭스 버튼 → 행이 '어느 칸으로?' 캡션 + 미니 2×2 그리드 4개로 (앱 matrixQuadrantPicker 파리티).
+  // 매트릭스 선택 (요청): 근처 팝업에 2×2 매트릭스를 시각화하고, PC는 칸에 호버할 때
+  // 문구('중요 · 긴급' 등)가 뜨고 모바일(마우스 없음)은 문구가 항상 떠 있다.
+  var MX_LAB=[null,'중요 · 긴급','중요 · 여유','긴급 · 사소','사소 · 여유 · 보상'];
+  var mxPopEl=null;
+  function closeMxPop(){if(mxPopEl){mxPopEl.remove();mxPopEl=null;}}
+  document.addEventListener('pointerdown',function(e){
+    if(mxPopEl&&!e.target.closest('.mxpop'))closeMxPop();},true);
   function showMxPick(row,t){
-    var pick=row.querySelector('.mx-pick');
-    function mini(q){var cells='';
-      for(var c=1;c<=4;c++){cells+='<span style="width:17px;height:15px;border-radius:3px;display:grid;place-items:center;'+(c===q?'background:#30B0C7;color:#fff;font-size:10px;font-weight:700':'background:rgba(90,100,120,.18)')+'">'+(c===q?q:'')+'</span>';}
-      return '<button data-q="'+q+'" style="display:grid;grid-template-columns:repeat(2,17px);gap:2px">'+cells+'</button>';}
-    pick.innerHTML='<span style="font-size:12px;font-weight:600;color:var(--ink-soft)">어느 칸으로?</span>'+
-      '<span style="flex:1"></span>'+[1,2,3,4].map(mini).join('')+
-      '<button class="mx-close" style="color:var(--ink-soft);font-size:17px;line-height:1">✕</button>';
-    row.classList.add('mx-open');
-    pick.querySelectorAll('button[data-q]').forEach(function(b){b.addEventListener('click',function(){
-      t.matrixQuadrant=+b.dataset.q;row.classList.remove('mx-open');closeSwipe();renderAll();pushSnapshot();});});
-    pick.querySelector('.mx-close').addEventListener('click',function(){row.classList.remove('mx-open');closeSwipe();});
+    closeMxPop();
+    var anchor=row.querySelector('.kebab')||row;
+    var p=document.createElement('div');p.className='mxpop';
+    p.innerHTML='<div class="mxp-t">어느 칸으로?</div><div class="mxp-grid">'+
+      [1,2,3,4].map(function(q){
+        return '<button data-q="'+q+'"'+(t.matrixQuadrant===q?' class="on"':'')+'>'+
+          '<b>'+q+'</b><span>'+MX_LAB[q]+'</span></button>';}).join('')+'</div>';
+    document.body.appendChild(p);mxPopEl=p;
+    var r=anchor.getBoundingClientRect(),pw=p.offsetWidth,ph=p.offsetHeight;
+    p.style.left=Math.min(window.innerWidth-pw-8,Math.max(8,r.right-pw))+'px';
+    p.style.top=((r.bottom+ph+8>window.innerHeight)?Math.max(8,r.top-ph-6):(r.bottom+6))+'px';
+    p.querySelectorAll('button[data-q]').forEach(function(b){b.addEventListener('click',function(e){
+      e.stopPropagation();t.matrixQuadrant=+b.dataset.q;closeMxPop();closeSwipe();renderAll();pushSnapshot();});});
   }
 
   // D2-5: '타임라인N' 회색 캡슐 — N = 그 작업의 오늘 기록 블록 수.
@@ -6043,7 +6067,7 @@
       var defs=[
         ['duration',IC.timer,'길이',false],
         ['note',IC.note,'메모',!!cap.draft.notes],
-        ['calreg','<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="14" height="15" rx="2.5"/><path d="M3 9.5h14M7 3v4M13 3v4"/><path d="M19 13v6M16 16h6"/></svg>','일정등록',false],
+        ['calreg','<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 2.5v4M16 2.5v4"/><path d="M12 12.8v5.4M9.3 15.5h5.4"/></svg>','일정등록',false],
         ['reward',IC.gift,'보상',(cap.draft.rewardIsMoney||cap.draft.rewardText)],
         ['reminder',IC.bell,'알림',(cap.draft.nudgeEnabled||cap.draft.reminderOffsets.length>0)],
         ['due',IC.flag,'마감',!!cap.draft.dueDate],
