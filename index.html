@@ -965,7 +965,13 @@
   }
 
   /* ── 데스크톱 워크스페이스 (≥1100px, Bidoro식): 좌 타임라인 고정 + 우 페이지 ── */
-  .tl-brand{display:none}
+  /* 앱 이름·부제: 할일 페이지 맨 아래 가운데, 무채색으로 작게 (요청).
+     예전엔 타임라인 위쪽 bar였는데, 그 bar가 세로를 잡아먹어 걷어냈다. */
+  .app-foot{display:none;justify-content:center;align-items:baseline;gap:7px;
+    margin:30px 0 6px;text-align:center;color:rgba(72,72,72,.5)}
+  .app-foot b{font-size:12.5px;font-weight:700;letter-spacing:-.01em}
+  .app-foot span{font-size:11px;font-weight:500;opacity:.9}
+  body.night .app-foot{color:rgba(236,236,240,.42)}
   .desk-nav{display:none}
   @media(min-width:1100px){
     .layout{display:flex;height:100%;padding-bottom:0}
@@ -974,13 +980,10 @@
     .pane-tabs{display:flex!important;position:relative;inset:auto;flex:1;min-width:0}
     .mbar{display:none!important}
     .tabbody{padding:64px 26px 90px;overflow-y:auto}
-    /* 좌측 브랜드 (시스템 한글=한글, 그 외=영어 — JS가 채움) */
-    .tl-brand{display:flex;align-items:baseline;gap:10px;padding:16px 18px 12px;z-index:5;
-      background:rgba(255,255,255,.06)}
-    .tl-brand b{font-size:19px;letter-spacing:-.02em;color:#fff;text-shadow:0 1px 4px rgba(20,40,80,.4)}
-    .tl-brand span{font-size:12px;color:rgba(255,255,255,.85);text-shadow:0 1px 3px rgba(20,40,80,.35)}
-    /* 상단바 캡슐 = 상단 중앙 */
-    .topcap{left:calc(400px + (100vw - 400px)/2);transform:translateX(-50%);right:auto;max-width:44vw}
+    /* 브랜드는 할일 페이지 하단으로 내려갔다 (요청) — 여기서만 보인다. */
+    .app-foot{display:flex}
+    /* 요청: 상단 캡슐을 할일 섹션 왼쪽 끝에 맞춘다 (.tabbody 좌패딩 26px). */
+    .topcap{left:calc(400px + 26px);transform:none;right:auto;max-width:min(44vw,420px)}
     body[data-m] .topcap{display:flex}          /* 데스크톱에선 항상 (타임라인 상시 표시) */
     /* 우상단 원형 네비 */
     .desk-nav{display:flex;gap:10px;position:fixed;top:12px;right:16px;z-index:45}
@@ -1287,7 +1290,6 @@
   <div class="layout">
     <!-- LEFT: timeline -->
     <section class="pane-tl">
-      <div class="tl-brand" id="tlBrand"><b id="brandName">엘리의 하루</b><span id="brandTag">마음을 돌보는 하루 플래너</span></div>
       <div class="tl-top">
         <div class="tl-datebox">
           <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="5" width="16" height="16" rx="2.5"/><path d="M4 9h16M8 3v4M16 3v4"/></svg>
@@ -1349,6 +1351,9 @@
           <h2>할 일 <button class="dow-toggle" id="todoDow" data-cal="todo"></button></h2>
           <div class="calstrip" data-cal="todo"></div>
           <div class="todo" id="todoList"></div>
+          <!-- 요청: 타임라인 위쪽 bar를 걷어내 타임라인을 세로로 길게 쓰고,
+               앱 이름·부제는 할일 페이지 맨 아래 가운데로 작게 내린다. -->
+          <div class="app-foot" id="tlBrand"><b id="brandName">엘리의 하루</b><span id="brandTag">마음을 돌보는 하루 플래너</span></div>
           <button class="page-fab fab-del" id="todoDelFab" title="선택한 할 일 삭제" style="display:none"><svg viewBox="0 0 24 24" style="width:26px;height:26px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7"/><path d="M6.5 7l.9 12.4A1.7 1.7 0 0 0 9.1 21h5.8a1.7 1.7 0 0 0 1.7-1.6L17.5 7"/><path d="M10 11v6M14 11v6"/></svg><b class="fab-n"></b></button>
           <button class="page-fab" id="todoFab" title="할 일 추가"><svg viewBox="0 0 24 24" style="width:30px;height:30px" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         </section>
@@ -5710,9 +5715,14 @@
       // 화면 밖으로 새지 않게 가둔다: 폰은 카드 폭(344)이 화면(375)과 비슷해
       // 손가락 한가운데 두면 한쪽이 통째로 잘려 나갔다. 판정은 아래에서 계속
       // ev.clientX/Y(손가락)로 하므로 타임라인 드롭·가로선은 영향 없다.
-      var M=6,
+      // 커서는 고스트 '윗변'을 잡는다 (요청). 타임라인 목표 피드백
+      // ('19:40까지 · 지금부터 2시간')은 드롭선 위 9~31px에 뜨는데, 예전처럼
+      // 카드를 커서 한가운데 두면 카드 윗절반이 정확히 그 자리를 덮어
+      // 어디에 떨어지는지가 안 보였다. 카드를 커서 아래로 내려 달면 그 위가
+      // 비어 라벨도, 드롭선 자체도 보인다.
+      var M=6,GRAB=8,     // 커서 → 고스트 윗변 (아래로)
           gx=Math.max(M,Math.min(ev.clientX-r.width/2,window.innerWidth-r.width-M)),
-          gy=Math.max(M,Math.min(ev.clientY-r.height/2,window.innerHeight-r.height-M));
+          gy=Math.max(M,Math.min(ev.clientY+GRAB,window.innerHeight-r.height-M));
       ghost.style.left=gx+'px';ghost.style.top=gy+'px';
       var sc=document.getElementById('tlScroll');
       var over=false;
