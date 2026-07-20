@@ -3607,7 +3607,12 @@
            '<button class="kebab" title="메뉴"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button>'+
            '<span class="star'+(t.isStarred?' on':'')+'">'+(t.isStarred?'★':'☆')+'</span>'))+
       '</div>';
-    var tl=row.querySelector('.t-title');tl.style.cursor='pointer';tl.addEventListener('click',function(){openEditor(t);});
+    // 요청: bar를 누르면 편집 팝업 대신 '값이 채워진 추가 패널'이 열린다.
+    var inner=row.querySelector('.task-inner');inner.style.cursor='pointer';
+    inner.addEventListener('click',function(e){
+      if(e.target.closest('.check,.star,.play,.kebab,.t-plus,.t-memo,.sa,.mx-pick'))return;
+      openCapture(t.scheduledStart?'timeline':'todo',{task:t});
+    });
     var mi=row.querySelector('.t-memo');if(mi)mi.addEventListener('click',function(e){e.stopPropagation();openMemoPopup(t);});
     if(inDone){
       row.querySelector('.check').addEventListener('click',function(){t.isDone=false;t.completedAt=null;renderTodo();pushSnapshot();});
@@ -5632,7 +5637,7 @@
      할일 · 매트릭스 · 타임라인 이 하나의 인라인 캡처바를 공유한다:
      색 동그라미 + 기호 버튼 + 입력란, 그 위로 옵션 아이콘 줄(길이·시간배치·
      알림·마감·메모·반복·보상)과 아이콘/색 피커가 스택으로 쌓인다. */
-  var cap={open:false,origin:'todo',quadrant:0,detail:'options',iconOpen:false,colorOpen:false,
+  var cap={open:false,editing:null,origin:'todo',quadrant:0,detail:'options',iconOpen:false,colorOpen:false,
     draft:{title:'',categoryID:'focus',colorKey:'',iconName:null,durationMin:50,
       scheduledStart:null,reminderOffsets:[],nudgeEnabled:false,dueDate:null,notes:'',
       repeatDaysMask:0,rewardIsMoney:false,rewardText:'',rewardToQ4:false},
@@ -5857,7 +5862,7 @@
   function capOpen(){return cap.open;}
   function openCapture(origin,opts){
     opts=opts||{};
-    cap.open=true;cap.origin=origin;cap.quadrant=opts.quadrant||0;
+    cap.open=true;cap.origin=origin;cap.quadrant=opts.quadrant||0;cap.editing=opts.task||null;
     // 앱 파리티: 열자마자 detail 줄 표시 — 타임라인은 길이 슬라이더, 그 외는 옵션 아이콘 줄.
     cap.detail=(origin==='timeline'?'duration':'options');cap.iconOpen=false;cap.colorOpen=false;cap.optionsOpen=true;cap.moreIcons=false;
     cap.draft={title:'',categoryID:(opts.categoryID||'focus'),
@@ -5866,18 +5871,32 @@
       durEdited:false,durationLocked:false,iconLocked:false,colorLocked:false,
       scheduledStart:opts.scheduledStart||null,reminderOffsets:[],nudgeEnabled:false,dueDate:null,
       notes:'',repeatDaysMask:0,rewardIsMoney:false,rewardText:'',rewardToQ4:false};
-    var _cta=document.getElementById('capText');_cta.value='';
+    // 편집 모드: 기존 작업 값으로 초안을 채운다 (요청: 편집 팝업 대신 추가 패널 재사용).
+    if(cap.editing){var et=cap.editing;
+      cap.draft.title=et.title||'';cap.draft.categoryID=et.categoryID||'focus';
+      cap.draft.colorKey=et.colorKey||cap.draft.colorKey;cap.draft.iconName=et.iconName||null;
+      cap.draft.durationMin=et.durationMin||0;cap.draft.durEdited=true;cap.draft.durationLocked=true;
+      cap.draft.iconLocked=!!et.iconName;cap.draft.colorLocked=!!et.colorKey;
+      cap.draft.scheduledStart=et.scheduledStart||null;cap.draft.reminderOffsets=et.reminderOffsets||[];
+      cap.draft.nudgeEnabled=!!et.nudgeEnabled;cap.draft.dueDate=et.dueDate||null;
+      cap.draft.notes=et.notes||'';cap.draft.repeatDaysMask=et.repeatDaysMask||0;
+      cap.draft.rewardIsMoney=(et.rewardMoney||0)>0;
+      cap.draft.rewardText=(et.rewardMoney||0)>0?String(et.rewardMoney):(et.rewardText||'');
+    }
+    var _cta=document.getElementById('capText');_cta.value=cap.editing?(cap.draft.title||''):'';
     _cta.placeholder=origin==='timeline'?'예: 35분 영어':(origin==='matrix'?'‘'+quadHint(cap.quadrant)+'’에 담기…':'예: 30분 달리기');
     var wrap=document.getElementById('capWrap');wrap.classList.add('open');
     _cta.style.height='';   // 타임라인 2줄 placeholder가 잘리지 않게 (rows="1" 보정)
     if(origin==='timeline'){_cta.style.height='auto';_cta.style.height=Math.max(46,Math.min(_cta.scrollHeight,52))+'px';}
     var mb=document.querySelector('.mbar');if(mb)mb.style.display='none';
+    document.getElementById('capSubmit').disabled=!(_cta.value||'').trim();
     paintCap();
     // iOS: 키보드는 사용자 제스처 안에서 동기 focus여야 뜬다 (요청 버그fix).
     _cta.focus();
     setTimeout(positionCap,60);
   }
   function closeCapture(){
+    cap.editing=null;
     cap.open=false;
     document.getElementById('capText').blur();
     var wrap=document.getElementById('capWrap');wrap.classList.remove('open');wrap.style.bottom='';
@@ -5886,7 +5905,9 @@
   // 캡처바를 키보드 바로 위에 고정 (요청: 키보드 위 패널 자동 상승, 빈 공간·이동 없음).
   function positionCap(){
     if(!cap.open)return;var wrap=document.getElementById('capWrap');var vv=window.visualViewport;
-    if(vv){var gap=window.innerHeight-vv.height-vv.offsetTop;wrap.style.bottom=(gap>1?gap:0)+'px';}
+    // 키보드 간격이 있을 때만 인라인으로 올린다. 예전엔 gap<=1에도 bottom:0px를 박아
+    // 데스크톱 CSS(bottom:26px)를 덮어써서 '떴다가 아래로 내려가는' 것처럼 보였다 (요청).
+    if(vv){var gap=window.innerHeight-vv.height-vv.offsetTop;wrap.style.bottom=(gap>1?gap+'px':'');}
   }
   if(window.visualViewport){
     window.visualViewport.addEventListener('resize',positionCap);
@@ -5912,6 +5933,20 @@
   function submitCapture(){
     var raw=(document.getElementById('capText').value||'').trim();
     if(!raw)return;
+    // 편집 모드 (요청): 새로 만들지 않고 그 작업을 갱신한다.
+    if(cap.editing){
+      var t=cap.editing,ti=raw.split('\n')[0].trim();
+      var pe=parseDurTitle(ti);
+      if(pe){ti=pe.title;if(!cap.draft.durationLocked)cap.draft.durationMin=pe.dur;}
+      t.title=ti;t.categoryID=cap.draft.categoryID;t.colorKey=cap.draft.colorKey;t.iconName=cap.draft.iconName;
+      t.durationMin=cap.draft.durationMin;t.scheduledStart=cap.draft.scheduledStart;
+      t.reminderOffsets=cap.draft.reminderOffsets;t.nudgeEnabled=cap.draft.nudgeEnabled;
+      t.dueDate=cap.draft.dueDate;t.notes=cap.draft.notes;t.repeatDaysMask=cap.draft.repeatDaysMask;
+      if(cap.draft.rewardIsMoney)t.rewardMoney=parseInt((cap.draft.rewardText||'').replace(/[^0-9]/g,''),10)||0;
+      else{t.rewardMoney=0;t.rewardText=cap.draft.rewardText||'';}
+      if(t.scheduledStart&&t.durationMin)setPlanFromSchedule(t);
+      closeCapture();renderAll();pushSnapshot();return;
+    }
     // 여러 줄 = 여러 작업 (앱 §4)
     var lines=raw.split('\n').map(function(l){return l.trim();}).filter(Boolean);
     if(lines.length>1){
