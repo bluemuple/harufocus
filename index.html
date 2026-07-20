@@ -133,6 +133,18 @@
   .task.sel .task-inner{box-shadow:inset 0 0 0 2px #3D51C4;background:#EEF1FF}
   .marquee{position:fixed;z-index:200;border:1.5px solid #3D51C4;background:rgba(61,81,196,.12);
     border-radius:4px;pointer-events:none}
+  /* 꾹 눌러 타임라인에 떨어뜨리기 (요청): 고스트 카드 + 5분 단위 고스트 마감선 */
+  .drag-ghost{position:fixed;z-index:210;pointer-events:none;opacity:.9;transform:rotate(-1.5deg);
+    box-shadow:0 14px 34px rgba(20,40,80,.32);border-radius:16px;overflow:hidden}
+  .ghost-due{position:absolute;left:0;right:8px;height:0;z-index:9;pointer-events:none}
+  .ghost-due .gd-wire{position:absolute;left:56px;right:0;top:-1px;height:2px;border-radius:2px;
+    background:var(--tl-accent,#5b93e6);opacity:.95}
+  .ghost-due .gd-wire::before{content:"";position:absolute;right:-2px;top:-2px;width:6px;height:6px;
+    border-radius:50%;background:inherit}
+  .ghost-due .gd-lab{position:absolute;left:60px;top:-26px;display:flex;align-items:center;gap:6px;
+    background:rgba(20,28,50,.9);color:#fff;font-size:11.5px;font-weight:700;padding:4px 9px;
+    border-radius:999px;white-space:nowrap}
+  .ghost-due .gd-lab i{font-style:normal;opacity:.75;font-weight:600}
   h2{position:relative}
   .h2-sub{font-size:16px;font-weight:400;color:var(--ink-soft);margin-left:6px}
   /* 전역: 꾹 눌러 텍스트 선택 금지(입력란 제외) + 확대 금지 (요청). */
@@ -3761,6 +3773,7 @@
         renderTodo();pushSnapshot();});
     }
     attachSwipe(row,t,!!placed);
+    attachTaskDrag(row,t);   // 꾹 눌러 타임라인 드롭 (요청)
     // 요청/버그: 예전엔 subpanel을 .task(가로 flex) '안'에 넣어 bar가 좁아지고
     // 우측 절반에 입력이 떴다. 이제 행의 '형제'로 바로 아래에 붙인다.
     if(expanded){var frag=document.createDocumentFragment();frag.appendChild(row);frag.appendChild(buildSubPanel(t,col));return frag;}
@@ -5417,6 +5430,94 @@
 
   /* ---------- 작업 추가 입력 배선 (요청) ---------- */
   document.getElementById('todoFab').addEventListener('click',function(){openCapture('todo');});
+  /* ── 꾹 눌러 타임라인에 떨어뜨리기 (요청) ─────────────────────────────────
+     할 일 bar를 마우스/손가락으로 꾹 누르면 고스트가 따라오고, 타임라인 위로
+     가져가면 5분 단위로 스냅된 '고스트 마감선'이 보인다. 라벨엔 그 마감이
+     몇 시인지와, 지금(또는 그 사이 마지막 마감)부터 이 마감까지 얼마나
+     쓸 수 있는지를 함께 띄운다. 놓으면 그 시각이 마감이 된다. */
+  var tlDropping=false;
+  document.addEventListener('touchmove',function(e){if(tlDropping)e.preventDefault();},{passive:false});
+  function snap5(ms){var m=5*60000;return Math.round(ms/m)*m;}
+  // 드롭 지점 기준 '언제부터' 쓸 수 있는지 — 지금, 또는 그 사이 마지막 마감.
+  function dropAnchorMs(T,self){
+    var now=Date.now(),prev=null;
+    todayDueLines(true).forEach(function(x){
+      if(x===self)return;
+      var d=taskDueAt(x).getTime();
+      if(d<T&&(prev===null||d>prev))prev=d;
+    });
+    return (prev!==null&&prev>now)?prev:now;
+  }
+  function attachTaskDrag(row,t){
+    var inner=row.querySelector('.task-inner');if(!inner)return;
+    var timer=null,ghost=null,gdue=null,dropAt=null;
+    inner.addEventListener('pointerdown',function(e){
+      if(e.target.closest('.check,.star,.play,.kebab,.t-plus,.t-memo,.sa,.mx-pick'))return;
+      var sx=e.clientX,sy=e.clientY;
+      timer=setTimeout(function(){start(sx,sy);},420);
+      function cancel(){if(timer){clearTimeout(timer);timer=null;}
+        window.removeEventListener('pointermove',pre);window.removeEventListener('pointerup',cancel);}
+      function pre(ev){if(Math.abs(ev.clientX-sx)+Math.abs(ev.clientY-sy)>8)cancel();}
+      window.addEventListener('pointermove',pre);window.addEventListener('pointerup',cancel);
+    });
+    function start(sx,sy){
+      tlDropping=true;clearSel&&clearSel();
+      var r=row.getBoundingClientRect();
+      ghost=row.cloneNode(true);ghost.className='task drag-ghost';
+      ghost.style.width=r.width+'px';ghost.style.left=r.left+'px';ghost.style.top=r.top+'px';
+      document.body.appendChild(ghost);
+      window.addEventListener('pointermove',move);
+      window.addEventListener('pointerup',end);
+      window.addEventListener('pointercancel',end);
+      move({clientX:sx,clientY:sy});
+    }
+    function move(ev){
+      if(!ghost)return;
+      var r=ghost.getBoundingClientRect();
+      ghost.style.left=(ev.clientX-r.width/2)+'px';
+      ghost.style.top=(ev.clientY-r.height/2)+'px';
+      var sc=document.getElementById('tlScroll');
+      var over=false;
+      if(sc){var b=sc.getBoundingClientRect();
+        over=ev.clientX>=b.left&&ev.clientX<=b.right&&ev.clientY>=b.top&&ev.clientY<=b.bottom;}
+      if(!over){if(gdue){gdue.remove();gdue=null;}dropAt=null;return;}
+      // y → 시각 (yFor의 역함수) → 5분 스냅
+      var b=sc.getBoundingClientRect();
+      var y=ev.clientY-b.top+sc.scrollTop;
+      var h=TS+(y-14)/PPH;
+      var base=selDate();base.setHours(0,0,0,0);
+      var T=snap5(base.getTime()+h*3600000);
+      var minT=base.getTime()+TS*3600000,maxT=base.getTime()+TE*3600000;
+      T=Math.max(minT,Math.min(maxT,T));
+      dropAt=T;
+      var d=new Date(T),hf=d.getHours()+d.getMinutes()/60;
+      if(!gdue){gdue=document.createElement('div');gdue.className='ghost-due';
+        gdue.innerHTML='<div class="gd-wire"></div><div class="gd-lab"></div>';sc.appendChild(gdue);}
+      gdue.style.top=yFor(hf)+'px';
+      var anchor=dropAnchorMs(T,t),avail=Math.max(0,Math.round((T-anchor)/60000));
+      var fromLbl=(anchor>Date.now()+1000)?'이전 마감부터':'지금부터';
+      gdue.querySelector('.gd-lab').innerHTML=
+        ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+'까지'+
+        '<i>'+fromLbl+' '+durLabel(avail)+'</i>';
+    }
+    function end(){
+      window.removeEventListener('pointermove',move);
+      window.removeEventListener('pointerup',end);
+      window.removeEventListener('pointercancel',end);
+      tlDropping=false;
+      if(ghost){ghost.remove();ghost=null;}
+      if(gdue){gdue.remove();gdue=null;}
+      if(dropAt!=null){
+        // 떨어뜨린 시각 = 마감. 길이는 그 작업 자체 길이를 지킨다(없으면 가용 시간).
+        var anchor=dropAnchorMs(dropAt,t);
+        var avail=Math.max(5,Math.round((dropAt-anchor)/60000));
+        if(!(t.durationMin>0))t.durationMin=Math.min(avail,120);
+        t.planDueAt=new Date(dropAt).toISOString();
+        t.scheduledStart=new Date(dropAt-t.durationMin*60000).toISOString();
+        dropAt=null;renderAll();pushSnapshot();
+      }
+    }
+  }
   /* ── 드래그 다중선택 (요청, 마우스 전용) ────────────────────────────────
      빈 곳에서 드래그하면 사각형 아웃라인이 그려지고, 거기에 '조금이라도'
      걸치는 할 일 bar가 모두 선택된다. 선택되면 추가 버튼 왼쪽에 삭제 FAB이
