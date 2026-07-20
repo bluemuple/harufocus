@@ -442,9 +442,14 @@
   .t-plus svg{width:22px;height:22px;display:block}
   .kebab{width:28px;height:28px;flex:0 0 auto;border:0;background:none;padding:0;cursor:pointer;display:grid;place-items:center;color:rgba(90,100,120,.6)}
   /* 요청: 마우스 환경에서 재생·케밥은 행에 호버할 때만 (터치에선 항상 보임) */
-  @media(hover:hover) and (pointer:fine){
+  @media(hover:hover) and (pointer:fine) and (min-width:861px){
     .task .play,.task .kebab{opacity:0;transition:opacity .13s}
     .task:hover .play,.task:hover .kebab,.task .play:focus-visible,.task .kebab:focus-visible{opacity:1}
+  }
+  /* 폰(요청): 케밥은 숨기고 재생을 맨 오른쪽으로 — 액션은 스와이프로 쓴다. */
+  @media(hover:none),(max-width:860px){
+    .task .kebab{display:none}
+    .task-inner .play{order:2;opacity:.9}
   }
   .kmenu{position:fixed;z-index:120;min-width:150px;background:var(--card);border:1px solid var(--line);
     border-radius:12px;box-shadow:0 10px 30px rgba(20,40,80,.22);padding:5px;display:flex;flex-direction:column}
@@ -3654,9 +3659,13 @@
     var LW=128,RW=128;   // 오른쪽 스와이프(내일로+매트릭스) · 왼쪽 스와이프(타임라인+삭제)
     function set(x){cur=x;inner.style.transform='translateX('+x+'px)';
       row.classList.toggle('sw-left',x>6);row.classList.toggle('sw-right',x<-6);}
+    // ⚠closeSwipe()는 transform만 0으로 되돌리고 이 클로저의 cur은 남겨둔다. 그래서
+    // 예전엔 시각은 닫혔는데 내부값이 -128로 남아 ①살짝만 밀어도 확 열리고
+    // ②오른쪽으로 밀면 왼쪽으로 튀었다. 시작값을 실제 transform에서 읽어 동기화한다.
+    function curX(){var m=/translateX\((-?[\d.]+)px\)/.exec(inner.style.transform||'');return m?parseFloat(m[1]):0;}
     inner.addEventListener('pointerdown',function(e){if(e.pointerType==='mouse')return;
       if(swipeOpen&&swipeOpen!==inner)closeSwipe();
-      sx=e.clientX;sy=e.clientY;startCur=cur;drag=true;lock='';inner.style.transition='none';});
+      cur=curX();sx=e.clientX;sy=e.clientY;startCur=cur;drag=true;lock='';inner.style.transition='none';});
     inner.addEventListener('pointermove',function(e){if(!drag)return;
       var dx=e.clientX-sx,dy=e.clientY-sy;
       if(!lock){if(Math.abs(dx)<6&&Math.abs(dy)<6)return;lock=Math.abs(dx)>Math.abs(dy)?'x':'y';}
