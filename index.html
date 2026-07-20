@@ -1151,9 +1151,12 @@
   .ft-stats{font-size:13.5px;opacity:.92;margin-top:8px;text-shadow:0 1px 2px rgba(0,0,0,.25)}
   .ft-ringwrap{position:relative;width:300px;height:300px;margin-top:18px;max-width:86vw;max-height:86vw}
   .ft-ringwrap svg{width:100%;height:100%}
-  .ft-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+  .ft-center{position:absolute;inset:0;display:grid;place-items:center}
   .ft-timer{font-size:43px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.02em;text-shadow:0 1px 3px rgba(0,0,0,.3)}
-  .ft-pausebtn{width:46px;height:26px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.14);color:#fff;font-size:13px;line-height:1;cursor:pointer;padding:0}
+  .ft-pausebtn{position:absolute;left:50%;top:68%;transform:translate(-50%,-50%);
+    width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.22);
+    background:rgba(255,255,255,.14);color:rgba(255,255,255,.92);font-size:18px;line-height:1;
+    cursor:pointer;padding:0;display:grid;place-items:center}
   .ft-sub{font-size:13px;opacity:.9;margin-top:10px;min-height:18px;text-shadow:0 1px 2px rgba(0,0,0,.2)}
   .ft-morepanel{position:absolute;bottom:calc(20px + env(safe-area-inset-bottom));left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:4}
   /* 전환 카드 (§5): 링 안 원형 크롭 엘리 그림 5초, 종이 위 다음 작업명. */
@@ -1167,7 +1170,7 @@
   /* 딴짓 포스트잇 (§5): 우측 가장자리, 탭=뒤집기, 우로 밀면 숨김. 앱 DistractionPostIt 파리티. */
   /* 요청: 포스트잇 1·2·3 모두 포모도로 링 '아래'로. 1=작은 앞면, 2=큰 안내(ⓘ),
      3=뒷변(적는 면). 2는 우측으로 밀어 절반만 보이게 한다. */
-  .postit{position:absolute;right:10px;top:60%;width:150px;height:128px;z-index:4;
+  .postit{position:absolute;right:-75px;top:60%;width:150px;height:128px;z-index:4;
     background:#FFEC8C;border-radius:6px;box-shadow:0 6px 14px rgba(0,0,0,.25);transform:rotate(-6deg);
     cursor:pointer;transition:transform .25s;touch-action:none}
   .focusScrim.night .postit{background:#B39F5C}
@@ -1180,7 +1183,8 @@
     background:rgba(77,61,13,.75);color:#FFEC8C;font-size:11px;font-weight:800}
   .focusScrim.night .pi-badge{color:#B39F5C}
   .pi-back{display:none;flex-direction:column;gap:8px;padding:12px;color:#4D3D0D}
-  .postit.flip{width:250px;height:auto;border-radius:8px}   /* 3 = 뒷변: 1과 같은 자리 */
+  /* 뒷면(적는 면)은 입력을 해야 하므로 전부 보이게 되돌린다 (앱 open ? 0 : 밀어두기). */
+  .postit.flip{width:250px;height:auto;border-radius:8px;right:10px}
   .pi-bhead{font-size:13px;font-weight:800;line-height:1.3}
   .pi-bcap{display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(77,61,13,.85)}
   .pi-bcap #piInfo{border:0;background:none;color:rgba(77,61,13,.6);font-size:12px;cursor:pointer;padding:0}
@@ -3014,7 +3018,7 @@
      링 기준으로 쓰므로, 채택한 세션에선 작업의 durationMin이 아니라 이 값을
      따라야 링이 맞는다. fPomo는 '이 세션'의 포모도로 여부(시작한 기기 기준).
      fRemote = 다른 기기에서 시작돼 여기서는 따라 보는 세션. */
-  var fPlanMin=0,fPomo=null,fRemote=false,fRemoteDev='';
+  var fPlanMin=0,fPomo=null,fRemote=false,fRemoteDev='',fSessionID=null;
   function fPlanSec(){return Math.max(0,fPlanMin)*60;}
   function fPomoOn(){return fPomo===null?pomoOn():!!fPomo;}
   function fmtMS(s){var m=Math.floor(s/60);return ('0'+m).slice(-2)+':'+('0'+(s%60)).slice(-2);}
@@ -3401,7 +3405,7 @@
   function webFocusDTO(){
     if(!fTask)return null;
     var now=new Date(),el=focusElapsed();
-    return{taskID:fTask.id,taskTitle:fTask.title||'',categoryID:fTask.categoryID||'focus',
+    return{sessionID:fSessionID,taskID:fTask.id,taskTitle:fTask.title||'',categoryID:fTask.categoryID||'focus',
       clockStart:now.toISOString(),focusedBaseSec:el,
       isPaused:!!fPaused,pauseBegan:fPaused?now.toISOString():null,
       pauses:[],planMin:Math.max(0,fPlanMin),
@@ -3409,26 +3413,47 @@
       pomodoroEpoch:new Date(now.getTime()-el*1000).toISOString(),
       sceneRaw:fmScene(),deviceID:webDeviceId(),updatedAt:now.toISOString()};
   }
+  /* 종료 신호 (앱 FocusManager.lastFocusEnd 대응) — 어느 쪽에서 끄든 다
+     꺼지려면 '누가 어느 세션을 끝냈다'를 명시해야 한다. 최신 것을 서로
+     물어 나른다: 남이 낸 신호를 안 받아 두면 내 push가 그걸 지운다. */
+  var FEND_KEY='harufocusFocusEnd';
+  function lastFocusEnd(){try{return JSON.parse(localStorage.getItem(FEND_KEY)||'null');}catch(e){return null;}}
+  function setFocusEnd(fe){try{localStorage.setItem(FEND_KEY,JSON.stringify(fe));}catch(e){}}
+  function noteRemoteEnd(fe){
+    if(!fe||!fe.sessionID)return;
+    var mine=lastFocusEnd();
+    if(!mine||Date.parse(fe.endedAt)>Date.parse(mine.endedAt))setFocusEnd(fe);
+  }
+  function recordLocalEnd(){
+    if(!fSessionID)return;
+    setFocusEnd({sessionID:fSessionID,endedAt:new Date().toISOString(),deviceID:webDeviceId()});
+  }
   /* 다른 기기(앱)의 세션을 채택·추종·해제. 앱 FocusManager.reconcileRemote 대응.
       · 세션 없음 + 원격 있음 → 포커스 페이지를 열고 시계를 맞춘다
       · 같은 세션      → 일시정지·계획·씬(포커스뮤직)을 따라간다
-      · 진행 중 세션 + 원격 소멸 → 닫는다 (요청: 어느 쪽에서 끝냈든 — 웹이
-        시작했든 앱이 시작했든 — 모두 닫힌다. 기록은 끝낸 쪽이 이미 씀) */
-  function adoptRemoteFocus(af){
-    if(!af||!af.taskID){
-      // ⚠ 예전엔 fRemote(따라 보던 세션)일 때만 닫아, 웹이 직접 시작한
-      // 세션은 앱에서 끝내도 안 닫혔다(요청 버그). 방금(2초 안) 시작한
-      // 세션은 내 push가 아직 서버에 안 올라갔을 수 있어, 그 사이 낀
-      // 무관한 폴이 들고 온 '활성 없음'에 지워지지 않게 짧은 유예를 둔다.
-      if(fTask&&(Date.now()-fStart)>2000)closeRemoteFocus();
-      return;
-    }
+      · 내 세션을 지목한 **명시적 종료 신호** → 닫는다 (요청: 어느 쪽에서
+        끝냈든 — 웹이 시작했든 앱이 시작했든 — 모두 닫힌다. 기록은 끝낸 쪽이
+        이미 썼다)
+
+     ⚠ af == null은 **종료가 아니다**: "이 스냅샷을 올린 기기에 세션이 없다"는
+     뜻일 뿐이다. 웹도 앱도 집중 중이 아니면 모든 push에 activeFocus를 null로
+     싣기 때문에, null을 종료로 읽으면 저쪽에서 작업 하나만 고쳐도 여기서
+     돌던 세션이 꺼진다 (실제로 그렇게 만들었다가 되돌린 회귀). */
+  function adoptRemoteFocus(af,fe){
+    noteRemoteEnd(fe);
+    // 종료 신호가 지금 내 세션을 지목하면 닫는다 — 누가 껐든.
+    if(fe&&fSessionID&&fe.sessionID===fSessionID&&fe.deviceID!==webDeviceId()){closeRemoteFocus();return;}
+    if(!af||!af.taskID)return;                          // 세션 없음 ≠ 종료 (위 주석)
     if(af.deviceID===webDeviceId())return;              // 내가 올린 것의 메아리
+    // 이미 끝난 세션이 스냅샷에 남아 있을 수 있다 (끝낸 기기의 push가 아직 안
+    // 올라온 창) — 종료 신호가 그 세션을 지목하면 채택하지 않는다.
+    if(fe&&af.sessionID&&fe.sessionID===af.sessionID)return;
     var now=Date.now();
     var ref=af.isPaused&&af.pauseBegan?Date.parse(af.pauseBegan):now;
     var el=Math.max(0,(af.focusedBaseSec||0)+Math.floor((ref-Date.parse(af.clockStart))/1000));
     if(fTask){
       if(fTask.id!==af.taskID)return;                   // 서로 다른 세션 — 보존 우선
+      if(af.sessionID)fSessionID=af.sessionID;         // 저쪽 종료 신호가 이 세션을 지목하도록
       fStart=now-el*1000;fPausedAcc=0;fPaused=!!af.isPaused;fPauseAt=now;
       fPlanMin=af.planMin||0;fPomo=!!af.pomodoro;
       document.getElementById('ftPause').innerHTML=fPaused?IC.play:IC.pause;
@@ -3439,7 +3464,7 @@
       categoryID:af.categoryID||'focus',durationMin:af.planMin||0};
     fRemote=true;fRemoteDev=af.deviceID||'';
     fPlanMin=af.planMin||0;fPomo=!!af.pomodoro;
-    startFocus(t,{remote:true,elapsed:el,paused:!!af.isPaused,
+    startFocus(t,{remote:true,elapsed:el,paused:!!af.isPaused,sessionID:af.sessionID,
                   planMin:af.planMin||0,pomodoro:!!af.pomodoro,scene:af.sceneRaw});
   }
   /* 원격 씬을 반영 (요청 동기화) — 웹은 불·비만 실제로 재생하고, 그 외
@@ -3453,7 +3478,7 @@
   function closeRemoteFocus(){
     clearInterval(fTimer);fTimer=null;
     document.getElementById('focusScrim').classList.remove('open');
-    fTask=null;fRemote=false;fRemoteDev='';fPomo=null;fPlanMin=0;fmStop();renderAll();
+    fTask=null;fRemote=false;fRemoteDev='';fPomo=null;fPlanMin=0;fSessionID=null;fmStop();renderAll();
   }
   /* 세션 상태만 바뀌었을 때의 즉시 push (시작·종료·일시정지·포모도로 토글). */
   function pushFocusState(){pushSnapshot();}
@@ -3462,9 +3487,11 @@
     if(opt&&opt.remote){
       fStart=Date.now()-(opt.elapsed||0)*1000;fPaused=!!opt.paused;fPauseAt=Date.now();
       fPlanMin=opt.planMin||0;fPomo=!!opt.pomodoro;fRemote=true;
+      fSessionID=opt.sessionID||uuid();      // 시작한 기기의 식별자를 물려받는다
     }else{
       // 내가 시작한 세션: 계획은 이 작업의 길이, 포모도로는 이 기기 설정.
       fPlanMin=t.durationMin||0;fPomo=pomoOn();fRemote=false;fRemoteDev='';
+      fSessionID=uuid();
     }
     document.getElementById('ftTitle').innerHTML=catIcon(t.categoryID)+' '+esc(t.title||'집중');
     document.getElementById('ftStats').textContent=focusStatsText();   // 제목 아래 정보 한 줄 (앱 statsRow 파리티)
@@ -3485,6 +3512,7 @@
     pushFocusState();}   // 반대편 시계도 같이 멈추고 같이 간다 (요청)
   function endFocusSession(){                              // 세션 기록 (블록은 세션에서 파생 §3)
     if(!fTask)return;clearInterval(fTimer);
+    recordLocalEnd();     // 내가 껐다 → 다른 기기·앱도 닫히도록 신호를 남긴다
     // 따라 보던(원격) 세션은 기록하지 않는다 — 시작한 기기가 이미 남긴다.
     if(fRemote){fRemote=false;fRemoteDev='';return;}
     var el=focusElapsed();
@@ -3494,7 +3522,7 @@
   function finishFocus(){if(!fTask)return;
     var el=focusElapsed(),title=fTask.title||'집중';   // fTask=null 되기 전 캡처 (앱 파리티)
     endFocusSession();
-    document.getElementById('focusScrim').classList.remove('open');fTask=null;fPomo=null;fPlanMin=0;fRemote=false;fmStop();renderAll();pushSnapshot();
+    document.getElementById('focusScrim').classList.remove('open');fTask=null;fPomo=null;fPlanMin=0;fRemote=false;fSessionID=null;fmStop();renderAll();pushSnapshot();
     // 집중 후 기분 체크인 (앱 maybeMoodCheckIn): 10분+ · 하루 2회 · 다른 팝업 없을 때.
     if(el>=600&&moodDayCount()<2&&!document.getElementById('rewardPop'))
       showMoodCard(title,Math.max(1,Math.floor(el/60)));
@@ -5493,7 +5521,7 @@
       renderAll();
       // 되살아난 게 있었으면 지운 상태를 다시 올린다 — 그래야 앱도 따라 지운다.
       if(revived)pushSnapshot();
-      adoptRemoteFocus(serverSnap.activeFocus);
+      adoptRemoteFocus(serverSnap.activeFocus,serverSnap.focusEnd);
     })
     .catch(function(){});
   }
@@ -5514,6 +5542,9 @@
     // 원격 세션은 다시 올리지 않는다 — 메아리로 서로를 덮어쓰지 않게.
     if(fTask&&!fRemote)serverSnap.activeFocus=webFocusDTO();
     else if(!fTask)serverSnap.activeFocus=null;
+    // 종료 신호는 최신 것만 남긴다 (내 것 vs 서버에서 읽어 둔 것).
+    var fe=lastFocusEnd();
+    if(fe)serverSnap.focusEnd=fe;
     return serverSnap;}
   var pushTimer=null;
   function pushSnapshot(){if(!session)return;clearTimeout(pushTimer);pushTimer=setTimeout(doPush,1200);}
@@ -6165,7 +6196,7 @@
       return fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=snapshot',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok}});})
     .then(function(r){return r.json();}).then(function(rows){
       var snap=(rows&&rows.length&&rows[0].snapshot)||null;
-      if(snap)adoptRemoteFocus(snap.activeFocus);
+      if(snap)adoptRemoteFocus(snap.activeFocus,snap.focusEnd);
     }).catch(function(){});
   }
   setInterval(pollSync,6000);
