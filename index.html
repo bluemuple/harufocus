@@ -133,6 +133,9 @@
   .task.sel .task-inner{box-shadow:inset 0 0 0 2px #3D51C4;background:#EEF1FF}
   .marquee{position:fixed;z-index:200;border:1.5px solid #3D51C4;background:rgba(61,81,196,.12);
     border-radius:4px;pointer-events:none}
+  /* 목록 안 reorder 드롭 위치 표시 (요청) */
+  .drop-line{position:fixed;z-index:205;height:3px;border-radius:2px;background:#3D51C4;
+    box-shadow:0 0 0 3px rgba(61,81,196,.18);pointer-events:none}
   /* 꾹 눌러 타임라인에 떨어뜨리기 (요청): 고스트 카드 + 5분 단위 고스트 마감선 */
   .drag-ghost{position:fixed;z-index:210;pointer-events:none;opacity:.9;transform:rotate(-1.5deg);
     box-shadow:0 14px 34px rgba(20,40,80,.32);border-radius:16px;overflow:hidden}
@@ -3890,11 +3893,18 @@
     var todayMid=new Date();todayMid.setHours(0,0,0,0);
     // 내일로 미룬 일은 그날이 되기 전엔 숨긴다 (앱 파리티, 요청).
     var visible=(DATA.tasks||[]).filter(function(t){
-      if(!t.deferredUntil)return true;return new Date(t.deferredUntil)<=todayMid;});
+      if(t.deferredUntil&&new Date(t.deferredUntil)>todayMid)return false;
+      // 요청: 완료한 작업은 '완료한 그 날'에만 보인다 (다른 날짜엔 숨김).
+      if(t.isDone&&t.completedAt&&!calSameDay(new Date(t.completedAt),calSel))return false;
+      return true;});
     // D2-5: '오늘 계획' 섹션 폐지 — 타임라인 작업도 담아둔 일에 1행으로 합류.
     var scheduled=[];
     var backlog=visible
       .sort(function(a,b){var d=(a.isDone?1:0)-(b.isDone?1:0);if(d)return d;
+        // 사용자가 끌어서 정한 순서(ord)가 있으면 그게 1순위 (요청: reorder).
+        if(a.ord!=null&&b.ord!=null)return a.ord-b.ord;
+        if(a.ord!=null)return -1;
+        if(b.ord!=null)return 1;
         var st=(b.isStarred?1:0)-(a.isStarred?1:0);if(st)return st;
         var as=a.scheduledStart?new Date(a.scheduledStart).getTime():1/0;
         var bs=b.scheduledStart?new Date(b.scheduledStart).getTime():1/0;
@@ -5527,16 +5537,55 @@
     });
     return (prev!==null&&prev>now)?prev:now;
   }
+  /* ── 할일 목록 안 reorder: 드롭 위치 가로선 + ord 재부여 (요청) ── */
+  var dropLineEl=null,dropBeforeId=null;
+  function clearDropLine(){if(dropLineEl){dropLineEl.remove();dropLineEl=null;}dropBeforeId=null;}
+  function showDropLine(ev){
+    var list=document.getElementById('todoList');if(!list){clearDropLine();return;}
+    var lb=list.getBoundingClientRect();
+    if(ev.clientX<lb.left||ev.clientX>lb.right||ev.clientY<lb.top||ev.clientY>lb.bottom){clearDropLine();return;}
+    // 커서가 어느 행의 위/아래인지 → 그 앞에 넣을 행 id
+    var rows=[].slice.call(list.querySelectorAll('.task[data-id]')),before=null,y=ev.clientY,line=null;
+    for(var i=0;i<rows.length;i++){
+      var r=rows[i].getBoundingClientRect();
+      if(y<r.top+r.height/2){before=rows[i];line={top:r.top-5,left:r.left,width:r.width};break;}
+    }
+    if(!before&&rows.length){var last=rows[rows.length-1].getBoundingClientRect();
+      line={top:last.bottom+4,left:last.left,width:last.width};}
+    if(!line){clearDropLine();return;}
+    dropBeforeId=before?before.dataset.id:null;
+    if(!dropLineEl){dropLineEl=document.createElement('div');dropLineEl.className='drop-line';document.body.appendChild(dropLineEl);}
+    dropLineEl.style.top=line.top+'px';dropLineEl.style.left=line.left+'px';dropLineEl.style.width=line.width+'px';
+  }
+  function applyReorder(t){
+    if(!dropLineEl){clearDropLine();return;}
+    var list=document.getElementById('todoList');
+    var ids=[].map.call(list.querySelectorAll('.task[data-id]'),function(el){return el.dataset.id;});
+    ids=ids.filter(function(id){return id!==t.id;});
+    var at=dropBeforeId?ids.indexOf(dropBeforeId):ids.length;
+    if(at<0)at=ids.length;
+    ids.splice(at,0,t.id);
+    // 화면 순서 그대로 ord 재부여 → 이후 정렬의 1순위가 된다.
+    ids.forEach(function(id,i){var x=taskByID(id);if(x)x.ord=i;});
+    clearDropLine();renderTodo();pushSnapshot();
+  }
   function attachTaskDrag(row,t){
     var inner=row.querySelector('.task-inner');if(!inner)return;
     var timer=null,ghost=null,gdue=null,dropAt=null;
     inner.addEventListener('pointerdown',function(e){
       if(e.target.closest('.check,.star,.play,.kebab,.t-plus,.t-memo,.sa,.mx-pick'))return;
-      var sx=e.clientX,sy=e.clientY;
-      timer=setTimeout(function(){start(sx,sy);},420);
+      var sx=e.clientX,sy=e.clientY,isMouse=(e.pointerType==='mouse');
+      // 요청: 마우스는 누르고 '움직이면' 바로 고스트. 터치는 가로 스와이프·스크롤과
+      // 겹치므로 예전처럼 꾹 누르기(420ms)로 시작한다.
+      if(!isMouse)timer=setTimeout(function(){start(sx,sy);},420);
       function cancel(){if(timer){clearTimeout(timer);timer=null;}
         window.removeEventListener('pointermove',pre);window.removeEventListener('pointerup',cancel);}
-      function pre(ev){if(Math.abs(ev.clientX-sx)+Math.abs(ev.clientY-sy)>8)cancel();}
+      function pre(ev){
+        var moved=Math.abs(ev.clientX-sx)+Math.abs(ev.clientY-sy);
+        if(moved<=8)return;
+        if(isMouse){cancel();start(sx,sy);move(ev);}   // 마우스 = 즉시 드래그 시작
+        else cancel();                                 // 터치 = 움직이면 롱프레스 취소
+      }
       window.addEventListener('pointermove',pre);window.addEventListener('pointerup',cancel);
     });
     function start(sx,sy){
@@ -5559,7 +5608,12 @@
       var over=false;
       if(sc){var b=sc.getBoundingClientRect();
         over=ev.clientX>=b.left&&ev.clientX<=b.right&&ev.clientY>=b.top&&ev.clientY<=b.bottom;}
-      if(!over){if(gdue){gdue.remove();gdue=null;}dropAt=null;return;}
+      if(!over){
+        if(gdue){gdue.remove();gdue=null;}dropAt=null;
+        showDropLine(ev);                    // 할일 목록 위면 가로선 (요청)
+        return;
+      }
+      clearDropLine();
       // y → 시각 (yFor의 역함수) → 5분 스냅
       var b=sc.getBoundingClientRect();
       var y=ev.clientY-b.top+sc.scrollTop;
@@ -5593,8 +5647,9 @@
         if(!(t.durationMin>0))t.durationMin=Math.min(avail,120);
         t.planDueAt=new Date(dropAt).toISOString();
         t.scheduledStart=new Date(dropAt-t.durationMin*60000).toISOString();
-        dropAt=null;renderAll();pushSnapshot();
+        dropAt=null;clearDropLine();renderAll();pushSnapshot();return;
       }
+      applyReorder(t);   // 목록 안에 떨어뜨렸으면 순서 변경 (요청)
     }
   }
   /* ── 드래그 다중선택 (요청, 마우스 전용) ────────────────────────────────
