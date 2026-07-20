@@ -179,15 +179,31 @@
   /* 루틴 편집 시트 (요청). */
   .hseg{margin-left:0;width:100%;margin:6px 0}
   .hseg button{flex:1}
-  .hcolors{display:flex;gap:12px;justify-content:space-between;margin:10px 0 4px;flex-wrap:wrap}
-  .hcol{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+  .hcolors{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:10px 0 4px}
+  .hcol{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;min-width:0}
+.hcol .nm{font-size:11px;white-space:nowrap}
   .hcol .sw{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff}
   .hcol .nm{font-size:11px;color:var(--ink-soft)}
   .hdays{display:flex;gap:6px;margin:6px 0;justify-content:space-between}
   .hday{flex:1;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--card-2);color:var(--ink-soft);font-weight:800;font-size:13px;cursor:pointer}
   .hday.on{background:var(--sky-blue);color:#fff;border-color:var(--sky-blue)}
   .hinterval{display:flex;align-items:center;justify-content:space-between;margin:6px 0;font-size:14px;font-weight:600}
-  .hrow{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line)}
+  .hsw{position:relative;display:inline-block;width:44px;height:26px;flex:0 0 auto}
+  .hsw input{position:absolute;opacity:0;width:0;height:0}
+  .hsw i{position:absolute;inset:0;background:var(--line);border-radius:999px;transition:background .18s}
+  .hsw i::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .18s}
+  .hsw input:checked+i{background:#34C759}
+  .hsw input:checked+i::after{transform:translateX(18px)}
+  .hremind{display:flex;flex-direction:column;gap:6px}
+  .hremind .hrm{display:flex;align-items:center;gap:8px;padding:8px 2px}
+  .hremind .hrm input{flex:1;border:1px solid var(--line);border-radius:10px;padding:8px 10px;
+    font-family:inherit;font-size:14px;background:var(--card-2);color:var(--ink)}
+  .hremind .hrm button{border:0;background:none;color:#FF3B30;font-size:17px;cursor:pointer;padding:0 4px}
+  .hadd{border:0;background:none;color:#FF7A45;font-family:inherit;font-size:14px;font-weight:700;
+    cursor:pointer;padding:8px 2px;text-align:left}
+  .hrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.hrow>span,.hrow>label{white-space:nowrap;flex:0 0 auto}
   .tl-body{flex:1;position:relative;min-height:0}
 
   /* big timeline (sky) */
@@ -1750,6 +1766,11 @@
       <span><b id="hIntNum">2</b>일마다 반복</span>
       <span><button class="chip" id="hIntMinus">−</button> <button class="chip" id="hIntPlus">+</button></span>
     </div>
+    <div class="hrow" id="hFromLastRow" style="display:none"><span>놓치면 다음 날부터 다시</span>
+      <label class="hsw"><input type="checkbox" id="hFromLast"><i></i></label></div>
+    <div class="elabel">알림</div>
+    <div class="hremind" id="hRemind"></div>
+    <button class="hadd" id="hRemindAdd">알림 추가</button>
     <div class="elabel">기간</div>
     <div class="hrow"><span>시작</span><input type="date" id="hStart"></div>
     <div class="hrow"><label><input type="checkbox" id="hEndOn"> 종료일 정하기</label><input type="date" id="hEnd" style="display:none"></div>
@@ -2763,7 +2784,7 @@
   function habitDayOn(h,wd){return (h.weekdaysMask===0||h.weekdaysMask===127)?true:((h.weekdaysMask&(1<<wd))!==0);} // wd: 0=일..6=토
   function newHabit(o){return Object.assign({
     id:uuid(),title:'',categoryID:'study',isAvoid:false,iconName:null,weekdaysMask:127,
-    createdAt:new Date().toISOString(),logJSON:'{}',photosJSON:'[]',scheduleKindRaw:'everyday',
+    createdAt:new Date().toISOString(),logJSON:'{}',photosJSON:'{}',scheduleKindRaw:'everyday',
     intervalDays:2,intervalFromLastCheck:false,dayEndMinutes:0,reminderMinutesJSON:'[]',startDate:null,endDate:null
   },o||{});}
   function addHabit(o){if(!DATA.habits)DATA.habits=[];var h=newHabit(o);DATA.habits.push(h);renderRoutine();pushSnapshot();return h;}
@@ -4028,7 +4049,7 @@
     g.style.gridTemplateColumns=lf+'fr '+(1-lf)+'fr';
   }
   // ── 루틴 편집 시트 (앱 파리티, 요청) ──
-  var hEdit=null,hAvoid=0,hColor='study',hRepeat='everyday',hMask=127,hInterval=2;
+  var hEdit=null,hAvoid=0,hColor='study',hRepeat='everyday',hMask=127,hInterval=2,hFromLast=false,hRemindArr=[];
   var HCAT=['mind','health','rest','life','study','focus','people'];
   function openHabitSheet(h){
     hEdit=h||null;
@@ -4040,6 +4061,9 @@
     hRepeat=h?(h.scheduleKindRaw==='interval'?'interval':(h.weekdaysMask&&h.weekdaysMask!==127?'weekdays':'everyday')):'everyday';
     hMask=h?(h.weekdaysMask||127):127;
     hInterval=h?(h.intervalDays||2):2;
+    hFromLast=!!(h&&h.intervalFromLastCheck);
+    try{hRemindArr=h?(JSON.parse(h.reminderMinutesJSON||'[]')||[]):[];}catch(_){hRemindArr=[];}
+    if(!Array.isArray(hRemindArr))hRemindArr=[];
     document.getElementById('hStart').value=(h&&h.startDate)?h.startDate.slice(0,10):new Date().toISOString().slice(0,10);
     document.getElementById('hEndOn').checked=!!(h&&h.endDate);
     document.getElementById('hEnd').style.display=(h&&h.endDate)?'':'none';
@@ -4061,13 +4085,30 @@
     document.getElementById('hDays').innerHTML=L.map(function(l,i){return '<button class="hday'+((hMask&(1<<i))?' on':'')+'" data-wd="'+i+'">'+l+'</button>';}).join('');
     document.querySelectorAll('#hDays .hday').forEach(function(b){b.addEventListener('click',function(){hMask^=(1<<+b.dataset.wd);paintHabitSheet();});});
     document.getElementById('hIntNum').textContent=hInterval;
+    // '놓치면 다음 날부터 다시'는 앱과 같이 '며칠마다'에서만 의미가 있다.
+    document.getElementById('hFromLastRow').style.display=hRepeat==='interval'?'flex':'none';
+    document.getElementById('hFromLast').checked=hFromLast;
+    var rw=document.getElementById('hRemind');
+    rw.innerHTML=hRemindArr.map(function(m,i){
+      var hh=('0'+Math.floor(m/60)).slice(-2),mm=('0'+(m%60)).slice(-2);
+      return '<div class="hrm"><input type="time" data-i="'+i+'" value="'+hh+':'+mm+'"><button data-del="'+i+'" title="삭제">✕</button></div>';
+    }).join('');
+    rw.querySelectorAll('input[type=time]').forEach(function(inp){inp.addEventListener('change',function(){
+      var p=(inp.value||'').split(':');if(p.length<2)return;
+      hRemindArr[+inp.dataset.i]=(+p[0])*60+(+p[1]);});});
+    rw.querySelectorAll('button[data-del]').forEach(function(b){b.addEventListener('click',function(){
+      hRemindArr.splice(+b.dataset.del,1);paintHabitSheet();});});
   }
   function saveHabitSheet(){
     var name=(document.getElementById('hName').value||'').trim();if(!name)return;
     var o={title:name,isAvoid:!!hAvoid,categoryID:hColor,
-      scheduleKindRaw:hRepeat==='interval'?'interval':'weekly',
+      // ⚠앱 HabitSchedule은 everyday|weekdays|interval 뿐이다. 예전엔 'weekly'를 써서
+      // 앱이 해석하지 못해(요일 선택이 매일로 떨어짐) 동기화가 깨졌다.
+      scheduleKindRaw:hRepeat,
       weekdaysMask:hRepeat==='everyday'?127:(hRepeat==='weekdays'?hMask:127),
       intervalDays:hInterval,
+      intervalFromLastCheck:!!hFromLast,
+      reminderMinutesJSON:JSON.stringify(hRemindArr.slice().sort(function(a,b){return a-b;})),
       startDate:new Date(document.getElementById('hStart').value||new Date().toISOString().slice(0,10)).toISOString(),
       endDate:document.getElementById('hEndOn').checked&&document.getElementById('hEnd').value?new Date(document.getElementById('hEnd').value).toISOString():null};
     if(hEdit){Object.assign(hEdit,o);}else{addHabit(o);}
@@ -5584,6 +5625,9 @@
   document.querySelectorAll('#hAvoid button').forEach(function(b){b.addEventListener('click',function(){hAvoid=+b.dataset.a;paintHabitSheet();});});
   document.querySelectorAll('#hRepeat button').forEach(function(b){b.addEventListener('click',function(){hRepeat=b.dataset.r;paintHabitSheet();});});
   document.getElementById('hIntMinus').addEventListener('click',function(){hInterval=Math.max(1,hInterval-1);paintHabitSheet();});
+  document.getElementById('hFromLast').addEventListener('change',function(){hFromLast=this.checked;});
+  document.getElementById('hRemindAdd').addEventListener('click',function(){
+    hRemindArr.push(9*60);paintHabitSheet();});   // 기본 09:00
   document.getElementById('hIntPlus').addEventListener('click',function(){hInterval=Math.min(30,hInterval+1);paintHabitSheet();});
   document.getElementById('hEndOn').addEventListener('change',function(){document.getElementById('hEnd').style.display=this.checked?'':'none';});
   // 이전/다음 화살표: 월 모드는 월 단위, 주 모드는 주 단위 (미래 방향은 0으로 클램프).
