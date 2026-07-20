@@ -479,6 +479,12 @@
   .subadd{display:flex;align-items:center;gap:8px;padding:6px 11px;border-radius:12px;background:#fff;box-shadow:0 2px 8px rgba(20,40,80,.08)}
   .subadd .subplus{color:var(--ink-soft);font-size:15px;line-height:1;flex:0 0 auto}
   .subadd input{flex:1;min-width:0;border:0;background:transparent;font-family:inherit;font-size:14px;padding:3px 0;color:var(--ink);outline:none}
+  .subadd .sub-ok,.subadd .sub-cancel{flex:0 0 auto;width:28px;height:28px;border:0;border-radius:9px;
+    cursor:pointer;display:grid;place-items:center;transition:background .13s,color .13s}
+  .subadd .sub-ok{background:rgba(61,81,196,.10);color:#3D51C4}
+  .subadd .sub-ok:hover{background:rgba(61,81,196,.18)}
+  .subadd .sub-cancel{background:transparent;color:var(--ink-soft)}
+  .subadd .sub-cancel:hover{background:var(--card-2);color:#FF3B30}
   .r-daycol{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
   .r-daycol .wl{font-size:9px;font-weight:500;color:var(--ink-soft)}
   .rday{width:100%;max-width:30px;aspect-ratio:1;border-radius:50%;border:1.5px solid var(--rc,#7fc6cc);
@@ -980,6 +986,7 @@
     /* 긴 세로 나열 → 2컬럼 (요청) */
     .todo{display:block;columns:2;column-gap:14px}
     .todo .task{break-inside:avoid;margin-bottom:9px}
+    .todo .subpanel{break-inside:avoid;break-before:avoid}
     .todo .sec-h{column-span:all}
     .todo .welcome{column-span:all}
     .routines{display:block;columns:2;column-gap:14px}
@@ -3804,6 +3811,14 @@
     return row;
   }
   // 인라인 하위작업 목록 (앱 SubtaskListEditor 파리티): 체크 토글 + 단계 추가.
+  // 요청: 아무것도 입력하지 않았는데 하위작업 밖을 클릭하면 그냥 닫는다.
+  document.addEventListener('pointerdown',function(e){
+    if(expandedTaskId==null)return;
+    if(e.target.closest('.subpanel,.kmenu,.kebab'))return;
+    var inp=document.querySelector('.subpanel .subadd input');
+    if(inp&&(inp.value||'').trim())return;      // 쓰던 글자가 있으면 유지
+    expandedTaskId=null;renderTodo();
+  },true);
   function buildSubPanel(t,col){
     var panel=document.createElement('div');panel.className='subpanel';panel.dataset.for=t.id;
     parseSubs(t).forEach(function(s,i){
@@ -3815,19 +3830,30 @@
       panel.appendChild(r);
     });
     var add=document.createElement('div');add.className='subadd';
-    add.innerHTML='<span class="subplus">＋</span><input type="text" placeholder="하위 작업 추가">';
+    add.innerHTML='<span class="subplus">＋</span><input type="text" placeholder="하위 작업 추가">'+
+      '<button class="sub-ok" title="확인"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5L19.5 7"/></svg></button>'+
+      '<button class="sub-cancel" title="취소"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
     var inp=add.querySelector('input');
+    function subCommit(v){var a=parseSubs(t);a.push({id:uuid(),title:v,isDone:false});t.subtasksJSON=JSON.stringify(a);}
+    function subDone(v){   // 입력 완료 = 남은 글자까지 저장하고 닫기
+      if(v)subCommit(v);
+      expandedTaskId=null;renderTodo();if(v)pushSnapshot();
+    }
+    function subCancelAll(){expandedTaskId=null;renderTodo();}
     inp.addEventListener('keydown',function(e){
-      // 요청: 엔터 = 저장하고 그 아래 새 입력 bar / ⌘·Ctrl+엔터 = 입력 완료(닫기).
+      // ⚠한글 IME: 조합 중(안'녕')에 Enter가 오면 확정 전 값이 저장되고 조합 글자가
+      // 다음 칸으로 흘러 '안녕' + '녕'이 됐다. 조합 중이면 무시한다.
+      if(e.isComposing||e.keyCode===229)return;
+      if(e.key==='Escape'){e.preventDefault();subCancelAll();return;}
       if(e.key!=='Enter')return;
+      e.preventDefault();
       var v=(inp.value||'').trim();
-      if(e.metaKey||e.ctrlKey){
-        if(v){var b=parseSubs(t);b.push({id:uuid(),title:v,isDone:false});t.subtasksJSON=JSON.stringify(b);pushSnapshot();}
-        expandedTaskId=null;renderTodo();return;
-      }
+      if(e.metaKey||e.ctrlKey){subDone(v);return;}          // ⌘/Ctrl+Enter = 완료
       if(!v)return;
-      var a=parseSubs(t);a.push({id:uuid(),title:v,isDone:false});t.subtasksJSON=JSON.stringify(a);renderTodo();pushSnapshot();
+      subCommit(v);renderTodo();pushSnapshot();
       var np=document.querySelector('.subpanel[data-for="'+t.id+'"] .subadd input');if(np)np.focus();});
+    add.querySelector('.sub-ok').addEventListener('click',function(e){e.stopPropagation();subDone((inp.value||'').trim());});
+    add.querySelector('.sub-cancel').addEventListener('click',function(e){e.stopPropagation();subCancelAll();});
     add.addEventListener('click',function(e){e.stopPropagation();});
     panel.appendChild(add);
     return panel;
@@ -6385,6 +6411,11 @@
     ib.innerHTML=cap.draft.iconName?findIconSvg(cap.draft.iconName):IC.none;
     ib.onclick=function(){cap.iconOpen=!cap.iconOpen;paintCap();};
     document.getElementById('capSubmit').onclick=submitCapture;
+    document.getElementById('capText').onkeydown=function(e){
+      if(e.isComposing||e.keyCode===229)return;               // 한글 조합 중엔 무시
+      if(e.key==='Escape'){e.preventDefault();closeCapture();return;}
+      if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();submitCapture();}
+    };
     document.getElementById('capText').oninput=function(){
       document.getElementById('capSubmit').disabled=!this.value.trim();
       this.style.height='auto';this.style.height=Math.min(this.scrollHeight,52)+'px';   // 2줄까지 (§4)
