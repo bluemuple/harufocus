@@ -405,17 +405,30 @@
   /* 할일 행 부속 버튼: 횟수 +1, 하위작업 ↳ 토글. */
   .t-plus{width:26px;height:26px;flex:0 0 auto;border:0;background:none;padding:0;cursor:pointer;display:grid;place-items:center}
   .t-plus svg{width:22px;height:22px;display:block}
-  .subtog{width:28px;height:28px;flex:0 0 auto;border:0;background:none;padding:0;cursor:pointer;display:grid;place-items:center}
+  .kebab{width:28px;height:28px;flex:0 0 auto;border:0;background:none;padding:0;cursor:pointer;display:grid;place-items:center;color:rgba(90,100,120,.6)}
+  /* 요청: 마우스 환경에서 재생·케밥은 행에 호버할 때만 (터치에선 항상 보임) */
+  @media(hover:hover) and (pointer:fine){
+    .task .play,.task .kebab{opacity:0;transition:opacity .13s}
+    .task:hover .play,.task:hover .kebab,.task .play:focus-visible,.task .kebab:focus-visible{opacity:1}
+  }
+  .kmenu{position:fixed;z-index:120;min-width:150px;background:var(--card);border:1px solid var(--line);
+    border-radius:12px;box-shadow:0 10px 30px rgba(20,40,80,.22);padding:5px;display:flex;flex-direction:column}
+  .kmenu button{border:0;background:none;font-family:inherit;font-size:14px;color:var(--ink);text-align:left;
+    padding:10px 12px;border-radius:8px;cursor:pointer}
+  .kmenu button:hover{background:var(--card-2)}
+  .kmenu button.danger{color:#FF3B30}
   .subtog svg{width:20px;height:20px;display:block}
   /* 인라인 하위작업 목록 (앱 SubtaskListEditor 파리티). */
-  .subpanel{padding:8px 13px 12px;display:flex;flex-direction:column;gap:7px}
-  .subrow{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:10px}
+  /* 하위 작업 = 부모 bar '아래'의 형제 블록 (요청). 보통 bar보다 살짝 낮다. */
+  .subpanel{margin:-4px 0 9px 26px;display:flex;flex-direction:column;gap:5px}
+  .subrow{display:flex;align-items:center;gap:10px;padding:7px 11px;border-radius:12px;background:#fff;box-shadow:0 2px 8px rgba(20,40,80,.08)}
   .subrow .subck{width:20px;height:20px;border-radius:50%;border:2px solid var(--ink-soft);flex:0 0 auto;cursor:pointer;display:grid;place-items:center}
   .subrow .subck.done::after{content:"✓";color:#fff;font-size:12px;font-weight:800}
   .subrow .st{flex:1;min-width:0;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .subrow.done .st{text-decoration:line-through;color:var(--ink-soft)}
-  .subadd{display:flex;align-items:center;gap:8px;padding-left:4px}
-  .subadd input{flex:1;border:0;background:transparent;font-family:inherit;font-size:14px;padding:4px 0;color:var(--ink)}
+  .subadd{display:flex;align-items:center;gap:8px;padding:6px 11px;border-radius:12px;background:#fff;box-shadow:0 2px 8px rgba(20,40,80,.08)}
+  .subadd .subplus{color:var(--ink-soft);font-size:15px;line-height:1;flex:0 0 auto}
+  .subadd input{flex:1;min-width:0;border:0;background:transparent;font-family:inherit;font-size:14px;padding:3px 0;color:var(--ink);outline:none}
   .r-daycol{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
   .r-daycol .wl{font-size:9px;font-weight:500;color:var(--ink-soft)}
   .rday{width:100%;max-width:30px;aspect-ratio:1;border-radius:50%;border:1.5px solid var(--rc,#7fc6cc);
@@ -1906,7 +1919,7 @@
       todayVow:'',ddayLabel:'',ddayDate:null,lat:-43.53,lng:172.63}
   };
 
-  var DATA=DEMO;
+  var DATA=DEMO;ensureIds(DATA);   // DEMO 시드엔 id가 없다 — 아래 ensureIds 주석 참조
 
   /* ---------- big timeline (today only) ---------- */
   var TS=6,TE=24,PPH=120,dayOffset=0;
@@ -3488,17 +3501,54 @@
       else{set(0);if(swipeOpen===inner)swipeOpen=null;}}
     inner.addEventListener('pointerup',end);inner.addEventListener('pointercancel',end);
     // 4버튼 탭
-    row.querySelector('.sa-tomorrow').addEventListener('click',function(){
-      var d=new Date();d.setDate(d.getDate()+1);d.setHours(0,0,0,0);
-      t.deferredUntil=d.toISOString();t.deferCount=(t.deferCount||0)+1;
-      closeSwipe();renderTodo();pushSnapshot();});
-    row.querySelector('.sa-matrix').addEventListener('click',function(){
-      showMxPick(row,t);});
-    row.querySelector('.sa-timeline').addEventListener('click',function(){
-      var slot=nextSlotToday();t.scheduledStart=todayAt(Math.floor(slot),(slot%1)*60);if(!t.durationMin)t.durationMin=50;
-      setPlanFromSchedule(t);
-      closeSwipe();renderTodo();renderBig();renderMosaic();pushSnapshot();});
+    row.querySelector('.sa-tomorrow').addEventListener('click',function(){taskDeferTomorrow(t);});
+    row.querySelector('.sa-matrix').addEventListener('click',function(){showMxPick(row,t);});
+    row.querySelector('.sa-timeline').addEventListener('click',function(){taskToTimeline(t);});
     row.querySelector('.sa-delete').addEventListener('click',function(){deleteTask(t);});
+  }
+  // 행 액션 (스와이프·케밥 메뉴 공용).
+  function taskDeferTomorrow(t){
+    var d=new Date();d.setDate(d.getDate()+1);d.setHours(0,0,0,0);
+    t.deferredUntil=d.toISOString();t.deferCount=(t.deferCount||0)+1;
+    closeSwipe();renderTodo();pushSnapshot();
+  }
+  function taskToTimeline(t){
+    var slot=nextSlotToday();t.scheduledStart=todayAt(Math.floor(slot),(slot%1)*60);if(!t.durationMin)t.durationMin=50;
+    setPlanFromSchedule(t);
+    closeSwipe();renderTodo();renderBig();renderMosaic();pushSnapshot();
+  }
+  // 케밥(⋮) 메뉴 — 하위 작업·내일로·매트릭스·타임라인·삭제 (요청).
+  var kmenuEl=null;
+  function closeKebab(){if(kmenuEl){kmenuEl.remove();kmenuEl=null;}}
+  document.addEventListener('pointerdown',function(e){
+    if(kmenuEl&&!e.target.closest('.kmenu,.kebab'))closeKebab();},true);
+  function openKebab(btn,t,row){
+    closeKebab();
+    var subs=parseSubs(t),shown=expandedTaskId===t.id;
+    var items=[
+      ['sub', subs.length?(shown?'하위 작업 감추기':'하위 작업 보이기'):'하위 작업 추가'],
+      ['tomorrow','내일로 미루기'],
+      ['matrix','매트릭스로'],
+      ['timeline','타임라인'],
+      ['delete','삭제']
+    ];
+    var m=document.createElement('div');m.className='kmenu';
+    m.innerHTML=items.map(function(it){
+      return '<button data-k="'+it[0]+'"'+(it[0]==='delete'?' class="danger"':'')+'>'+it[1]+'</button>';}).join('');
+    document.body.appendChild(m);kmenuEl=m;
+    var r=btn.getBoundingClientRect(),mw=m.offsetWidth,mh=m.offsetHeight;
+    var left=Math.min(window.innerWidth-mw-8,Math.max(8,r.right-mw));
+    var top=(r.bottom+mh+8>window.innerHeight)?(r.top-mh-6):(r.bottom+6);
+    m.style.left=left+'px';m.style.top=top+'px';
+    m.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(e){
+      e.stopPropagation();var k=b.dataset.k;closeKebab();
+      if(k==='sub'){expandedTaskId=(expandedTaskId===t.id)?null:t.id;renderTodo();
+        var np=document.querySelector('.subpanel[data-for="'+t.id+'"] .subadd input');if(np)np.focus();}
+      else if(k==='tomorrow')taskDeferTomorrow(t);
+      else if(k==='matrix')showMxPick(row,t);
+      else if(k==='timeline')taskToTimeline(t);
+      else if(k==='delete')deleteTask(t);
+    });});
   }
   // 매트릭스 버튼 → 행이 '어느 칸으로?' 캡션 + 미니 2×2 그리드 4개로 (앱 matrixQuadrantPicker 파리티).
   function showMxPick(row,t){
@@ -3552,9 +3602,10 @@
         memoIconHTML(t)+
         (inDone?'':
           ((t.countTarget>0?'<button class="t-plus" title="1회 완료" style="color:'+col+'">'+svgI('<circle cx="12" cy="12" r="9"/><path d="M12 8.5v7M8.5 12h7"/>')+'</button>':'')+
-           '<button class="subtog" title="하위 작업" style="color:'+(expanded||subs.length>0?col:'rgba(90,100,120,.4)')+'">'+svgI('<path d="M6 5v6a3 3 0 0 0 3 3h9"/><path d="M15 11l4 3-4 3"/>')+'</button>'+
-           '<span class="star'+(t.isStarred?' on':'')+'">'+(t.isStarred?'★':'☆')+'</span>'+
-           '<button class="play" title="집중 시작" style="color:'+col+'"><svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M9.8 7.6v8.8L17 12z" fill="#fff"/></svg></button>'))+
+           // 요청: 맨 마지막 아이콘 순서 = 재생 → 케밥(⋮) → 별표. 재생·케밥은 마우스 환경에서 호버 시 노출.
+           '<button class="play" title="집중 시작" style="color:'+col+'"><svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M9.8 7.6v8.8L17 12z" fill="#fff"/></svg></button>'+
+           '<button class="kebab" title="메뉴"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button>'+
+           '<span class="star'+(t.isStarred?' on':'')+'">'+(t.isStarred?'★':'☆')+'</span>'))+
       '</div>';
     var tl=row.querySelector('.t-title');tl.style.cursor='pointer';tl.addEventListener('click',function(){openEditor(t);});
     var mi=row.querySelector('.t-memo');if(mi)mi.addEventListener('click',function(e){e.stopPropagation();openMemoPopup(t);});
@@ -3564,19 +3615,21 @@
       row.querySelector('.play').addEventListener('click',function(){startFocus(t);});
       row.querySelector('.check').addEventListener('click',function(){t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;if(t.isDone)grantReward(t);renderTodo();pushSnapshot();});
       row.querySelector('.star').addEventListener('click',function(){t.isStarred=!t.isStarred;renderTodo();pushSnapshot();});
-      row.querySelector('.subtog').addEventListener('click',function(e){e.stopPropagation();expandedTaskId=expandedTaskId===t.id?null:t.id;renderTodo();});
+      row.querySelector('.kebab').addEventListener('click',function(e){e.stopPropagation();openKebab(this,t,row);});
       var pb=row.querySelector('.t-plus');if(pb)pb.addEventListener('click',function(e){e.stopPropagation();
         t.countDone=(t.countDone||0)+1;
         if(t.countDone>=t.countTarget){t.isDone=true;t.completedAt=new Date().toISOString();grantReward(t);}
         renderTodo();pushSnapshot();});
-      if(expanded)row.appendChild(buildSubPanel(t,col));
     }
     attachSwipe(row,t,!!placed);
+    // 요청/버그: 예전엔 subpanel을 .task(가로 flex) '안'에 넣어 bar가 좁아지고
+    // 우측 절반에 입력이 떴다. 이제 행의 '형제'로 바로 아래에 붙인다.
+    if(expanded){var frag=document.createDocumentFragment();frag.appendChild(row);frag.appendChild(buildSubPanel(t,col));return frag;}
     return row;
   }
   // 인라인 하위작업 목록 (앱 SubtaskListEditor 파리티): 체크 토글 + 단계 추가.
   function buildSubPanel(t,col){
-    var panel=document.createElement('div');panel.className='subpanel';
+    var panel=document.createElement('div');panel.className='subpanel';panel.dataset.for=t.id;
     parseSubs(t).forEach(function(s,i){
       var r=document.createElement('div');r.className='subrow'+(s.isDone?' done':'');r.style.background=colAlpha(col,0.10);
       r.innerHTML='<span class="subck'+(s.isDone?' done':'')+'" style="border-color:'+(s.isDone?'#8a93a5':col)+(s.isDone?';background:#8a93a5':'')+'"></span>'+
@@ -3586,11 +3639,19 @@
       panel.appendChild(r);
     });
     var add=document.createElement('div');add.className='subadd';
-    add.innerHTML='<span style="color:var(--ink-soft);font-size:16px;line-height:1">＋</span><input type="text" placeholder="단계 추가">';
+    add.innerHTML='<span class="subplus">＋</span><input type="text" placeholder="하위 작업 추가">';
     var inp=add.querySelector('input');
-    inp.addEventListener('keydown',function(e){if(e.key!=='Enter')return;var v=(inp.value||'').trim();if(!v)return;
+    inp.addEventListener('keydown',function(e){
+      // 요청: 엔터 = 저장하고 그 아래 새 입력 bar / ⌘·Ctrl+엔터 = 입력 완료(닫기).
+      if(e.key!=='Enter')return;
+      var v=(inp.value||'').trim();
+      if(e.metaKey||e.ctrlKey){
+        if(v){var b=parseSubs(t);b.push({id:uuid(),title:v,isDone:false});t.subtasksJSON=JSON.stringify(b);pushSnapshot();}
+        expandedTaskId=null;renderTodo();return;
+      }
+      if(!v)return;
       var a=parseSubs(t);a.push({id:uuid(),title:v,isDone:false});t.subtasksJSON=JSON.stringify(a);renderTodo();pushSnapshot();
-      var np=document.querySelector('.task[data-id="'+t.id+'"] .subadd input');if(np)np.focus();});
+      var np=document.querySelector('.subpanel[data-for="'+t.id+'"] .subadd input');if(np)np.focus();});
     add.addEventListener('click',function(e){e.stopPropagation();});
     panel.appendChild(add);
     return panel;
@@ -5105,8 +5166,22 @@
       ab.textContent='로그인';ab.style.marginTop='0';
     }
   }
-  function normalize(s){return {tasks:s.tasks||[],habits:s.habits||[],sessions:s.sessions||[],
-    settings:s.settings||{focusGoalMinutes:240},diary:s.diary||[]};}
+  function normalize(s){
+    var o={tasks:s.tasks||[],habits:s.habits||[],sessions:s.sessions||[],
+      settings:s.settings||{focusGoalMinutes:240},diary:s.diary||[]};
+    ensureIds(o);
+    return o;
+  }
+  // id 보장 (버그): DEMO 시드·구 데이터엔 id가 없어 t.id가 전부 undefined였다.
+  // 그러면 expandedTaskId===t.id 가 undefined===undefined 로 '모든 행'에 참이 되어
+  // 하위 작업 패널이 전 행에 열리고, taskByID·.task[data-id] 선택자도 어긋난다.
+  function ensureIds(o){
+    if(!o)return o;
+    (o.tasks||[]).forEach(function(t){if(!t.id)t.id=uuid();});
+    (o.habits||[]).forEach(function(h){if(!h.id)h.id=uuid();});
+    (o.diary||[]).forEach(function(d){if(!d.id)d.id=uuid();});
+    return o;
+  }
 
   /* 서버 스냅샷을 통째로 보관 (schemaVersion·sessions 등 앱 전용 필드 보존).
      DATA.tasks는 serverSnap.tasks와 같은 참조라 편집이 그대로 반영된다. */
