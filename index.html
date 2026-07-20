@@ -2212,7 +2212,7 @@
     ],
     settings:{focusGoalMinutes:240,captureDefaultMin:30,chipIntervalMin:10,
       chipMotto:true,chipFocusTotal:false,chipDaylight:false,chipDday:false,chipDeadline:true,
-      todayVow:'',ddayTitle:'',ddayDate:null,lat:-43.53,lng:172.63}
+      todayVow:'',ddayTitle:'',ddayDate:null}   // 좌표는 obsLat()/obsLng()가 정한다
   };
 
   var DATA=DEMO;ensureIds(DATA);   // DEMO 시드엔 id가 없다 — 아래 ensureIds 주석 참조
@@ -2382,12 +2382,14 @@
   // ── 평원 유기 요소 (앱 §1): 들풀·들꽃=낮 집중 25분당 1(최대7, 그날 리셋),
   //    반딧불=해 진 뒤 밤 집중 25분당 1(최대7, 집중 중엔 최소2) ──
   function focusSecSplit(){
-    var S=DATA.settings||{},lat=S.lat!=null?S.lat:-43.53,lng=S.lng!=null?S.lng:172.63;
+    var lat=obsLat(),lng=obsLng();
     var t=sunTimes(new Date(),lat,lng),t0=new Date();t0.setHours(0,0,0,0);
     var day=0,night=0;
     allSessions().forEach(function(x){
       var d=new Date(x.start);if(d<t0)return;
       var sec=x.focusedSec||0;
+      // 극지(백야/극야)엔 일출·일몰이 없다 — 하루 전체를 낮 또는 밤으로 본다.
+      if(t.polar){if(t.midnightSun)day+=sec;else night+=sec;return;}
       if(d>=t.sunrise&&d<t.sunset)day+=sec;else night+=sec;
     });
     return {day:day,night:night,sunset:t.sunset,sunrise:t.sunrise};
@@ -6091,6 +6093,41 @@
     if(key==='chipDeadline')return true;      // 앱 기본값
     return false;
   }
+  /* ---------- 관측 위치 (요청) ----------
+     ⚠ 예전엔 lat/lng이 **크라이스트처치(-43.53, 172.63)** 로 세 곳에
+     하드코딩돼 있었고, 이 값을 사용자 위치로 바꾸는 코드가 **하나도** 없었다.
+     그래서 서울 사용자에게도 남반구 기준 일출·일몰이 나왔다(상단바
+     '해질녘까지'가 18시간 27분 틀림).
+     이제 브라우저 위치 권한을 한 번 물어보고, 거부·실패·미지원이면 서울로
+     떨어진다. 받은 좌표는 localStorage에 남겨 매번 묻지 않는다. */
+  var GEO_KEY='harufocusGeo';
+  var SEOUL={lat:37.5665,lng:126.9780};
+  function geoSaved(){
+    try{var o=JSON.parse(localStorage.getItem(GEO_KEY)||'null');
+      if(o&&typeof o.lat==='number'&&typeof o.lng==='number')return o;}catch(_){}
+    return null;
+  }
+  /* 관측 좌표 한 곳 — 해·달 계산은 전부 이걸 쓴다.
+     우선순위: 사용자 설정(설정 화면/앱 스냅샷) → 브라우저 위치 → 서울. */
+  function obsLat(){var S=DATA&&DATA.settings;if(S&&S.lat!=null)return S.lat;
+    var g=geoSaved();return g?g.lat:SEOUL.lat;}
+  function obsLng(){var S=DATA&&DATA.settings;if(S&&S.lng!=null)return S.lng;
+    var g=geoSaved();return g?g.lng:SEOUL.lng;}
+  function askGeoOnce(){
+    if(geoSaved())return;                       // 이미 받아 뒀다
+    if(!navigator.geolocation)return;           // 미지원 → 서울 폴백 그대로
+    try{
+      navigator.geolocation.getCurrentPosition(function(pos){
+        var o={lat:pos.coords.latitude,lng:pos.coords.longitude};
+        try{localStorage.setItem(GEO_KEY,JSON.stringify(o));}catch(_){}
+        renderAll();                            // 하늘·상단바 즉시 갱신
+      },function(){
+        // 거부·실패 → 서울 (요청). 다시 묻지 않도록 표식만 남긴다.
+        try{localStorage.setItem(GEO_KEY,JSON.stringify(SEOUL));}catch(_){}
+        renderAll();
+      },{timeout:8000,maximumAge:6*3600*1000});
+    }catch(_){}
+  }
   function normalize(s){
     var o={tasks:s.tasks||[],habits:s.habits||[],sessions:s.sessions||[],
       settings:s.settings||{focusGoalMinutes:240},diary:s.diary||[]};
@@ -7113,6 +7150,7 @@
     setTimeout(pollTick,quiet?20000:6000);
   }
   setTimeout(pollTick,6000);
+  askGeoOnce();   // 위치 권한 1회 (거부·실패 시 서울)
 
   /* ---------- 공용 캡처바 (앱 CaptureBar 파리티, 요청) ----------
      할일 · 매트릭스 · 타임라인 이 하나의 인라인 캡처바를 공유한다:
@@ -8022,13 +8060,26 @@
     function julianCycle(d,lw){return Math.round(d-J0-lw/(2*Math.PI));}
     function approx(ht,lw,n){return J0+(ht+lw)/(2*Math.PI)+n;}
     function solarTransitJ(ds,m,l){return J2000+ds+0.0053*Math.sin(m)-0.0069*Math.sin(2*l);}
-    function hourAngle(h,phi,d){return Math.acos((Math.sin(h)-Math.sin(phi)*Math.sin(d))/(Math.cos(phi)*Math.cos(d)));}
+    /* ⚠ |x|>1이면 acos가 NaN → fromJ()가 Invalid Date를 만들고, 그게 그대로
+     상단바까지 흘러가 'NaN분'이라는 글자가 표시됐다(극지 백야·극야).
+     해가 그 고도에 아예 도달하지 못하는 날이므로 null로 돌려 소비처가
+     '오늘은 안 뜸/안 짐'으로 처리하게 한다. */
+  function hourAngle(h,phi,d){
+    var x=(Math.sin(h)-Math.sin(phi)*Math.sin(d))/(Math.cos(phi)*Math.cos(d));
+    if(!(x>=-1&&x<=1))return null;         // 그 고도에 도달 못 하는 날 (극지)
+    return Math.acos(x);
+  }
     var lw=rad*-lng,phi=rad*lat,d=toDays(date),n=julianCycle(d,lw),ds=approx(0,lw,n);
     var m=M(ds),l=eclLng(m),dec2=dec(l),Jnoon=solarTransitJ(ds,m,l);
-    var h0=rad*-0.833,w0=hourAngle(h0,phi,dec2),a=approx(w0,lw,n);
-    var Jset=solarTransitJ(a,m,l),Jrise=Jnoon-(Jset-Jnoon);
+    var h0=rad*-0.833,w0=hourAngle(h0,phi,dec2);
     function fromJ(j){return new Date((j+0.5-J1970)*dayMs);}
-    return {sunrise:fromJ(Jrise),sunset:fromJ(Jset)};
+    // 극지: 해가 그 고도를 아예 안 지나는 날 → null (백야/극야).
+    // 예전엔 NaN이 Invalid Date로 흘러 상단바에 'NaN분'이 찍혔다.
+    if(w0===null)return {sunrise:null,sunset:null,polar:true,
+                         midnightSun:Math.sin(dec2)*Math.sin(phi)>0};
+    var a=approx(w0,lw,n);
+    var Jset=solarTransitJ(a,m,l),Jrise=Jnoon-(Jset-Jnoon);
+    return {sunrise:fromJ(Jrise),sunset:fromJ(Jset),polar:false};
   }
   function fmtClock(d){try{return d.toLocaleTimeString('ko-KR',{hour:'numeric',minute:'2-digit'});}catch(e){return '';}}
 
@@ -8079,11 +8130,19 @@
       return {ic:IC.timer,txt:ft};}
     if(k==='sunset'||k==='sunrise'){
       // D2-2: 문구 없이 아이콘(해+↑/↓) + 남은 시간 카운트다운만.
-      var lat=S.lat!=null?S.lat:-43.53,lng=S.lng!=null?S.lng:172.63;
+      var lat=obsLat(),lng=obsLng();
       var now=new Date(),t=sunTimes(now,lat,lng);
+      // 극지: 오늘 그 사건이 없다 (요청 결함 — 예전엔 Invalid Date가 흘러
+      // 상단바에 리터럴 'NaN분'이 찍혔다).
+      if(t.polar)return {ic:(k==='sunset'?IC.sunset:IC.sunrise),
+                         txt:t.midnightSun?'해가 지지 않아요':'해가 뜨지 않아요'};
       var target=k==='sunset'?t.sunset:t.sunrise;
-      if(target<now)target=(k==='sunset'?sunTimes(new Date(Date.now()+86400000),lat,lng).sunset
-                                        :sunTimes(new Date(Date.now()+86400000),lat,lng).sunrise);
+      if(target<now){
+        var nx=sunTimes(new Date(Date.now()+86400000),lat,lng);
+        var nt=k==='sunset'?nx.sunset:nx.sunrise;
+        if(!nt)return {ic:(k==='sunset'?IC.sunset:IC.sunrise),txt:'—'};
+        target=nt;
+      }
       var mins=Math.max(0,Math.round((target-now)/60000)),hh=Math.floor(mins/60);
       return {ic:(k==='sunset'?IC.sunset:IC.sunrise),txt:(hh?hh+'시간 ':'')+(mins%60)+'분'};
     }
