@@ -1420,7 +1420,7 @@
     <button data-nav="routine" title="루틴"><svg viewBox="0 0 24 24"><path d="M17 3.5l3 3-3 3"/><path d="M20 6.5H8.5A4.5 4.5 0 0 0 4 11v.5"/><path d="M7 20.5l-3-3 3-3"/><path d="M4 17.5h11.5A4.5 4.5 0 0 0 20 13v-.5"/></svg></button>
     <button id="deskMenuBtn" title="더보기"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <div class="desk-menu" id="deskMenu" style="display:none">
-      <button data-nav="diary">📖 한 줄 일기</button>
+      <button data-nav="diary">📖 일기</button>
       <button data-nav="bucket">💧 물통</button>
       <button data-act="promise">🤝 약속</button>
       <button data-act="about">📱 아이폰 앱</button>
@@ -1530,7 +1530,7 @@
           <button class="page-fab" id="habitFab" title="루틴 추가"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         </section>
         <section class="view" id="view-diary">
-          <h2>한 줄 일기</h2>
+          <h2>일기</h2>
           <div class="d-chips" id="diaryChips"></div>
           <div class="d-list" id="diaryList"></div>
           <button class="page-fab" id="diaryFab" title="새 일기"><svg viewBox="0 0 24 24" style="width:30px;height:30px" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -2766,8 +2766,12 @@
         var newTotal=Math.max(fut.length*5*60000,oldTotal+dm);
         var k=newTotal/oldTotal;
         orig.forEach(function(o){
-          var nd=now0+Math.round((o.due-now0)*k/60000)*60000;
-          o.t.planDueAt=new Date(nd).toISOString();
+          // 앱 clampDrag 파리티: ①각 마감은 '지금+5분' 아래로 안 내려가고
+          // ②마감이 움직이면 duration도 공용 규칙(nudgeDueTo)으로 같이 간다.
+          // 예전엔 planDueAt만 바꿔서, 집게로 하루를 늘렸다 줄여도 각 줄의
+          // '1시간 30분' 같은 길이 라벨이 그대로였다 (요청 신고).
+          var off=Math.max(300000,(o.due-now0)*k);
+          nudgeDueTo(o.t,now0+Math.round(off/60000)*60000);
         });
         renderBig();ev.preventDefault();
       }
@@ -7832,14 +7836,13 @@
     bucket:{label:'물통',svg:'<path d="M12 3.4s6.2 6.5 6.2 11a6.2 6.2 0 0 1-12.4 0c0-4.5 6.2-11 6.2-11z" fill="currentColor" stroke="none"/>',type:'tab'},
     matrix:{label:'매트릭스',svg:'<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',type:'tab'},
     routine:{label:'루틴',svg:'<path d="M17 3.5l3 3-3 3"/><path d="M20 6.5H8.5A4.5 4.5 0 0 0 4 11v.5"/><path d="M7 20.5l-3-3 3-3"/><path d="M4 17.5h11.5A4.5 4.5 0 0 0 20 13v-.5"/>',type:'tab'},
-    diary:{label:'한 줄 일기',svg:'<path d="M5 4h13a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5z"/><path d="M5 4v16M9 2.5v3M9 11h6M9 15h4"/>',type:'tab'},
+    diary:{label:'일기',svg:'<path d="M5 4h13a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5z"/><path d="M5 4v16M9 2.5v3M9 11h6M9 15h4"/>',type:'tab'},
     lock:{label:'약속',svg:'<rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/>',type:'action'},
     about:{label:'아이폰 앱',svg:'<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10.5 5h3M11 18.5h2"/>',type:'action'},
-    friends:{label:'함께',svg:'<circle cx="9" cy="8" r="3"/><path d="M3.6 20c.6-3.3 2.6-4.9 5.4-4.9s4.8 1.6 5.4 4.9"/><circle cx="17" cy="9" r="2.4"/><path d="M15.6 14.7c2.6.3 4.2 1.7 4.8 4.2"/>',type:'action'},
     settings:{label:'설정',svg:'<path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58z"/><circle cx="12" cy="12" r="3.2"/>',type:'action'}
   };
-  var NAV_ALL=['timeline','todo','matrix','routine','bucket','diary','lock','friends','settings','about'];
-  // 앱 TabID에 실제로 있는 것만 — friends/about은 웹 전용이라 barTabsRaw에 실으면
+  var NAV_ALL=['timeline','todo','matrix','routine','bucket','diary','lock','settings','about'];
+  // 앱 TabID에 실제로 있는 것만 — about은 웹 전용이라 barTabsRaw에 실으면
   // 앱의 compactMap이 조용히 떨어뜨려 폰 탭바가 줄어든다 (§1).
   var APP_TAB_IDS=['timeline','todo','matrix','routine','bucket','diary','lock','settings'];
   var NAV_MAX=6,navEditMode=false,navPopKey=null;
@@ -7868,7 +7871,6 @@
   function runNavItem(key){var d=NAV_DEF[key];if(!d)return;
     if(d.type==='tab')setTab(key);
     else if(key==='settings'){closeMore();openSettings();}
-    else if(key==='friends'){closeMore();alert('함께 기능은 준비 중이에요.');}
     else if(key==='lock'){closeMore();appNudge();}
     else if(key==='about'){closeMore();document.getElementById('aboutScrim').classList.add('open');}}
   function renderNav(){

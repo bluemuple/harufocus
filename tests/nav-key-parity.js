@@ -76,13 +76,13 @@ t('APP_TAB_IDS가 앱 TabID 집합과 같다',
 t('APP_TAB_IDS는 전부 NAV_ALL 안에 있다',
   W.APP_TAB_IDS.every(function (k) { return W.NAV_ALL.indexOf(k) >= 0; }));
 t('웹 전용 키는 앱에 없다',
-  ['friends', 'about'].every(function (k) { return W.APP_TAB_IDS.indexOf(k) < 0; }));
+  ['about'].every(function (k) { return W.APP_TAB_IDS.indexOf(k) < 0; }));
 
 // --- ① 웹 → 앱: 웹 전용 키가 앱 탭바를 갉아먹지 않는다 -----------------------
 W.setSettings({ barTabsRaw: 'timeline,todo,matrix,routine,bucket,diary' });
-W.saveNav(['timeline', 'friends', 'about', 'todo']);
+W.saveNav(['timeline', 'about', 'todo']);
 t('navBar에는 웹 구성이 그대로 남는다',
-  W.settings().navBar.join(',') === 'timeline,friends,about,todo');
+  W.settings().navBar.join(',') === 'timeline,about,todo');
 t('⚠barTabsRaw엔 앱이 아는 id만 실린다',
   W.settings().barTabsRaw === 'timeline,todo');
 t('저장하면 push가 한 번 돈다', W.pushes() === 1);
@@ -90,17 +90,19 @@ t('저장하면 push가 한 번 돈다', W.pushes() === 1);
 // 하나도 안 겹치면 앱 탭바는 **건드리지 않는다** — 빈 값을 쓰면 앱이 '설정 없음'
 // 으로 읽어 기본 6개로 조용히 되돌린다(사용자가 고른 적 없는 상태).
 W.setSettings({ barTabsRaw: 'timeline,todo,bucket' });
-W.saveNav(['friends', 'about']);
+W.saveNav(['about']);
 t('⚠앱 전용 id가 하나도 없으면 barTabsRaw는 그대로',
   W.settings().barTabsRaw === 'timeline,todo,bucket');
-t('그래도 웹 구성은 저장된다', W.settings().navBar.join(',') === 'friends,about');
+t('그래도 웹 구성은 저장된다', W.settings().navBar.join(',') === 'about');
 
 // --- ② 앱 → 웹: 앱이 탭바를 고쳐도 웹 구성이 살아남는다 ----------------------
 // (앱 SettingsDTO.navBar pass-through가 왕복시켜 준 뒤의 모양)
-W.setSettings({ navBar: ['timeline', 'friends', 'about'],
+// (샘플 '웹 전용 키'는 about — friends 메뉴 스텁은 요청으로 삭제됐다.
+//  실제 친구 기능은 루틴 페이지 FAB로 남아 있고 네비 키가 아니다.)
+W.setSettings({ navBar: ['timeline', 'about', 'lock'],
                 barTabsRaw: 'timeline,todo,matrix,routine,bucket,diary' });
 t('⚠navBar가 있으면 앱 탭바가 웹 네비를 덮지 않는다',
-  W.navBarKeys().join(',') === 'timeline,friends,about');
+  W.navBarKeys().join(',') === 'timeline,about,lock');
 
 // --- 예전 데이터: navBar가 없으면 앱 탭바를 따라간다 -------------------------
 W.setSettings({ barTabsRaw: 'timeline,todo,bucket' });
@@ -116,7 +118,7 @@ t('바는 NAV_MAX(6)개까지만', W.navBarKeys().length === 6);
 W.setSettings({ navBar: ['timeline', 'nonsense', 'todo'] });
 t('모르는 키는 걸러진다', W.navBarKeys().join(',') === 'timeline,todo');
 W.setSettings({ navBar: ['timeline', 'todo'] });
-t('나머지는 더보기로', W.navOverflowKeys().indexOf('friends') >= 0 &&
+t('나머지는 더보기로', W.navOverflowKeys().indexOf('about') >= 0 &&
   W.navOverflowKeys().indexOf('timeline') < 0);
 
 console.log(fail ? `\n${fail}/${ran} FAILED` : `\n${ran}/${ran} 통과`);
