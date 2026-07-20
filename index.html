@@ -1079,7 +1079,16 @@
   .desk-nav{display:none}
   @media(min-width:1100px){
     .layout{display:flex;height:100%;padding-bottom:0}
-    .pane-tl{display:flex!important;position:relative;inset:auto;flex:0 0 400px;max-width:400px;
+    /* 좌우 비율을 앱(아이패드)과 **같은 식**으로 통일 (요청).
+       예전엔 400px 고정이라 노트북(1512)에선 26.5%인데 아이패드 세로(834pt)
+       에선 48%가 되어 경계선이 거의 중앙에 왔다.
+       clamp(380, 30%, 520): 넓은 화면에선 황금비 제곱(27.6%)에 붙고, 좁은
+       분할에선 하한 380이 걸려 31~32% — 실제 분할되는 모든 화면이 27~32%의
+       좁은 대역에 들어온다. 황금비 38.2%는 안 쓴다: 1920에서 734px짜리 텅 빈
+       타임라인이 되고, 834에서는 319px로 작업명이 3자에서 잘린다.
+       ⚠ max-width:400px를 반드시 걷어내야 clamp가 산다. */
+    .pane-tl{display:flex!important;position:relative;inset:auto;
+      flex:0 0 clamp(380px, 30%, 520px);max-width:none;
       border-right:1px solid rgba(255,255,255,.25);flex-direction:column}
     .pane-tabs{display:flex!important;position:relative;inset:auto;flex:1;min-width:0}
     .mbar{display:none!important}
@@ -4556,8 +4565,14 @@
             dropIndex=tasks.length;var lineY=null;
             for(var i=0;i<tasks.length;i++){var tr=tasks[i].getBoundingClientRect();
               if(ev.clientY<tr.top+tr.height/2){dropIndex=i;lineY=tr.top-3;break;}}
-            if(lineY==null){var last=tasks[tasks.length-1];
-              lineY=last?last.getBoundingClientRect().bottom+3:qr.top+34;}
+            // 빈 셀에선 제목 칩과 겹쳐 보였다 (요청: bar를 아래로).
+      // 상수 대신 .qbody(본문) 실측 — 제목 높이가 바뀌어도 안 깨진다.
+      if(lineY==null){var last=tasks[tasks.length-1];
+              if(last){lineY=last.getBoundingClientRect().bottom+3;}
+              else{var qb=q.querySelector('.qbody');
+                   // 실측: 셀 top 기준 제목 칩 15~39, 본문(.qbody) 51.
+                   // 예전 값 34는 제목 칩과 5px 겹쳤다 → 본문 시작 +3.
+                   lineY=qb?qb.getBoundingClientRect().top+3:qr.top+54;}}
             line.style.display='block';line.style.left=(qr.left+8)+'px';line.style.width=(qr.width-16)+'px';line.style.top=lineY+'px';
           }
         });
@@ -4698,6 +4713,19 @@
         attachMxSwipe(el,t);      // 좌우 스와이프 (요청: 폭 최소화)
         attachMxDrag(el,t);       // 꾹 눌러 셀 간 이동 (요청: 고스트+가로선)
       });
+      // task bar 탭 = '값이 채워진 추가 패널' (요청) — 할일 페이지와 대칭.
+      // 제외 셀렉터는 attachMxDrag가 쓰는 것과 같은 목록이라 드래그·스와이프와
+      // 충돌하지 않는다. origin='matrix'면 길이 슬라이더 대신 아이콘 옵션 줄이
+      // 먼저 떠서 사분면 '+' 버튼과 같은 모습이 된다.
+      b.querySelectorAll('.mtask').forEach(function(el){
+        var t2=taskByID(el.dataset.id);if(!t2)return;
+        var mi=el.querySelector('.mtask-inner');if(!mi)return;
+        mi.style.cursor='pointer';
+        mi.addEventListener('click',function(e){
+          if(e.target.closest('.mck,.t-memo,.play,.kebab,.star,.sa'))return;
+          openCapture('matrix',{task:t2,quadrant:t2.matrixQuadrant||0});
+        });
+      });
       var qa=b.querySelector('.qadd-top');
       if(qa)qa.addEventListener('click',function(){openCapture('matrix',{quadrant:qd.q});});
       var qi=b.querySelector('.qinfo');
@@ -4711,10 +4739,12 @@
     g.style.gridTemplateColumns=
       (rightCnt===0&&leftCnt>0&&mxLongL)?'0.62fr 0.38fr':
       (leftCnt===0&&rightCnt>0&&mxLongR)?'0.38fr 0.62fr':'1fr 1fr';
-    // rows grow with their content (max of the two cells in the row); page never
-    // scrolls — an overloaded cell scrolls internally (요청).
-    var r1=Math.max(cnt[1],cnt[2]),r2=Math.max(cnt[3],cnt[4]);
-    g.style.gridTemplateRows='minmax(0,'+(1+r1*0.7)+'fr) minmax(0,'+(1+r2*0.7)+'fr)';
+    // 행 높이 (요청 개정): 예전엔 작업 **개수**에 비례해(1 + n×0.7 fr) 1개만
+    // 넣어도 그 행이 커지며 반대 행을 찌그러뜨렸다. 이제는 앱 규칙과 같다 —
+    // **넘칠 때만** 그 행이 커지고, 아니면 위아래가 똑같다(미관).
+    // 일단 반반으로 두고, 레이아웃이 끝난 뒤 fitMatrixRows()가 실측해서
+    // 필요한 경우에만 다시 나눈다.
+    g.style.gridTemplateRows='minmax(0,1fr) minmax(0,1fr)';
     // 시나리오1 (요청, 앱 파리티): 열 너비도 내용(가장 긴 제목)에 따라 —
     // 같은 열(q1/q3, q2/q4)은 너비 공유, 극단 클램프.
     function wNeed(q){var m=0;(DATA.tasks||[]).forEach(function(t){if(t.matrixQuadrant===q)m=Math.max(m,(t.title||'').length);});return Math.min(24,Math.max(8,m));}
@@ -4722,6 +4752,44 @@
     var lf=Math.min(.62,Math.max(.38,wl/(wl+wr)));
     g.style.gridTemplateColumns=lf+'fr '+(1-lf)+'fr';
     fitMatrixHeight();
+    fitMatrixRows();
+  }
+  /* 행 높이 재배분 (요청: 앱 MatrixView.layoutSpec 파리티).
+     규칙: 행 need = 그 행 두 셀 중 **큰 쪽**. 한쪽만 넘치면 그 행이 커지고
+     반대 행이 줄어든다. 둘 다 넘치거나 둘 다 안 넘치면 반반 유지.
+
+     ⚠ 되먹임 진동 방어 — 이 판정은 **자기 결과에 의존한다**: 행을 키우면
+     스크롤이 사라져 다음 측정에서 '안 넘침'이 되고 다시 반반으로 돌아가
+     무한 왕복한다. 그래서 ①항상 '반반 상태에서' 재고(측정 전 1fr 1fr로
+     되돌린다) ②차이가 작으면(데드밴드) 아예 건드리지 않으며 ③같은 값이면
+     쓰지 않는다(fitMatrixHeight가 쓰는 것과 같은 방어). */
+  function fitMatrixRows(){
+    var g=document.getElementById('matrixGrid');if(!g)return;
+    var qs=g.querySelectorAll('.quad');if(qs.length<4)return;
+    // ①측정은 언제나 반반 상태에서.
+    if(g.style.gridTemplateRows!=='minmax(0,1fr) minmax(0,1fr)'){
+      g.style.gridTemplateRows='minmax(0,1fr) minmax(0,1fr)';
+    }
+    function need(q){
+      var qb=q.querySelector('.qbody');if(!qb)return 0;
+      // 셀이 실제로 원하는 높이 = 본문 콘텐츠 + 셀 크롬(패딩·제목·추가버튼).
+      return qb.scrollHeight + (q.clientHeight - qb.clientHeight);
+    }
+    var total=g.clientHeight;if(!(total>200))return;
+    var gap=10, avail=total-gap, half=avail/2;
+    var nT=Math.max(need(qs[0]),need(qs[1])), nB=Math.max(need(qs[2]),need(qs[3]));
+    var over=8;                       // ②데드밴드: 이만큼 넘쳐야 인정
+    var minRow=150;                   // 앱 layoutSpec과 같은 값
+    var top=half;
+    if(nT>half+over && nB<half-over){
+      top=Math.min(nT, avail-Math.max(nB+20,minRow));
+    }else if(nB>half+over && nT<half-over){
+      top=avail-Math.min(nB, avail-Math.max(nT+20,minRow));
+    }
+    top=Math.min(Math.max(top,minRow),Math.max(minRow,avail-minRow));
+    var css=(top===half)?'minmax(0,1fr) minmax(0,1fr)'
+                        :'minmax(0,'+Math.round(top)+'px) minmax(0,'+Math.round(avail-top)+'px)';
+    if(g.style.gridTemplateRows!==css)g.style.gridTemplateRows=css;   // ③같으면 안 쓴다
   }
   /* 네 칸이 한 화면에 다 보이면서 높이는 최대가 되게 (요청).
      어림한 calc(100dvh - …)는 실제 여백과 어긋나 그리드가 화면 밖으로
