@@ -7156,11 +7156,6 @@
     var inv=new URLSearchParams(location.search).get('invite');
     if(inv){pendingInvite=normCode(inv);if(pendingInvite)openInvite();}
   }catch(_){}
-  // TEMP TEST HOOK — verification only, removed before commit.
-  window.__test={adoptRemoteFocus:adoptRemoteFocus,applyRemoteScene:applyRemoteScene,
-    closeRemoteFocus:closeRemoteFocus,fmScene:fmScene,
-    getFTask:function(){return fTask;},getFRemote:function(){return fRemote;},
-    setFStart:function(v){fStart=v;}};
 })();
 </script>
 </body>
