@@ -1902,8 +1902,8 @@
     else if(t.rewardText)out+='<span class="t-reward">'+IC.gift+'<span class="rtext"> '+esc(t.rewardText)+'</span></span>';
     // 앱 taskRow 메타 부속 (요청): 횟수·넛지 종·미룸 화살표·하위작업 단계.
     if(t.countTarget>0)out+='<span class="t-dur">· '+(t.countDone||0)+'/'+t.countTarget+'</span>';
-    if(t.nudgeEnabled)out+='<span class="t-dur" style="display:inline-flex;align-items:center">'+IC.bell+'</span>';
-    if(t.deferredUntil)out+='<span class="t-dur" style="display:inline-flex;align-items:center;color:#AF52DE"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 17H10a4 4 0 0 1 0-8h9"/><path d="M16 5l4 4-4 4"/></svg></span>';
+    if(t.nudgeEnabled)out+='<span class="t-dur" style="display:inline-flex;align-items:center;gap:3px">'+IC.bell+'알림</span>';
+    if(t.deferredUntil)out+='<span class="t-dur" style="display:inline-flex;align-items:center;gap:3px;color:#AF52DE"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 17H10a4 4 0 0 1 0-8h9"/><path d="M16 5l4 4-4 4"/></svg>미룸'+((t.deferCount||0)>1?' '+t.deferCount:'')+'</span>';
     var subs=parseSubs(t);
     if(subs.length>0)out+='<span class="t-dur">· 단계 '+subs.filter(function(s){return s.isDone;}).length+'/'+subs.length+'</span>';
     return out;
