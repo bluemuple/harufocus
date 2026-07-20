@@ -230,6 +230,11 @@
   /* 평원/눈 그림 — 지평선 아래를 받친다 (앱 GroundLayer scenery PNG). JS가 위치·밝기 설정. */
   #tlGround{position:absolute;left:0;width:100%;pointer-events:none;z-index:0;
     background-size:100% 100%;background-repeat:no-repeat;background-position:top center}
+  /* 해 — 시간각(x)·고도(y)로 하늘을 가로지른다 (앱 CelestialLayer 태양). JS가 위치·투명도. */
+  #tlSun{position:absolute;width:58px;height:58px;border-radius:50%;pointer-events:none;z-index:0;
+    transform:translate(-50%,-50%);opacity:0;transition:opacity .4s linear;
+    background:radial-gradient(circle at 50% 45%,#fff9e0,#ffe79a 46%,rgba(255,224,150,0) 72%);
+    filter:drop-shadow(0 0 22px rgba(255,231,150,.55))}
   /* 시간축에 고정된 해·달 — 스크롤하면 함께 움직인다 (요청). */
   .tl-sun{position:absolute;left:50%;width:64px;height:64px;border-radius:50%;transform:translateX(-50%);
     background:radial-gradient(circle at 50% 45%,#fff8dc,#ffe89a 45%,rgba(255,224,150,0) 72%);
@@ -2522,7 +2527,9 @@
     var dt=new Date();dt.setHours(0,0,0,0);
     dt=new Date(dt.getTime()+Math.max(0,Math.min(24,h))*3600000+dayOffset*dayMs());
     var s=sunAltAt(dt,obsLat(),obsLng());
-    return skyPalette(s.alt,s.H<0);   // H<0 = 남중 전 = 새벽/오전
+    var pal=skyPalette(s.alt,s.H<0);  // H<0 = 남중 전 = 새벽/오전
+    pal.H=s.H;                        // 해 x 위치(시간각)용
+    return pal;
   }
   function dayMs(){return 86400000;}
   function updateTlSky(){
@@ -2576,6 +2583,15 @@
     // 초록 평원이 밤에 형광으로 튀지 않게 한다.
     var bright=Math.max(0.42,Math.min(1,(p.alt+8)/22));
     ground.style.filter='brightness('+bright.toFixed(2)+') saturate('+(0.6+bright*0.4).toFixed(2)+')';
+    // 해 — 앱 SkyGeometry.point(for:): x=시간각, y=절대고도.
+    //   t=H/(π/2) → x = 50% ± 42%(뜰 땐 왼쪽·질 땐 오른쪽·남중 가운데).
+    //   y: 고도 90°=화면 4.5%(천정), 0°=지평선 82%. 지평선 아래면 서서히 숨긴다.
+    var sun=document.getElementById('tlSun');
+    if(!sun){sun=document.createElement('div');sun.id='tlSun';vb.insertBefore(sun,glow.nextSibling);}
+    var st=(p.H||0)/(Math.PI/2), sunX=Math.max(4,Math.min(96,50+42*st));
+    var sunY=0.82*skH-(p.alt/90)*0.775*skH;
+    sun.style.left=sunX.toFixed(2)+'%'; sun.style.top=sunY.toFixed(1)+'px';
+    sun.style.opacity=Math.max(0,Math.min(1,(p.alt+1.5)/3)).toFixed(2);   // 지평선서 부드럽게 사라짐
     // 고정 2단계 액센트·잉크 (앱 SkyTheme.timelineFixed): 밤 = 태양고도 −3° 밑.
     var night=p.alt<-3;
     vb.classList.toggle('tl-night',night);
