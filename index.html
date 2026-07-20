@@ -582,8 +582,11 @@
   .topcap .tc-ic{flex:0 0 auto;display:grid;place-items:center;color:var(--ink-soft)}
   .topcap .tc-ic svg{width:15px;height:15px}
   .topcap .tc-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .topcap .tc-txt.slidedown{animation:tcDown .7s cubic-bezier(.25,.8,.3,1)}
-  @keyframes tcDown{0%{transform:translateY(-110%);opacity:0}100%{transform:translateY(0);opacity:1}}
+  .topcap .tc-txt.slidedown{animation:tcDown .5s cubic-bezier(.25,.8,.3,1)}
+  @keyframes tcDown{0%{transform:translateY(-115%);opacity:0}100%{transform:translateY(0);opacity:1}}
+  /* 쓰던 글자는 아래로 빠지고, 다음 글자가 위에서 내려온다 (요청). */
+  .topcap .tc-txt.tc-out{animation:tcOut .24s cubic-bezier(.4,0,.8,.4) forwards}
+  @keyframes tcOut{0%{transform:translateY(0);opacity:1}100%{transform:translateY(115%);opacity:0}}
   .topcap{transition:width .45s cubic-bezier(.3,.7,.3,1),opacity .2s}
   /* 스크롤해서 밑으로 콘텐츠가 지나갈 땐 반투명하게 (요청) — 덜 거슬리게. */
   .topcap.faded{opacity:.42}
@@ -1023,7 +1026,10 @@
     .app-foot{display:flex;margin-top:auto;padding-top:30px}
     /* 요청: 윗줄 하나에 [엘리에게 한마디] | [페이지 제목] ……… [버튼 4개].
        셋 다 top:14px / height:44px 라 세로 가운데가 정확히 맞는다. */
-    .topcap{left:16px;top:14px;transform:none;right:auto;height:44px;max-width:330px}
+    /* 캡슐·버튼 높이 = 제목 '글자' 높이(27px 폰트 → 31.5px). 제목 박스는 44로
+       두되 세로 중심(36)은 셋 다 같게 맞춘다: 32px 짜리는 top 20. */
+    .topcap{left:16px;top:20px;transform:none;right:auto;height:32px;padding:0 13px;
+      max-width:376px}          /* 타임라인 우측변(400)까지만 — 넘치면 조각내 슬라이드 */
     .view.on>h2{position:fixed;top:14px;left:calc(400px + 26px);z-index:46;margin:0;height:44px;
       display:flex;align-items:center;gap:10px;font-size:27px;letter-spacing:-.03em}
     .undobar{bottom:18px}          /* 데스크톱엔 하단 바가 없다 */
@@ -1038,12 +1044,12 @@
     #view-matrix.on>.matrix{flex:0 0 auto;min-height:calc(100dvh - 82px)}
     body[data-m] .topcap{display:flex}          /* 데스크톱에선 항상 (타임라인 상시 표시) */
     /* 우상단 원형 네비 */
-    .desk-nav{display:flex;gap:10px;position:fixed;top:14px;right:16px;z-index:45}   /* 윗줄 3요소 세로 가운데 (요청) */
-    .desk-nav>button{width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.88);
+    .desk-nav{display:flex;gap:9px;position:fixed;top:20px;right:16px;z-index:45}   /* 윗줄 3요소 세로 가운데 (요청) */
+    .desk-nav>button{width:32px;height:32px;border-radius:50%;border:0;background:rgba(255,255,255,.88);
       color:var(--ink-soft);cursor:pointer;display:grid;place-items:center;box-shadow:0 3px 10px rgba(20,40,80,.18)}
     .desk-nav>button.on{background:var(--ink);color:#fff}
-    .desk-nav>button svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-    .desk-menu{position:absolute;top:52px;right:0;background:var(--card);border-radius:16px;padding:8px;
+    .desk-nav>button svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .desk-menu{position:absolute;top:40px;right:0;background:var(--card);border-radius:16px;padding:8px;
       box-shadow:0 14px 40px rgba(20,30,70,.25);display:flex;flex-direction:column;min-width:170px}
     .desk-menu button{border:0;background:none;font-family:inherit;font-size:14px;font-weight:600;color:var(--ink);
       text-align:left;padding:11px 13px;border-radius:10px;cursor:pointer}
@@ -3528,6 +3534,7 @@
     if(!fTask)return null;
     var now=new Date(),el=focusElapsed();
     return{sessionID:fSessionID,taskID:fTask.id,taskTitle:fTask.title||'',categoryID:fTask.categoryID||'focus',
+      planAdjustMin:fPlanAdjust,   // '원래대로'의 기준 — 이게 없으면 반대편이 엉뚱한 값으로 되돌린다
       clockStart:now.toISOString(),focusedBaseSec:el,
       isPaused:!!fPaused,pauseBegan:fPaused?now.toISOString():null,
       pauses:[],planMin:Math.max(0,fPlanMin),
@@ -3578,6 +3585,9 @@
       if(af.sessionID)fSessionID=af.sessionID;         // 저쪽 종료 신호가 이 세션을 지목하도록
       fStart=now-el*1000;fPausedAcc=0;fPaused=!!af.isPaused;fPauseAt=now;
       fPlanMin=af.planMin||0;fPomo=!!af.pomodoro;
+      if(af.planAdjustMin!=null)fPlanAdjust=af.planAdjustMin;
+      setPomoOn(!!af.pomodoro);   // 세션 값과 설정 정본이 갈라지지 않게 (앱 파리티)
+      if(fAdjOpen)paintAdjRow();
       document.getElementById('ftPause').innerHTML=fPaused?IC.play:IC.pause;
       paintPomoChip();applyRemoteScene(af.sceneRaw);ftKey='';tickFocus();
       return;
@@ -3586,7 +3596,9 @@
       categoryID:af.categoryID||'focus',durationMin:af.planMin||0};
     fRemote=true;fRemoteDev=af.deviceID||'';
     fPlanMin=af.planMin||0;fPomo=!!af.pomodoro;
+    setPomoOn(!!af.pomodoro);
     startFocus(t,{remote:true,elapsed:el,paused:!!af.isPaused,sessionID:af.sessionID,
+                  planAdjustMin:af.planAdjustMin,
                   planMin:af.planMin||0,pomodoro:!!af.pomodoro,scene:af.sceneRaw});
   }
   /* 원격 씬을 반영 (요청 동기화) — 웹은 불·비만 실제로 재생하고, 그 외
@@ -3640,6 +3652,9 @@
     }
     fPlanMin=newPlan;fPlanAdjust+=d;
     ftKey='';tickFocus();renderAll();paintAdjRow();
+    // 이 push는 '실행 취소' 토스트를 띄우지 않는다 — undo는 tasks만 되돌려
+    // 마감선과 링(fPlanMin/fPlanAdjust)이 어긋나기 때문.
+    undoSuppress=true;
     pushFocusState();      // 즉시 동기화 (요청: 웹-앱 즉시)
     return true;
   }
@@ -3668,7 +3683,11 @@
     w.querySelectorAll('.ft-adjchip').forEach(function(b){
       b.addEventListener('click',function(){
         var a=b.dataset.a;
-        if(a==='end'){finishFocus();return;}
+        if(a==='end'){
+          // 앱은 확인 다이얼로그를 거친다 — 웹도 같은 문구로 (✕ 버튼과 동일).
+          showFocusConfirm('집중을 끝낼까요?','나가면 집중이 멈춰요. 지금까지 한 시간은 기록에 남아요.','끝내기',true,finishFocus);
+          return;
+        }
         if(a==='fix'){fAdjKeepEnd=!fAdjKeepEnd;paintAdjRow();adjTip('fix');return;}
         if(a==='reset'){adjTip('reset');if(fPlanAdjust)webAdjustSessionPlan(-fPlanAdjust,fAdjKeepEnd);return;}
         webAdjustSessionPlan(parseInt(a,10),fAdjKeepEnd);
@@ -3692,6 +3711,7 @@
       fStart=Date.now()-(opt.elapsed||0)*1000;fPaused=!!opt.paused;fPauseAt=Date.now();
       fPlanMin=opt.planMin||0;fPomo=!!opt.pomodoro;fRemote=true;
       fSessionID=opt.sessionID||uuid();      // 시작한 기기의 식별자를 물려받는다
+      if(opt.planAdjustMin!=null)fPlanAdjust=opt.planAdjustMin;
     }else{
       // 내가 시작한 세션: 계획은 이 작업의 길이, 포모도로는 이 기기 설정.
       fPlanMin=t.durationMin||0;fPomo=pomoOn();fRemote=false;fRemoteDev='';
@@ -3828,7 +3848,7 @@
     document.querySelectorAll('#setBarItems input').forEach(function(cb){cb.checked=setChip(cb.dataset.k);});
     document.getElementById('settingsScrim').classList.add('open');}
   function saveSettings(){if(!DATA.settings)DATA.settings={};var S=DATA.settings;
-    S.focusGoalMinutes=parseInt(document.getElementById('setGoal').value,10)||0;
+    S.focusGoalMinutes=Math.min(720,Math.max(60,parseInt(document.getElementById('setGoal').value,10)||240));   // 앱 Stepper 범위와 동일
     S.wakeMinutes=hhmmToMin(document.getElementById('setWake').value);
     S.bedMinutes=hhmmToMin(document.getElementById('setBed').value);
     S.captureDefaultMin=parseInt(document.getElementById('setDefDur').value,10)||0;
@@ -3842,7 +3862,7 @@
     S.ddayTitle=document.getElementById('setDdayLabel').value||'';
     delete S.ddayLabel;
     var dd=document.getElementById('setDdayDate').value;S.ddayDate=dd?new Date(dd).toISOString():null;
-    S.chipIntervalMin=Math.max(1,parseInt(document.getElementById('setBarPeriod').value,10)||10);
+    S.chipIntervalMin=Math.min(60,Math.max(1,parseInt(document.getElementById('setBarPeriod').value,10)||10));
     delete S.barPeriodSec;            // 앱은 분 단위 chipIntervalMin을 쓴다
     document.querySelectorAll('#setBarItems input').forEach(function(cb){S[cb.dataset.k]=cb.checked;});
     delete S.barItems;
@@ -5838,9 +5858,14 @@
   }
   function fetchSnapshot(){if(!session)return;
     freshToken().then(function(tok){if(!tok)throw 0;
-      return fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=snapshot',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok}});})
+      return fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=snapshot,updated_at',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok}});})
     .then(function(r){if(r.status===401){signOut();throw 0;}return r.json();})
     .then(function(rows){
+      // 받은 시각을 기록해 둔다 — 이게 없으면 pollSync의 '첫 진입' 가드
+      // (lastSeenUpdated===null이면 기록만 하고 return)가 **탭 복귀 후 첫
+      // 변경을 통째로 삼킨다**. 백그라운드 탭으로 열어 둔 사이 앱이 바꾼
+      // 내용이 영영 안 내려오고, 그 상태로 웹에서 뭘 고치면 앱 변경이 지워졌다.
+      if(rows&&rows.length&&rows[0].updated_at)lastSeenUpdated=rows[0].updated_at;
       serverSnap=(rows&&rows.length&&rows[0].snapshot)||{schemaVersion:1,tasks:[],habits:[],sessions:[],settings:null};
       var revived=tombApply(serverSnap);   // 반대쪽이 되살린 삭제분 제거 (요청)
       DATA=normalize(serverSnap);
@@ -5873,10 +5898,13 @@
     if(DATA.settings)serverSnap.settings=DATA.settings;
     // diary 왕복 보존 (앱 핸드오프 §8): 서버에 있었거나 웹이 항목을 만든 경우에만 실어 보낸다.
     if(DATA.diary&&(DATA.diary.length||serverSnap.diary!==undefined))serverSnap.diary=DATA.diary;
-    // 진행 중 세션 (요청): 내가 돌리는 중이면 싣고, 아니면 지운다. 따라 보는
-    // 원격 세션은 다시 올리지 않는다 — 메아리로 서로를 덮어쓰지 않게.
-    if(fTask&&!fRemote)serverSnap.activeFocus=webFocusDTO();
-    else if(!fTask)serverSnap.activeFocus=null;
+    // 진행 중 세션 (요청). ⚠ 예전엔 `fTask && !fRemote`라 **따라 보는 세션**
+    // 에서는 아무것도 안 올렸다 — 그래서 원격 세션을 보며 시간 조절을 하면
+    // 서버에 안 나가고 6초 뒤 폴이 옛 planMin을 도로 씌워 되돌아갔다.
+    // 앱은 채택 세션에서도 올린다(SundialSnapshot.capture) — 그쪽에 맞춘다.
+    // 메아리는 adoptRemoteFocus의 deviceID 비교가 이미 걸러 준다.
+    if(fTask)serverSnap.activeFocus=webFocusDTO();
+    else serverSnap.activeFocus=null;
     // 종료 신호는 최신 것만 남긴다 (내 것 vs 서버에서 읽어 둔 것).
     var fe=lastFocusEnd();
     if(fe)serverSnap.focusEnd=fe;
@@ -6017,7 +6045,29 @@
     lastLocalChange=Date.now();
     undoConsider();                    // 로그인 여부와 무관하게 실행 취소는 뜬다
     if(!session)return;clearTimeout(pushTimer);pushTimer=setTimeout(doPush,1200);}
+  /* ⚠ 앱 syncNow는 push 전에 94B 메타를 보고 '남이 더 최신이면 pull'로
+     떨어진다. 웹 doPush엔 그 검사가 없어, 집중 중처럼 전체 pull을 안 하는
+     구간에서는 낡은 스냅샷을 그대로 덮어써 반대편 변경(원격 시간 조절이
+     옮긴 마감선 등)을 지웠다. 같은 검사를 앞에 붙인다 — 메타 94B라 egress
+     영향은 사실상 없고, 남이 바꿨을 때만 전체를 받는다. */
   function doPush(){pushTimer=null;if(!session)return;
+    freshToken().then(function(tok){if(!tok)return null;
+      return fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=updated_at,device_id',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok}})
+        .then(function(r){return r.json();}).catch(function(){return null;});})
+    .then(function(rows){
+      var r0=rows&&rows.length?rows[0]:null;
+      if(r0&&r0.device_id!==webDeviceId()&&r0.updated_at!==lastSeenUpdated){
+        // 남이 더 최신이다 → 내 낡은 스냅샷으로 덮지 않고 먼저 받는다.
+        // fetchSnapshot은 fTask를 새 배열에서 다시 찾아 붙이므로 집중 중에도
+        // 안전하다 (앱 reattachActiveTask와 같은 역할).
+        fetchSnapshot();
+        pushSnapshot();          // 병합된 상태로 다시 올린다
+        return;
+      }
+      doPushNow();
+    });
+  }
+  function doPushNow(){if(!session)return;
     pushing=true;
     var body=[{user_id:session.user.id,snapshot:currentSnap(),device_id:webDeviceId(),updated_at:new Date().toISOString()}];
     freshToken().then(function(tok){if(!tok)throw new Error('auth');
@@ -6598,8 +6648,11 @@
   document.getElementById('ftAdjust').addEventListener('click',toggleAdjRow);
   document.querySelector('.bcloud').addEventListener('click',rainBucket);
   document.getElementById('ftPomo').addEventListener('click',function(){
-    setPomoOn(!pomoOn());
-    if(fTask)fPomo=pomoOn();
+    // ⚠ 화면에 보이는 값은 fPomoOn()(세션 우선)인데 예전엔 pomoOn()(설정)을
+    // 뒤집어서, 둘이 어긋나 있으면 한 번 눌러도 상태가 안 바뀌어 보였다.
+    var next=!fPomoOn();
+    setPomoOn(next);
+    if(fTask)fPomo=next;
     // 세션 중이면 세션 필드로도 나가고(반대편 링이 즉시 바뀜), 세션이 없어도
     // **설정**이 바뀐 것이므로 올린다 (요청).
     pushFocusState();
@@ -7689,6 +7742,75 @@
     }
     return {ic:IC.note,txt:''};
   }
+  /* 한마디가 캡슐 최대 폭(타임라인 우측변)을 넘으면 잘라 버리지 않고
+     여러 조각으로 나눠 차례로 보여 준다 (요청). 낱말 단위로 채우고,
+     한 낱말이 통째로 넘치면 그때만 글자 단위로 끊는다. */
+  var barChunks=[''],barChunkIdx=0,barChunkTimer=null,tcSeq=0;
+  function tcFit(text){
+    text=String(text==null?'':text);
+    var cap=document.getElementById('topCap'),txt=document.getElementById('tcTxt'),
+        ic=document.getElementById('tcIc'),cs=getComputedStyle(cap);
+    var max=parseFloat(cs.maxWidth);
+    if(!text||!isFinite(max))return [text];
+    var avail=max-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight)
+              -ic.offsetWidth-(parseFloat(cs.columnGap)||7)-2;
+    if(!(avail>20))return [text];
+    var m=document.createElement('span');
+    m.style.cssText='position:absolute;left:-9999px;top:0;white-space:nowrap;visibility:hidden';
+    m.style.font=getComputedStyle(txt).font;
+    document.body.appendChild(m);
+    function w(x){m.textContent=x;return m.offsetWidth;}
+    if(w(text)<=avail){document.body.removeChild(m);return [text];}
+    var out=[],cur='';
+    text.split(/\s+/).forEach(function(word){
+      if(!word)return;
+      var t=cur?cur+' '+word:word;
+      if(w(t)<=avail){cur=t;return;}
+      if(cur){out.push(cur);cur='';}
+      if(w(word)<=avail){cur=word;return;}
+      var acc='';                                  // 낱말 하나가 넘칠 때만 글자로
+      for(var i=0;i<word.length;i++){
+        if(acc&&w(acc+word[i])>avail){out.push(acc);acc='';}
+        acc+=word[i];
+      }
+      cur=acc;
+    });
+    if(cur)out.push(cur);
+    document.body.removeChild(m);
+    return out.length?out:[text];
+  }
+  function setTcText(sTxt,anim){
+    var cap=document.getElementById('topCap'),txt=document.getElementById('tcTxt');
+    function apply(){
+      // 전환 중 재측정으로 점점 줄어드는 버그 방지: 트랜지션 끄고 자연폭 측정.
+      cap.style.transition='none';
+      var before=cap.offsetWidth;
+      cap.style.width='auto';txt.textContent=sTxt;
+      var after=cap.offsetWidth;
+      if(anim&&before!==after){
+        cap.style.width=before+'px';void cap.offsetWidth;
+        cap.style.transition='';cap.style.width=after+'px';
+        setTimeout(function(){cap.style.width='auto';cap.style.transition='none';},500);
+      }else cap.style.width='auto';
+    }
+    if(!anim){txt.classList.remove('slidedown','tc-out');apply();return;}
+    // ⚠고정 setTimeout으로 2단계를 넘기면, 탭이 백그라운드라 타이머가 밀릴 때
+    // 다음 조각 차례가 먼저 와서 tc-out(fill:forwards)에 갇혀 글자가 사라진다.
+    // 애니메이션 끝을 직접 듣고, 그마저 안 오면 늦게라도 복구한다.
+    var my=++tcSeq;
+    txt.classList.remove('slidedown','tc-out');void txt.offsetWidth;
+    txt.classList.add('tc-out');                       // ① 쓰던 글자는 아래로
+    var done=false;
+    function finish(){
+      if(done||my!==tcSeq)return;done=true;
+      txt.removeEventListener('animationend',finish);
+      txt.classList.remove('tc-out');
+      apply();                                         // ② 글자 교체 + 폭 애니메이션
+      void txt.offsetWidth;txt.classList.add('slidedown');   // ③ 위에서 내려온다
+    }
+    txt.addEventListener('animationend',finish);
+    setTimeout(finish,420);
+  }
   function paintBar(anim){
     var keys=barEnabledKeys(),cap=document.getElementById('topCap');
     if(!keys.length){cap.style.display='none';return;}
@@ -7696,18 +7818,13 @@
     if(barIdx>=keys.length)barIdx=0;
     var c=barContent(keys[barIdx]);
     document.getElementById('tcIc').innerHTML=c.ic;
-    var txt=document.getElementById('tcTxt');
-    // 전환 중 재측정으로 점점 줄어드는 버그 방지: 트랜지션 끄고 자연폭 측정.
-    cap.style.transition='none';
-    var before=cap.offsetWidth;
-    cap.style.width='auto';txt.textContent=c.txt;
-    var after=cap.offsetWidth;
-    if(anim&&before!==after){
-      cap.style.width=before+'px';void cap.offsetWidth;
-      cap.style.transition='';cap.style.width=after+'px';
-      setTimeout(function(){cap.style.width='auto';cap.style.transition='none';},500);
-    }else{cap.style.width='auto';}
-    if(anim){txt.classList.remove('slidedown');void txt.offsetWidth;txt.classList.add('slidedown');}
+    barChunks=tcFit(c.txt);barChunkIdx=0;
+    setTcText(barChunks[0],anim);
+    clearInterval(barChunkTimer);barChunkTimer=null;
+    if(barChunks.length>1)barChunkTimer=setInterval(function(){
+      barChunkIdx=(barChunkIdx+1)%barChunks.length;
+      setTcText(barChunks[barChunkIdx],true);
+    },2800);
   }
   function barAdvance(){var keys=barEnabledKeys();if(!keys.length)return;barIdx=(barIdx+1)%keys.length;barWordTick++;paintBar(true);}
   function startBarRotation(){
