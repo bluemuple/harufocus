@@ -1725,6 +1725,21 @@
   var SUPA_KEY='sb_publishable_vwZUKHhhtBEjAgXrZQTNFQ_bQeM8Ypc';
   var AUTH_KEY='harufocusWebAuth';
 
+  // 한국어 조사 자동 선택 (요청): 받침 유무로 갈린다 — 엘리'야' vs 영식'아'.
+  // 한글 음절은 종성으로, 숫자는 읽는 소리로 판정(0영·1일·3삼·6육·7칠·8팔 = 받침).
+  // 영문·기호로 끝나면 받침 없음으로 본다(Elly야, Test를).
+  function hasJong(w){
+    var t=String(w==null?'':w).trim();if(!t)return false;
+    var last=t[t.length-1],c=t.charCodeAt(t.length-1);
+    if(c>=0xAC00&&c<=0xD7A3)return ((c-0xAC00)%28)!==0;
+    if(c>=0x30&&c<=0x39)return '013678'.indexOf(last)>=0;
+    return false;
+  }
+  // jo('영식','아','야') → '영식아' / jo('엘리','아','야') → '엘리야'
+  function jo(w,withJong,withoutJong){return String(w==null?'':w)+(hasJong(w)?withJong:withoutJong);}
+  function josa(w,withJong,withoutJong){return hasJong(w)?withJong:withoutJong;}   // 조사만
+  // 마우스 환경(=홈페이지/PC) 판정 — 안내 문구 분기에 쓴다 (요청).
+  function hasMouse(){try{return window.matchMedia('(hover:hover) and (pointer:fine)').matches;}catch(_){return false;}}
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function hexA(h,a){var n=parseInt(h.slice(1),16);return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';}
   var CATS={focus:{name:'공부/일',color:'#4F8AD1'},study:{name:'성장',color:'#4FC2D1'},health:{name:'몸',color:'#D1854F'},mind:{name:'마음',color:'#D14F7B'},life:{name:'돈',color:'#4FD17B'},rest:{name:'기쁨',color:'#D1B54F'},people:{name:'사람',color:'#904FD1'}};
@@ -2837,7 +2852,7 @@
       if(!DATA.settings)DATA.settings={};
       DATA.settings.rewardMoneyTotal=(DATA.settings.rewardMoneyTotal||0)+t.rewardMoney;walletLedgerAdd(t.title,t.rewardMoney);
       try{updateCloud();}catch(e){}
-      showCelebration('축하해요! 🎉','‘'+t.title+'’을(를) 끝내고 '+moneyStr(t.rewardMoney)+'을(를) 받았어요.');
+      showCelebration('축하해요! 🎉','‘'+t.title+'’'+josa(t.title,'을','를')+' 끝내고 '+jo(moneyStr(t.rewardMoney),'을','를')+' 받았어요.');
     }else if(t.rewardText){
       if(t.rewardToQ4)addTask({title:t.rewardText,matrixQuadrant:4,isRewardItem:true,durationMin:0,iconName:'gift'});
       showCelebration('축하해요! 🎉','이제 ‘'+t.rewardText+'’, 마음껏 즐겨요!');
@@ -3148,9 +3163,9 @@
     var p=document.getElementById('postit'),e=document.getElementById('postitEdge');
     if(!p)return;
     var fr=document.getElementById('piFtext');
-    if(fr)fr.innerHTML=esc(eleName())+'야<br>조금만<br>기다려';   // D2-8: 충동=엘리 프레임
+    if(fr)fr.innerHTML=esc(jo(eleName(),'아','야'))+'<br>조금만<br>기다려';   // D2-8: 충동=엘리 프레임 (호격 야/아)
     var pt=document.getElementById('piBhead');
-    if(pt)pt.textContent=eleName()+'가 딴짓하고 싶은가 봐요';
+    if(pt)pt.textContent=jo(eleName(),'이','가')+' 딴짓하고 싶은가 봐요';
     var tucked=localStorage.getItem('hfPostItTucked')==='1';
     p.style.display=postItOn()&&!tucked?'':'none';
     e.style.display=postItOn()&&tucked?'':'none';
@@ -3585,9 +3600,8 @@
     return '<div class="welcome" id="welcomeCard">'+
       '<b>하루를 이렇게 써보세요</b>'+
       '<div class="w-step"><span>1</span>＋ 로 오늘 할 일을 담고</div>'+
-      '<div class="w-step"><span>2</span>오른쪽으로 밀어 타임라인에 배치한 뒤</div>'+
+      '<div class="w-step"><span>2</span>'+(hasMouse()?'드래그해서 타임라인에 배치한 뒤':'왼쪽으로 밀어 타임라인에 배치한 뒤')+'</div>'+
       '<div class="w-step"><span>3</span>▶ 를 눌러 그 시간 안에 끝내요</div>'+
-      '<div class="w-note">블록 없이 ▶만 눌러 바로 시작해도 돼요.<br>동반자 엘리의 이름·색은 설정에서 바꿀 수 있어요 🐘</div>'+
       '<button id="welcomeGo">시작하기</button></div>';
   }
   function renderTodo(){
@@ -4675,7 +4689,10 @@
     var w=document.getElementById('diaryPromptDD'),html='';
     Object.keys(DIARY_PROMPTS).forEach(function(cat){
       html+='<div class="pd-cat">'+cat+'</div>'+
-        DIARY_PROMPTS[cat].map(function(p){return '<button data-p="'+esc(p)+'">'+esc(p)+'</button>';}).join('');
+        DIARY_PROMPTS[cat].map(function(p){
+          // 코끼리 이름을 바꿨으면 프롬프트도 그 이름·조사로 (기본값이 '엘리'라 무개명 시 동일).
+          var pt=p.replace('엘리가',jo(eleName(),'이','가'));
+          return '<button data-p="'+esc(pt)+'">'+esc(pt)+'</button>';}).join('');
     });
     w.innerHTML=html;
     w.querySelectorAll('button[data-p]').forEach(function(b){
@@ -5462,7 +5479,8 @@
   },true);
   document.getElementById('ftCheck').addEventListener('click',function(){
     if(!fTask)return;
-    showFocusConfirm("'"+(fTask.title||'집중')+"'을(를) 완료할까요?",'','완료',false,finishFocusDone);
+    var _ft=fTask.title||'집중';
+    showFocusConfirm("'"+_ft+"'"+josa(_ft,'을','를')+" 완료할까요?",'','완료',false,finishFocusDone);
   });
   document.getElementById('ftClose').addEventListener('click',function(){
     showFocusConfirm('집중을 끝낼까요?','나가면 집중이 멈춰요. 지금까지 한 시간은 기록에 남아요.','끝내기',true,finishFocus);
