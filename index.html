@@ -2813,8 +2813,16 @@
         var due=taskDueAt(t).getTime();
         // 겹침 스프링 스냅 (§2·§7): 다른 캡슐 ±8분 → 그 아래 10분.
         var others=(DATA.tasks||[]).filter(function(x){return x!==t&&x.scheduledStart&&(x.durationMin||0)>0&&!x.isDone&&!x.isRewardItem;});
-        for(var i=0;i<others.length;i++){var od=taskDueAt(others[i]).getTime();
-          if(Math.abs(od-due)<=8*60000){due=od+10*60000;break;}}
+        // ⚠ 앱은 **가장 가까운** 캡슐을 고른 뒤 8분 안인지 본다(min(by:) 후
+        // `< 8*60`). 예전 웹은 배열 순서상 **처음 걸리는** 것을 집고 break라,
+        // 8분 안에 둘 이상 있으면 앱과 다른 곳에 내려앉았다. 경계도 앱은
+        // 미만(<)인데 웹은 이하(<=)였다 — 정확히 8분일 때 웹만 스냅했다.
+        var best=null,bestGap=Infinity;
+        for(var i=0;i<others.length;i++){
+          var od=taskDueAt(others[i]).getTime(),gap=Math.abs(od-due);
+          if(gap<bestGap){bestGap=gap;best=od;}
+        }
+        if(best!==null&&bestGap<8*60000)due=best+10*60000;
         t.planDueAt=new Date(due).toISOString();
         // 겹침 스냅으로 마감이 옮겨졌으면 길이도 같은 규칙으로 다시 맞춘다.
         // ⚠앵커는 '바로 앞 마감선'이 아니라 자기 scheduledStart다 (앱 파리티).
