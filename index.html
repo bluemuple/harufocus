@@ -437,6 +437,10 @@
   .qadd-top{margin-left:auto;flex:0 0 auto;width:32px;height:32px;border-radius:50%;border:0;
     background:rgba(255,255,255,.55);color:rgba(60,60,67,.8);font-family:inherit;font-size:21px;
     font-weight:700;line-height:1;cursor:pointer;display:grid;place-items:center;transition:background .13s}
+  /* ⚠ 예전엔 '+'를 **텍스트 글자**로 넣었는데, 글자는 폰트의 em 박스 안에서
+     잉크가 위/오른쪽으로 치우쳐 있어 동그라미 정중앙에 안 맞는다(요청: 미세하게
+     아래 왼쪽으로 보임). SVG 선 두 개로 그리면 기하학적으로 정확히 중앙이다. */
+  .qadd-top svg{width:16px;height:16px;display:block}
   .qadd-top:hover{background:rgba(255,255,255,.82)}
   /* Q4 안내는 셀 안에 늘 깔려 있던 글이었다 → 제목 옆 ⓘ를 눌렀을 때만 (요청). */
   .qinfo{flex:0 0 auto;width:20px;height:20px;border-radius:50%;border:0;
@@ -4658,7 +4662,8 @@
       var b=document.createElement('div');b.className='quad '+qd.cls+(mxPast?' readonly':'');b.dataset.q=qd.q;
       b.innerHTML='<h3><span class="qtitle">'+qd.h+'</span>'+
         (!mxPast&&qd.q===4?'<button class="qinfo" title="이 칸은 뭔가요?">i</button>':'')+
-        (mxPast?'':'<button class="qadd-top" data-q="'+qd.q+'" title="추가">+</button>')+'</h3>'+
+        (mxPast?'':'<button class="qadd-top" data-q="'+qd.q+'" title="추가">'+
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg></button>')+'</h3>'+
         '<div class="qbody">'+
         items.map(function(t){return '<div class="mtask'+(t.isDone?' done':'')+'">'+
           '<div class="swipe-grp lead sm"><button class="sa sa-tomorrow">'+IC.curve+'<b>내일로</b></button>'+
