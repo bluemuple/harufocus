@@ -692,8 +692,16 @@
   .dow-toggle{font-family:inherit;font-size:14px;font-weight:700;color:rgba(255,255,255,.95);
     background:rgba(255,255,255,.18);border:0;border-radius:999px;padding:5px 13px;margin-left:8px;cursor:pointer;
     vertical-align:3px;text-shadow:0 1px 2px rgba(20,40,80,.3);line-height:1}
-  .dow-toggle::after{content:" ⌄";font-size:11px}
-  .dow-toggle.open::after{content:" ⌃"}
+  /* 열림/닫힘 화살표 — 마감 캡슐과 같은 이유로 글리프(⌄/⌃)를 버렸다.
+     서체마다 두 글자의 크기·광학 중심이 달라 위아래가 다른 크기로 보인다
+     (요청). **같은 SVG 하나**를 마스크로 깔고 열렸을 때만 180° 돌린다 —
+     크기·굵기·중심이 정의상 동일해진다. 색은 currentColor를 따라간다. */
+  .dow-toggle::after{content:"";display:inline-block;width:11px;height:11px;
+    margin-left:5px;vertical-align:-1px;background:currentColor;
+    -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>") center/contain no-repeat;
+            mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>") center/contain no-repeat;
+    transition:transform .18s ease}
+  .dow-toggle.open::after{transform:rotate(180deg)}
   /* 요일 캡슐 옆에 붙는 달력 툴팁 (요청). 폭·위치는 placeCal()이 캡슐과
      우상단 버튼 사이 빈 공간을 재서 그 절반쯤으로 잡는다. */
   .calstrip{position:fixed;z-index:48;display:none;color:#fff;
@@ -1080,9 +1088,6 @@
          평범한 흐름이 된다. 최소 간격은 padding-top이 지킨다. */
     #view-todo.on{display:flex;flex-direction:column;min-height:100%}
     #view-todo.on>*{flex:0 0 auto}
-    /* 요청: 우측 추가 버튼(+)의 **아랫변**과 같은 높이까지 내린다.
-       .page-fab이 bottom:22px·높이 56px이므로 같은 bottom을 쓰면 두 요소의
-       아랫변이 정확히 맞는다. 흐름에서 빼되 클릭은 통과시킨다. */
     /* 요청: 우측 추가 버튼(+)의 **아랫변**과 같은 높이까지 내린다.
        .page-fab이 bottom:22px·높이 56px이라 같은 bottom을 주면 아랫변이 맞는다.
        흐름에서 빼되 클릭은 통과시키고, 목록이 길어 글자가 카드 위에 비치면
