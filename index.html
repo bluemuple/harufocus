@@ -218,7 +218,18 @@
 
   /* big timeline (sky) */
   #view-big{position:absolute;inset:0;overflow:hidden;
-    background:linear-gradient(180deg,var(--tl-top,#3f6fb0) 0%,var(--tl-mid,#77a7dd) 55%,var(--tl-bot,#bcd6ef) 100%)}
+    /* ⚠ 자체 합성 레이어로 승격 (요청: 모바일 스크롤 시 하늘이 끊겨 보임).
+       스크롤 콘텐츠가 이 고정 배경 위를 지날 때 모바일 브라우저가 매 프레임
+       배경을 다시 칠하며 이음새가 생겼다. translateZ로 GPU 레이어에 올리면
+       스크롤은 콘텐츠만 움직이고 하늘은 다시 칠하지 않는다. */
+    transform:translateZ(0);will-change:transform;
+    /* 하늘: 위=top, 지평선(82%)=horizon, 그 아래는 땅이 받친다 (앱 riseLineY 0.82). */
+    background:linear-gradient(180deg,var(--tl-top,#3f6fb0) 0%,var(--tl-mid,#77a7dd) 46%,var(--tl-bot,#bcd6ef) 82%,var(--tl-bot,#bcd6ef) 100%)}
+  /* 새벽·노을의 따뜻한 지평선 글로우 (JS가 색·투명도 설정) — 지평선(82%)에 얹는다. */
+  #tlGlow{position:absolute;inset:0;pointer-events:none;z-index:0;opacity:0;transition:opacity .25s linear}
+  /* 평원/눈 그림 — 지평선 아래를 받친다 (앱 GroundLayer scenery PNG). JS가 위치·밝기 설정. */
+  #tlGround{position:absolute;left:0;width:100%;pointer-events:none;z-index:0;
+    background-size:100% 100%;background-repeat:no-repeat;background-position:top center}
   /* 시간축에 고정된 해·달 — 스크롤하면 함께 움직인다 (요청). */
   .tl-sun{position:absolute;left:50%;width:64px;height:64px;border-radius:50%;transform:translateX(-50%);
     background:radial-gradient(circle at 50% 45%,#fff8dc,#ffe89a 45%,rgba(255,224,150,0) 72%);
@@ -2469,25 +2480,104 @@
     var moon=document.createElement('div');moon.className='tl-moon';moon.style.top=(yFor(mHour)-17)+'px';
     moon.innerHTML=moonSVG(now);sc.appendChild(moon);
   }
-  // 시간대별 하늘 3색 (앱 SkyPalette 근사): top/mid/bot.
-  function tlSkyFor(h){
-    var K=[[0,0x0a0e24,0x0d1229,0x10152e],[5,0x2f3e77,0x6a5a86,0xb4657f],
-           [6.5,0x5e7fb4,0x9fb6d8,0xffd79a],[9,0x2e86d8,0x77a7dd,0xafdbf2],
-           [16,0x2e86d8,0x77a7dd,0xafdbf2],[18,0x5e7fb4,0x8f88b0,0xff7b4a],
-           [19.5,0x2f3e77,0x4a4570,0xb4657f],[21,0x0a0e24,0x0d1229,0x10152e],[24,0x0a0e24,0x0d1229,0x10152e]];
-    var i=0;while(i<K.length-1&&h>K[i+1][0])i++;
-    var a=K[i],b=K[Math.min(i+1,K.length-1)],t=(h-a[0])/Math.max(0.001,b[0]-a[0]);
-    return [lerpHex(a[1],b[1],t),lerpHex(a[2],b[2],t),lerpHex(a[3],b[3],t)];
+  // ── 하늘색을 **실제 태양 고도**로 (요청: 앱을 따라해 · 다양한 색) ──────────
+  // 예전엔 시각(hour)에 3색을 선형보간해 색이 단조롭고 새벽/노을이 밋밋했다.
+  // 앱은 SkyPalette가 **태양 고도**(+50°…−18°) 하나로 9키프레임을 smoothstep
+  // 보간한다 — 위도·계절·그날 해가 실제로 얼마나 높이 뜨는지가 전부 반영된다.
+  // 그걸 그대로 옮긴다.
+  function smooth01(x){x=Math.min(1,Math.max(0,x));return x*x*(3-2*x);}
+  // 결정적 유사난수 (0~1) — 별 위치가 재계산마다 튀지 않게 씨앗 기반.
+  // ⚠ sin 해시는 정수 수열에서 값이 몰려(별이 한 줄에 뭉침) Knuth 곱셈 해시로.
+  function fakeRnd(n){var h=(((n|0)*2654435761)>>>0)^0x9e3779b9;h=(h^(h>>>15))>>>0;return (h%100000)/100000;}
+  // 태양 고도(도)와 시간각 H(라디안). SunCalc 축약(sunTimes와 같은 공식).
+  function sunAltAt(date,lat,lng){
+    var rad=Math.PI/180,dayMs=86400000,J1970=2440588,J2000=2451545,e=rad*23.4397;
+    var d=date.getTime()/dayMs-0.5+J1970-J2000;
+    var M=rad*(357.5291+0.98560028*d);
+    var L=M+rad*(1.9148*Math.sin(M)+0.02*Math.sin(2*M)+0.0003*Math.sin(3*M))+rad*102.9372+Math.PI;
+    var dec=Math.asin(Math.sin(e)*Math.sin(L));
+    var ra=Math.atan2(Math.sin(L)*Math.cos(e),Math.cos(L));
+    var lw=rad*-lng,phi=rad*lat,th=rad*(280.16+360.9856235*d)-lw,H=th-ra;
+    while(H>Math.PI)H-=2*Math.PI;while(H<=-Math.PI)H+=2*Math.PI;
+    var alt=Math.asin(Math.sin(phi)*Math.sin(dec)+Math.cos(phi)*Math.cos(dec)*Math.cos(H));
+    return {alt:alt/rad,H:H,dec:dec};
   }
+  // 앱 SkyPalette.palette 포팅: 고도(도)+새벽여부 → top/horizon/별알파/글로우.
+  function skyPalette(alt,isDawn){
+    var KF=[[50,0x2E86D8,0xAFDBF2,0xAFDBF2,0.00],[30,0x4E98DE,0xC3E4F3,0xC3E4F3,0.00],
+      [12,0x6AA6DD,0xE4EFF2,0xE4EFF2,0.00],[6,0x7FA8D2,0xFFD79A,0xFFD79A,0.00],
+      [0,0x5E7FB4,0xFF9E8C,0xFF7B4A,0.00],[-4,0x2F3E77,0xB4657F,0xB4657F,0.15],
+      [-8,0x1E2A57,0x45406E,0x45406E,0.45],[-14,0x121A3B,0x1E2547,0x1E2547,0.80],
+      [-18,0x0A0E24,0x10152E,0x10152E,1.00]];
+    var a=Math.max(-18,Math.min(50,alt)),up=KF[0],lo=KF[KF.length-1];
+    for(var i=0;i<KF.length-1;i++){if(a<=KF[i][0]&&a>=KF[i+1][0]){up=KF[i];lo=KF[i+1];break;}}
+    var span=up[0]-lo[0],t=span===0?0:smooth01((up[0]-a)/span);
+    function hz(k){return isDawn?k[2]:k[3];}
+    var bell=1-Math.min(1,Math.abs(alt-1)/7);
+    return {top:lerpHex(up[1],lo[1],t),horizon:lerpHex(hz(up),hz(lo),t),
+      star:up[4]+(lo[4]-up[4])*t,glow:smooth01(bell),warm:isDawn?'#FF9E8C':'#FF7B4A',alt:alt};
+  }
+  // 하루 중 시각 h(로컬)의 하늘 팔레트 — 관측 좌표·오늘 날짜 기준.
+  function tlSkyFor(h){
+    var dt=new Date();dt.setHours(0,0,0,0);
+    dt=new Date(dt.getTime()+Math.max(0,Math.min(24,h))*3600000+dayOffset*dayMs());
+    var s=sunAltAt(dt,obsLat(),obsLng());
+    return skyPalette(s.alt,s.H<0);   // H<0 = 남중 전 = 새벽/오전
+  }
+  function dayMs(){return 86400000;}
   function updateTlSky(){
     var sc=document.getElementById('tlScroll');if(!sc)return;
-    // 화면 중앙에 보이는 시각으로 하늘색을 정한다.
+    // 화면 중앙에 보이는 시각으로 하늘색을 정한다 (앱: 스크롤 중앙 = displayedDate).
     var centerY=sc.scrollTop+sc.clientHeight/2;
     var h=TS+(centerY-14)/PPH;h=Math.max(0,Math.min(24,h));
-    var c=tlSkyFor(h),vb=document.getElementById('view-big'),r=vb.style;
-    r.setProperty('--tl-top',c[0]);r.setProperty('--tl-mid',c[1]);r.setProperty('--tl-bot',c[2]);
-    // 타임라인 고정 2단계 액센트·잉크 (앱 SkyTheme.timelineFixed 파리티) — 밤=태양고도 -4°의 시각 근사.
-    var night=h<6.5||h>=19.5;
+    var p=tlSkyFor(h),vb=document.getElementById('view-big'),r=vb.style;
+    // 하늘: 위=top, 아래(지평선)=horizon. 밴딩을 줄이려 중간 블렌드 한 점을 더 둔다.
+    r.setProperty('--tl-top',p.top);
+    r.setProperty('--tl-mid',lerpHex(parseInt(p.top.slice(1),16),parseInt(p.horizon.slice(1),16),0.55));
+    r.setProperty('--tl-bot',p.horizon);
+    // 새벽·노을의 따뜻한 지평선 글로우 (앱 glowStrength).
+    var glow=document.getElementById('tlGlow');
+    if(!glow){glow=document.createElement('div');glow.id='tlGlow';vb.insertBefore(glow,vb.firstChild);}
+    // 글로우는 **지평선(82%)** 에 얹는다 — 노을은 땅과 하늘이 만나는 자리에서 핀다.
+    glow.style.background='radial-gradient(135% 42% at 50% 82%,'+p.warm+' 0%,rgba(0,0,0,0) 68%)';
+    glow.style.opacity=(p.glow*0.55).toFixed(3);
+    // ⚠ 첫 호출은 타임라인이 막 보이기 시작해 #view-big 측정값이 0일 수 있다.
+    // 그러면 땅 높이 0·별 미생성으로 첫 화면이 깨진다(스크롤 전). 뷰포트 크기로
+    // 폴백해 첫 호출부터 올바르게 그린다.
+    var skW=vb.clientWidth||window.innerWidth||375, skH=vb.clientHeight||window.innerHeight||812;
+    // 별밭 — 밤에 페이드인 (앱 CelestialLayer stars). 위치는 한 번만 생성한다.
+    r.setProperty('--tl-star',p.star.toFixed(3));
+    var stars=document.getElementById('tlStars');
+    // ⚠ 별 box-shadow는 **생성 시 1회**만 좌표를 굳힌다 (땅은 매 호출 재배치).
+    if(!stars && skH>10){
+      stars=document.createElement('div');stars.id='tlStars';
+      var sh=[], sw=Math.max(360,skW);
+      for(var si=0;si<64;si++){
+        var sx=(sw*fakeRnd(si*2+1))|0, sy=(0.78*skH*fakeRnd(si*2+2))|0;
+        var sr=fakeRnd(si*3+5)>0.82?1.5:0.8;
+        sh.push(sx+'px '+sy+'px 0 '+sr.toFixed(1)+'px rgba(255,255,255,'+(0.55+0.45*fakeRnd(si*3+7)).toFixed(2)+')');
+      }
+      stars.style.cssText='position:absolute;top:0;left:0;width:1px;height:1px;border-radius:50%;'+
+        'z-index:0;pointer-events:none;box-shadow:'+sh.join(',');
+      vb.insertBefore(stars,vb.firstChild);
+    }
+    if(stars)stars.style.opacity=p.star.toFixed(3);
+    // 평원/눈 그림 — 지평선(0.82H) 아래를 받친다 (앱 GroundLayer). 그림의 가장
+    // 높은 불투명 픽셀(언덕 꼭대기, 세로 38%)이 0.82H에 놓이게 앉힌다.
+    var ground=document.getElementById('tlGround');
+    if(!ground){ground=document.createElement('div');ground.id='tlGround';vb.insertBefore(ground,glow.nextSibling);}
+    var mo=new Date().getMonth()+1, north=obsLat()>=0;
+    var winter=(north?[12,1,2]:[6,7,8]).indexOf(mo)>=0;
+    ground.style.backgroundImage='url(assets/'+(winter?'scenery-snow':'scenery-plain')+'.png)';
+    var imgH=skW*350/800;
+    ground.style.height=imgH+'px';
+    ground.style.top=(0.82*skH-0.38*imgH)+'px';
+    // 밤엔 어둡게 (앱 colorMultiply(horizon)). 낮 1.0 → 밤 0.42로 밝기만 낮춰
+    // 초록 평원이 밤에 형광으로 튀지 않게 한다.
+    var bright=Math.max(0.42,Math.min(1,(p.alt+8)/22));
+    ground.style.filter='brightness('+bright.toFixed(2)+') saturate('+(0.6+bright*0.4).toFixed(2)+')';
+    // 고정 2단계 액센트·잉크 (앱 SkyTheme.timelineFixed): 밤 = 태양고도 −3° 밑.
+    var night=p.alt<-3;
     vb.classList.toggle('tl-night',night);
     r.setProperty('--tl-accent',night?'#273B9E':'#80CDE9');
     r.setProperty('--tl-onaccent',night?'#F5F7FF':'#141827');
