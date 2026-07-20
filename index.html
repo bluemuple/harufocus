@@ -7259,11 +7259,11 @@
     ['dumbbell','health',['헬스','운동','근력','웨이트','홈트','크로스핏','피티','스쿼트','푸시업','플랭크','유산소','체력','workout','gym','weights','lifting','exercise','fitness','crossfit','hiit','cardio','squat','pushup','plank']],
     ['walk','health',['산책','걷기','하이킹','등산','walk','walking','hike','hiking']],
     ['yoga','health',['요가','스트레칭','필라테스','yoga','stretch','stretching','pilates']],
-    ['drop','health',['물마시기','수분','water','hydrate']],
+    ['drop','health',['물','물마시기','수분','water','hydrate']],
     ['bike','health',['자전거','라이딩','bike','cycling','biking']],
     ['swim','health',['수영','swim','swimming']],
     ['steps','health',['걸음','만보','steps']],
-    ['dumbbell','health',['축구','풋살','농구','야구','캐치볼','배드민턴','테니스','탁구','스쿼시','골프','클라이밍','볼더링','복싱','킥복싱','태권도','유도','검도','주짓수','합기도','줄넘기','soccer','football','futsal','basketball','baseball','badminton','tennis','pingpong','squash','golf','climbing','bouldering','boxing','kickboxing','karate','judo','taekwondo','jiujitsu','jumprope','skipping']],
+    ['dumbbell','health',['축구','풋살','농구','야구','캐치볼','catchball','배드민턴','테니스','탁구','스쿼시','골프','클라이밍','볼더링','복싱','킥복싱','태권도','유도','검도','주짓수','합기도','줄넘기','soccer','football','futsal','basketball','baseball','badminton','tennis','pingpong','squash','golf','climbing','bouldering','boxing','kickboxing','karate','judo','taekwondo','jiujitsu','jumprope','skipping']],
     ['meal','health',['다이어트','식단','체중','체지방','diet']],
     // 기쁨
     ['game','rest',['게임','롤','옵치','스팀','game','gaming']],
@@ -7318,7 +7318,7 @@
     ['calendar','focus',['일정','계획','plan','planning','schedule']],
     ['mail','focus',['메일','이메일','편지','mail','email','emails','letter']],
     ['check','focus',['체크리스트','checklist','todo']],
-    ['camera','focus',['영상편집','프리미어','editing','premiere']],
+    ['camera','focus',['영상편집','편집','프리미어','editing','premiere']],
     // 사람
     ['people','people',['친구','모임','약속','동아리','동호회','friend','friends','meetup','hangout']],
     ['phone','people',['전화','통화','call','phone']],
@@ -7330,20 +7330,56 @@
     ['meal',null,['밥','식사','점심','저녁','아침밥','요리','lunch','dinner','breakfast','meal','cook','cooking']],
     ['bed',null,['잠','취침','수면','sleep','bed','bedtime']],
     ['shower',null,['샤워','목욕','양치','이닦기','shower','bath','teeth']],
-    ['pills',null,['약','영양제','비타민','병원','진료','치과','검진','안과','피부과','pill','pills','medicine','vitamin','vitamins','hospital','doctor','dentist','clinic','checkup']],
+    ['pills',null,['약','영양제','비타민','병원','진료','치과','검진','안과','피부과','예방접종','pill','pills','medicine','vitamin','vitamins','hospital','doctor','dentist','clinic','checkup']],
     ['alarm',null,['기상','wake','wakeup']],
     ['trash',null,['청소','정리','분리수거','clean','cleaning','tidy','declutter']],
     ['coffee',null,['커피','카페','coffee','cafe','tea']],
-    ['dishes',null,['빨래','세탁','설거지','laundry','dishes']],
+    ['dishes',null,['빨래','세탁','laundry']],
+    ['plate',null,['설거지','dishes']],
+    ['car',null,['운전','주유','세차','정비','drive','driving']],
+    ['comb',null,['미용실','이발','머리자르기','haircut']],
+    ['box',null,['택배','반품','이사','짐싸기','포장','packing','delivery']],
+    ['plant',null,['화분','식물','물주기','plant','plants','watering']],
+    ['paw',null,['강아지','고양이','반려','펫','산책시키기','dog','cat','pet','puppy']],
+    ['house',null,['집','home','house']],
     ['building',null,['은행','관공서','주민센터','등본','bank']]
   ];
+  // 단어 → {icon,cat}. 같은 단어가 두 행에 있으면 **먼저 적힌 행**이 이긴다
+  // (앱 IconCatalog.byKeyword의 `where map[w] == nil`과 같은 규칙).
+  var CAP_BY_WORD=(function(){
+    var m={};
+    CAP_KEYWORDS.forEach(function(e){
+      e[2].forEach(function(w){ if(!(w in m)) m[w]={icon:e[0],cat:e[1]}; });
+    });
+    return m;
+  })();
+  var CAP_HANGUL_WORDS=Object.keys(CAP_BY_WORD).filter(function(w){
+    return w.length>=2&&/[가-힣]/.test(w);
+  });
+  /* ⚠ 앱 IconCatalog.match와 **같은 규칙**이어야 한다. 예전 웹은 '표에서
+     먼저 나온 행'이 이겨서, 제목 어디에 있든 마음 범주가 늘 먼저 걸렸다:
+       "운동 후 명상" → 웹 meditate(마음) / 앱 dumbbell(몸)
+     같은 작업이 두 기기에서 다른 그림·다른 물통 면으로 보였다. 규칙은
+     ① 제목을 토큰으로 쪼개 **앞 토큰부터**, ② 한 토큰 안에서는 **먼저 나온
+     위치**, 같은 위치면 **더 긴 단어**가 이긴다. 표의 행 순서는 같은 단어가
+     두 행에 겹칠 때만 쓴다. 1글자 한글('물')은 통째로 같은 토큰일 때만
+     걸린다 — 안 그러면 '물리'가 물로 잡힌다. */
   function matchCapKeyword(title){
     var low=(title||'').toLowerCase();if(!low)return null;
     var tokens=low.split(/[^a-z0-9가-힣]+/).filter(Boolean);
-    for(var i=0;i<CAP_KEYWORDS.length;i++){var e=CAP_KEYWORDS[i],ws=e[2];
-      for(var j=0;j<ws.length;j++){var w=ws[j];
-        if(/[가-힣]/.test(w)){if(low.indexOf(w)>=0)return {icon:e[0],cat:e[1]};}
-        else if(tokens.indexOf(w)>=0)return {icon:e[0],cat:e[1]};}}
+    for(var i=0;i<tokens.length;i++){
+      var tok=tokens[i];
+      if(tok in CAP_BY_WORD)return CAP_BY_WORD[tok];
+      if(!/^[가-힣]/.test(tok))continue;
+      var best=null;
+      for(var k=0;k<CAP_HANGUL_WORDS.length;k++){
+        var w=CAP_HANGUL_WORDS[k],pos=tok.indexOf(w);
+        if(pos<0)continue;
+        if(!best||pos<best.pos||(pos===best.pos&&w.length>best.len))
+          best={pos:pos,len:w.length,m:CAP_BY_WORD[w]};
+      }
+      if(best)return best.m;
+    }
     return null;
   }
   // 앱 아이콘 파리티 (요청: filled SF-symbol 스타일). fI = filled icon.
@@ -7433,6 +7469,13 @@
       ['trash','<path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>'],
       ['coffee','<path d="M20 3H4v10a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-3h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/>'],
       ['dishes','<path d="M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 2v2h14V5H5zm2.5 1.5a.8.8 0 1 0-.8-.8.8.8 0 0 0 .8.8zM12 9a5 5 0 1 0 5 5 5 5 0 0 0-5-5zm-2.6 5.6c1.4-1.3 3.8-1.3 5.2 0 .4.4 1.1.4 1.4-.1a3.6 3.6 0 1 0-6.9.4c0-.1.2-.2.3-.3z"/>'],
+      ['car','<path d="M4.3 10.6l1.4-3.9A2.2 2.2 0 0 1 7.8 5.2h8.4a2.2 2.2 0 0 1 2.1 1.5l1.4 3.9c.6.2 1.1.8 1.1 1.5v4.3c0 .5-.4.9-.9.9h-1v1a1.3 1.3 0 1 1-2.6 0v-1H7.7v1a1.3 1.3 0 1 1-2.6 0v-1h-1a.9.9 0 0 1-.9-.9v-4.3c0-.7.5-1.3 1.1-1.5zm2.2-.2h11l-1.2-3.2a.7.7 0 0 0-.7-.5H8.4a.7.7 0 0 0-.7.5l-1.2 3.2zM7 12.2a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8zm10 0a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8z"/>'],
+      ['house','<path d="M12 3.1L2.6 11.2a.9.9 0 0 0 .6 1.6h1.3v7.2c0 .5.4.9.9.9h4v-5.3h5.2v5.3h4c.5 0 .9-.4.9-.9v-7.2h1.3a.9.9 0 0 0 .6-1.6L12 3.1z"/>'],
+      ['comb','<path d="M2.6 5.6h18.8c.6 0 1 .4 1 1v2.6c0 .6-.4 1-1 1H2.6c-.6 0-1-.4-1-1V6.6c0-.6.4-1 1-1z"/><path d="M3.9 10.6h1.9v6.9a.95.95 0 0 1-1.9 0v-6.9zm4.3 0h1.9v6.9a.95.95 0 0 1-1.9 0v-6.9zm4.3 0h1.9v6.9a.95.95 0 0 1-1.9 0v-6.9zm4.3 0h1.9v6.9a.95.95 0 0 1-1.9 0v-6.9z"/>'],
+      ['paw','<ellipse cx="7.2" cy="8.6" rx="1.9" ry="2.4"/><ellipse cx="11.6" cy="6.7" rx="1.9" ry="2.5"/><ellipse cx="16.1" cy="7.7" rx="1.9" ry="2.4"/><ellipse cx="19.4" cy="11.5" rx="1.7" ry="2.1"/><path d="M12.2 12.3c2.4 0 4.3 1.5 5.2 3.3.9 1.9-.3 4-2.4 4-1 0-1.9-.3-2.8-.3s-1.8.3-2.8.3c-2.1 0-3.3-2.1-2.4-4 .9-1.8 2.8-3.3 5.2-3.3z"/>'],
+      ['box','<path d="M12 2.6l9 3.4v11.9l-9 3.5-9-3.5V6l9-3.4zm0 2.1L5.9 7l6.1 2.3L18.1 7 12 4.7zM4.6 8.3v8.5l6.6 2.6v-8.6L4.6 8.3zm14.8 0l-6.6 2.5v8.6l6.6-2.6V8.3z"/>'],
+      ['plant','<path d="M11.3 11.7C11 8.3 8.4 5.6 5 5.2c-.5-.1-.9.4-.8.9.5 3.2 3.1 5.7 6.4 6.1v-.5z"/><path d="M12.7 11.7c.3-3.4 2.9-6.1 6.3-6.5.5-.1.9.4.8.9-.5 3.2-3.1 5.7-6.4 6.1v-.5z"/><path d="M11.3 8.4h1.4V13h-1.4z"/><path d="M6.4 13h11.2l-1.1 7.1a1.2 1.2 0 0 1-1.2 1H8.7a1.2 1.2 0 0 1-1.2-1L6.4 13z"/>'],
+      ['plate','<path d="M2.6 12.6h18.8c.45 0 .78.42.68.86-.7 2.9-3.05 4.94-5.86 4.94H7.78c-2.81 0-5.16-2.04-5.86-4.94-.1-.44.23-.86.68-.86z"/><path d="M6.2 8.2h11.6c.42 0 .73.4.63.81-.5 1.98-2.1 3.39-4 3.39H9.57c-1.9 0-3.5-1.41-4-3.39-.1-.41.21-.81.63-.81z"/><circle cx="19.1" cy="5.2" r="1.5"/><circle cx="15.5" cy="3.3" r="1"/>'],
       ['sunrise2','<path d="M12 2l3 3.5h-2V9h-2V5.5H9zM12 11a5 5 0 0 1 5 5H7a5 5 0 0 1 5-5zM3.5 13.6l1.4-1.4 1.8 1.8-1.4 1.4zM17.3 14l1.8-1.8 1.4 1.4-1.8 1.8zM2 18h20v2H2z"/>']],
     etc:[
       ['sun','<path d="M12 6a6 6 0 1 0 6 6 6 6 0 0 0-6-6zM11 1h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3zM4.2 5.6L5.6 4.2l2.1 2.1-1.4 1.4zm12.1 12.1l1.4-1.4 2.1 2.1-1.4 1.4zM4.2 18.4l2.1-2.1 1.4 1.4-2.1 2.1zM16.3 6.3l2.1-2.1 1.4 1.4-2.1 2.1z"/>'],
