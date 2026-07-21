@@ -1926,9 +1926,9 @@
 
     <div class="set-sec">짧은 집중</div>
     <div class="set-toggles">
-      <label><input type="checkbox" id="setKeepShort"> 5분 미만도 블록으로 남기기</label>
+      <label><input type="checkbox" id="setKeepShort"> 2분 미만도 블록으로 남기기</label>
     </div>
-    <div class="msub">꺼 두면 5분 미만 집중은 타임라인에 블록을 남기지 않아요. 집중한 시간 자체는 물통·통계에 그대로 쌓이고, 켜면 지나간 짧은 기록도 다시 보여요.</div>
+    <div class="msub">꺼 두면 2분 미만 집중은 타임라인에 블록을 남기지 않아요. 집중한 시간 자체는 물통·통계에 그대로 쌓이고, 켜면 지나간 짧은 기록도 다시 보여요.</div>
 
     <div class="set-sec">기타</div>
     <button class="set-row-btn" id="setStatsBtn">통계 보기</button>
@@ -2297,11 +2297,15 @@
   var LABEL_MIN_H=26, LABEL_H=18;
   /* 이 시간 **미만**으로 집중한 기록은 타임라인에 블록을 그리지 않는다 (요청:
      1~3분짜리가 쌓이면 블록이 2~6px로 그려지고 라벨끼리 겹쳐 지저분해진다).
+     ⚠ 처음 5분이었다가 **2분으로 낮췄다**(요청): 5분은 "재생했는데 흔적이
+     없다"는 당황을 불렀다 — 규칙의 의도는 이미 끝난 1~3분짜리가 쌓이는 걸
+     막는 거였는데 방금 시작했다 멈춘 것까지 지웠다. 2분이면 그 지저분함은
+     그대로 걸러지고 3~4분 한 건은 남는다.
      기록 자체(세션·누적 시간·통계)는 그대로 남는다 — 안 그리는 건 그림뿐.
      ⚠ 기준은 **집중한 시간**이지 통의 길이가 아니다: 3분 집중 + 10분 쉼은
      통이 13분이라 안 지저분하지만 '수행'은 3분이라 규칙대로 안 그린다.
      앱 FocusManager.shortBlockMinSec와 한 쌍. */
-  var SHORT_FOCUS_SEC=300;
+  var SHORT_FOCUS_SEC=120;
   function keepShortBlocks(){return !!(DATA.settings&&DATA.settings.keepShortBlocks);}
   function selDate(){var d=new Date();d.setDate(d.getDate()+dayOffset);return d;}
   function selKey(){var d=selDate();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
@@ -2861,7 +2865,7 @@
         last2.end=en2;last2.active=true;
       }else blocks.push({taskID:fTask.id,title:fTask.title||'',categoryID:fTask.categoryID||'focus',start:st2,end:en2,rest:[],foc:0,active:true});
     }
-    /* 5분 미만 집중은 안 그린다 (요청) — 지금 재생 중인 블록은 예외다:
+    /* 2분 미만 집중은 안 그린다 (요청) — 지금 재생 중인 블록은 예외다:
        이제 막 시작해 0분이지만 지금 선을 따라 자라는 중이라 보여야 한다.
        설정 '5분 미만도 블록으로 남기기'를 켜면 옛 기록까지 한꺼번에 돌아온다. */
     if(!keepShortBlocks())blocks=blocks.filter(function(b){
@@ -4187,12 +4191,12 @@
     var el=focusElapsed();
     fTask.actualFocusedSec=(fTask.actualFocusedSec||0)+el;fTask.cumulativeFocusedSec=(fTask.cumulativeFocusedSec||0)+el;fTask.lastFocusedAt=new Date().toISOString();
     if(el>=5){if(!DATA.sessions)DATA.sessions=[];DATA.sessions.push({id:uuid(),taskID:fTask.id,taskTitle:fTask.title||'',categoryID:fTask.categoryID||'focus',start:new Date(fStart).toISOString(),end:new Date().toISOString(),focusedSec:el});}
-    /* 5분 미만이면 블록을 안 그린다 (요청) — 기록(세션·누적)은 위에서 이미
+    /* 2분 미만이면 블록을 안 그린다 (요청) — 기록(세션·누적)은 위에서 이미
        남겼고, 여기선 "왜 안 보이지?" 소리를 안 듣게 안내 플래그만 세운다. */
     shortSkipPending=(el>=5&&el<SHORT_FOCUS_SEC&&!keepShortBlocks())?el:0;
   }
   var shortSkipPending=0;
-  /* "5분 미만이라 안 남겼어요" 안내 — 집중 화면을 닫는 순간 하단에 떴다가
+  /* "2분 미만이라 안 남겼어요" 안내 — 집중 화면을 닫는 순간 하단에 떴다가
      4초 뒤 사라진다 (앱 MainTabView의 shortSkipText와 한 쌍). */
   function showShortSkipToast(sec){
     var m=Math.max(1,Math.round(sec/60));

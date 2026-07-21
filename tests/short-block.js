@@ -1,4 +1,5 @@
-/* 5분 미만 집중은 타임라인에 블록을 그리지 않는다 (요청).
+/* 2분 미만 집중은 타임라인에 블록을 그리지 않는다 (요청: 처음 5분이었다가
+ * "재생했는데 흔적이 없다"는 당황 때문에 낮췄다).
  *
  * ⚠ 앱 `SundialTests/ShortBlockTests.swift`와 **한 쌍**이다. 어느 한쪽 규칙을
  * 고치면 두 파일을 같이 고쳐야 한다.
@@ -55,47 +56,51 @@ function sess(startMin, focusedSec, spanMin, taskID = 't1') {
 }
 const key = new Date(`${DAY}T09:00:00.000Z`).toISOString().slice(0, 10);
 
-is(SHORT, 300, '기준은 300초(5분) — 앱 FocusManager.shortBlockMinSec와 같은 값');
+is(SHORT, 120, '기준은 120초(2분) — 앱 FocusManager.shortBlockMinSec와 같은 값');
 
-// ① 3분 집중 → 안 그린다
-DATA.sessions = [sess(0, 180, 3)];
+// ① 1분 집중 → 안 그린다
+DATA.sessions = [sess(0, 60, 1)];
 DATA.settings = {};
-is(dayRecordBlocks(key).length, 0, '3분 집중은 블록을 안 그린다');
+is(dayRecordBlocks(key).length, 0, '1분 집중은 블록을 안 그린다');
 
-// ② 정확히 5분 → 그린다 (경계는 '미만'이므로 5분은 남는다)
-DATA.sessions = [sess(0, 300, 5)];
-is(dayRecordBlocks(key).length, 1, '정확히 5분은 그린다 (미만이 아니다)');
+// ② 정확히 2분 → 그린다 (경계는 '미만'이므로 2분은 남는다)
+DATA.sessions = [sess(0, 120, 2)];
+is(dayRecordBlocks(key).length, 1, '정확히 2분은 그린다 (미만이 아니다)');
 
-// ③ 4분 59초 → 안 그린다
-DATA.sessions = [sess(0, 299, 5)];
-is(dayRecordBlocks(key).length, 0, '4분 59초는 안 그린다');
+// ③ 1분 59초 → 안 그린다
+DATA.sessions = [sess(0, 119, 2)];
+is(dayRecordBlocks(key).length, 0, '1분 59초는 안 그린다');
 
-// ④ 설정을 켜면 3분짜리도 돌아온다 (지나간 기록까지)
+// ③-2 ⚠ 5분→2분으로 낮춘 이유가 이 경계에 있다 — 3~4분 한 건은 남는다.
 DATA.sessions = [sess(0, 180, 3)];
+is(dayRecordBlocks(key).length, 1, '3분은 이제 남는다');
+
+// ④ 설정을 켜면 1분짜리도 돌아온다 (지나간 기록까지)
+DATA.sessions = [sess(0, 60, 1)];
 DATA.settings = { keepShortBlocks: true };
 is(dayRecordBlocks(key).length, 1, '설정을 켜면 짧은 기록도 다시 보인다');
 
 // ⑤ ⚠ 기준은 **집중한 시간**이지 통의 길이가 아니다:
 //    3분 집중 + 10분 쉼은 통이 13분이라 안 지저분하지만 '수행'은 3분이다.
 DATA.settings = {};
-DATA.sessions = [sess(0, 180, 13)];
-is(dayRecordBlocks(key).length, 0, '통이 13분이어도 집중이 3분이면 안 그린다');
+DATA.sessions = [sess(0, 60, 13)];
+is(dayRecordBlocks(key).length, 0, '통이 13분이어도 집중이 1분이면 안 그린다');
 
-// ⑥ 짧은 세션 둘이 30분 안에 이어지면 합쳐서 판단한다 (3분+3분=6분 → 그린다)
-DATA.sessions = [sess(0, 180, 3), sess(10, 180, 3)];
-is(dayRecordBlocks(key).length, 1, '3분+3분이 한 블록으로 합쳐지면 6분이라 그린다');
+// ⑥ 짧은 세션 둘이 30분 안에 이어지면 합쳐서 판단한다 (1분+1분=2분 → 그린다)
+DATA.sessions = [sess(0, 60, 1), sess(10, 60, 1)];
+is(dayRecordBlocks(key).length, 1, '1분+1분이 한 블록으로 합쳐지면 2분이라 그린다');
 const merged = dayRecordBlocks(key)[0];
-is(merged.foc, 360, '합쳐진 블록의 집중 초는 두 세션의 합');
+is(merged.foc, 120, '합쳐진 블록의 집중 초는 두 세션의 합');
 is(merged.rest.length, 1, '두 세션 사이 7분 공백은 쉼(빗금)으로 남는다');
 
-// ⑦ 갭이 30분을 넘으면 안 합쳐지고, 각각 3분이라 둘 다 사라진다
-DATA.sessions = [sess(0, 180, 3), sess(40, 180, 3)];
-is(dayRecordBlocks(key).length, 0, '30분 넘게 떨어진 3분짜리 둘은 각각 사라진다');
+// ⑦ 갭이 30분을 넘으면 안 합쳐지고, 각각 1분이라 둘 다 사라진다
+DATA.sessions = [sess(0, 60, 1), sess(40, 60, 1)];
+is(dayRecordBlocks(key).length, 0, '30분 넘게 떨어진 1분짜리 둘은 각각 사라진다');
 
 // ⑧ 다른 작업이 사이에 끼면 병합하지 않는다 (기존 규칙 회귀 방지)
-DATA.sessions = [sess(0, 180, 3), sess(5, 600, 10, 't2'), sess(20, 180, 3)];
+DATA.sessions = [sess(0, 60, 1), sess(5, 600, 10, 't2'), sess(20, 60, 1)];
 const r8 = dayRecordBlocks(key);
-is(r8.length, 1, '사이에 다른 작업이 있으면 안 합쳐져 3분짜리 둘은 사라지고 10분짜리만 남는다');
+is(r8.length, 1, '사이에 다른 작업이 있으면 안 합쳐져 1분짜리 둘은 사라지고 10분짜리만 남는다');
 is(r8[0].taskID, 't2', '남은 건 10분 집중한 작업');
 
 console.log(fail ? `\n${fail}개 실패, ${pass}개 통과` : `${pass}개 통과 (short-block)`);
