@@ -2719,8 +2719,27 @@
     var inner=(mag>0)?(p<0.5?1:0):(p<0.5?0:1);  // 초승/그믐 vs 볼록
     var lit='M '+cx+' '+(cy-r)+' a '+r+' '+r+' 0 0 '+big+' 0 '+(2*r)+
             ' a '+rx.toFixed(2)+' '+r+' 0 0 '+inner+' 0 '+(-2*r)+' z';
-    return '<svg viewBox="0 0 34 34"><circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="#3a4767"/>'+
-           '<path d="'+lit+'" fill="#eef3ff"/></svg>';
+    /* F5 (요청): 낮달처럼 **터미네이터(밝은 면과 어두운 면의 경계)를 흐리게**.
+       실제 낮달은 경계가 칼로 자른 듯 선명하지 않고, 어두운 면은 하늘에 묻혀
+       거의 안 보인다(받은 참고 사진 4장이 전부 그렇다).
+       ⚠ **바깥 둘레(limb)는 선명해야 한다** — 통째로 blur하면 달이 솜뭉치가 된다.
+       그래서 밝은 면만 blur한 뒤 **원으로 클립**한다: 경계는 부드럽고 둘레는 또렷.
+       ⚠ 보름달은 터미네이터가 없으므로(rx=r) blur를 걸지 않는다 — 걸면 둘레만
+       흐려져 손해다. */
+    var full=Math.abs(mag)>0.94;                 // 거의 보름 = 경계 없음
+    var uid='m'+Math.abs(Math.round(mag*1000));  // 필터 id 충돌 방지
+    var blurAmt=(1-Math.abs(mag)*0.45).toFixed(2);   // 초승달일수록 더 부드럽게
+    return '<svg viewBox="0 0 34 34">'+
+      (full?'':'<defs>'+
+        '<clipPath id="c'+uid+'"><circle cx="'+cx+'" cy="'+cy+'" r="'+r+'"/></clipPath>'+
+        '<filter id="f'+uid+'" x="-30%" y="-30%" width="160%" height="160%">'+
+          '<feGaussianBlur stdDeviation="'+blurAmt+'"/></filter></defs>')+
+      // 어두운 면은 하늘이 비치게 아주 옅게 (낮달은 사실상 안 보인다).
+      '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="#3a4767" opacity="'+(full?'1':'0.28')+'"/>'+
+      (full
+        ? '<path d="'+lit+'" fill="#eef3ff"/>'
+        : '<g clip-path="url(#c'+uid+')"><path d="'+lit+'" fill="#eef3ff" filter="url(#f'+uid+')"/></g>')+
+      '</svg>';
   }
   function addCelestial(sc){
     var sun=document.createElement('div');sun.className='tl-sun';sun.style.top=(yFor(12.5)-32)+'px';sc.appendChild(sun);
