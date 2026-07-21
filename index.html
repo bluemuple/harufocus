@@ -1331,8 +1331,12 @@
        .page-fab이 bottom:22px·높이 56px이라 같은 bottom을 주면 아랫변이 맞는다.
        흐름에서 빼되 클릭은 통과시키고, 목록이 길어 글자가 카드 위에 비치면
        버그처럼 보이므로 그때는 숨긴다(.app-foot.hide — renderTodo가 판단). */
-    .app-foot{display:flex;margin:0;position:fixed;left:0;right:0;z-index:1;
+    /* ⚠ z-index 0 + 목록 1: 워터마크는 **언제나 카드 밑**이다. 예전엔 둘 다
+       1이라 DOM 순서(푸터가 목록 뒤)로 글자가 카드 **위에** 비쳤다 —
+       숨김 판정이 렌더 때만 돌아서, 스크롤로 카드가 내려오면 그대로 겹쳤다. */
+    .app-foot{display:flex;margin:0;position:fixed;left:0;right:0;z-index:0;
       bottom:calc(22px + env(safe-area-inset-bottom));pointer-events:none}
+    #todoList{position:relative;z-index:1}
     /* ⚠display:none으로 숨기면 rect가 0이 돼 다음 판정에서 영영 못 돌아온다
        (자기 위치를 재서 판단하기 때문) — 박스는 남기고 보이기만 끈다. */
     .app-foot.hide{visibility:hidden}
@@ -4970,6 +4974,27 @@
       '<div class="w-step"><span>3</span>▶ 를 눌러 그 시간 안에 끝내요</div>'+
       '<button id="welcomeGo">시작하기</button></div>';
   }
+  /* 브랜드 워터마크(할일 페이지 맨 아래 '엘리의 하루')는 **남는 자리에만**
+     머문다 (요청: + 버튼 아랫변). 목록이 그 자리까지 내려오면 글자가 카드에
+     걸쳐 보이므로 아예 숨긴다.
+     ⚠ **스크롤에서도 다시 재야 한다** — 예전엔 renderTodo에서 한 번만 재서,
+     목록을 내리면 카드가 워터마크 위로 미끄러져 들어와 글자가 겹쳤다(요청 버그).
+     ⚠ 마지막 '카드'가 아니라 **목록 상자**의 아랫변을 잰다: 목록 끝이 카드가
+     아닐 수도 있어(`.task:last-child`가 null) 그때는 영영 안 숨었다.
+     ⚠ display:none으로 숨기면 rect가 0이 돼 다음 판정에서 못 돌아온다 —
+     .hide는 visibility만 끈다. */
+  function placeFoot(){
+    var foot=document.querySelector('.app-foot');if(!foot)return;
+    var list=document.getElementById('todoList');if(!list)return;
+    var fr=foot.getBoundingClientRect();
+    if(!fr.height)return;                       // 모바일(display:none)에선 잴 게 없다
+    foot.classList.toggle('hide',list.getBoundingClientRect().bottom>fr.top-8);
+  }
+  (function(){
+    var tb=document.querySelector('.tabbody');
+    if(tb)tb.addEventListener('scroll',placeFoot,{passive:true});
+    window.addEventListener('resize',placeFoot);
+  })();
   function renderTodo(){
     if(typeof paintSel==='function')setTimeout(paintSel,0);
     var dow=document.getElementById('todoDow');
@@ -4980,14 +5005,7 @@
     // 완료 → 아래로, 별표 → 위로 움직이는 게 보이도록).
     var oldPos={};
     list.querySelectorAll('.task[data-id]').forEach(function(el){oldPos[el.dataset.id]=el.getBoundingClientRect().top;});
-    // 브랜드 워터마크는 '남는 자리'에만 (요청: + 버튼 아랫변). 목록이 그
-    // 자리까지 내려오면 글자가 카드 위에 비쳐 숨긴다.
-    setTimeout(function(){
-      var foot=document.querySelector('.app-foot');if(!foot)return;
-      var last=list.querySelector('.task:last-child');
-      var fr=foot.getBoundingClientRect();
-      foot.classList.toggle('hide',!!last&&last.getBoundingClientRect().bottom>fr.top-8);
-    },0);
+    setTimeout(placeFoot,0);
     list.innerHTML='';
     var todayMid=new Date();todayMid.setHours(0,0,0,0);
     // 내일로 미룬 일은 그날이 되기 전엔 숨긴다 (앱 파리티, 요청).
