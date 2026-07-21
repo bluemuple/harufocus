@@ -2840,6 +2840,14 @@
     :new Date(new Date(t.scheduledStart).getTime()+(t.durationMin||0)*60000);}
   function taskByID(id){return (DATA.tasks||[]).find(function(x){return x.id===id;});}
   // 세션 → 그날 블록. 병합(§3): 같은 작업 + 갭≤30분 + 사이 다른 작업 세션 없음.
+  /* 같은 작업을 다시 재생했을 때 **한 블록으로 합칠 최대 공백** (요청).
+     합치는 이유는 5~10px짜리 조각이 한 자리에 몰리는 걸 막기 위함이고,
+     공백은 블록 안 빗금으로 남는다.
+     ⚠ 30분 → **15분**으로 줄였다 (요청: 시간선 기준 재검토). 30분이면 빗금
+     띠가 60px — 한 시간 칸(120px)의 절반이라 시간선을 넘기기 일쑤고 "그
+     시간 내내 이 작업 자리"라는 인상이 과했다. 15분은 한 칸의 1/4.
+     앱 FocusManager.mergeGapMaxSec와 한 쌍. */
+  var MERGE_GAP_MS=15*60*1000;
   function dayRecordBlocks(tk){
     var ss=allSessions().filter(function(x){return dateKey(x.start)===tk;})
       .slice().sort(function(a,b){return new Date(a.start)-new Date(b.start);});
@@ -2851,7 +2859,7 @@
       var st=new Date(x.start).getTime(),en=new Date(x.end||x.start).getTime();
       if(en<=st)en=st+Math.max(60,(x.focusedSec||60))*1000;
       var last=lastOf(x.taskID),gap=last?st-last.end:1/0;
-      if(last&&gap>=0&&gap<=1800000&&!otherBetween(x.taskID,last.end,st)){
+      if(last&&gap>=0&&gap<=MERGE_GAP_MS&&!otherBetween(x.taskID,last.end,st)){
         if(st>last.end)last.rest.push({s:last.end,e:st});      // 갭=쉼 빗금
         last.end=Math.max(last.end,en);
       }else blocks.push({taskID:x.taskID,title:x.taskTitle||'',categoryID:x.categoryID||'focus',start:st,end:en,rest:[],foc:0});
@@ -2860,7 +2868,7 @@
     });
     if(fTask&&tk===todayKey()){                                 // 활성 = 지금까지 자라는 중
       var st2=fStart,en2=Date.now(),last2=lastOf(fTask.id),gap2=last2?st2-last2.end:1/0;
-      if(last2&&gap2>=0&&gap2<=1800000&&!otherBetween(fTask.id,last2.end,st2)){
+      if(last2&&gap2>=0&&gap2<=MERGE_GAP_MS&&!otherBetween(fTask.id,last2.end,st2)){
         if(st2>last2.end)last2.rest.push({s:last2.end,e:st2});
         last2.end=en2;last2.active=true;
       }else blocks.push({taskID:fTask.id,title:fTask.title||'',categoryID:fTask.categoryID||'focus',start:st2,end:en2,rest:[],foc:0,active:true});

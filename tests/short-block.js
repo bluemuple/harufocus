@@ -22,6 +22,8 @@ function grab(name) {
   throw new Error('함수 끝을 못 찾음: ' + name);
 }
 const SHORT = +/var SHORT_FOCUS_SEC\s*=\s*(\d+)/.exec(html)[1];
+// 병합 한도도 **본체에서 뽑는다** — 여기 베껴 쓰면 본체가 바뀌어도 통과한다.
+const MERGE = eval(/var MERGE_GAP_MS\s*=\s*([^;]+);/.exec(html)[1]);
 
 // dayRecordBlocks가 기대는 전역들을 흉내낸다.
 let DATA = { settings: {}, sessions: [] };
@@ -36,10 +38,10 @@ const ctx = {
 };
 const dayRecordBlocks = new Function(
   'DATA', 'allSessions', 'dateKey', 'todayKey', 'keepShortBlocks',
-  'fTask', 'fStart', 'SHORT_FOCUS_SEC',
+  'fTask', 'fStart', 'SHORT_FOCUS_SEC', 'MERGE_GAP_MS',
   grab('dayRecordBlocks') + '; return dayRecordBlocks;'
 )(ctx.DATA, ctx.allSessions, ctx.dateKey, ctx.todayKey, ctx.keepShortBlocks,
-  null, 0, SHORT);
+  null, 0, SHORT, MERGE);
 
 let pass = 0, fail = 0;
 function is(got, want, label) {
@@ -57,6 +59,7 @@ function sess(startMin, focusedSec, spanMin, taskID = 't1') {
 const key = new Date(`${DAY}T09:00:00.000Z`).toISOString().slice(0, 10);
 
 is(SHORT, 120, '기준은 120초(2분) — 앱 FocusManager.shortBlockMinSec와 같은 값');
+is(MERGE, 15 * 60 * 1000, '병합 한도는 15분 — 앱 FocusManager.mergeGapMaxSec와 같은 값');
 
 // ① 1분 집중 → 안 그린다
 DATA.sessions = [sess(0, 60, 1)];
@@ -86,16 +89,23 @@ DATA.settings = {};
 DATA.sessions = [sess(0, 60, 13)];
 is(dayRecordBlocks(key).length, 0, '통이 13분이어도 집중이 1분이면 안 그린다');
 
-// ⑥ 짧은 세션 둘이 30분 안에 이어지면 합쳐서 판단한다 (1분+1분=2분 → 그린다)
+// ⑥ 짧은 세션 둘이 15분 안에 이어지면 합쳐서 판단한다 (1분+1분=2분 → 그린다)
 DATA.sessions = [sess(0, 60, 1), sess(10, 60, 1)];
 is(dayRecordBlocks(key).length, 1, '1분+1분이 한 블록으로 합쳐지면 2분이라 그린다');
 const merged = dayRecordBlocks(key)[0];
 is(merged.foc, 120, '합쳐진 블록의 집중 초는 두 세션의 합');
 is(merged.rest.length, 1, '두 세션 사이 7분 공백은 쉼(빗금)으로 남는다');
 
-// ⑦ 갭이 30분을 넘으면 안 합쳐지고, 각각 1분이라 둘 다 사라진다
+// ⑦ 갭이 15분을 넘으면 안 합쳐지고, 각각 1분이라 둘 다 사라진다
 DATA.sessions = [sess(0, 60, 1), sess(40, 60, 1)];
-is(dayRecordBlocks(key).length, 0, '30분 넘게 떨어진 1분짜리 둘은 각각 사라진다');
+is(dayRecordBlocks(key).length, 0, '15분 넘게 떨어진 1분짜리 둘은 각각 사라진다');
+
+// ⑦-2 ⚠ 병합 한도 경계 (앱 FocusManager.mergeGapMaxSec와 한 쌍):
+//      공백 14분은 합쳐지고, 16분은 안 합쳐진다.
+DATA.sessions = [sess(0, 60, 1), sess(15, 60, 1)];   // 1분 끝 → 15분 시작 = 공백 14분
+is(dayRecordBlocks(key).length, 1, '공백 14분은 한 블록으로 합쳐진다');
+DATA.sessions = [sess(0, 60, 1), sess(17, 60, 1)];   // 공백 16분
+is(dayRecordBlocks(key).length, 0, '공백 16분은 안 합쳐져 각각 사라진다');
 
 // ⑧ 다른 작업이 사이에 끼면 병합하지 않는다 (기존 규칙 회귀 방지)
 DATA.sessions = [sess(0, 60, 1), sess(5, 600, 10, 't2'), sess(20, 60, 1)];
