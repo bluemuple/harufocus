@@ -6932,9 +6932,17 @@
       },{timeout:8000,maximumAge:6*3600*1000});
     }catch(_){}
   }
-  function normalize(s){
+  function normalize(s,prev){
     var o={tasks:s.tasks||[],habits:s.habits||[],sessions:s.sessions||[],
       settings:s.settings||{focusGoalMinutes:240},diary:s.diary||[]};
+    /* 도메인 분리 이후(스냅샷에 domains 표식이 있으면) 세션·일기는 **스냅샷이
+       아니라 표가 정본**이다. 그때 빈 배열로 로컬을 밀어 버리면, 워터마크가
+       이미 앞서 있는 기기는 델타로도 다시 못 받아 기록이 화면에서 사라진다
+       → 스냅샷이 비었으면 **가지고 있던 걸 지킨다**. */
+    var dm=s.domains||{};
+    DOMAINS.forEach(function(d){
+      if(dm[d.k]&&!(o[d.k]&&o[d.k].length)&&prev&&prev[d.k]&&prev[d.k].length)o[d.k]=prev[d.k];
+    });
     ensureIds(o);
     return o;
   }
@@ -6994,7 +7002,7 @@
       if(rows&&rows.length&&rows[0].updated_at)lastSeenUpdated=rows[0].updated_at;
       serverSnap=(rows&&rows.length&&rows[0].snapshot)||{schemaVersion:1,tasks:[],habits:[],sessions:[],settings:null};
       var revived=tombApply(serverSnap);   // 반대쪽이 되살린 삭제분 제거 (요청)
-      DATA=normalize(serverSnap);
+      DATA=normalize(serverSnap,DATA);   // prev = 도메인 표가 정본일 때 지킬 것들
       // ⚠여기서 DATA가 통째로 바뀐다 — 대기 중이던 실행 취소 사본은 이제 '옛
       // 배열'이라, 그대로 되돌리면 저쪽 기기가 방금 한 일까지 지우고 그 상태를
       // 서버로 밀어 올린다. 그러니 폐기한다. (undoBefore도 같이 — 안 그러면
@@ -7008,6 +7016,11 @@
       // 되살아난 게 있었으면 지운 상태를 다시 올린다 — 그래야 앱도 따라 지운다.
       if(revived)pushSnapshot();
       adoptRemoteFocus(serverSnap.activeFocus,serverSnap.focusEnd);
+      /* 세션·일기는 이제 별도 표에 산다 — 스냅샷을 받은 김에 델타도 받는다.
+         ⚠ 표가 없는 계정에선 첫 호출에서 domainsOK=false가 되고 이후 조용하다. */
+      pullDomains().then(function(any){if(any)renderAll();
+        // 아직 표에 안 올라간 옛 기록(스냅샷에만 있던 것)을 여기서 채운다.
+        pushDomains();});
     })
     .catch(function(){});
   }
@@ -7034,6 +7047,16 @@
     // 종료 신호는 최신 것만 남긴다 (내 것 vs 서버에서 읽어 둔 것).
     var fe=lastFocusEnd();
     if(fe)serverSnap.focusEnd=fe;
+    /* 도메인 분리: 표가 살아 있으면 세션·일기는 표가 정본이므로 스냅샷에서
+       **뺀다** — 이게 스냅샷을 다시 작게 만드는 유일한 지점이다.
+       ⚠ `domains` 표식을 같이 올려야 반대편이 "빈 게 아니라 표에 있다"로
+       읽는다(normalize의 prev 보존 규칙). ⚠ DOMAIN_BLOB_DROP를 켜기 전에
+       **표에 행이 다 쌓였는지 눈으로 확인**할 것 — 스냅샷에서 빼는 순간
+       표가 유일한 사본이 된다. */
+    if(DOMAIN_BLOB_DROP&&domainsOK===true){
+      serverSnap.domains={sessions:true,diary:true};
+      serverSnap.sessions=[];serverSnap.diary=[];
+    }
     return serverSnap;}
   /* ── 실행 취소 (요청 첨부4·5) ─────────────────────────────────────────
      실수로 뭘 눌렀을 때 왼쪽 아래에 '무엇을 했는지 + 실행 취소'를 잠깐 띄운다.
@@ -7200,7 +7223,154 @@
       return fetch(SUPA_URL+'/rest/v1/sundial_state',{method:'POST',headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});})
     .then(function(r){if(r.status===401)signOut();else if(!r.ok)r.text().then(function(t){console.warn('[harufocus] 저장 실패',r.status,t);});})
     .catch(function(e){console.warn('[harufocus] 저장 네트워크 오류',e);})
-    .then(function(){pushing=false;});   // 성공·실패 무관하게 반드시 푼다
+    .then(function(){pushing=false;pushDomains();});   // 성공·실패 무관하게 반드시 푼다
+  }
+
+  /* ---------- 도메인 분리 동기화 (스냅샷 무한 증가 해결) ----------
+     지금까지는 편집 한 번에 **내 데이터 전부**(작업+세션 전량+일기 전량)를
+     JSON 한 덩어리로 덮어썼다. 계정 수명에 비례해 커져(실측 ~112KB) 체크
+     하나 누를 때마다 그 전부가 왕복한다. 무한히 쌓이는 두 도메인(집중
+     세션·일기)을 **행 단위 표**로 빼고 **바뀐 행만** 주고받는다.
+     · pull  = `updated_at > 워터마크` 델타 (없으면 빈 배열 = 사실상 공짜)
+     · push  = 로컬에서 바뀐 것 + 사라진 것(tombstone)만
+     ⚠ **워터마크는 서버 시각이어야 한다** — 기기 시계로 찍으면 시계가 느린
+       기기의 행이 남의 워터마크보다 과거라 영영 안 내려간다. SQL의 트리거가
+       insert/update마다 now()로 덮어쓰고, 클라이언트는 **pull 응답에서만**
+       워터마크를 올린다(내가 쓴 행도 한 번은 도로 받는다 — 그게 안전하다).
+     ⚠ **표가 없으면 자동 폴백**: supabase-sundial-domains.sql을 아직 안 돌린
+       계정에서는 404가 오고, 그때는 예전 방식 그대로 동작한다.
+     ⚠ **지금은 이중 쓰기**(DOMAIN_BLOB_DROP=false): 스냅샷에도 세션·일기를
+       그대로 실어 보낸다. 행이 제대로 쌓이는 걸 눈으로 확인한 뒤에 이 스위치를
+       켜면 그때부터 스냅샷이 작아진다. 지금 끄면 되돌릴 수 없는 쪽이 먼저다. */
+  var DOMAIN_BLOB_DROP=false;
+  var DOMAINS=[
+    // ver = '이 항목이 바뀌었나'를 재는 값. 세션은 한 번 쓰이면 안 바뀌는
+    // 기록이라 상수, 일기는 본문 수정이 있어 updatedAt을 쓴다.
+    {k:'sessions',tbl:'sundial_sessions',ver:function(){return '1';}},
+    {k:'diary',   tbl:'sundial_diary',   ver:function(x){return String(x.updatedAt||x.date||'1');}}
+  ];
+  var domainsOK=null;          // null=아직 모름 · false=표 없음(폴백) · true=사용
+  var DOM_EPOCH='1970-01-01T00:00:00Z';
+  function domKey(kind,what){return 'hfDom_'+what+'_'+kind+'_'+((session&&session.user.id)||'anon');}
+  function domSince(kind){try{return localStorage.getItem(domKey(kind,'since'))||DOM_EPOCH;}catch(_){return DOM_EPOCH;}}
+  function setDomSince(kind,v){try{localStorage.setItem(domKey(kind,'since'),v);}catch(_){}}
+  /* 내가 서버에 올려 둔 것들 {id: ver} — 이게 있어야 **무엇이 바뀌었는지**와
+     **무엇이 지워졌는지**(로컬엔 없는데 여기 있는 id)를 안다. */
+  function domSent(kind){try{return JSON.parse(localStorage.getItem(domKey(kind,'sent'))||'{}')||{};}catch(_){return {};}}
+  function setDomSent(kind,m){try{localStorage.setItem(domKey(kind,'sent'),JSON.stringify(m));}catch(_){}}
+
+  function domHeaders(tok,extra){
+    var h={apikey:SUPA_KEY,Authorization:'Bearer '+tok};
+    if(extra)for(var k in extra)h[k]=extra[k];
+    return h;
+  }
+  /* 표가 없을 때의 신호 — PostgREST는 404(없는 표)나 42P01을 준다. */
+  function domMissing(r){return r.status===404||r.status===400;}
+
+  /* 델타 pull 한 도메인. 바뀐 게 있으면 true. */
+  function pullDomain(d,tok){
+    if(!session||domainsOK===false)return Promise.resolve(false);
+    var url=SUPA_URL+'/rest/v1/'+d.tbl+'?user_id=eq.'+encodeURIComponent(session.user.id)
+      +'&updated_at=gt.'+encodeURIComponent(domSince(d.k))
+      +'&order=updated_at.asc&limit=1000&select=id,payload,deleted,updated_at';
+    return fetch(url,{headers:domHeaders(tok)})
+      .then(function(r){
+        if(domMissing(r)){domainsOK=false;return null;}
+        if(!r.ok)return null;
+        domainsOK=true;return r.json();
+      })
+      .then(function(rows){
+        if(!rows||!rows.length)return false;
+        var res=domMerge(DATA[d.k]||[],rows,domSent(d.k),d.ver);
+        DATA[d.k]=res.list;
+        setDomSent(d.k,res.sent);
+        setDomSince(d.k,res.since);
+        return true;
+      })
+      .catch(function(){return false;});
+  }
+  /* 받은 델타를 로컬 목록에 녹인다 (순수 함수 — tests/domain-sync.js가 이걸
+     그대로 뽑아 돌린다). 반환 {list, sent, since}.
+     ⚠ 받은 항목은 **'올려 둔 것'으로도 표시**한다. 안 그러면 다음 push가
+     방금 받은 걸 그대로 되올려 두 기기가 서로를 밀어 올리며 돈다.
+     ⚠ 삭제 표식은 로컬에서 지우고 sent에서도 뺀다 — sent에 남으면 다음
+     push가 "로컬에 없다"고 보고 tombstone을 또 만든다. */
+  function domMerge(list,rows,sent,ver){
+    list=list.slice();
+    var idx={};list.forEach(function(x,i){if(x&&x.id)idx[x.id]=i;});
+    var drop={},since=null;
+    rows.forEach(function(r){
+      since=r.updated_at||since;
+      if(r.deleted){
+        if(idx[r.id]!=null)drop[idx[r.id]]=1;
+        delete sent[r.id];
+        return;
+      }
+      var obj=r.payload||{};obj.id=r.id;
+      if(idx[r.id]!=null)list[idx[r.id]]=obj;else{idx[r.id]=list.length;list.push(obj);}
+      sent[r.id]=String(ver(obj));
+    });
+    if(Object.keys(drop).length)list=list.filter(function(_,i){return !drop[i];});
+    return {list:list,sent:sent,since:since};
+  }
+  /* 올릴 행 고르기 (순수 함수 — 같이 테스트한다).
+     ⚠ **sent가 비어 있으면 tombstone을 만들지 않는다**: 새 브라우저는 아직
+     아무것도 안 올려 봤으므로 "로컬에 없다"가 곧 "지웠다"가 아니다. */
+  function domRows(list,sent,ver,uid,dev){
+    var rows=[],live={};
+    (list||[]).forEach(function(x){
+      if(!x||!x.id)return;
+      live[x.id]=1;
+      var v=String(ver(x));
+      if(sent[x.id]!==v)rows.push({user_id:uid,id:x.id,payload:x,deleted:false,device_id:dev});
+    });
+    Object.keys(sent).forEach(function(id){
+      if(!live[id])rows.push({user_id:uid,id:id,payload:{},deleted:true,device_id:dev});
+    });
+    return rows;
+  }
+  /* 바뀐 행만 push. 한 번에 200행씩 (첫 backfill이 수천 행일 수 있다). */
+  function pushDomain(d,tok){
+    if(!session||domainsOK===false)return Promise.resolve(0);
+    var rows=domRows(DATA[d.k]||[],domSent(d.k),d.ver,session.user.id,webDeviceId());
+    if(!rows.length)return Promise.resolve(0);
+    var chunks=[];for(var i=0;i<rows.length;i+=200)chunks.push(rows.slice(i,i+200));
+    var done=0;
+    return chunks.reduce(function(p,c){
+      return p.then(function(){
+        return fetch(SUPA_URL+'/rest/v1/'+d.tbl,{method:'POST',
+          headers:domHeaders(tok,{'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'}),
+          body:JSON.stringify(c)})
+        .then(function(r){
+          if(domMissing(r)){domainsOK=false;return;}
+          if(!r.ok){r.text().then(function(t){console.warn('[harufocus] '+d.tbl+' 저장 실패',r.status,t);});return;}
+          domainsOK=true;
+          var m=domSent(d.k);
+          c.forEach(function(row){
+            if(row.deleted)delete m[row.id];else m[row.id]=String(d.ver(row.payload));
+          });
+          setDomSent(d.k,m);done+=c.length;
+        });
+      });
+    },Promise.resolve()).then(function(){return done;});
+  }
+  function pullDomains(){
+    if(!session||domainsOK===false)return Promise.resolve(false);
+    return freshToken().then(function(tok){
+      if(!tok)return false;
+      return DOMAINS.reduce(function(p,d){
+        return p.then(function(any){return pullDomain(d,tok).then(function(r){return any||r;});});
+      },Promise.resolve(false));
+    }).catch(function(){return false;});
+  }
+  function pushDomains(){
+    if(!session||domainsOK===false)return Promise.resolve(0);
+    return freshToken().then(function(tok){
+      if(!tok)return 0;
+      return DOMAINS.reduce(function(p,d){
+        return p.then(function(n){return pushDomain(d,tok).then(function(r){return n+r;});});
+      },Promise.resolve(0));
+    }).catch(function(){return 0;});
   }
   function saveSession(j){session={access_token:j.access_token,
     // 토큰 갱신 재료 (버그 수정: 이걸 안 저장해 1시간 뒤 모든 쓰기가 401 →
@@ -7904,8 +8074,15 @@
   // 몇 초마다 아주 가벼운 updated_at만 조회(≈100바이트)해서, 다른 기기가
   // 바꿨을 때만 전체 스냅샷을 받아온다 (요청: 몇 초 뒤 반영 + egress 최소화).
   var lastSeenUpdated=null;
+  /* 도메인 표는 sundial_state를 안 건드리고도 바뀐다(반대편이 세션만 남긴
+     경우). 메타 폴로는 그걸 못 보므로 **가끔 델타도 확인**한다 — 바뀐 게
+     없으면 응답이 빈 배열이라 사실상 공짜다. 매 틱마다 하면 요청 수만 두
+     배가 되므로 5틱(≈30초~100초)에 한 번. */
+  var domTick=0;
   function pollSync(){
     if(document.hidden||!session||pushTimer||pushing)return;
+    if(domainsOK!==false&&(domTick++%5)===0)
+      pullDomains().then(function(any){if(any)renderAll();});
     freshToken().then(function(tok){if(!tok)throw 0;
       return fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=updated_at,device_id',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok}});})
     .then(function(r){return r.json();}).then(function(rows){
