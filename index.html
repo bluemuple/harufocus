@@ -338,7 +338,11 @@
   /* 마감선 제목 띠와 겹칠 때만 블록이 오른쪽으로 물러난다 (앱 파리티).
      늘 좁히면 블록이 손해라 **겹칠 때만**. 히스테리시스가 있어 경계에서
      떨지 않는다. */
-  .block.rec.pushed{left:169px}
+  /* ⚠ 왼쪽만 밀면 **오른쪽 2줄 글자를 덮는다**(요청 버그). 오른쪽 글자는
+     right:16px + 폭 84 = 오른쪽 끝에서 100px를 쓰므로 그만큼 비운다. */
+  /* 오른쪽 글자의 실제 왼쪽 끝 = 8(.dueline right) + 16(.dl-right right)
+     + 84(폭) = 오른쪽 끝에서 **108px**. 6px 틈을 두어 114. */
+  .block.rec.pushed{left:169px;right:114px}
   .dueline .dl-text{transition:right .15s ease}
   .dueline.narrow .dl-text{right:auto;max-width:65px}
   .dueline.narrow .dl-text .dl-title{font-size:12px;line-height:1.16;white-space:normal;
@@ -367,13 +371,22 @@
     background:repeating-linear-gradient(45deg,rgba(120,130,150,.45) 0 6px,rgba(235,240,248,.5) 6px 12px)}
   .block.rec .brest{position:absolute;left:0;right:0;z-index:1;pointer-events:none;background:rgba(107,194,250,.9)}
   .block.rec.active{box-shadow:0 0 0 2px rgba(255,255,255,.65);z-index:6}
-  .block{position:absolute;left:52px;right:14px;border-radius:10px;padding:8px 12px;z-index:3;color:#fff;
-    font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px;overflow:hidden;
+  /* ⚠ 블록 안은 **좌상단에 심볼+작업명, 우하단에 길이** (요청, 앱 파리티).
+     예전엔 가운데 정렬 한 줄이라 블록이 좁아지면 이름이 duration에 밀려
+     '…'이 됐다. 위아래로 갈라 두면 좁아져도 이름이 제 폭을 다 쓴다. */
+  .block{position:absolute;left:52px;right:14px;border-radius:10px;padding:6px 10px;z-index:3;color:#fff;
+    font-weight:600;font-size:13.5px;display:flex;align-items:flex-start;gap:6px;overflow:hidden;
     border:1px solid rgba(255,255,255,.32);box-shadow:0 1px 5px rgba(0,0,0,.22)}
   .block .belapsed{position:absolute;left:0;right:0;top:0;z-index:0;pointer-events:none;border-radius:11px 11px 0 0}
   .block>.bic,.block>.btitle,.block>.bplay,.block>.bx,.block>small{position:relative;z-index:1}
   .block .btitle{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .block>small{margin-left:6px;order:9}
+  /* 좁아진 블록: 글자·심볼을 한 단계 줄여 이름이 더 들어가게 (요청). */
+  .block.rec.pushed{font-size:12px}
+  .block.rec.pushed .bic svg{width:13px;height:13px}
+  .block.rec.pushed>small{font-size:10px;right:8px;bottom:4px}
+  .block.rec.pushed.big{font-size:14px}
+  .block.rec.pushed.big .bic svg{width:14px;height:14px}
+  .block>small{position:absolute;right:10px;bottom:5px;margin:0;order:9}
   .block small{font-weight:700;opacity:.75;font-size:11px}
   /* 확대 티어 (앱 8833b9e): h>=44 = big — 제목 .title3(20)·심볼 .body(17)·duration .subheadline(15) */
   .block.big{font-size:20px}
