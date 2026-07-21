@@ -379,21 +379,20 @@
   .skip-toast.in{opacity:1;transform:translate(-50%,0)}
   .block.rec.tiny{padding:0;border-radius:3px}
   /* 블록 밖(윗변 위)으로 뺀 라벨 — 하늘 위에 놓이므로 글자색은 onSky. */
-  /* B3 (요청 C안): 짧은 블록의 라벨은 블록 윗변 **위**에 얹히는데, 바로 위에
-     다른 블록이 있으면 그 글자와 겹쳐 둘 다 못 읽었다. 라벨 뒤에 하늘색을 살짝
-     가린 **반투명 알약**을 깔아 자기 글자만 또렷하게 한다.
-     ⚠ 불투명 배경으로 하면 위 블록을 잘라먹는 것처럼 보인다 — 하늘이 비쳐야
-     '위에 얹힌 라벨'로 읽힌다. 폭은 글자만큼만(width:max-content). */
-  /* ⚠ 알약이 글자만 감싸도록 라벨을 **내용 폭**으로 줄인다 — 예전엔 left/right로
-     전체 폭을 차지해서, 알약을 깔면 빈 오른쪽까지 통째로 덮였다. */
+  /* B3 (재설계): 짧은 블록의 라벨은 블록 윗변 **위**에 얹히는데, 바로 위에
+     다른 블록이 있으면 그 글자와 겹쳐 둘 다 못 읽었다. 처음엔 라벨 뒤에
+     반투명 알약을 깔았지만(5b1986f) 그건 가리는 것일 뿐이다 — **마감선 제목과
+     똑같은 규칙**을 쓴다: 라벨은 왼쪽에 남고, 겹치는 그 블록이 오른쪽으로
+     물러난다(.pushed). 자리를 나누므로 둘 다 온전히 읽힌다.
+     ⚠ 폭은 글자만큼만(width:max-content) — left/right로 전체 폭을 차지하면
+     빈 오른쪽까지 클릭 영역이 되고 겹침 판정도 뜻이 없어진다. */
   .rec-lab{position:absolute;left:64px;right:auto;width:max-content;max-width:calc(100% - 126px);
     height:18px;z-index:3;cursor:pointer;
     display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;
     font-size:12.5px;font-weight:700;color:var(--onSky,#141827)}
-  .rec-lab>*{position:relative;z-index:1}
-  .rec-lab::before{content:"";position:absolute;inset:-1px -6px;border-radius:999px;
-    background:rgba(255,255,255,.62);backdrop-filter:blur(3px);z-index:0}
-  body.night .rec-lab::before{background:rgba(18,22,38,.55)}
+  /* 겹칠 땐 물러난 블록의 왼쪽 끝(169px)까지만 — 6px 틈을 둔다.
+     마감선 제목의 `.dueline.narrow .dl-text`와 같은 문법. */
+  .rec-lab.narrow{max-width:99px}
   .rec-lab .bic{flex:none;display:inline-flex;align-items:center;color:inherit}
   .rec-lab .bic svg{width:14px;height:14px}
   .rec-lab .btitle{overflow:hidden;text-overflow:ellipsis;min-width:0}
@@ -3386,8 +3385,13 @@
      마감선을 끌 때 넓힘↔좁힘이 계속 튄다. 한 번 좁아지면 8px 이상 벌어져야
      되돌린다. */
   var DUE_BAND_H=30, DUE_SLACK=8, dueNarrowIds={};
-  function computeNarrow(dueTops,blockRects){
-    var narrowDue={},pushBlk={};
+  /* labRects = 짧은 블록의 '윗변 위 라벨'(.rec-lab). 마감선 제목 띠와 **같은
+     규칙**을 쓴다 — 라벨과 겹치는 블록도 오른쪽으로 물러나고, 라벨은 그
+     한계선까지 좁아진다. (예전엔 라벨 뒤에 반투명 알약을 깔아 가렸다.)
+     ⚠ 라벨엔 히스테리시스가 필요 없다: 판정이 순수 세로 겹침이고 밀어내는 건
+     가로라, 밀어도 판정값이 안 바뀐다(마감선처럼 되먹임하지 않는다). */
+  function computeNarrow(dueTops,blockRects,labRects){
+    var narrowDue={},pushBlk={},narrowLab={};
     dueTops.forEach(function(d){
       var was=!!dueNarrowIds[d.id],slack=was?DUE_SLACK:0,hit=false;
       blockRects.forEach(function(b){
@@ -3395,7 +3399,13 @@
       });
       dueNarrowIds[d.id]=hit;if(hit)narrowDue[d.id]=1;
     });
-    return {due:narrowDue,blk:pushBlk};
+    (labRects||[]).forEach(function(l){
+      blockRects.forEach(function(b){
+        if(b.key===l.key)return;                       // 자기 블록은 제외
+        if(b.top<l.bottom&&b.bottom>l.top){pushBlk[b.key]=1;narrowLab[l.key]=1;}
+      });
+    });
+    return {due:narrowDue,blk:pushBlk,lab:narrowLab};
   }
 
   function renderBig(){
@@ -3449,6 +3459,7 @@
         var lab=document.createElement('div');
         lab.className='rec-lab';
         lab.style.top=(yFor(hf)-LABEL_H-2)+'px';    // 윗변 바로 위
+        lab.dataset.bkey=b.taskID+'@'+b.start;      // 겹침 판정에서 '자기 블록' 식별
         lab.innerHTML=icHTML+titleHTML+durHTML;
         var tk2=taskByID(b.taskID);
         if(tk2)lab.addEventListener('click',function(){openCapture('timeline',{task:tk2});});
@@ -3571,8 +3582,12 @@
         return {key:el.dataset.bkey,top:top,bottom:top+h,el:el};});
       var dueTops=[...sc.querySelectorAll('.dueline')].map(function(el){
         return {id:el.dataset.tid,y:parseFloat(el.style.top)||0,el:el};});
-      var res=computeNarrow(dueTops,blkRects);
+      var labRects=[...sc.querySelectorAll('.rec-lab')].map(function(el){
+        var top=parseFloat(el.style.top)||0;
+        return {key:el.dataset.bkey,top:top,bottom:top+LABEL_H,el:el};});
+      var res=computeNarrow(dueTops,blkRects,labRects);
       dueTops.forEach(function(d){d.el.classList.toggle('narrow',!!res.due[d.id]);});
+      labRects.forEach(function(l){l.el.classList.toggle('narrow',!!res.lab[l.key]);});
       /* 좁힘이 정해진 뒤에 넘침을 잰다 — 좁아지면 폭이 달라지므로 순서가 중요. */
       dueTops.forEach(function(d){
         var ti=d.el.querySelector('.dl-title');if(!ti)return;
