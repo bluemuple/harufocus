@@ -3713,7 +3713,11 @@
   var fPlanAdjust=0,fAdjKeepEnd=false,fAdjOpen=false,fTipTimer=null;
   function fPlanSec(){return Math.max(0,fPlanMin)*60;}
   function fPomoOn(){return fPomo===null?pomoOn():!!fPomo;}
-  function fmtMS(s){var m=Math.floor(s/60);return ('0'+m).slice(-2)+':'+('0'+(s%60)).slice(-2);}
+  /* ⚠ `('0'+m).slice(-2)`는 **세 자리 분을 잘라냈다** — 102분 계획이
+     "02:00"으로 떴다(요청 버그). 앱은 "101:33"처럼 자릿수를 안 자른다.
+     한 자리일 때만 0을 붙이고 그 위로는 그대로 둔다. */
+  function fmtMS(s){var m=Math.floor(s/60);
+    return (m<10?'0'+m:String(m))+':'+('0'+(s%60)).slice(-2);}
   function focusElapsed(){var base=fPaused?fPauseAt:Date.now();return Math.max(0,Math.floor((base-fStart-fPausedAcc)/1000));}
   /* ---------- Focus music (요청: 앱의 집중 사운드 이식) ----------
      원본 음원(각 35~64MB)은 웹에 못 싣는다 — WebAudio로 같은 씬(비·파도·
@@ -3914,11 +3918,30 @@
   // 2색 포모도로 링 (앱 FocusTimerRing segmentArcs 파리티): 링 한 바퀴 = 세션 계획
   // 전체. 작업 호=테마색·휴식 호=하늘색을 미리 칠하고, 바늘(el/plan)이 계획 전체를
   // 쉼 없이 돈다 — 지나간 자리는 작업 0.28·휴식 0.20으로 연하게 남고 중앙은 위상 잔여.
-  var ring2Arcs=[];
-  function pomo2Arcs(planSec){
-    var segs=pomoSegments(Math.round(planSec/60)),arcs=[],acc=0;
-    segs.forEach(function(s){arcs.push({from:acc/planSec,to:Math.min(1,(acc+s.len)/planSec),rest:s.rest});acc+=s.len;});
-    return arcs;
+  var ring2Arcs=[],cycleArcs=[];
+  /* ⚠ 링 한 바퀴 = **1 사이클**(작업 25 + 휴식 5), 계획 전체가 아니다 (요청).
+     102분 계획을 한 바퀴에 다 그리면 눈금이 0·15·30…90이 되어 지금 몇 분째인지
+     읽히지 않고, 5분 휴식은 링에서 1.8%짜리 실오라기가 된다.
+     지금 몇 번째 사이클의 어디인지를 돌려준다 — 초과 구간도 25+5 리듬을 잇는다. */
+  function pomoCycleAt(el,planSec){
+    var segs=pomoSegments(Math.round(planSec/60)),acc=0,cyc=[],out=null;
+    function flush(){
+      if(!cyc.length)return;
+      var len=cyc.reduce(function(a,x){return a+x.len;},0),from=acc-len,a2=0,arcs=[];
+      cyc.forEach(function(x){arcs.push({from:a2/len,to:(a2+x.len)/len,rest:x.rest});a2+=x.len;});
+      if(out==null&&el<acc)out={len:len,off:el-from,arcs:arcs};
+      cyc=[];
+    }
+    for(var i=0;i<segs.length;i++){
+      acc+=segs[i].len;cyc.push(segs[i]);
+      if(segs[i].rest)flush();                    // 휴식으로 한 사이클이 닫힌다
+    }
+    flush();                                      // 휴식 없이 끝난 꼬리
+    if(out)return out;
+    // 계획 소진 뒤 — 앱 초과 체인과 같은 [작업 25 → 휴식 5] 무한 반복.
+    var e2=el-acc,inC=e2%1800;
+    return {len:1800,off:inC,
+            arcs:[{from:0,to:1500/1800,rest:false},{from:1500/1800,to:1,rest:true}]};
   }
   function buildRing2(planSec){
     var svg=document.getElementById('ftRing');if(!svg)return;
@@ -3929,7 +3952,7 @@
       html+='<line x1="'+(cx+Math.cos(a)*r1).toFixed(1)+'" y1="'+(cy+Math.sin(a)*r1).toFixed(1)+'" x2="'+(cx+Math.cos(a)*r2).toFixed(1)+'" y2="'+(cy+Math.sin(a)*r2).toFixed(1)+'" style="stroke:rgba(255,255,255,'+(major?'.38':'.18')+')" stroke-width="'+(major?1.4:1)+'"/>';
       if(major){var lr=r+24;html+='<text class="ftlabel" x="'+(cx+Math.cos(a)*lr).toFixed(1)+'" y="'+(cy+Math.sin(a)*lr+4.2).toFixed(1)+'" text-anchor="middle">'+m+'</text>';}
     }
-    ring2Arcs=pomo2Arcs(planSec);var cat=catColor(fTask.categoryID);
+    ring2Arcs=cycleArcs;var cat=taskDisplayColor(fTask);
     // 세그먼트별 지나간(연한)·남은(불투명) butt-cap 호 2개씩 — 값은 paintRing2에서 매 틱 갱신.
     ring2Arcs.forEach(function(ar,i){var base=ar.rest?REST_COLOR:cat;
       html+='<circle class="ft2p" data-i="'+i+'" cx="150" cy="150" r="114" fill="none" stroke="'+hexA(base,ar.rest?0.20:0.28)+'" stroke-width="10" stroke-linecap="butt" transform="rotate(-90 150 150)" stroke-dasharray="0 100000"/>';
@@ -3940,7 +3963,7 @@
   }
   function paintRing2(planSec,el,ph){
     var svg=document.getElementById('ftRing');if(!svg)return;
-    var C=2*Math.PI*114,prog=Math.min(1,el/planSec),cat=catColor(fTask.categoryID);
+    var C=2*Math.PI*114,prog=Math.min(1,el/planSec),cat=taskDisplayColor(fTask);
     ring2Arcs.forEach(function(ar,i){
       var live=svg.querySelector('.ft2l[data-i="'+i+'"]'),past=svg.querySelector('.ft2p[data-i="'+i+'"]');
       if(live){if(ar.to>prog){var f0=Math.max(ar.from,prog);live.setAttribute('stroke-dasharray',((ar.to-f0)*C)+' '+C);live.setAttribute('stroke-dashoffset',(-f0*C));}
@@ -4077,12 +4100,14 @@
     if(fPomoOn()&&planS>0&&el<planS){
       // 2색 포모도로 링 (앱 FocusTimerRing segmentArcs 파리티): 작업·휴식 호를 미리
       // 칠하고 바늘이 계획 전체를 연속 주행, 중앙은 현재 위상 잔여 카운트다운.
-      var key2='2c|'+planS+'|'+catColor(fTask.categoryID);
-      if(key2!==ftKey){ftKey=key2;buildRing2(planS);}
-      paintRing2(planS,el,ph);
+      var cyc=pomoCycleAt(el,planS);
+      cycleArcs=cyc.arcs;
+      var key2='2c|'+cyc.len+'|'+cyc.arcs.length+'|'+taskDisplayColor(fTask);
+      if(key2!==ftKey){ftKey=key2;buildRing2(cyc.len);}
+      paintRing2(cyc.len,cyc.off,ph);
       document.getElementById('ftTimer').textContent=fmtMS(ph.left);
     }else{
-      var col=ph.rest?REST_COLOR:catColor(fTask.categoryID);
+      var col=ph.rest?REST_COLOR:taskDisplayColor(fTask);
       var key=ph.total+'|'+col+'|'+ph.countdown;
       if(key!==ftKey){ftKey=key;buildRing(ph.total,col,ph.countdown);}
       var prog=ph.countdown?1-(ph.left/ph.total):((el%3600)/3600);
@@ -4304,7 +4329,10 @@
       fPlanMin=t.durationMin||0;fPomo=pomoOn();fRemote=false;fRemoteDev='';
       fSessionID=uuid();
     }
-    document.getElementById('ftTitle').innerHTML=catIcon(t.categoryID)+' '+esc(t.title||'집중');
+    // 집중 화면 제목 — 아이콘은 작업 것(taskIcon), 글자는 흰색이라
+    // 아이콘만 테마색으로 물들인다 (요청: 링과 같은 색).
+    document.getElementById('ftTitle').innerHTML=
+      '<span style="color:'+taskDisplayColor(t)+'">'+taskIcon(t)+'</span> '+esc(t.title||'집중');
     document.getElementById('ftStats').textContent=focusStatsText();   // 제목 아래 정보 한 줄 (앱 statsRow 파리티)
     var h=new Date().getHours();
     document.getElementById('focusScrim').classList.toggle('night',h<6||h>=18);
@@ -4670,7 +4698,10 @@
       '<div class="task-inner">'+
         '<span class="check'+(t.isDone?' done':'')+'" style="border-color:'+chk+(t.isDone?';background:'+chk:'')+'"></span>'+
         (t.iconName
-          ?'<span class="t-icon" style="color:'+(iconTint(t.iconName)||catColor(t.categoryID))+'">'+findIconSvg(t.iconName)+'</span>'
+          /* ⚠ 아이콘 **모양은 그대로**, 색만 작업의 테마색으로 (요청).
+             예전엔 iconTint(아이콘 고유색) ?? 범주색이라, 초록으로 고른
+             '수학'이 파란 √ 로 나왔다 — 링·블록은 테마색인데 여기만 달랐다. */
+          ?'<span class="t-icon" style="color:'+col+'">'+findIconSvg(t.iconName)+'</span>'
           :'<span class="swatch" style="background:'+catColor(t.categoryID)+'"></span>')+
         '<div class="t-main"><div class="t-title">'+esc(t.title)+'</div>'+
           '<div class="t-meta">'+(placed?'<span class="t-time">'+fmtTime(t.scheduledStart)+'</span>':'')+taskMetaHTML(t)+tlBadgeHTML(t)+'</div></div>'+
