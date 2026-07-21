@@ -95,5 +95,28 @@ const orphans = Object.keys(referenced).filter(function (g) {
 t('CAP_KEYWORDS가 가리키는 글리프가 전부 존재 (없으면: ' + orphans.join(',') + ')',
   orphans.length === 0);
 
+// ── 종목별 전용 그림 (앱 divergence 해소) ─────────────────────────────────
+// ⚠ 예전엔 이 열두 개가 전부 dumbbell/film/music/game/leaf 하나로 접혀서,
+//   같은 작업이 앱에선 농구공·웹에선 아령으로 보였다. 앱 IconCatalog가
+//   전용 SF를 쓰는 줄은 웹도 전용 글리프를 가져야 한다.
+const DEDICATED = {
+  '축구': 'ball', '농구': 'basketball', '야구': 'baseball', '배드민턴': 'racket',
+  '테니스': 'racket', '골프': 'golf', '클라이밍': 'climb', '복싱': 'boxing',
+  '태권도': 'martial', '줄넘기': 'jumprope', '유튜브': 'play', '웹툰': 'webtoon',
+  '노래방': 'mic', '퍼즐': 'puzzle', '캠핑': 'tent',
+};
+Object.keys(DEDICATED).forEach(function (word) {
+  const got = W.match(word);
+  t('‘' + word + '’ → ' + DEDICATED[word] + ' (앱 전용 SF와 같은 뜻)',
+    !!got && got.icon === DEDICATED[word]);
+  t('CAP_ICONS에 ' + DEDICATED[word] + ' 글리프가 있다',
+    SRC.indexOf("['" + DEDICATED[word] + "','<") >= 0);
+});
+// 갈라놓은 뒤에도 원래 줄은 그대로여야 한다 (분리하다 흘리지 않았는지).
+[['헬스', 'dumbbell'], ['영화', 'film'], ['보드게임', 'game'], ['낚시', 'leaf'], ['춤', 'music']]
+  .forEach(function (pair) {
+    t('‘' + pair[0] + '’은 그대로 ' + pair[1], W.match(pair[0]).icon === pair[1]);
+  });
+
 console.log(fail ? `\n${fail}/${ran} FAILED` : `\n${ran}/${ran} 통과`);
 process.exit(fail ? 1 : 0);
