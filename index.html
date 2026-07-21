@@ -2943,9 +2943,15 @@
       var plan=t.createdDurationMin||t.durationMin||30;
       var focMin=Math.round(todayFocusSec(t.id)/60);
       var len;
-      if(focMin>=plan)len=30;                       // 계획 이상 재생 → 30분
-      else if(focMin>0)len=Math.max(5,plan-focMin); // 일부 재생 → 잔여
-      else len=plan;                                // 기록 0 → 계획 그대로
+      /* 얼마를 새로 줄지 (요청, 앱 pushLateDueLines와 한 쌍):
+         · 계획만큼 이미 했다 → 30분 덤
+         · 일부만 했다 → 남은 만큼. 단 **남은 게 30분 미만이면 30분**을
+           준다(요청 개정): 5분·10분짜리 조각은 다시 앉아 붙기엔 너무 짧아
+           오히려 실패를 예약하는 셈이었다.
+         · 하나도 안 했다 → 원래 계획 길이 그대로 */
+      if(focMin>=plan)len=30;
+      else if(focMin>0)len=Math.max(30,plan-focMin);
+      else len=plan;
       var due=cursor+len*60000;
       t.planDueAt=new Date(due).toISOString();
       t.durationMin=len;
