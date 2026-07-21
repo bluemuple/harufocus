@@ -541,7 +541,13 @@
   .task.done .t-title{text-decoration:line-through;color:var(--ink-soft)}
   .t-meta{display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap}
   .t-dur{font-size:11px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+  /* 목표를 채운 작업 (B2) — 남은 시간 자리에 들어가는 유일한 '끝' 상태라 색으로 구분. */
+  .t-dur.goal-done{color:#3aa76d;font-weight:700}
   .t-hint{font-size:10.5px;font-weight:700;color:var(--ink-soft);background:var(--card-2);border-radius:999px;padding:1px 7px}
+  /* 글자 대신 기호로 접은 캡슐 (B2: 목표 칩이 길어져 메타 줄이 넘쳤다). */
+  .t-hint.t-ico{display:inline-flex;align-items:center;gap:2px;padding:1px 6px;vertical-align:middle}
+  .t-hint.t-ico .ic{width:12px;height:12px}
+  .t-hint.t-ico b{font-size:10px;font-weight:800}
   .ic{width:1.06em;height:1.06em;vertical-align:-0.16em;display:inline-block}
   .t-memo{border:0;background:transparent;font-size:15px;cursor:pointer;opacity:.6;padding:0 2px;color:var(--ink-soft)}
   .memo-view{min-height:60px;font-size:14.5px;line-height:1.55;color:var(--ink);white-space:pre-wrap;word-break:break-word;cursor:text;padding:4px 2px}
@@ -2304,10 +2310,15 @@
   // 작업 메타 칩(요청: duration · 매트릭스 힌트 · 보상) — 할일/매트릭스/타임라인 공용.
   function taskMetaHTML(t){
     var out='';
-    var dur=t.durationMin||0;
-    // 앱 TodoView 파리티: 항상 '\(durationMin)분' (0분도 '0분', 시간 합성·'실시간' 없음).
-    out+='<span class="t-dur">'+dur+'분</span>';
-    if(t.matrixQuadrant&&!t.isRewardItem)out+='<span class="t-hint">'+quadHint(t.matrixQuadrant)+'</span>';
+    // B2 (요청): duration = **오늘 집중 목표**. '목표 25분' → 1분 뒤 '24분 남음'.
+    out+=goalLabelHTML(t);
+    /* 매트릭스 칸도 기호+번호로 접는다 (B2 후속, 백로그 제안) — '빨리 처리'
+       네 글자가 목표 칩과 나란히 서면 메타 줄이 두 줄이 된다. 번호는 매트릭스
+       페이지의 칸 번호와 같아 옮겨 읽기 쉽다. 전체 문구는 title/aria에. */
+    if(t.matrixQuadrant&&!t.isRewardItem){
+      var qh=quadHint(t.matrixQuadrant);
+      out+='<span class="t-hint t-ico" title="'+qh+'" aria-label="매트릭스 '+qh+'">'+IC.grid+'<b>'+t.matrixQuadrant+'</b></span>';
+    }
     if(t.isRewardItem)out+='<span class="t-reward">'+IC.gift+'<span class="rtext"> 보상</span></span>';
     else if((t.rewardMoney||0)>0)out+='<span class="t-reward">'+IC.gift+'<span class="rtext"> '+moneyStr(t.rewardMoney)+'</span></span>';
     else if(t.rewardText)out+='<span class="t-reward">'+IC.gift+'<span class="rtext"> '+esc(t.rewardText)+'</span></span>';
@@ -3115,9 +3126,40 @@
     appToast('길이를 '+d+'분으로 똑같이 맞췄어요 — ↩︎로 되돌릴 수 있어요 ('+fut.length+'개)');
   }
   function todayFocusSec(tid){
-    var t0=todayKey(),sum=0;
-    allSessions().forEach(function(x){if(x.taskID===tid&&dateKey(x.start)===t0)sum+=x.focusedSec||0;});
-    return sum;
+    var m=todayFocusMap();return m[tid]||0;
+  }
+  /* ⚠ 한 렌더 안에서 작업마다 세션 전량을 훑으면 O(작업×세션)이라 목록이
+     길어질수록 눈에 띄게 느려진다 — 한 번만 훑어 map으로 만들고 renderAll이
+     시작할 때 버린다. B2(목표/남음)가 모든 행에서 이걸 부르므로 필수. */
+  var _tfMap=null;
+  function todayFocusMap(){
+    if(_tfMap)return _tfMap;
+    var t0=todayKey(),m={};
+    allSessions().forEach(function(x){if(dateKey(x.start)===t0)m[x.taskID]=(m[x.taskID]||0)+(x.focusedSec||0);});
+    _tfMap=m;return m;
+  }
+  /* ---------- B2: duration = '오늘 집중 목표' (요청 확정) ----------
+     블록이 더는 추가 시 생기지 않으므로, 할일/매트릭스에서 정하는 duration은
+     '이 작업을 오늘 이만큼 하겠다'는 **목표**다. 그래서 화면엔 남은 만큼을
+     보여주고, ▶를 다시 눌렀을 때의 포모도로도 **남은 만큼**으로 잡는다. */
+  function goalRemainMin(t){
+    var g=t.durationMin||0;if(g<=0)return 0;
+    return Math.max(0,g-Math.floor(todayFocusSec(t.id)/60));
+  }
+  /* ▶ 를 누를 때의 계획 분. 목표를 이미 채웠으면 0(실시간)으로 — 더 하고 싶어
+     누른 것이니 링을 다시 채우게 하지 않는다. */
+  function focusPlanFor(t){
+    var g=t.durationMin||0;if(g<=0)return 0;
+    return goalRemainMin(t);
+  }
+  /* 할일·매트릭스 bar의 목표 칩 (요청 문구: '목표 25분' → '24분 남음'). */
+  function goalLabelHTML(t){
+    var g=t.durationMin||0;
+    if(g<=0)return '<span class="t-dur">실시간</span>';
+    var done=Math.floor(todayFocusSec(t.id)/60);
+    if(done<=0)return '<span class="t-dur">목표 '+durLabel(g)+'</span>';
+    if(done>=g)return '<span class="t-dur goal-done">목표 달성</span>';
+    return '<span class="t-dur">'+durLabel(g-done)+' 남음</span>';
   }
   // 마감집게 (D2-3): 마지막 선 아래, 드래그 = 미래 미완료 선 간격 비율 스케일.
   function addDueClamp(sc){
@@ -4326,8 +4368,10 @@
       fSessionID=opt.sessionID||uuid();      // 시작한 기기의 식별자를 물려받는다
       if(opt.planAdjustMin!=null)fPlanAdjust=opt.planAdjustMin;
     }else{
-      // 내가 시작한 세션: 계획은 이 작업의 길이, 포모도로는 이 기기 설정.
-      fPlanMin=t.durationMin||0;fPomo=pomoOn();fRemote=false;fRemoteDev='';
+      /* 내가 시작한 세션 — 계획은 **오늘 남은 목표**다 (B2 요청):
+         25분 목표에서 1분 하고 다시 누르면 포모도로가 24분으로 잡힌다.
+         목표를 이미 채웠거나 목표가 없으면(0) 실시간. */
+      fPlanMin=focusPlanFor(t);fPomo=pomoOn();fRemote=false;fRemoteDev='';
       fSessionID=uuid();
     }
     // 집중 화면 제목 — 아이콘은 작업 것(taskIcon), 글자는 흰색이라
@@ -4675,7 +4719,12 @@
     var n=0;
     try{n=dayRecordBlocks(todayKey()).filter(function(b){return b.taskID===t.id;}).length;}catch(_){}
     if(!hasPlan&&!n)return '';
-    return '<span class="t-hint" style="background:var(--card-2)">타임라인'+(n||'')+'</span>';
+    /* B2로 목표 칩이 '목표 1시간 30분'까지 길어져 메타 줄이 두 줄로 넘쳤다.
+       bar 높이를 키우는 대신 **가장 덜 읽히는 캡슐부터 아이콘으로 접는다**
+       (백로그 제안): '타임라인' 네 글자는 해돋이 기호 하나로 충분하다.
+       개수(n)는 뜻이 있으므로 남긴다. 접근성 이름엔 원래 글자를 유지. */
+    return '<span class="t-hint t-ico" style="background:var(--card-2)" title="타임라인'+(n||'')+'"'+
+      ' aria-label="타임라인'+(n||'')+'">'+IC.sunrise+(n?'<b>'+n+'</b>':'')+'</span>';
   }
   // 인라인 하위작업 펼침 상태 — renderTodo 재렌더에도 유지 (앱 expandedTask 파리티).
   var expandedTaskId=null;
@@ -6510,7 +6559,8 @@
     t.style.opacity='1';
     clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},2600);
   }
-  function renderAll(){renderCalStrips();renderBig();renderMosaic();renderTodo();renderMatrix();renderRoutine();renderBucket();renderDiary();}
+  function renderAll(){_tfMap=null;   // 오늘 집중 map 무효화 (B2)
+    renderCalStrips();renderBig();renderMosaic();renderTodo();renderMatrix();renderRoutine();renderBucket();renderDiary();}
 
   /* ---------- tab + mode switching ---------- */
   function setTab(name){
