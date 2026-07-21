@@ -276,7 +276,13 @@
   .dueline .dl-text .dl-ic{flex:none;display:inline-flex;align-items:center;color:inherit}
   .dueline .dl-text .dl-ic svg{width:17px;height:17px}
   /* duration = 캡슐 'hh:mm까지'와 같은 크기 (앱 dueDurationFont .caption2 + durationOpacity .75) */
-  .dueline .dl-text .dl-dur{flex:none;font-size:11px;font-weight:600;opacity:.75}
+  /* ⚠ **폭을 미리 예약**한다 (요청): 마감선을 위아래로 끌면 durLabel이
+     '2시간'↔'2시간 8분'처럼 길이가 변해 오른쪽 ▶ 버튼이 좌우로 흔들렸다.
+     durLabel이 낼 수 있는 가장 긴 문자열('20시간 48분')을 이 폰트(11px/600)로
+     실측하면 60.88px — 62px를 잡아 두면 어떤 duration에도 ▶가 안 움직인다.
+     ⚠ 작업명은 예약 대상이 아니다 — 이름이 길어지면 ▶도 따라 밀린다(요청). */
+  .dueline .dl-text .dl-dur{flex:none;font-size:11px;font-weight:600;opacity:.75;
+    min-width:62px}
   .dueline .dl-cap{position:absolute;right:0;top:-9px;background:var(--tl-accent,#80CDE9);color:var(--tl-onaccent,#141827);font-size:11px;font-weight:800;
     border-radius:999px;padding:2px 6px;box-shadow:0 3px 8px rgba(20,40,80,.22);cursor:ns-resize;touch-action:none;user-select:none}
   .tl-night .dl-cap{background:#273B9E;color:#F5F7FF}
