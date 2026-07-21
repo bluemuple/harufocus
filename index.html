@@ -259,13 +259,23 @@
      밑으로 2px 파고들게 한다. */
   /* '지금' 라인 색 (요청): 빨강 #E34238 → 주황톤 #FC9975. 빨강은 '경고'로
      읽혀 하루 종일 떠 있기엔 셌다. 앱 TimelineScrollView.markerRed와 한 쌍. */
-  .now{position:absolute;left:8px;right:12px;z-index:4;display:flex;align-items:center;gap:0}
+  /* ⚠ 오른쪽 끝은 **마감선과 완전히 같아야 한다** (요청): 컨테이너 right를
+     마감선과 같은 8px로 맞추고, 점도 마감선 .dl-wire::after와 같은 7px·right:-3px.
+     예전엔 right:12px + 5px 점이라 크기도 위치도 미묘하게 어긋났다. */
+  .now{position:absolute;left:0;right:8px;z-index:4;display:flex;align-items:center;gap:0;pointer-events:none}
+  /* '지금' 캡슐 오른쪽 끝 = ▶ 버튼 오른쪽 끝 (요청). ▶는 left:41 + 30 = 71px이라
+     그 폭의 칸을 두고 캡슐을 오른쪽 정렬한다 — 글꼴이 바뀌어 캡슐 폭이 달라져도
+     오른쪽 끝은 그대로 71px에 남는다. */
+  .now .pill-zone{flex:none;width:71px;display:flex;justify-content:flex-end}
   .now .pill{background:#FC9975;color:#fff;font-weight:800;font-size:11px;padding:3px 8px;border-radius:8px}
   .now .wire{flex:1;height:2px;background:#FC9975;border-radius:2px;position:relative;margin-left:-2px}
   /* 요청: 지금 라인의 작은 동그라미는 왼쪽 → 오른쪽 끝으로 */
-  .now .wire::before{content:"";position:absolute;right:-2px;top:-1.5px;width:5px;height:5px;border-radius:50%;background:#FC9975}
+  .now .wire::before{content:"";position:absolute;right:-3px;top:-2.5px;width:7px;height:7px;border-radius:50%;background:#FC9975}
   /* 마감선 (델타 §2): 계획 = 가로 선. 텍스트는 선의 밑줄처럼 위에. */
-  .dueline{position:absolute;left:0;right:8px;height:0;z-index:4}
+  /* ⚠ z-index가 '지금' 라인(4)보다 높아야 한다 (요청): 둘 다 4였고 '지금'이
+     DOM 뒤라 위에 깔려, ▶ 버튼이 지금 캡슐과 겹치면 캡슐이 탭을 가로챘다.
+     칠 순서와 히트테스트가 같이 뒤집힌다. */
+  .dueline{position:absolute;left:0;right:8px;height:0;z-index:5}
   /* 마감선 가로 3구역 (앱 파리티):
        [▶] ○ 작업명 …… (선 위, 아랫변 기준 = 선이 밑줄)      08:33까지
        ─────────────────────────────────────────────         45분 남음
@@ -3416,7 +3426,7 @@
     });
     var nf=(nowHf!=null)?nowHf:TS+1.5;   // 라벨과 **같은 수** (위 참조)
     if(dayOffset===0){
-      var n=document.createElement('div');n.className='now';n.style.top=yFor(nf)+'px';n.innerHTML='<span class="pill">지금</span><span class="wire"></span>';sc.appendChild(n);}
+      var n=document.createElement('div');n.className='now';n.style.top=yFor(nf)+'px';n.innerHTML='<span class="pill-zone"><span class="pill">지금</span></span><span class="wire"></span>';sc.appendChild(n);}
     if(!any){var e=document.createElement('div');e.className='tl-empty';e.textContent='이 날 일정이 비어 있어요.';sc.appendChild(e);}
     /* 겹칠 때만 좁히기 (앱 파리티) — 마감선·블록을 다 붙인 뒤 한 번에 판정.
        DOM 좌표가 아니라 **이미 계산해 둔 top/height**를 쓴다: 레이아웃을
