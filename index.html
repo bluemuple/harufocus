@@ -310,6 +310,16 @@
      웹 dayRecordBlocks의 rest는 전부 세션 사이 갭이라 현재는 .bhatch만 쓴다. */
   .block.rec{left:64px;right:62px;cursor:pointer}
   /* 아주 짧은 블록: 안쪽 여백 없이 색 막대만 — 높이가 곧 시간이다. */
+  /* "5분 미만이라 안 남겼어요" 하단 토스트 (요청) — 앱 캡슐과 같은 톤. */
+  /* ⚠ bottom은 **+ FAB 위**로 (실측: FAB top 678 / 뷰포트 812 → 148px면
+     그 위로 비껴간다). 86px이던 첫 판은 FAB와 정확히 겹쳐, 반투명
+     캡슐 뒤로 파란 + 가 비쳤다. */
+  .skip-toast{position:fixed;left:50%;bottom:148px;transform:translate(-50%,14px);z-index:80;
+    padding:11px 16px;border-radius:999px;font-size:13px;font-weight:600;color:#fff;
+    background:rgba(28,34,48,.82);backdrop-filter:blur(8px);
+    box-shadow:0 4px 14px rgba(0,0,0,.28);pointer-events:none;
+    opacity:0;transition:opacity .3s ease,transform .3s ease;white-space:nowrap;max-width:92vw}
+  .skip-toast.in{opacity:1;transform:translate(-50%,0)}
   .block.rec.tiny{padding:0;border-radius:3px}
   /* 블록 밖(윗변 위)으로 뺀 라벨 — 하늘 위에 놓이므로 글자색은 onSky. */
   .rec-lab{position:absolute;left:64px;right:62px;height:18px;z-index:3;cursor:pointer;
@@ -1914,6 +1924,12 @@
       <label><input type="checkbox" id="setPostItQ4"> 적으면 Q4(나중에)에 담기</label>
     </div>
 
+    <div class="set-sec">짧은 집중</div>
+    <div class="set-toggles">
+      <label><input type="checkbox" id="setKeepShort"> 5분 미만도 블록으로 남기기</label>
+    </div>
+    <div class="msub">꺼 두면 5분 미만 집중은 타임라인에 블록을 남기지 않아요. 집중한 시간 자체는 물통·통계에 그대로 쌓이고, 켜면 지나간 짧은 기록도 다시 보여요.</div>
+
     <div class="set-sec">기타</div>
     <button class="set-row-btn" id="setStatsBtn">통계 보기</button>
 
@@ -2279,6 +2295,14 @@
   /* 기록 블록 안에 글자를 넣을 수 있는 최소 높이 / 밖으로 뺀 라벨의 높이.
      이보다 짧으면 블록은 정확한 높이를 지키고 라벨만 윗변 위로 나간다. */
   var LABEL_MIN_H=26, LABEL_H=18;
+  /* 이 시간 **미만**으로 집중한 기록은 타임라인에 블록을 그리지 않는다 (요청:
+     1~3분짜리가 쌓이면 블록이 2~6px로 그려지고 라벨끼리 겹쳐 지저분해진다).
+     기록 자체(세션·누적 시간·통계)는 그대로 남는다 — 안 그리는 건 그림뿐.
+     ⚠ 기준은 **집중한 시간**이지 통의 길이가 아니다: 3분 집중 + 10분 쉼은
+     통이 13분이라 안 지저분하지만 '수행'은 3분이라 규칙대로 안 그린다.
+     앱 FocusManager.shortBlockMinSec와 한 쌍. */
+  var SHORT_FOCUS_SEC=300;
+  function keepShortBlocks(){return !!(DATA.settings&&DATA.settings.keepShortBlocks);}
   function selDate(){var d=new Date();d.setDate(d.getDate()+dayOffset);return d;}
   function selKey(){var d=selDate();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
   // ── 주간/월간 캘린더 스트립 (앱 CalendarHeader 파리티, 요청) ──
@@ -2826,15 +2850,22 @@
       if(last&&gap>=0&&gap<=1800000&&!otherBetween(x.taskID,last.end,st)){
         if(st>last.end)last.rest.push({s:last.end,e:st});      // 갭=쉼 빗금
         last.end=Math.max(last.end,en);
-      }else blocks.push({taskID:x.taskID,title:x.taskTitle||'',categoryID:x.categoryID||'focus',start:st,end:en,rest:[]});
+      }else blocks.push({taskID:x.taskID,title:x.taskTitle||'',categoryID:x.categoryID||'focus',start:st,end:en,rest:[],foc:0});
+      // 합쳐진 블록이든 새 블록이든, 그 블록에 실제로 집중한 초를 누적한다.
+      var cur=lastOf(x.taskID);if(cur)cur.foc=(cur.foc||0)+(x.focusedSec||0);
     });
     if(fTask&&tk===todayKey()){                                 // 활성 = 지금까지 자라는 중
       var st2=fStart,en2=Date.now(),last2=lastOf(fTask.id),gap2=last2?st2-last2.end:1/0;
       if(last2&&gap2>=0&&gap2<=1800000&&!otherBetween(fTask.id,last2.end,st2)){
         if(st2>last2.end)last2.rest.push({s:last2.end,e:st2});
         last2.end=en2;last2.active=true;
-      }else blocks.push({taskID:fTask.id,title:fTask.title||'',categoryID:fTask.categoryID||'focus',start:st2,end:en2,rest:[],active:true});
+      }else blocks.push({taskID:fTask.id,title:fTask.title||'',categoryID:fTask.categoryID||'focus',start:st2,end:en2,rest:[],foc:0,active:true});
     }
+    /* 5분 미만 집중은 안 그린다 (요청) — 지금 재생 중인 블록은 예외다:
+       이제 막 시작해 0분이지만 지금 선을 따라 자라는 중이라 보여야 한다.
+       설정 '5분 미만도 블록으로 남기기'를 켜면 옛 기록까지 한꺼번에 돌아온다. */
+    if(!keepShortBlocks())blocks=blocks.filter(function(b){
+      return b.active||(b.foc||0)>=SHORT_FOCUS_SEC;});
     return blocks;
   }
 
@@ -4156,11 +4187,28 @@
     var el=focusElapsed();
     fTask.actualFocusedSec=(fTask.actualFocusedSec||0)+el;fTask.cumulativeFocusedSec=(fTask.cumulativeFocusedSec||0)+el;fTask.lastFocusedAt=new Date().toISOString();
     if(el>=5){if(!DATA.sessions)DATA.sessions=[];DATA.sessions.push({id:uuid(),taskID:fTask.id,taskTitle:fTask.title||'',categoryID:fTask.categoryID||'focus',start:new Date(fStart).toISOString(),end:new Date().toISOString(),focusedSec:el});}
+    /* 5분 미만이면 블록을 안 그린다 (요청) — 기록(세션·누적)은 위에서 이미
+       남겼고, 여기선 "왜 안 보이지?" 소리를 안 듣게 안내 플래그만 세운다. */
+    shortSkipPending=(el>=5&&el<SHORT_FOCUS_SEC&&!keepShortBlocks())?el:0;
+  }
+  var shortSkipPending=0;
+  /* "5분 미만이라 안 남겼어요" 안내 — 집중 화면을 닫는 순간 하단에 떴다가
+     4초 뒤 사라진다 (앱 MainTabView의 shortSkipText와 한 쌍). */
+  function showShortSkipToast(sec){
+    var m=Math.max(1,Math.round(sec/60));
+    var old=document.getElementById('shortSkipToast');if(old)old.remove();
+    var d=document.createElement('div');d.id='shortSkipToast';d.className='skip-toast';
+    d.textContent=m+'분이라 타임라인엔 안 남겼어요 · 기록은 남았어요';
+    document.body.appendChild(d);
+    requestAnimationFrame(function(){d.classList.add('in');});
+    setTimeout(function(){d.classList.remove('in');
+      setTimeout(function(){if(d.parentNode)d.remove();},500);},4000);
   }
   function finishFocus(){if(!fTask)return;
     var el=focusElapsed(),title=fTask.title||'집중';   // fTask=null 되기 전 캡처 (앱 파리티)
     endFocusSession();
     document.getElementById('focusScrim').classList.remove('open');fTask=null;fPomo=null;fPlanMin=0;fRemote=false;fSessionID=null;fmStop();renderAll();pushSnapshot();
+    if(shortSkipPending){showShortSkipToast(shortSkipPending);shortSkipPending=0;}
     // 집중 후 기분 체크인 (앱 maybeMoodCheckIn): 10분+ · 하루 2회 · 다른 팝업 없을 때.
     if(el>=600&&moodDayCount()<2&&!document.getElementById('rewardPop'))
       showMoodCard(title,Math.max(1,Math.floor(el/60)));
@@ -4244,6 +4292,7 @@
     document.getElementById('setVow').value=s.motto||s.todayVow||'';
     document.getElementById('setEleName').value=s.eleName||'';
     renderCapIconSettings();
+    document.getElementById('setKeepShort').checked=!!s.keepShortBlocks;
     document.getElementById('setPostIt').checked=localStorage.getItem('hfPostItOn')!=='0';
     document.getElementById('setPostItQ4').checked=localStorage.getItem('hfPostItToQ4')!=='0';
     var scen=s.sceneryRaw||'plain';
@@ -7185,6 +7234,12 @@
         document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
       });});
   }
+  document.getElementById('setKeepShort').addEventListener('change',function(){
+    // 정본은 설정 스냅샷 — 앱 AppSettings.keepShortBlocks와 같은 키로 오간다.
+    if(!DATA.settings)DATA.settings={};
+    DATA.settings.keepShortBlocks=this.checked;
+    renderAll();pushSnapshot();
+  });
   document.getElementById('setPostIt').addEventListener('change',function(){
     localStorage.setItem('hfPostItOn',this.checked?'1':'0');paintPostit();});
   document.getElementById('setPostItQ4').addEventListener('change',function(){
