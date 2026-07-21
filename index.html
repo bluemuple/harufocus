@@ -309,6 +309,16 @@
      = solid 하늘색(.brest), 정지로 나갔다 재개한 '갭' = 빗금(.bhatch).
      웹 dayRecordBlocks의 rest는 전부 세션 사이 갭이라 현재는 .bhatch만 쓴다. */
   .block.rec{left:64px;right:62px;cursor:pointer}
+  /* 아주 짧은 블록: 안쪽 여백 없이 색 막대만 — 높이가 곧 시간이다. */
+  .block.rec.tiny{padding:0;border-radius:3px}
+  /* 블록 밖(윗변 위)으로 뺀 라벨 — 하늘 위에 놓이므로 글자색은 onSky. */
+  .rec-lab{position:absolute;left:64px;right:62px;height:18px;z-index:3;cursor:pointer;
+    display:flex;align-items:center;gap:6px;white-space:nowrap;
+    font-size:12.5px;font-weight:700;color:var(--onSky,#141827)}
+  .rec-lab .bic{flex:none;display:inline-flex;align-items:center;color:inherit}
+  .rec-lab .bic svg{width:14px;height:14px}
+  .rec-lab .btitle{overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .rec-lab small{font-weight:600;opacity:.72;font-size:11px}
   .block.rec .bhatch{position:absolute;left:0;right:0;z-index:1;pointer-events:none;
     background:repeating-linear-gradient(45deg,rgba(120,130,150,.45) 0 6px,rgba(235,240,248,.5) 6px 12px)}
   .block.rec .brest{position:absolute;left:0;right:0;z-index:1;pointer-events:none;background:rgba(107,194,250,.9)}
@@ -2266,6 +2276,9 @@
      위·아랫변은 실제 시작·종료 시각을 그대로 가리켜야 한다. */
   function hourFrac(ms){var d=new Date(ms);
     return d.getHours()+d.getMinutes()/60+d.getSeconds()/3600;}
+  /* 기록 블록 안에 글자를 넣을 수 있는 최소 높이 / 밖으로 뺀 라벨의 높이.
+     이보다 짧으면 블록은 정확한 높이를 지키고 라벨만 윗변 위로 나간다. */
+  var LABEL_MIN_H=26, LABEL_H=18;
   function selDate(){var d=new Date();d.setDate(d.getDate()+dayOffset);return d;}
   function selKey(){var d=selDate();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
   // ── 주간/월간 캘린더 스트립 (앱 CalendarHeader 파리티, 요청) ──
@@ -3086,9 +3099,26 @@
         return '<div class="bhatch" style="top:'+((r.s-b.start)/span*100)+'%;height:'+((r.e-r.s)/span*100)+'%"></div>';
       }).join('');
       var mins=Math.max(1,Math.round(span/60000));
-      el.innerHTML=hatches+
-        '<span class="bic">'+taskIcon(taskByID(b.taskID)||b)+'</span><span class="btitle">'+esc(b.title)+'</span>'+
-        '<small>'+durLabel(mins)+'</small>';
+      var icHTML='<span class="bic">'+taskIcon(taskByID(b.taskID)||b)+'</span>';
+      var titleHTML='<span class="btitle">'+esc(b.title)+'</span>';
+      var durHTML='<small>'+durLabel(mins)+'</small>';
+      /* ⚠ 아주 짧은 블록(예: 1분=2px)엔 글자가 물리적으로 안 들어간다.
+         그렇다고 블록을 늘리면 아랫변이 '지금' 선과 안 맞는다(요청: 반드시
+         맞닿아야 함). 그래서 **블록은 정확한 높이 그대로 두고, 라벨만 윗변
+         위로 빼서** 하늘 위에 얹는다 (요청). */
+      if(hpx>=LABEL_MIN_H){
+        el.innerHTML=hatches+icHTML+titleHTML+durHTML;
+      }else{
+        el.innerHTML=hatches;                       // 블록은 색·빗금만
+        el.classList.add('tiny');
+        var lab=document.createElement('div');
+        lab.className='rec-lab';
+        lab.style.top=(yFor(hf)-LABEL_H-2)+'px';    // 윗변 바로 위
+        lab.innerHTML=icHTML+titleHTML+durHTML;
+        var tk2=taskByID(b.taskID);
+        if(tk2)lab.addEventListener('click',function(){openEditor(tk2);});
+        sc.appendChild(lab);
+      }
       var task=taskByID(b.taskID);
       if(task)el.addEventListener('click',function(){openEditor(task);});
       sc.appendChild(el);
@@ -3117,7 +3147,18 @@
         return y>=y1-2&&y<=y2+18;});
       // 앱 3009b09('지남' 삭제) + 6e4e3de③(dueDisplayMin 배선 제거): 마감선엔
       // 작업명 + 작업 자체 길이만. 0분이면 생략.
-      var lenTxt=(t.durationMin||0)>0?durLabel(t.durationMin):'';
+      /* 마감선이 '지금' 선보다 위(=이미 지난 마감)면, 계획 길이 대신
+         **지금 기준 얼마나 지났는지**를 보여준다 (요청). 오늘만 — 지난 날엔
+         '지금' 선 자체가 없다. */
+      var lenTxt;
+      if(dayOffset===0&&due.getTime()<Date.now()){
+        /* 요청 문구 그대로 "몇 분(몇 시간)" — 1시간 넘으면 **시간 단위로
+           축약**한다('3시간 20분 지남' 아님). 읽기 쉽고, 폭도 최대
+           55.4px('20시간 지남')라 ▶ 예약폭 62px 안에 들어와 마감선을 끌어
+           지남으로 바뀌는 순간에도 버튼이 안 흔들린다. */
+        var pm=Math.max(1,Math.round((Date.now()-due.getTime())/60000));
+        lenTxt=(pm<60?pm+'분':Math.round(pm/60)+'시간')+' 지남';
+      }else lenTxt=(t.durationMin||0)>0?durLabel(t.durationMin):'';
       dl.innerHTML='<div class="dl-wire"></div>'+
         '<button class="dl-radio'+(t.isDone?' on':'')+'" title="완료" style="--dc:'+catColor(t.categoryID)+'">'+(t.isDone?'✓':'')+'</button>'+
         (covered?'':'<div class="dl-text'+(t.isDone?' done':'')+'"><span class="dl-ic">'+taskIcon(t)+'</span><span class="dl-title">'+esc(t.title)+'</span>'+(lenTxt?'<span class="dl-dur">'+lenTxt+'</span>':'')+'<button class="dl-play" title="집중 시작">'+IC.play+'</button></div>')+
