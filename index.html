@@ -2972,7 +2972,11 @@
      모두 이걸 쓴다 — 예전엔 슬라이더만 길이를 안 바꿔 서로 갈렸다. */
   function nudgeDueTo(t,ms){
     t.planDueAt=new Date(ms).toISOString();
-    if(isPlanOnly(t)&&t.scheduledStart){
+    // 마감선을 옮기면 **계획 길이도 따라간다** (요청 개정, 앱과 같은 규칙).
+    // ⚠ 예전엔 isPlanOnly(집중 이력 없음)일 때만 동기해서, 한 번이라도 집중한
+    // 작업은 마감선을 끌어도 '34분'이 그대로였다. 블록은 세션 기록에서 그리므로
+    // durationMin을 바꿔도 기록은 안 상한다 — 계획은 계획대로 따라오게 한다.
+    if(t.scheduledStart){
       var m=Math.max(5,Math.round((ms-new Date(t.scheduledStart).getTime())/60000));
       if(t.durationMin!==m)t.durationMin=m;
     }
