@@ -1027,9 +1027,14 @@
   .d-badge.dark{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.10);color:#f5f7ff}
   .d-badge.today{background:var(--sky-blue);border-color:transparent;color:#fff}
   .d-cards{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px}
-  .d-card{position:relative;background:rgba(255,255,255,.95);border-radius:14px;padding:10px 12px 10px 15px;
+  .d-card{position:relative;background:rgba(255,255,255,.95);border-radius:14px;padding:0;overflow:hidden;
     box-shadow:0 4px 12px rgba(20,40,80,.12);cursor:pointer;overflow:hidden}
-  .d-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--dc,#9AA3B2)}
+  .d-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--dc,#9AA3B2);z-index:2}
+  /* F7: 여백·배경은 **미는 안쪽(.d-in)**으로 — 카드에 두면 뒤 삭제 버튼이 가려진다. */
+  .d-card .d-in{padding:10px 12px 10px 15px;background:rgba(255,255,255,.95);border-radius:14px;flex-direction:column;align-items:stretch;gap:0}
+  .d-card.dark .d-in{background:rgba(30,38,60,.92)}
+  /* 삭제는 할일과 같은 빨강·휴지통이되 **entry bar처럼 약간 반투명** (요청). */
+  .d-card .d-del{width:72px;background:rgba(255,59,48,.82);backdrop-filter:blur(2px)}
   .d-card.dark{background:rgba(30,38,60,.92);color:#e8ecf6}
   .d-head{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-bottom:4px}
   .d-card.dark .d-head{color:#aab4cc}
@@ -6132,8 +6137,14 @@
     // D5-1: 유저 태그 칩이 범주 칩보다 앞(맨 왼쪽). 태그 필터는 범주와 배타.
     var tagChips=tagCatalog().map(function(tg){
       return '<button class="d-chip tagchip'+(diaryTagFilter===tg?' on':'')+'" data-t="'+esc(tg)+'">'+getTagIcon(tg)+esc(tg)+'</button>';}).join('');
-    document.getElementById('diaryChips').innerHTML=tagChips+chips.map(function(c){
-      return '<button class="d-chip'+(diaryFilter===c[0]&&!diaryTagFilter?' on':'')+'" data-f="'+c[0]+'">'+c[1]+'</button>';}).join('');
+    /* F6 (요청): 새 태그는 **'전체' 캡슐 바로 오른쪽**에 붙는다.
+       예전엔 태그가 통째로 '전체'보다 왼쪽이라, 태그를 더할수록 '전체'가
+       오른쪽으로 밀려 나갔다. tagCatalogAdd가 이미 최신 태그를 앞에 넣으므로
+       '전체' 하나만 앞으로 빼면 새 태그가 그 옆에 온다. */
+    var chipHTML=function(c){
+      return '<button class="d-chip'+(diaryFilter===c[0]&&!diaryTagFilter?' on':'')+'" data-f="'+c[0]+'">'+c[1]+'</button>';};
+    document.getElementById('diaryChips').innerHTML=
+      chipHTML(chips[0])+tagChips+chips.slice(1).map(chipHTML).join('');
     document.querySelectorAll('#diaryChips .d-chip').forEach(function(b){
       b.addEventListener('click',function(){
         if(b.dataset.t!=null){diaryTagFilter=diaryTagFilter===b.dataset.t?null:b.dataset.t;}
@@ -6168,7 +6179,13 @@
           var time=('0'+t.getHours()).slice(-2)+':'+('0'+t.getMinutes()).slice(-2);
           var ph=getPhotos(e),photos='';
           if(ph.length)photos='<div class="d-photos" data-ph="'+esc(ph[0])+'">'+(ph.length>1?'<span class="d-pbadge">+'+(ph.length-1)+'</span>':'')+'</div>';
+          /* F7 (요청): 왼쪽으로 밀면 오른쪽에서 빨강 삭제. 할일 스와이프 삭제와
+             같은 빨강·휴지통이되 **entry bar처럼 약간 반투명**하게(.d-del).
+             ⚠ 내용은 .sub-in으로 감싼다 — 미는 건 안쪽뿐이고 카드는 버튼을
+             담는 틀이 된다(하위 작업 줄과 같은 구조·같은 attachSubSwipe). */
           return '<div class="d-card'+(night?' dark':'')+'" data-id="'+e.id+'" style="--dc:'+m.color+'">'+
+            '<button class="sub-del d-del" title="삭제">'+IC.trash+'</button>'+
+            '<div class="sub-in d-in">'+
             '<div class="d-head">'+m.icon+(m.head?' '+m.head:'')+
             getTags(e).slice(0,3).map(function(tg){return '<span class="d-tag">'+getTagIcon(tg)+esc(tg)+'</span>';}).join('')+
             (getTags(e).length>3?'<span class="d-tag">+'+(getTags(e).length-3)+'</span>':'')+
@@ -6178,12 +6195,20 @@
               '<div class="d-elewrap">'+
               (!localStorage.getItem('hfEleWordHint')?'<span class="d-elehint">날 누르면 이 한마디를 상단에서 숨겨줘요</span>':'')+
               '<button class="d-elebadge" data-id="'+e.id+'" data-open="'+(e.shownInBar?1:0)+'"><img alt=""></button></div>':'')+
-            '</div>';
+            '</div></div>';
         }).join('')+
         taskFootprints(d)+
         '</div></div>';
     });
     wrap.innerHTML=html;
+    // F7: 좌스와이프 삭제 — 하위 작업 줄과 **같은 attachSubSwipe**를 쓴다.
+    wrap.querySelectorAll('.d-card').forEach(function(c){
+      var ent=(DATA.diary||[]).filter(function(x){return String(x.id)===c.dataset.id;})[0];
+      if(ent)attachSubSwipe(c,function(){
+        DATA.diary=(DATA.diary||[]).filter(function(x){return x!==ent;});
+        renderDiary();pushSnapshot();
+      });
+    });
     wrap.querySelectorAll('.d-card').forEach(function(c){
       c.addEventListener('click',function(e){
         if(e.target.closest('.d-eye'))return;
