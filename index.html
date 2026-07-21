@@ -257,11 +257,13 @@
   /* 지금 라인 = 빨강, x=56 시작 (델타 §2·§7) */
   /* 요청: 빨간선 왼쪽 끝이 '지금' 캡슐에 붙게 — gap을 없애고 캡슐 둥근 모서리
      밑으로 2px 파고들게 한다. */
+  /* '지금' 라인 색 (요청): 빨강 #E34238 → 주황톤 #FC9975. 빨강은 '경고'로
+     읽혀 하루 종일 떠 있기엔 셌다. 앱 TimelineScrollView.markerRed와 한 쌍. */
   .now{position:absolute;left:8px;right:12px;z-index:4;display:flex;align-items:center;gap:0}
-  .now .pill{background:#E34238;color:#fff;font-weight:800;font-size:11px;padding:3px 8px;border-radius:8px}
-  .now .wire{flex:1;height:2px;background:#E34238;border-radius:2px;position:relative;margin-left:-2px}
+  .now .pill{background:#FC9975;color:#fff;font-weight:800;font-size:11px;padding:3px 8px;border-radius:8px}
+  .now .wire{flex:1;height:2px;background:#FC9975;border-radius:2px;position:relative;margin-left:-2px}
   /* 요청: 지금 라인의 작은 동그라미는 왼쪽 → 오른쪽 끝으로 */
-  .now .wire::before{content:"";position:absolute;right:-2px;top:-1.5px;width:5px;height:5px;border-radius:50%;background:#E34238}
+  .now .wire::before{content:"";position:absolute;right:-2px;top:-1.5px;width:5px;height:5px;border-radius:50%;background:#FC9975}
   /* 마감선 (델타 §2): 계획 = 가로 선. 텍스트는 선의 밑줄처럼 위에. */
   .dueline{position:absolute;left:0;right:8px;height:0;z-index:4}
   .dueline .dl-wire{position:absolute;left:56px;right:0;top:-0.75px;height:1.5px;background:var(--tl-accent,#5b93e6);border-radius:2px;opacity:.9}
@@ -858,7 +860,7 @@
   .ele-heart{position:absolute;font-size:20px;pointer-events:none;animation:heartUp 1s ease-out forwards;z-index:3}
   @keyframes heartUp{0%{transform:translateY(0) scale(.7);opacity:1}100%{transform:translateY(-46px) scale(1.15);opacity:0}}
   /* 까지 라인 (§4) */
-  .until-line{position:absolute;left:56px;right:8px;height:2.5px;background:#E34238;z-index:8;cursor:ns-resize;touch-action:none}
+  .until-line{position:absolute;left:56px;right:8px;height:2.5px;background:#FC9975;z-index:8;cursor:ns-resize;touch-action:none}
   .until-line::before{content:"🏁";position:absolute;right:0;top:-11px;font-size:15px}
   .until-line::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom:-9px}
   /* ── 친구(루틴 공유) ── */
@@ -1091,6 +1093,11 @@
   .cap-dhint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:6px;
     color:rgba(120,120,120,.55);font-size:10px;font-weight:800;pointer-events:none}
   .cap-dfill{position:absolute;left:0;top:0;bottom:0;min-width:16px;border-radius:999px;pointer-events:none}
+  /* 세로 손잡이 (요청, 앱 HorizontalDurationSlider.gripColor와 같은 값):
+     채움 오른쪽 끝이 곧 손잡이 자리인데 색이 끊기기만 해서 '잡는 곳'으로
+     안 읽혔다. 손잡이 모양을 얹어 끌 수 있다는 걸 보이게 한다. */
+  .cap-dfill::after{content:"";position:absolute;right:5px;top:50%;transform:translateY(-50%);
+    width:3px;height:13px;border-radius:1.5px;background:#DADADF}
   .cap-dval{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
     color:#fff;font-size:12px;font-weight:700;text-shadow:0 1px 1.5px rgba(0,0,0,.35);pointer-events:none}
   .cap-days{display:flex;gap:6px}
