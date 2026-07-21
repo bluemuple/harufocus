@@ -364,8 +364,52 @@
   .tl-tree{position:absolute;bottom:0;right:12px;width:88px;z-index:2;pointer-events:none;filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))}
   .tl-hills{position:absolute;left:0;right:0;bottom:0;height:150px;width:100%;object-fit:cover;object-position:center bottom;mix-blend-mode:soft-light;opacity:.9;z-index:1;pointer-events:none}
 
+  /* PC 2단: 가리키는 칸의 버튼만 선명, 나머지는 물러난다 (요청).
+     ⚠ **숨기지 않는 이유**: + 는 이 앱의 제1 동작이라, 처음 온 사람이 마우스를
+     움직이기 전에 아무 버튼도 안 보이면 안 된다. 흐리게만 두면 발견성은
+     지키면서 "지금 어느 칸이 살아 있는지"는 한눈에 읽힌다.
+     터치(hover:none)엔 호버가 없으니 적용하지 않는다 — 폰은 단일 컬럼이라
+     애초에 + 가 하나뿐이라 헷갈릴 일도 없다. */
+  @media (hover:hover) and (min-width:1101px){
+    .pane-tl .tl-plusbtn,.pane-tl .mo-toggle,
+    .pane-tabs .page-fab{transition:opacity .18s ease}
+    .layout:has(.pane-tabs:hover) .pane-tl .tl-plusbtn,
+    .layout:has(.pane-tabs:hover) .pane-tl .mo-toggle{opacity:.3}
+    .layout:has(.pane-tl:hover) .pane-tabs .page-fab{opacity:.3}
+  }
+
+  .mo-toggle{position:absolute;top:calc(10px + env(safe-area-inset-top));right:12px;z-index:24;
+    width:34px;height:34px;border:0;border-radius:10px;cursor:pointer;padding:6px;
+    background:rgba(255,255,255,.22);color:#fff;backdrop-filter:blur(6px);
+    box-shadow:0 1px 4px rgba(0,0,0,.18);transition:background .15s ease,opacity .15s ease}
+  .mo-toggle:hover{background:rgba(255,255,255,.34)}
+  .mo-toggle svg{width:100%;height:100%;display:block}
+  .mo-toggle.on{background:var(--card);color:var(--ink);box-shadow:0 1px 5px rgba(0,0,0,.16)}
+
+  /* 하루 모자이크 (앱 파리티) — 한 줄 1시간 × 6칸(10분).
+     ⚠ 칸을 정사각으로 두면 24줄이 화면을 넘는다. 세로만 눕혀서 좁은
+     2단 왼쪽 칸(최소 340px)에서도 46×32px가 나온다(실측). */
+  :root{--mo-empty:rgba(120,140,175,.16);--mo-plan:#9CC0E8;
+        --mo-done:#3B7FD4;--mo-past:rgba(120,140,175,.42)}
+  /* ⚠ 24줄 + '지난 7일'을 합치면 한 화면을 넘는다. #view-mosaic이 이미
+     overflow-y:auto라 스크롤되지만, 아래 여백이 없으면 마지막 줄이 잘려
+     보인다. */
+  .mday{display:flex;flex-direction:column;gap:3px}
+  .mday-row{display:flex;align-items:center;gap:5px}
+  .mday-h{flex:0 0 20px;text-align:right;font-size:10px;color:var(--ink-soft);
+    font-variant-numeric:tabular-nums;line-height:1}
+  .mday-cells{flex:1;display:grid;grid-template-columns:repeat(6,1fr);gap:3px}
+  .mday-c{height:clamp(15px,2.9vh,32px);border-radius:3px;background:var(--mo-empty);
+    position:relative;overflow:hidden}
+  .mday-c.now{outline:2px solid var(--sky-blue);outline-offset:-2px}
+  .mday-fill{position:absolute;left:0;top:0;bottom:0;border-radius:3px}
+  .mday-legend{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;
+    margin-top:10px;font-size:11px;color:var(--ink-soft)}
+  .mday-legend span{display:inline-flex;align-items:center;gap:5px}
+  .mday-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+
   /* mosaic */
-  #view-mosaic{position:absolute;inset:0;overflow-y:auto;background:var(--card-2);padding:14px 14px 24px;display:none}
+  #view-mosaic{position:absolute;inset:0;overflow-y:auto;background:var(--card-2);padding:14px 14px 90px;display:none}
   .mo-sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:12px}
   .mo-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
   .mo-day{width:52px;font-size:12px;color:var(--ink-soft);flex:0 0 auto}
@@ -1518,6 +1562,7 @@
     <div><kbd id="scMod">⌘</kbd>+<kbd>↑</kbd><kbd>↓</kbd> 마감선 5분씩 옮기기</div>
     <div><kbd>Delete</kbd> 마감선 지우기</div>
     <div><kbd>Esc</kbd> 편집 끝내기</div>
+    <div><kbd>M</kbd> 모자이크 ↔ 타임라인</div>
   </div>
   <div class="undobar" id="undoBar"><span id="undoMsg"></span><button id="undoDo">실행 취소</button><button id="undoX" aria-label="닫기">✕</button></div>
 
@@ -1540,6 +1585,17 @@
       </div>
       <div class="tl-body">
         <div id="view-big">
+          <!-- ▦ 보기 바꾸기 (요청): '만들기·고치기'와 성격이 달라 아래 FAB가
+               아니라 **칸 위**에 둔다 — 아래 버튼 수가 안 늘어난다.
+               ⚠ 원래 tl-top의 세그먼트가 이 역할이었는데 PC에선
+               `.pane-tl .tl-top{display:none}`, 폰에선 ≤860px에서 .tl-seg가
+               숨겨져 **어느 화면에서도 안 보였다**. -->
+          <button class="mo-toggle" id="moToggle" title="모자이크 보기 (M)" aria-label="모자이크 보기">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/>
+              <rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>
+            </svg>
+          </button>
           <div class="tl-scroll" id="tlScroll"></div>
           <!-- 요청: 타임라인 코끼리 이미지 삭제 — 엘리는 상단 '엘리에게 한마디'로만 -->
           <button class="ele-tip" id="eleTip" title="엘리" style="display:none">
@@ -1565,7 +1621,21 @@
           </div>
         </div>
         <div id="view-mosaic">
-          
+          <button class="mo-toggle on" id="moToggleBack" title="타임라인으로 (M · Esc)" aria-label="타임라인으로">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="M5 4v16"/><path d="M5 8h11M5 13h14M5 18h8"/>
+            </svg>
+          </button>
+          <!-- 하루 한 판 (앱 MosaicDayView 파리티): 한 줄 = 1시간, 6칸 = 10분씩 -->
+          <div class="mday" id="moDay"></div>
+          <div class="mday-legend">
+            <span><i style="background:var(--mo-empty)"></i>빈 시간</span>
+            <span><i style="background:var(--mo-plan)"></i>계획</span>
+            <span><i style="background:var(--mo-done)"></i>집중한 시간</span>
+            <span><i style="background:var(--mo-past)"></i>지나간 계획</span>
+          </div>
+          <!-- 기존 '지난 7일' 훑어보기는 아래에 그대로 둔다 (요청과 별개 기능) -->
+          <div class="mo-sub" style="margin:20px 0 8px">지난 7일</div>
           <div id="moGrid"></div>
           <div class="mo-legend" id="moLegend"></div>
         </div>
@@ -2848,7 +2918,7 @@
      시간 내내 이 작업 자리"라는 인상이 과했다. 15분은 한 칸의 1/4.
      앱 FocusManager.mergeGapMaxSec와 한 쌍. */
   var MERGE_GAP_MS=15*60*1000;
-  function dayRecordBlocks(tk){
+  function dayRecordBlocks(tk,opts){
     var ss=allSessions().filter(function(x){return dateKey(x.start)===tk;})
       .slice().sort(function(a,b){return new Date(a.start)-new Date(b.start);});
     var blocks=[];
@@ -2876,7 +2946,11 @@
     /* 2분 미만 집중은 안 그린다 (요청) — 지금 재생 중인 블록은 예외다:
        이제 막 시작해 0분이지만 지금 선을 따라 자라는 중이라 보여야 한다.
        설정 '5분 미만도 블록으로 남기기'를 켜면 옛 기록까지 한꺼번에 돌아온다. */
-    if(!keepShortBlocks())blocks=blocks.filter(function(b){
+    /* ⚠ 모자이크는 **거르지 않는다** (요청): 타임라인이 2분 미만을 안 그리는
+       이유는 2~4px 조각이 몰려 라벨이 겹치기 때문인데, 모자이크는 1px로도
+       칠할 수 있어 그 문제가 없다. 오히려 "그 시간에 뭘 했나"를 되짚는
+       화면이라 짧은 것도 사실대로 보여야 한다. 앱 MosaicDayView와 같은 규칙. */
+    if(!keepShortBlocks()&&!(opts&&opts.keepShort))blocks=blocks.filter(function(b){
       return b.active||(b.foc||0)>=SHORT_FOCUS_SEC;});
     return blocks;
   }
@@ -3301,8 +3375,58 @@
     this.classList.toggle('on',on);this.textContent=on?'완료':'편집';
   });
 
+  /* ---------- 하루 모자이크 (앱 MosaicDayView 파리티) ----------
+     한 줄 = 1시간, 6칸 = 10분씩. 칸을 통째로 칠하지 않고 **그 10분 중 실제로
+     겹친 만큼만** 가로로 채운다 — 앱과 같은 규칙이라 5분짜리는 반 칸이다.
+     · 집중한 시간  = 작업색 (세션 기록, 쉼 구간은 걷어낸다)
+     · 계획         = 앞으로 할 계획(옅게) / 지나간 계획은 회색
+     ⚠ 2분 미만 집중도 그린다 (keepShort) — 여기선 1px로도 칠할 수 있다. */
+  function renderMosaicDay(){
+    var box=document.getElementById('moDay');if(!box)return;
+    var tk=selKey(),now=Date.now();
+    var recs=dayRecordBlocks(tk,{keepShort:true});
+    // 계획(마감선) 구간 — 기록이 없는 시간에만 옅게 깔린다.
+    var plans=(DATA.tasks||[]).filter(function(t){
+      return t.scheduledStart&&(t.durationMin||0)>0&&!t.isRewardItem&&
+        dateKey(t.scheduledStart)===tk;
+    }).map(function(t){var st=new Date(t.scheduledStart).getTime();
+      return {s:st,e:st+t.durationMin*60000,col:catColor(t.categoryID)};});
+    var day0=new Date(new Date(tk+'T00:00:00').getTime());
+    if(isNaN(day0.getTime())){var p0=tk.split('-');day0=new Date(+p0[0],+p0[1]-1,+p0[2]);}
+    var base=day0.getTime();
+    function ov(a0,a1,b0,b1){return Math.max(0,Math.min(a1,b1)-Math.max(a0,b0));}
+    var html='';
+    for(var h=0;h<24;h++){
+      html+='<div class="mday-row"><span class="mday-h">'+String(h).padStart(2,'0')+'</span><div class="mday-cells">';
+      for(var q=0;q<6;q++){
+        var t0=base+(h*60+q*10)*60000,t1=t0+600000,cellMs=600000;
+        // ① 집중한 시간 — 블록에서 쉼(빗금) 구간을 뺀 만큼.
+        var focMs=0,col=null;
+        recs.forEach(function(b){
+          var o=ov(t0,t1,b.start,b.end);if(o<=0)return;
+          (b.rest||[]).forEach(function(r){o-=ov(t0,t1,r.s,r.e);});
+          if(o>0){focMs+=o;if(!col)col=catColor(b.categoryID);}
+        });
+        // ② 계획 — 기록이 채우지 못한 나머지 자리에만.
+        var planMs=0,planCol=null;
+        plans.forEach(function(pl){var o=ov(t0,t1,pl.s,pl.e);
+          if(o>0){planMs+=o;if(!planCol)planCol=pl.col;}});
+        planMs=Math.max(0,Math.min(planMs,cellMs-focMs));
+        var isNow=(t0<=now&&now<t1),past=(t1<=now);
+        var inner='';
+        if(focMs>0)inner+='<i class="mday-fill" style="width:'+(focMs/cellMs*100)+'%;background:'+(col||'var(--mo-done)')+'"></i>';
+        if(planMs>0)inner+='<i class="mday-fill" style="left:'+(focMs/cellMs*100)+'%;width:'+(planMs/cellMs*100)+'%;'
+          +'background:'+(past?'var(--mo-past)':hexA(planCol||'#9CC0E8',0.45))+'"></i>';
+        html+='<div class="mday-c'+(isNow?' now':'')+'" title="'+String(h).padStart(2,'0')+':'+String(q*10).padStart(2,'0')+'">'+inner+'</div>';
+      }
+      html+='</div></div>';
+    }
+    box.innerHTML=html;
+  }
+
   /* ---------- mosaic (last 7 days) ---------- */
   function renderMosaic(){
+    renderMosaicDay();
     var grid=document.getElementById('moGrid');grid.innerHTML='';
     var hours=[];for(var h=6;h<24;h++)hours.push(h);
     for(var off=0;off>=-6;off--){
@@ -6381,6 +6505,43 @@
   }
   document.getElementById('segBig').addEventListener('click',function(){setMode('big');});
   document.getElementById('segMo').addEventListener('click',function(){setMode('mosaic');});
+
+  /* ── 모자이크 들어가는 길 셋 (요청) ─────────────────────────────
+     ① ▦ 칩  ② 타임라인에서 핀치 아웃  ③ 키보드 M
+     ⚠ Ctrl+휠은 쓰지 않는다 — 브라우저 확대·축소를 빼앗는 조작이라
+       페이지를 키우려다 모자이크가 열린다. */
+  function toggleMosaic(){
+    setMode(document.getElementById('view-mosaic').style.display==='block'?'big':'mosaic');
+  }
+  document.getElementById('moToggle').addEventListener('click',toggleMosaic);
+  document.getElementById('moToggleBack').addEventListener('click',toggleMosaic);
+
+  // ② 핀치 — 타임라인 안에서만. 페이지 전체 확대는 그대로 두고(접근성),
+  //    두 손가락이 **타임라인 위에서** 벌어질 때만 가로챈다.
+  (function(){
+    var big=document.getElementById('view-big'),base=0;
+    if(!big)return;
+    function dist(t){var dx=t[0].clientX-t[1].clientX,dy=t[0].clientY-t[1].clientY;
+      return Math.hypot(dx,dy);}
+    big.addEventListener('touchstart',function(e){
+      if(e.touches.length===2)base=dist(e.touches);},{passive:true});
+    big.addEventListener('touchmove',function(e){
+      if(e.touches.length!==2||!base)return;
+      var r=dist(e.touches)/base;
+      if(r>1.35){base=0;toggleMosaic();}      // 벌리면 모자이크
+    },{passive:true});
+    big.addEventListener('touchend',function(){base=0;},{passive:true});
+  })();
+
+  // ③ 키보드 M (모자이크에선 Esc로도 나온다). 입력 중엔 무시.
+  document.addEventListener('keydown',function(e){
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    var el=document.activeElement,tag=el&&el.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'||(el&&el.isContentEditable))return;
+    var onMosaic=document.getElementById('view-mosaic').style.display==='block';
+    if(e.key==='m'||e.key==='M'){e.preventDefault();toggleMosaic();}
+    else if(e.key==='Escape'&&onMosaic){e.preventDefault();setMode('big');}
+  });
 
   /* ---------- auth + snapshot ---------- */
   var session=null;try{session=JSON.parse(localStorage.getItem(AUTH_KEY)||'null');}catch(e){}
