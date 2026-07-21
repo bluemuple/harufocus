@@ -6745,7 +6745,8 @@
     clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},2600);
   }
   function renderAll(){_tfMap=null;   // 오늘 집중 map 무효화 (B2)
-    renderCalStrips();renderBig();renderMosaic();renderTodo();renderMatrix();renderRoutine();renderBucket();renderDiary();}
+    renderCalStrips();renderBig();renderMosaic();renderTodo();renderMatrix();renderRoutine();renderBucket();renderDiary();
+    paintAvatar();}   // 아바타=지금 내 상태 (▶·완료·계획이 바뀌면 곧바로)
 
   /* ---------- tab + mode switching ---------- */
   function setTab(name){
@@ -7855,11 +7856,18 @@
   }
   (function(){var sc=document.getElementById('tlScroll');
     if(sc)sc.addEventListener('scroll',tlArmIdleScroll,{passive:true});})();
+  var hidAt=0;                 // 집중 중 탭을 떠난 시각 (아바타 'phone' 판정용)
   document.addEventListener('visibilitychange',function(){
     // ⚠ egress: 예전엔 조건 없이 fetchSnapshot()(전체)을 불러, 서버가 안
     // 바뀌었어도 탭을 볼 때마다 스냅샷을 통째로 받았다. pollSync가 이미
     // updated_at 비교로 거르므로 그걸 그대로 쓴다 (바뀌었으면 어차피 받는다).
     if(!document.hidden && session && !pushTimer && !pushing) pollSync();
+    /* 아바타 'phone' 신호 (요청 상태 7종): 집중 중에 탭을 떠났다 돌아오면
+       한동안 '폰 보는 엘리'. ⚠ 30초 미만은 안 센다 — 알림 확인처럼 스치는
+       전환까지 딴짓으로 몰면 억울하다. */
+    if(document.hidden){if(fTask)hidAt=Date.now();return;}
+    if(hidAt&&fTask&&Date.now()-hidAt>=AWAY_MIN_MS){awayAt=Date.now();paintBar(false);}
+    hidAt=0;
   });
   // 몇 초마다 아주 가벼운 updated_at만 조회(≈100바이트)해서, 다른 기기가
   // 바꿨을 때만 전체 스냅샷을 받아온다 (요청: 몇 초 뒤 반영 + egress 최소화).
@@ -8983,6 +8991,7 @@
                                // (다음 단계 '집중 이탈 후 복귀' 트리거용 슬롯)
   var lastMyWordId=null;       // 같은 인용문을 연속으로 두 번 보여주지 않기
   var lastDdayAt=0;            // D-day 마지막 표시 시각 (인메모리, 10분 쿨다운)
+  var avaTimer=null;           // 아바타 상태 재확인 타이머 (글 회전과 별개)
   var DDAY_COOLDOWN_MS=10*60*1000;
 
   /* 오늘 일몰 (없으면 null) — ⚠ 기존 sunTimes를 **재사용**한다. */
@@ -9053,17 +9062,60 @@
     }
     return {txt:'',sub:''};
   }
-  /* 캡슐 아바타 (요청 B) — 진짜 엘리 그림으로 교체 (set_a).
-     ⚠ 상태 7종(focus·phone·distract·overload·messy·tired·refuse)이 다 준비돼
-     있지만 **이번 스코프는 기본값 하나**다. 다음 단계에서 state를 넘겨
-     `assets/avatar_<state>.png`로 바꾸기만 하면 된다 — 그래서 파일명을
-     state로 조립한다.
-     ⚠ 원본은 1024²이라 30px 자리에 그대로 쓰면 낭비다 → 내용 기준 정사각
-     크롭 후 96²로 줄여 담았다(6.9KB). */
+  /* 캡슐 아바타 (요청 B) — 진짜 엘리 그림 (set_a) 7종.
+     ⚠ 원본은 1024²이라 30px 자리에 그대로 쓰면 낭비다 → **몸 + 소품을 합친 뒤**
+     내용 기준 정사각 크롭 후 96²로 줄여 담았다(5~11KB). 몸만 쓰면 공책·폰·
+     책·서류더미·엉킨 실이 빠져 상태가 안 읽힌다(30px에서 눈확인). */
   var AVATAR_STATES=['focus','phone','distract','overload','messy','tired','refuse'];
   function avatarSVG(state){
     var st=(AVATAR_STATES.indexOf(state)>=0)?state:'focus';
     return '<img src="assets/avatar_'+st+'.png" alt="" aria-hidden="true">';
+  }
+  /* 지금 내 상태 → 아바타 (설계 법칙: 엘리는 마스코트가 아니라 **내 마음**이다.
+     말은 캡슐 글이 하고, 엘리는 **보여주기만** 한다).
+     ⚠ 사다리는 '지금 눈앞의 사실'부터 — 집중 중인지가 먼저고, 하루 전체의
+     쌓임(밀림·과부하·어질러짐)은 뒤다. 앞에서 걸리면 뒤는 안 본다. */
+  var awayAt=0;                      // 집중 중 탭을 떠난 시각 (0=안 떠났음)
+  var AWAY_MIN_MS=30*1000;           // 30초 넘게 자리를 비웠을 때만 '딴 데 봤다'
+  var AWAY_SHOW_MS=2*60*1000;        // 복귀 후 2분간만 그 얼굴
+  function avatarState(){
+    // 1. 집중 중인데 자리를 비웠다 돌아왔다 — 폰 보는 얼굴 (잠깐만).
+    if(fTask&&awayAt&&Date.now()-awayAt<=AWAY_SHOW_MS)return 'phone';
+    // 2·3. 집중 중 / 집중을 멈춰 둔 채 (마음이 딴 데 갔다).
+    if(fTask)return fPaused?'distract':'focus';
+    var tasks=(DATA.tasks||[]).filter(function(t){return !t.isRewardItem;});
+    var open=tasks.filter(function(t){return !t.isDone;});
+    // 4. 늦은 시각(취침 이후~새벽) 또는 오늘 4시간 넘게 집중 — 지친 얼굴.
+    var S=DATA.settings||{},bedH=Math.floor((S.bedMinutes!=null?S.bedMinutes:1380)/60);
+    var wakeH=Math.floor((S.wakeMinutes!=null?S.wakeMinutes:420)/60);
+    var h=new Date().getHours();
+    if(h>=bedH||h<wakeH)return 'tired';
+    var focSec=0;var fm=todayFocusMap();for(var k in fm)focSec+=fm[k];
+    if(focSec>=4*3600)return 'tired';
+    // 5. 오늘 마감선을 두 번 넘게 그냥 지나쳤다 — 등 돌린 얼굴.
+    var now=Date.now(),tk=todayKey();
+    var missed=open.filter(function(t){
+      return t.scheduledStart&&(t.durationMin||0)>0&&
+             dateKey(taskDueAt(t).toISOString())===tk&&taskDueAt(t).getTime()<now;}).length;
+    if(missed>=2)return 'refuse';
+    // 6. 남은 계획이 남은 시간보다 많다 — 서류에 파묻힌 얼굴.
+    var planMin=0;
+    open.forEach(function(t){if(t.scheduledStart&&(t.durationMin||0)>0&&
+      dateKey(taskDueAt(t).toISOString())===tk)planMin+=goalRemainMin(t);});
+    var leftMin=Math.max(0,bedH*60-(new Date().getHours()*60+new Date().getMinutes()));
+    if(planMin>0&&planMin>leftMin)return 'overload';
+    // 7. 담아둔 일은 있는데 오늘 아무것도 계획하지 않았다 — 엉킨 실.
+    if(open.length&&!open.some(function(t){return t.scheduledStart&&(t.durationMin||0)>0;}))
+      return 'messy';
+    return 'focus';
+  }
+  /* 아바타만 다시 그린다 — 글은 몇 분에 한 번 도는데(회전) 상태는 ▶를 누른
+     그 순간 바뀌어야 한다. ⚠ 같은 상태면 <img>를 다시 만들지 않는다: 캐시에서
+     오더라도 새로 만들면 그림이 한 번 깜빡인다. */
+  function paintAvatar(){
+    var ava=document.getElementById('tcAva');if(!ava)return;
+    var st=avatarState();
+    if(ava.dataset.state!==st){ava.dataset.state=st;ava.innerHTML=avatarSVG(st);}
   }
   /* 앱 AppState.planDeadline 대응 — 오늘 마지막 마감선 시각 (없으면 null). */
   function planDeadlineAt(){
@@ -9209,8 +9261,7 @@
       c=capContent(keys[barIdx]);
     }
     // 아바타가 있으면 작은 아이콘은 중복이라 숨긴다 (요청 B).
-    var ava=document.getElementById('tcAva');
-    ava.innerHTML=avatarSVG('default');
+    paintAvatar();
     document.getElementById('tcIc').style.display='none';
     // 귀속 줄은 **자리가 있을 때만** — 2줄 캡슐(모바일)에서만 그린다.
     // 데스크톱은 캡슐이 한 줄짜리 좁은 알약이라 인용문만 남긴다.
@@ -9229,6 +9280,10 @@
   function startBarRotation(){
     if(barTimer)clearInterval(barTimer);
     barIdx=0;paintBar(false);
+    /* 상태는 시간이 흘러도 바뀐다(취침 시각·마감 지남·집중 4시간) — 글 회전과
+       따로 30초마다 아바타만 다시 본다. 같은 상태면 DOM을 안 건드린다. */
+    if(avaTimer)clearInterval(avaTimer);
+    avaTimer=setInterval(paintAvatar,30000);
     var keys=capPool();if(keys.length<2)return;
     var per=setChipIntervalMin()*60000;
     barTimer=setInterval(barAdvance,per);
