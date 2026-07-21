@@ -1690,6 +1690,20 @@
     color .18s ease,opacity .18s ease;transform-origin:center top}
   .mbtn.just .mlab{transform:scale(1.42);color:var(--ink);opacity:1}
   body.night .mbtn.just .mlab{color:#fff}
+
+  /* '지금 나' 시트 — 캡슐 아바타를 눌러 내가 직접 상태를 고른다 (요청). */
+  .me-modal{max-width:340px}
+  .me-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 12px}
+  .me-item{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 4px 8px;
+    border:1px solid var(--line);border-radius:14px;background:var(--card-2);cursor:pointer;
+    font-family:inherit;font-size:11.5px;font-weight:600;color:var(--ink);line-height:1.25;text-align:center}
+  .me-item img{width:44px;height:44px;object-fit:contain}
+  .me-item.on{border-color:var(--sky-blue);box-shadow:0 0 0 2px rgba(93,140,255,.28)}
+  .me-auto{width:100%;padding:11px;border:0;border-radius:12px;background:var(--card-2);
+    font-family:inherit;font-size:13px;font-weight:700;color:var(--ink-soft);cursor:pointer}
+  /* 아바타는 눌리는 것처럼 보여야 한다 — 캡슐 안에서 살짝 반응. */
+  .topcap .tc-ava{cursor:pointer;transition:transform .12s ease}
+  .topcap .tc-ava:active{transform:scale(.92)}
 </style>
 </head>
 <body data-m="todo">
@@ -2199,6 +2213,17 @@
 </div>
 
 <!-- 아이폰 전용 기능 소개 (D5-4·D5-5) -->
+<!-- '지금 나' — 캡슐 아바타를 누르면 내가 직접 상태를 고른다 (요청).
+     설계 법칙: 엘리는 내 마음이다. 자동 판정이 틀렸을 때 **내가 정정**할 수 있어야
+     한다. 고른 상태는 2시간만 유지하고 그 뒤엔 다시 자동으로 돌아간다. -->
+<div class="scrim" id="meScrim">
+  <div class="modal me-modal">
+    <h3>지금 나는</h3>
+    <div class="msub">고른 얼굴은 2시간 동안 보여요. 그 뒤엔 다시 자동으로.</div>
+    <div class="me-grid" id="meGrid"></div>
+    <button class="me-auto" id="meAuto">자동으로 두기</button>
+  </div>
+</div>
 <div class="scrim setpage" id="aboutScrim">
   <div class="modal">
     <div class="setpage-head">
@@ -8086,7 +8111,12 @@
        한동안 '폰 보는 엘리'. ⚠ 30초 미만은 안 센다 — 알림 확인처럼 스치는
        전환까지 딴짓으로 몰면 억울하다. */
     if(document.hidden){if(fTask)hidAt=Date.now();return;}
-    if(hidAt&&fTask&&Date.now()-hidAt>=AWAY_MIN_MS){awayAt=Date.now();paintBar(false);}
+    if(hidAt&&fTask&&Date.now()-hidAt>=AWAY_MIN_MS){
+      awayAt=Date.now();
+      /* 1순위 신호 (요청: 이 슬롯을 이제 채운다) — 아바타는 '폰 보는 얼굴'을
+         보여주고, **말은 내가 나에게** 한다. 둘이 한 장면이 된다. */
+      setCapSignal(awayLine(Math.round((Date.now()-hidAt)/1000)));
+    }
     hidAt=0;
   });
   // 몇 초마다 아주 가벼운 updated_at만 조회(≈100바이트)해서, 다른 기기가
@@ -9214,8 +9244,31 @@
 
      ⚠ 엄격한 3단 우선순위로 만들지 않는다: 2순위(내 말)는 거의 항상 값이 있어서
      3순위(해질녘·D-day)가 영영 안 뜬다. 배타적인 건 1순위뿐이다. */
-  var capSignal=null;          // {text} | null — 이번 스코프에선 **아무도 안 채운다**
-                               // (다음 단계 '집중 이탈 후 복귀' 트리거용 슬롯)
+  var capSignal=null;          // {text} | null — 1순위, 있으면 이것만 (회전 정지)
+  var capSignalTimer=null;
+  /* 신호를 띄운다 (1순위, 배타적).
+     ⚠ **자동으로 내린다**: 신호가 뜨면 회전이 멈추므로, 안 내리면 내 말·해질녘이
+       영영 안 돌아온다. 눌러서 해제하는 길(topCap 클릭)은 그대로 둔다.
+     ⚠ 말투는 **내가 나에게** — 엘리는 말하지 않는다(설계 법칙). 나무라지 않고
+       '돌아왔다'는 사실만 짚는다. */
+  var CAP_SIGNAL_MS=45000;
+  function setCapSignal(text){
+    if(!text)return;
+    capSignal={text:text};
+    clearTimeout(capSignalTimer);
+    capSignalTimer=setTimeout(function(){
+      if(capSignal){capSignal=null;startBarRotation();}
+    },CAP_SIGNAL_MS);
+    paintBar(true);
+  }
+  /* '집중 이탈 후 복귀' 문구 — 자리를 비운 길이에 따라 (한 조각 24자 내외). */
+  function awayLine(sec){
+    var m=Math.round(sec/60);
+    if(sec<120)return '잠깐 다녀왔네. 이어서 가자.';
+    if(m<10)return m+'분 비웠어. 다시 여기부터.';
+    if(m<60)return m+'분 만에 돌아왔다. 천천히.';
+    return '한참 만이네. 다시 앉자.';
+  }
   var lastMyWordId=null;       // 같은 인용문을 연속으로 두 번 보여주지 않기
   var lastDdayAt=0;            // D-day 마지막 표시 시각 (인메모리, 10분 쿨다운)
   var avaTimer=null;           // 아바타 상태 재확인 타이머 (글 회전과 별개)
@@ -9305,7 +9358,29 @@
   var awayAt=0;                      // 집중 중 탭을 떠난 시각 (0=안 떠났음)
   var AWAY_MIN_MS=30*1000;           // 30초 넘게 자리를 비웠을 때만 '딴 데 봤다'
   var AWAY_SHOW_MS=2*60*1000;        // 복귀 후 2분간만 그 얼굴
+  /* 내가 직접 고른 상태 (요청 '지금 나'): 자동 판정이 틀렸을 때 정정할 수 있어야
+     한다 — 엘리는 내 마음이니까. ⚠ **영구 고정은 안 한다**: 한 번 골라 두고 잊으면
+     그 뒤로 얼굴이 거짓말이 된다 → 2시간 뒤 자동으로 돌아간다.
+     ⚠ localStorage에 둔다(기기별) — 이건 '지금 이 자리의 나'라 계정 동기화 대상이
+     아니다(스냅샷에 넣으면 다른 기기 얼굴까지 바꾼다). */
+  var ME_KEY='hfMeState',ME_MS=2*60*60*1000;
+  function manualState(){
+    try{
+      var v=JSON.parse(localStorage.getItem(ME_KEY)||'null');
+      if(!v||!v.k||AVATAR_STATES.indexOf(v.k)<0)return null;
+      if(Date.now()-v.at>ME_MS){localStorage.removeItem(ME_KEY);return null;}
+      return v.k;
+    }catch(_){return null;}
+  }
+  function setManualState(k){
+    try{
+      if(k)localStorage.setItem(ME_KEY,JSON.stringify({k:k,at:Date.now()}));
+      else localStorage.removeItem(ME_KEY);
+    }catch(_){}
+    paintAvatar();
+  }
   function avatarState(){
+    var mine=manualState();if(mine)return mine;   // 내가 고른 게 언제나 이긴다
     // 1. 집중 중인데 자리를 비웠다 돌아왔다 — 폰 보는 얼굴 (잠깐만).
     if(fTask&&awayAt&&Date.now()-awayAt<=AWAY_SHOW_MS)return 'phone';
     // 2·3. 집중 중 / 집중을 멈춰 둔 채 (마음이 딴 데 갔다).
@@ -9344,6 +9419,33 @@
     var st=avatarState();
     if(ava.dataset.state!==st){ava.dataset.state=st;ava.innerHTML=avatarSVG(st);}
   }
+  /* '지금 나' 시트 (요청): 아바타를 누르면 7종 중에서 내가 고른다. */
+  var ME_LABEL={focus:'집중하고 있어',phone:'폰만 보고 있어',distract:'자꾸 딴 데 가',
+    overload:'할 게 너무 많아',messy:'머리가 엉켰어',tired:'지쳤어',refuse:'하기 싫어'};
+  function openMeSheet(){
+    var g=document.getElementById('meGrid');if(!g)return;
+    var cur=manualState();
+    g.innerHTML=AVATAR_STATES.map(function(k){
+      return '<button class="me-item'+(k===cur?' on':'')+'" data-me="'+k+'">'
+        +'<img src="assets/avatar_'+k+'.png" alt="">'+ME_LABEL[k]+'</button>';
+    }).join('');
+    document.getElementById('meScrim').classList.add('open');
+  }
+  (function(){
+    var sc=document.getElementById('meScrim');if(!sc)return;
+    sc.addEventListener('click',function(e){
+      if(e.target===sc){sc.classList.remove('open');return;}
+      var b=e.target.closest('[data-me]');
+      if(b){setManualState(b.dataset.me);sc.classList.remove('open');}
+    });
+    document.getElementById('meAuto').addEventListener('click',function(){
+      setManualState(null);sc.classList.remove('open');
+    });
+    /* ⚠ 아바타 탭은 캡슐 본래 동작(신호 해제·다음 문구)을 **뺏지 않는다** —
+       stopPropagation으로 여기서 끊는다. 캡슐의 나머지 자리는 그대로다. */
+    var ava=document.getElementById('tcAva');
+    if(ava)ava.addEventListener('click',function(e){e.stopPropagation();openMeSheet();});
+  })();
   /* 앱 AppState.planDeadline 대응 — 오늘 마지막 마감선 시각 (없으면 null). */
   function planDeadlineAt(){
     var t=(DATA.tasks||[]).filter(function(x){
