@@ -342,7 +342,7 @@
      right:16px + 폭 84 = 오른쪽 끝에서 100px를 쓰므로 그만큼 비운다. */
   /* 오른쪽 글자의 실제 왼쪽 끝 = 8(.dueline right) + 16(.dl-right right)
      + 84(폭) = 오른쪽 끝에서 **108px**. 6px 틈을 두어 114. */
-  .block.rec.pushed{left:169px;right:114px}
+  .block.rec.pushed{left:169px;right:89px}
   .dueline .dl-text{transition:right .15s ease}
   .dueline.narrow .dl-text{right:auto;max-width:65px}
   .dueline.narrow .dl-text .dl-title{font-size:12px;line-height:1.16;white-space:normal;
@@ -3330,6 +3330,14 @@
         dateKey(taskDueAt(t).toISOString())===tk;
     }).sort(function(a,b){return taskDueAt(a)-taskDueAt(b);});
     var prevDue=null;
+    /* '지금' 선의 시간분수 — 마감선 라벨이 이걸 기준으로 남음/지남을 정한다.
+       ⚠ **여기 클램프가 요청 버그의 진짜 원인이었다**: 지금이 타임라인 창
+       (기상~취침) 밖이면 지금 선을 TS+1.5(≈08:30) 자리로 **대체해 그리는데**,
+       라벨은 진짜 시각으로 계산했다. 새벽 01:04에 지금 선은 08:30에 그려지고
+       09:15 마감선은 "8시간 남음"(01:04 기준)이 떠, 그림과 글자가 어긋났다.
+       아래 nf가 이 값을 그대로 받아 쓰므로 이제 둘이 같은 수다. */
+    var nowHf=null;
+    if(dayOffset===0){nowHf=hourFrac(Date.now());if(nowHf<TS)nowHf=TS+1.5;}
     lines.forEach(function(t){
       var due=taskDueAt(t),hf=due.getHours()+due.getMinutes()/60;
       if(hf<TS||hf>TE){prevDue=due;return;}
@@ -3358,20 +3366,25 @@
       /* 오른쪽 2줄 (앱 파리티): 위=시각, 아래=남음·지남. 지난 마감은
          '까지'를 뗀다 — 지난 약속에 '까지'는 어색하다. */
       var hhmmTxt=('0'+due.getHours()).slice(-2)+':'+('0'+due.getMinutes()).slice(-2);
-      var past=(dayOffset===0&&due.getTime()<Date.now());
+      /* ⚠ 남음/지남은 **선을 그린 값과 같은 것**으로 판단한다 (요청 버그:
+         마감선이 '지금' 선 **위**인데 "남음"이 떴다 — 글자가 그림과 모순).
+         선은 hf(시각의 시간분수)로, '지금' 선은 nowHf로 그리므로 그 둘의
+         차이가 곧 화면에서 보이는 거리다. 절대시각(Date.now)으로 따로
+         계산하면 날짜·시간대가 어긋나는 순간 그림과 어긋난다. */
+      var past=(dayOffset===0&&nowHf!=null&&hf<nowHf);
       var clockTxt=past?hhmmTxt:(hhmmTxt+'까지');
       var lenTxt;
-      if(dayOffset===0&&due.getTime()<Date.now()){
+      if(past){
         /* 요청 문구 그대로 "몇 분(몇 시간)" — 1시간 넘으면 **시간 단위로
            축약**한다('3시간 20분 지남' 아님). 읽기 쉽고, 폭도 최대
            55.4px('20시간 지남')라 ▶ 예약폭 62px 안에 들어와 마감선을 끌어
            지남으로 바뀌는 순간에도 버튼이 안 흔들린다. */
-        var pm=Math.max(1,Math.round((Date.now()-due.getTime())/60000));
+        var pm=Math.max(1,Math.round((nowHf-hf)*60));
         lenTxt=(pm<60?pm+'분':Math.round(pm/60)+'시간')+' 지남';
-      }else if(dayOffset===0){
+      }else if(dayOffset===0&&nowHf!=null){
         /* 아직 안 지난 오늘 마감 — 남은 시간. 축약 규칙은 '지남'과 같다:
            같은 자리를 번갈아 쓰므로 폭도 같이 묶여야 흔들리지 않는다. */
-        var rm=Math.max(1,Math.round((due.getTime()-Date.now())/60000));
+        var rm=Math.max(1,Math.round((hf-nowHf)*60));
         lenTxt=(rm<60?rm+'분':Math.round(rm/60)+'시간')+' 남음';
       }else lenTxt=(t.durationMin||0)>0?durLabel(t.durationMin):'';
       dl.innerHTML='<div class="dl-wire"></div>'+
@@ -3395,8 +3408,8 @@
       if(!t.isDone)attachDueDrag(dl,t);
       sc.appendChild(dl);
     });
-    var nf=TS+1.5;
-    if(dayOffset===0){var now=new Date();nf=hourFrac(now.getTime());if(nf<TS)nf=TS+1.5;
+    var nf=(nowHf!=null)?nowHf:TS+1.5;   // 라벨과 **같은 수** (위 참조)
+    if(dayOffset===0){
       var n=document.createElement('div');n.className='now';n.style.top=yFor(nf)+'px';n.innerHTML='<span class="pill">지금</span><span class="wire"></span>';sc.appendChild(n);}
     if(!any){var e=document.createElement('div');e.className='tl-empty';e.textContent='이 날 일정이 비어 있어요.';sc.appendChild(e);}
     /* 겹칠 때만 좁히기 (앱 파리티) — 마감선·블록을 다 붙인 뒤 한 번에 판정.
