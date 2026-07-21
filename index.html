@@ -708,10 +708,12 @@
   /* 하위 작업 좌스와이프 삭제 (요청 H3) — 부모 bar 삭제와 같은 빨강·둥근 모서리,
      높이만 낮다. 버튼은 행 뒤에 깔고 내용(.sub-in)만 왼쪽으로 민다. */
   .sub-del{position:absolute;top:0;bottom:0;right:0;width:64px;border:0;background:#FF3B30;color:#fff;
-    cursor:pointer;display:grid;place-items:center;border-radius:0 12px 12px 0;padding:0}
+    cursor:pointer;display:grid;place-items:center;padding:0}   /* 모서리는 행의 overflow:hidden이 깎는다 */
   .sub-del svg{width:17px;height:17px}
+  /* ⚠ 관성으로 튕기듯이 (요청) — 부모 bar와 같은 스프링 느낌. 살짝 넘어갔다
+     돌아오는 곡선이라 손을 뗀 뒤가 '툭' 끊기지 않는다. */
   .sub-in{position:relative;z-index:1;display:flex;align-items:center;gap:10px;
-    border-radius:12px;transition:transform .2s cubic-bezier(.3,0,.2,1);touch-action:pan-y}
+    border-radius:12px;transition:transform .28s cubic-bezier(.22,1.2,.36,1);touch-action:pan-y}
   /* 인라인 하위작업 목록 (앱 SubtaskListEditor 파리티). */
   /* 하위 작업 = 부모 bar '아래'의 형제 블록 (요청). 보통 bar보다 살짝 낮다. */
   .subpanel{margin:-4px 0 9px 26px;display:flex;flex-direction:column;gap:5px}
@@ -719,7 +721,7 @@
      모달과 함께 지우면 여백이 달라지므로 여기로 옮겨 그대로 지킨다. */
   /* ⚠ 스와이프 삭제가 붙으면서 배경·여백이 **.sub-in으로 옮겨갔다** — 행은
      삭제 버튼을 담는 틀이 되고, 미는 건 안쪽뿐이다. */
-  .subrow{position:relative;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(20,40,80,.08)}
+  .subrow{position:relative;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(20,40,80,.08)}   /* 부모 .task와 같은 모서리 (요청) */
   .subrow .sub-in{gap:8px;padding:4px 0;background:#fff}
   .subrow .subck{width:20px;height:20px;border-radius:50%;border:2px solid var(--ink-soft);flex:0 0 auto;cursor:pointer;display:grid;place-items:center}
   .subrow .subck.done::after{content:"✓";color:#fff;font-size:12px;font-weight:800}
@@ -728,9 +730,9 @@
   /* 매트릭스 셀 안의 하위 작업 (요청 H2) — 부모 bar 아래, 왼쪽에 체크 동그라미.
      셀이 좁으므로 할일 쪽보다 한 단계 작게. */
   .mx-subs{display:flex;flex-direction:column;gap:4px;margin:-2px 0 6px 16px}
-  .mx-sub{position:relative;border-radius:9px;overflow:hidden;box-shadow:0 2px 7px rgba(20,40,80,.10)}
-  .mx-sub .sub-in{gap:7px;padding:5px 9px;background:#fff;border-radius:9px}
-  .mx-sub .sub-del{width:52px;border-radius:0 9px 9px 0}
+  .mx-sub{position:relative;border-radius:10px;overflow:hidden;box-shadow:0 2px 7px rgba(20,40,80,.10)}   /* 부모 .mtask와 같은 모서리 */
+  .mx-sub .sub-in{gap:7px;padding:5px 9px;background:#fff;border-radius:10px}
+  .mx-sub .sub-del{width:52px}
   .mx-sub .sub-ck{width:17px;height:17px;flex:0 0 auto;border-radius:50%;border:2px solid var(--dc,#9aa3b2);
     display:grid;place-items:center;font-size:10px;font-weight:800;color:#fff;cursor:pointer}
   .mx-sub .sub-ck.on{background:var(--dc);border-color:var(--dc)}
@@ -2347,8 +2349,8 @@
     if(t.countTarget>0)out+='<span class="t-dur">· '+(t.countDone||0)+'/'+t.countTarget+'</span>';
     if(t.nudgeEnabled)out+='<span class="t-dur" style="display:inline-flex;align-items:center;gap:3px">'+IC.bell+'알림</span>';
     if(t.deferredUntil)out+='<span class="t-dur" style="display:inline-flex;align-items:center;gap:3px;color:#AF52DE"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 17H10a4 4 0 0 1 0-8h9"/><path d="M16 5l4 4-4 4"/></svg>미룸'+((t.deferCount||0)>1?' '+t.deferCount:'')+'</span>';
-    var subs=parseSubs(t);
-    if(subs.length>0)out+='<span class="t-dur">· 단계 '+subs.filter(function(s){return s.isDone;}).length+'/'+subs.length+'</span>';
+    // ('· 단계 0/1'은 뺐다 — 요청: 하위 작업이 부모 아래에 그대로 보이고
+    //  펼침 화살표 색도 이미 바뀌어 중복이다.)
     return out;
   }
   // 메모가 있으면 메모 아이콘 (요청). 클릭 시 편집 모달의 메모로.
