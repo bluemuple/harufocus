@@ -1673,6 +1673,19 @@
     /* 제목 줄이 비었으므로 그만큼 아래 콘텐츠를 위로. */
     .view>h2{margin-top:0;margin-bottom:6px;min-height:0}
   }
+
+  /* 탭을 누른 직후 0.8초만 그 이름을 크고 밝게 (요청) — 페이지 제목을 지운 뒤
+     (I1) '내가 지금 어디로 왔는지'를 알려 주는 게 아이콘 색뿐이라, 누른 순간의
+     **확인 신호**를 이름으로 돌려준다. 제목처럼 계속 떠 있진 않는다.
+     ⚠ 폰트 크기가 아니라 transform으로 키운다 — 크기를 바꾸면 하단 바 높이가
+     들썩이고 옆 탭 이름까지 밀린다.
+     ⚠ 새 규칙은 늘 **스타일시트 맨 끝**에 — 위쪽에 MQ 블록들이 있어 앞에 쓰면
+     같은 명시도에서 밀린다 (이 파일에서 네 번 겪은 사고). */
+  /* ⚠ inline 요소엔 transform이 안 먹는다 — 반드시 inline-block. */
+  .mbtn .mlab{display:inline-block;transition:transform .18s cubic-bezier(.2,.8,.2,1),
+    color .18s ease,opacity .18s ease;transform-origin:center top}
+  .mbtn.just .mlab{transform:scale(1.42);color:var(--ink);opacity:1}
+  body.night .mbtn.just .mlab{color:#fff}
 </style>
 </head>
 <body data-m="todo">
@@ -6749,10 +6762,29 @@
     paintAvatar();}   // 아바타=지금 내 상태 (▶·완료·계획이 바뀌면 곧바로)
 
   /* ---------- tab + mode switching ---------- */
+  /* 하단 탭을 누르면 그 이름만 0.8초 크고 밝게 (요청: 제목 대신 확인 신호).
+     ⚠ 켠 뒤 반드시 끈다 — 클래스가 남으면 '제목'이 되어 버린다.
+     ⚠ 첫 화면(boot)에도 setTab이 도는데, 그건 내가 누른 게 아니라 신호가
+     아니다 → started 뒤에만 반짝인다. */
+  var navFlashTimer=null,navFlashReady=false;
+  function flashNavLabel(name){
+    if(!navFlashReady)return;
+    var b=document.querySelector('#mbar .mbtn[data-nav="'+name+'"]');
+    document.querySelectorAll('#mbar .mbtn.just').forEach(function(x){x.classList.remove('just');});
+    if(!b)return;                                   // '더보기' 안에 있는 탭이면 없다
+    clearTimeout(navFlashTimer);
+    /* ⚠ rAF로 미루면 안 된다 — 탭이 비활성이면 rAF가 아예 안 돌아 신호가
+       영영 안 뜬다(이 파일에서 겪은 함정). 같은 탭을 연타해도 transition이
+       처음부터 돌게 **강제 리플로우 한 줄**로 되감는다. */
+    void b.offsetWidth;
+    b.classList.add('just');
+    navFlashTimer=setTimeout(function(){b.classList.remove('just');},800);
+  }
   function setTab(name){
     document.body.setAttribute('data-m',name);
     document.querySelector('.tabbody').classList.toggle('matrix-mode',name==='matrix');
     document.querySelectorAll('.mbtn').forEach(function(b){b.classList.toggle('on',b.dataset.nav===name);});
+    flashNavLabel(name);          // 누른 탭 이름을 0.8초만 크게 (요청)
     document.querySelectorAll('#deskNav>button[data-nav]').forEach(function(b){b.classList.toggle('on',b.dataset.nav===name);});
     if(name!=='timeline'){
       document.querySelectorAll('.tabrow button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===name);});
@@ -8836,7 +8868,7 @@
     var bar=navBarKeys(),cur=document.body.getAttribute('data-m'),mbar=document.getElementById('mbar');
     if(!mbar)return;
     mbar.innerHTML=bar.map(function(k){
-      return '<button class="mbtn'+(k===cur?' on':'')+(k===navPopKey?' nav-pop':'')+'" data-nav="'+k+'"><svg viewBox="0 0 24 24">'+NAV_DEF[k].svg+'</svg>'+navLabel(k)+
+      return '<button class="mbtn'+(k===cur?' on':'')+(k===navPopKey?' nav-pop':'')+'" data-nav="'+k+'"><svg viewBox="0 0 24 24">'+NAV_DEF[k].svg+'</svg><span class="mlab">'+navLabel(k)+'</span>'+
         (navEditMode?'<span class="nav-badge minus">−</span>':'')+'</button>';
     }).join('')+
       '<button class="mbtn" id="moreBtn"><svg viewBox="0 0 24 24">'+
@@ -9321,6 +9353,7 @@
     if(m.style.display!=='none'&&!e.target.closest('#deskNav'))m.style.display='none';
   });
   renderNav();updateAcct();setTab('todo');renderAll();startBarRotation();if(session)fetchSnapshot();
+  navFlashReady=true;   // 부팅 setTab은 신호가 아니다 — 여기서부터 반짝인다
   // 초대 랜딩 (핵심): ?invite=<코드>
   try{
     var inv=new URLSearchParams(location.search).get('invite');
