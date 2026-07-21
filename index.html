@@ -2254,6 +2254,12 @@
   /* ---------- big timeline (today only) ---------- */
   var TS=6,TE=24,PPH=120,dayOffset=0;
   function yFor(h){return 14+(h-TS)*PPH;}
+  /* 시각(ms) → 시간 분수. ⚠ **초까지** 반영한다 (요청: 픽셀 단위 경계).
+     예전엔 getHours()+getMinutes()/60라 초를 버려서, 방금 끝낸 블록의
+     아랫변이 '지금' 선과 최대 1분(PPH/60 px)까지 어긋났다. 기록 블록의
+     위·아랫변은 실제 시작·종료 시각을 그대로 가리켜야 한다. */
+  function hourFrac(ms){var d=new Date(ms);
+    return d.getHours()+d.getMinutes()/60+d.getSeconds()/3600;}
   function selDate(){var d=new Date();d.setDate(d.getDate()+dayOffset);return d;}
   function selKey(){var d=selDate();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
   // ── 주간/월간 캘린더 스트립 (앱 CalendarHeader 파리티, 요청) ──
@@ -3058,12 +3064,15 @@
     // ① 기록 블록 (§3): 세션에서 파생 — 실색 채움 + 쉼(갭)=빗금(위치 그대로).
     var recBlocks=dayRecordBlocks(tk);
     recBlocks.forEach(function(b){
-      var d=new Date(b.start),hf=d.getHours()+d.getMinutes()/60;
-      var ef=new Date(b.end),hfe=ef.getHours()+ef.getMinutes()/60;if(ef.getDate()!==d.getDate())hfe=24;
+      var d=new Date(b.start),hf=hourFrac(b.start);
+      var ef=new Date(b.end),hfe=hourFrac(b.end);if(ef.getDate()!==d.getDate())hfe=24;
       if(hfe<TS||hf>TE)return;
       any=true;var col=catColor(b.categoryID);
       var el=document.createElement('div');el.style.top=yFor(hf)+'px';
-      var hpx=Math.max(20,(hfe-hf)*PPH-1);el.style.height=hpx+'px';
+      /* ⚠ 높이는 **정확히 (끝−시작)** — 예전의 `-1`(아랫변이 1px 뜸)과
+         `최소 20px`(짧은 블록이 실제보다 길게 그려짐) 보정을 뺐다.
+         2px 하한은 0높이로 사라지는 것만 막는 최소값이다. */
+      var hpx=Math.max(2,(hfe-hf)*PPH);el.style.height=hpx+'px';
       el.className='block rec'+(b.active?' active':'')+(hpx>=44?' big':'');
       el.style.background=hexA(col,0.9);el.style.border='1.7px solid '+hexA(col,0.9);
       var span=b.end-b.start;
@@ -3122,7 +3131,7 @@
       sc.appendChild(dl);
     });
     var nf=TS+1.5;
-    if(dayOffset===0){var now=new Date();nf=now.getHours()+now.getMinutes()/60;if(nf<TS)nf=TS+1.5;
+    if(dayOffset===0){var now=new Date();nf=hourFrac(now.getTime());if(nf<TS)nf=TS+1.5;
       var n=document.createElement('div');n.className='now';n.style.top=yFor(nf)+'px';n.innerHTML='<span class="pill">지금</span><span class="wire"></span>';sc.appendChild(n);}
     if(!any){var e=document.createElement('div');e.className='tl-empty';e.textContent='이 날 일정이 비어 있어요.';sc.appendChild(e);}
     addBatchHandles(sc);                                  // 배치 조절 핸들 (요청)
