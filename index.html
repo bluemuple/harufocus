@@ -379,9 +379,21 @@
   .skip-toast.in{opacity:1;transform:translate(-50%,0)}
   .block.rec.tiny{padding:0;border-radius:3px}
   /* 블록 밖(윗변 위)으로 뺀 라벨 — 하늘 위에 놓이므로 글자색은 onSky. */
-  .rec-lab{position:absolute;left:64px;right:62px;height:18px;z-index:3;cursor:pointer;
-    display:flex;align-items:center;gap:6px;white-space:nowrap;
+  /* B3 (요청 C안): 짧은 블록의 라벨은 블록 윗변 **위**에 얹히는데, 바로 위에
+     다른 블록이 있으면 그 글자와 겹쳐 둘 다 못 읽었다. 라벨 뒤에 하늘색을 살짝
+     가린 **반투명 알약**을 깔아 자기 글자만 또렷하게 한다.
+     ⚠ 불투명 배경으로 하면 위 블록을 잘라먹는 것처럼 보인다 — 하늘이 비쳐야
+     '위에 얹힌 라벨'로 읽힌다. 폭은 글자만큼만(width:max-content). */
+  /* ⚠ 알약이 글자만 감싸도록 라벨을 **내용 폭**으로 줄인다 — 예전엔 left/right로
+     전체 폭을 차지해서, 알약을 깔면 빈 오른쪽까지 통째로 덮였다. */
+  .rec-lab{position:absolute;left:64px;right:auto;width:max-content;max-width:calc(100% - 126px);
+    height:18px;z-index:3;cursor:pointer;
+    display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;
     font-size:12.5px;font-weight:700;color:var(--onSky,#141827)}
+  .rec-lab>*{position:relative;z-index:1}
+  .rec-lab::before{content:"";position:absolute;inset:-1px -6px;border-radius:999px;
+    background:rgba(255,255,255,.62);backdrop-filter:blur(3px);z-index:0}
+  body.night .rec-lab::before{background:rgba(18,22,38,.55)}
   .rec-lab .bic{flex:none;display:inline-flex;align-items:center;color:inherit}
   .rec-lab .bic svg{width:14px;height:14px}
   .rec-lab .btitle{overflow:hidden;text-overflow:ellipsis;min-width:0}
