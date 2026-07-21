@@ -1624,6 +1624,36 @@
   .mood-inrow input{flex:1;border:0;background:none;font-family:inherit;font-size:13px;color:#2a2440;min-width:0;outline:none}
   .mood-x{position:absolute;top:10px;right:10px;border:0;background:none;color:#8a8398;font-size:12px;cursor:pointer}
   .mood-count{position:absolute;top:11px;right:30px;font-size:11px;color:#8a8398;font-weight:700}
+
+  /* ===== 페이지 제목 제거 + 캡슐 개편 (요청) =====
+     ⚠ 이 블록은 **스타일시트 맨 끝**에 둔다: 데스크톱 미디어쿼리(≥1100px)가
+     위에 있어서, 같은 명시도로 앞에 쓰면 밀린다. 이 파일에서 이미 세 번
+     같은 사고가 났다(.undobar·고스트·하단바). */
+
+  /* 페이지 이름은 **지우지 않고 감춘다** — h2를 지우면 그 안의 달력 버튼
+     (.dow-toggle)까지 사라진다. 웹은 날짜 줄이 팝오버라 .dow-toggle이
+     **유일한 날짜 표시이자 달력 트리거**이고 placeCal()도 그 위치를 기준으로
+     팝오버를 배치한다.
+     ⚠ display:none / visibility:hidden 금지 — 낭독기에서도 사라진다. */
+  .pg-title{position:absolute;width:1px;height:1px;margin:-1px;padding:0;
+    overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+
+  /* 캡슐 — 아바타 + 본문(인용문/귀속) */
+  .topcap .tc-ava{flex:0 0 auto;width:24px;height:24px;border-radius:50%;
+    display:grid;place-items:center;color:var(--ink);overflow:hidden}
+  .topcap .tc-ava svg,.topcap .tc-ava img{width:100%;height:100%;display:block;border-radius:50%}
+  .topcap .tc-body{min-width:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;line-height:1.25}
+  .topcap .tc-sub{font-size:10.5px;font-weight:600;opacity:.62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .topcap .tc-sub:empty{display:none}
+
+  @media(max-width:1099px){
+    /* 제목 줄이 사라진 만큼 캡슐을 키운다 (요청): 거의 전폭·2줄 허용. */
+    .topcap{left:12px;right:12px;max-width:none;min-height:42px;padding:6px 14px;font-size:13px}
+    .topcap .tc-ava{width:30px;height:30px}
+    .topcap .tc-txt{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+    /* 제목 줄이 비었으므로 그만큼 아래 콘텐츠를 위로. */
+    .view>h2{margin-top:0;margin-bottom:6px;min-height:0}
+  }
 </style>
 </head>
 <body data-m="todo">
@@ -1644,7 +1674,7 @@
     </div>
   </div>
   <!-- 우상단 회전 캡슐 (요청: 다짐·집중합계·해질녘·해돋이·D-day 번갈아, 아래로 전환). -->
-  <button class="topcap" id="topCap"><span class="tc-ic" id="tcIc"></span><span class="tc-txt" id="tcTxt"></span></button>
+  <button class="topcap" id="topCap"><span class="tc-ava" id="tcAva"></span><span class="tc-ic" id="tcIc"></span><span class="tc-body"><span class="tc-txt" id="tcTxt"></span><span class="tc-sub" id="tcSub"></span></span></button>
   <!-- 방금 한 일 + 실행 취소 (요청 첨부4·5) -->
   <!-- 편집 모드에서만 (요청): 무슨 키를 쓸 수 있는지 -->
   <button class="cal-today" id="calToday">오늘로</button>
@@ -1744,7 +1774,7 @@
       </div>
       <div class="tabbody">
         <section class="view on" id="view-todo">
-          <h2>할 일 <button class="dow-toggle" id="todoDow" data-cal="todo"></button></h2>
+          <h2><span class="pg-title">할 일</span> <button class="dow-toggle" id="todoDow" data-cal="todo"></button></h2>
           <div class="calstrip" data-cal="todo"></div>
           <div class="todo" id="todoList"></div>
           <!-- 요청: 타임라인 위쪽 bar를 걷어내 타임라인을 세로로 길게 쓰고,
@@ -1754,12 +1784,12 @@
           <button class="page-fab" id="todoFab" title="할 일 추가"><svg viewBox="0 0 24 24" style="width:30px;height:30px" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         </section>
         <section class="view" id="view-matrix">
-          <h2>매트릭스 <button class="dow-toggle" id="matrixDow" data-cal="matrix"></button></h2>
+          <h2><span class="pg-title">매트릭스</span> <button class="dow-toggle" id="matrixDow" data-cal="matrix"></button></h2>
           <div class="calstrip" data-cal="matrix"></div>
           <div class="matrix" id="matrixGrid"></div>
         </section>
         <section class="view" id="view-routine">
-          <h2>루틴</h2>
+          <h2><span class="pg-title">루틴</span></h2>
           <div class="r-weekbar">
             <button class="daynav" id="rwPrev">‹</button>
             <span class="r-weeklabel" id="rwLabel"></span>
@@ -1772,13 +1802,13 @@
           <button class="page-fab" id="habitFab" title="루틴 추가"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         </section>
         <section class="view" id="view-diary">
-          <h2>일기</h2>
+          <h2><span class="pg-title">일기</span></h2>
           <div class="d-chips" id="diaryChips"></div>
           <div class="d-list" id="diaryList"></div>
           <button class="page-fab" id="diaryFab" title="새 일기"><svg viewBox="0 0 24 24" style="width:30px;height:30px" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         </section>
         <section class="view" id="view-bucket">
-          <h2>물통 <span id="bMoney" class="bmoney"></span>
+          <h2><span class="pg-title">물통</span> <span id="bMoney" class="bmoney"></span>
             <button class="app-banner" id="bucketTimeBtn" style="float:right">📱 내 시간이 간 곳</button></h2>
           <div class="seg bseg" id="bSeg"><button class="on" data-bt="bucket">물통</button><button data-bt="stats">통계</button><button data-bt="wallet">용돈</button></div>
           <div id="bPane-bucket">
@@ -7647,8 +7677,9 @@
   document.getElementById('moreScrim').addEventListener('click',function(e){if(e.target===this){navEditMode=false;closeMore();}});
   document.getElementById('navEditBtn').addEventListener('click',toggleNavEdit);
   document.getElementById('topCap').addEventListener('click',function(){
-    var keys=barEnabledKeys();
-    if(keys[barIdx]==='vow'){openVow();return;}     // 다짐이면 작성 팝업 (요청)
+    if(capSignal&&capSignal.text){capSignal=null;startBarRotation();return;}   // 신호는 눌러서 해제
+    var keys=capPool();
+    if(keys[barIdx]==='myword'){openVow();return;}  // 내 말이면 작성 팝업 (요청)
     barAdvance();
   });
   function openVow(){
@@ -8865,6 +8896,98 @@
     if(setChip('chipDeadline')&&planDeadlineAt())out.push('deadline');
     return out;
   }
+  /* ---------- 캡슐 내용 선택 규칙 (요청 개편) ----------
+     설계 법칙: **엘리는 말하지 않는다. 말은 언제나 내가 한다.**
+     캡슐은 '내가 나에게 말하는 자리'다 — 통계(남은 시간·일조량)는 여기서 뺀다.
+
+       1순위  신호   — 배타적. 있으면 이것만 보여주고 회전을 멈춘다
+       2·3순위      — **같은 풀에서 함께 회전** (회전 주기는 기존 그대로)
+
+     ⚠ 엄격한 3단 우선순위로 만들지 않는다: 2순위(내 말)는 거의 항상 값이 있어서
+     3순위(해질녘·D-day)가 영영 안 뜬다. 배타적인 건 1순위뿐이다. */
+  var capSignal=null;          // {text} | null — 이번 스코프에선 **아무도 안 채운다**
+                               // (다음 단계 '집중 이탈 후 복귀' 트리거용 슬롯)
+  var lastMyWordId=null;       // 같은 인용문을 연속으로 두 번 보여주지 않기
+  var lastDdayAt=0;            // D-day 마지막 표시 시각 (인메모리, 10분 쿨다운)
+  var DDAY_COOLDOWN_MS=10*60*1000;
+
+  /* 오늘 일몰 (없으면 null) — ⚠ 기존 sunTimes를 **재사용**한다. */
+  function todaySunset(){
+    try{var t=sunTimes(new Date(),obsLat(),obsLng());
+      return (t&&!t.polar&&t.sunset)?t.sunset:null;}catch(e){return null;}
+  }
+  /* 해질녘 후보 조건: 일몰 2시간 전 ~ 일몰 사이에만. */
+  function duskActive(){
+    var ss=todaySunset();if(!ss)return false;
+    var left=ss.getTime()-Date.now();
+    return left>0&&left<=2*60*60*1000;
+  }
+  /* 조건을 통과한 2·3순위 후보들. */
+  function capPool(){
+    var out=['myword'];                                  // 2순위 — 항상 후보
+    if(duskActive())out.push('dusk');                    // 3순위 — 해질녘 창에서만
+    var S=DATA.settings||{};
+    if(S.ddayDate&&Date.now()-lastDdayAt>=DDAY_COOLDOWN_MS)out.push('dday');   // 3순위 — 10분 쿨다운
+    return out;
+  }
+  /* 2순위 '내 말 되돌려주기' — 설정 한마디 + 내가 쓴 일기에서 하나.
+     ⚠ DATA.diary 항목은 {id,date,text,kind,updatedAt} (newDiaryEntry 확인). */
+  var WD=['일','월','화','수','목','금','토'];
+  function myWordPick(){
+    var S=DATA.settings||{},out=[];
+    var motto=(S.motto||S.todayVow||'').trim();
+    if(motto)out.push({id:'motto',text:motto,who:'오늘 아침의 나'});
+    var cut=Date.now()-30*86400000;
+    (DATA.diary||[]).forEach(function(e){
+      var tx=(e.text||'').trim();if(!tx)return;
+      var d=new Date(e.date);if(isNaN(d)||d.getTime()<cut)return;
+      out.push({id:e.id,text:tx.split('\n')[0],
+                who:'지난 '+WD[d.getDay()]+'요일의 나'});
+    });
+    if(!out.length)return null;
+    // 같은 걸 연속으로 두 번 보여주지 않는다.
+    var pool=out.length>1?out.filter(function(x){return x.id!==lastMyWordId;}):out;
+    var pick=pool[Math.abs(barWordTick)%pool.length];
+    lastMyWordId=pick.id;
+    return pick;
+  }
+  /* 한국어 날짜 세는 말 — '사흘'처럼 읽히게 (요청 문구). */
+  function daysKo(n){return ['오늘','하루','이틀','사흘','나흘','닷새','엿새','이레','여드레','아흐레','열흘'][n]||(n+'일');}
+  /* 캡슐 한 조각을 만든다. {txt, sub} — sub는 자리가 있을 때만 그린다. */
+  function capContent(k){
+    if(k==='myword'){
+      var w=myWordPick();
+      if(!w)return {txt:eleName()+'에게 한마디',sub:''};
+      return {txt:'“'+w.text+'”',sub:'— '+w.who};
+    }
+    if(k==='dusk'){
+      var ss=todaySunset();if(!ss)return {txt:'',sub:''};
+      var mins=Math.max(0,Math.round((ss.getTime()-Date.now())/60000));
+      var lead=mins>=90?'두 시간':(mins>=45?'한 시간':(mins>=25?'삼십 분':'조금'));
+      return {txt:lead+' 뒤면 해 져. 하늘 한 번 보자.',sub:''};
+    }
+    if(k==='dday'){
+      var S=DATA.settings||{};
+      var dd=new Date(S.ddayDate);dd.setHours(0,0,0,0);
+      var td=new Date();td.setHours(0,0,0,0);
+      var diff=Math.round((dd-td)/86400000);
+      var lab=(setDdayTitle()||'').trim()||'그날';
+      lastDdayAt=Date.now();
+      if(diff===0)return {txt:lab+', 오늘이야.',sub:''};
+      if(diff<0)return {txt:lab+'에서 '+daysKo(-diff)+' 지났어.',sub:''};
+      return {txt:lab+'까지 '+daysKo(diff)+' 남았어.',sub:''};
+    }
+    return {txt:'',sub:''};
+  }
+  /* 캡슐 아바타 (요청 B) — 지금은 자리표시자 하나뿐.
+     ⚠ 나중에 `<img src="assets/avatar_*.png">` **한 줄로 갈아끼울 수 있게** 분리해 둔다. */
+  function avatarSVG(state){
+    return '<svg viewBox="0 0 32 32" aria-hidden="true">'+
+      '<circle cx="16" cy="16" r="15" fill="currentColor" opacity=".14"/>'+
+      '<path fill="currentColor" opacity=".72" d="M10.5 20.5c0-3.6 2.5-6.4 5.5-6.4s5.5 2.8 5.5 6.4c0 .6-.5 1.1-1.1 1.1h-1.3v2.3c0 .5-.4.9-.9.9h-1.1v-3.2h-1.2v3.2h-1.1c-.5 0-.9-.4-.9-.9v-2.3h-1.3c-.6 0-1.1-.5-1.1-1.1z"/>'+
+      '<circle cx="13.4" cy="12.4" r="1.5" fill="currentColor" opacity=".72"/>'+
+      '<circle cx="18.6" cy="12.4" r="1.5" fill="currentColor" opacity=".72"/></svg>';
+  }
   /* 앱 AppState.planDeadline 대응 — 오늘 마지막 마감선 시각 (없으면 null). */
   function planDeadlineAt(){
     var t=(DATA.tasks||[]).filter(function(x){
@@ -8995,12 +9118,28 @@
     setTimeout(finish,420);
   }
   function paintBar(anim){
-    var keys=barEnabledKeys(),cap=document.getElementById('topCap');
-    if(!keys.length){cap.style.display='none';return;}
+    var cap=document.getElementById('topCap');
     cap.style.display='';
-    if(barIdx>=keys.length)barIdx=0;
-    var c=barContent(keys[barIdx]);
-    document.getElementById('tcIc').innerHTML=c.ic;
+    /* 1순위 신호는 **배타적** — 있으면 이것만 보여주고 회전을 멈춘다. */
+    var c;
+    if(capSignal&&capSignal.text){
+      c={txt:capSignal.text,sub:''};
+      if(barTimer){clearInterval(barTimer);barTimer=null;}
+    }else{
+      var keys=capPool();
+      if(!keys.length){cap.style.display='none';return;}
+      if(barIdx>=keys.length)barIdx=0;
+      c=capContent(keys[barIdx]);
+    }
+    // 아바타가 있으면 작은 아이콘은 중복이라 숨긴다 (요청 B).
+    var ava=document.getElementById('tcAva');
+    ava.innerHTML=avatarSVG('default');
+    document.getElementById('tcIc').style.display='none';
+    // 귀속 줄은 **자리가 있을 때만** — 2줄 캡슐(모바일)에서만 그린다.
+    // 데스크톱은 캡슐이 한 줄짜리 좁은 알약이라 인용문만 남긴다.
+    cap.classList.toggle('two-line',window.innerWidth<1100);
+    var sub=document.getElementById('tcSub');
+    sub.textContent=(c.sub&&cap.classList.contains('two-line'))?c.sub:'';
     barChunks=tcFit(c.txt);barChunkIdx=0;
     setTcText(barChunks[0],anim);
     clearInterval(barChunkTimer);barChunkTimer=null;
@@ -9009,11 +9148,11 @@
       setTcText(barChunks[barChunkIdx],true);
     },2800);
   }
-  function barAdvance(){var keys=barEnabledKeys();if(!keys.length)return;barIdx=(barIdx+1)%keys.length;barWordTick++;paintBar(true);}
+  function barAdvance(){if(capSignal&&capSignal.text)return;var keys=capPool();if(!keys.length)return;barIdx=(barIdx+1)%keys.length;barWordTick++;paintBar(true);}
   function startBarRotation(){
     if(barTimer)clearInterval(barTimer);
     barIdx=0;paintBar(false);
-    var keys=barEnabledKeys();if(keys.length<2)return;
+    var keys=capPool();if(keys.length<2)return;
     var per=setChipIntervalMin()*60000;
     barTimer=setInterval(barAdvance,per);
   }
