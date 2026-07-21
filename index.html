@@ -692,7 +692,9 @@
   /* 인라인 하위작업 목록 (앱 SubtaskListEditor 파리티). */
   /* 하위 작업 = 부모 bar '아래'의 형제 블록 (요청). 보통 bar보다 살짝 낮다. */
   .subpanel{margin:-4px 0 9px 26px;display:flex;flex-direction:column;gap:5px}
-  .subrow{display:flex;align-items:center;gap:10px;padding:7px 11px;border-radius:12px;background:#fff;box-shadow:0 2px 8px rgba(20,40,80,.08)}
+  /* ⚠ gap·padding은 지웠던 편집 모달 `.subrow` 규칙이 덮어쓰던 값이다 —
+     모달과 함께 지우면 여백이 달라지므로 여기로 옮겨 그대로 지킨다. */
+  .subrow{display:flex;align-items:center;gap:8px;padding:4px 0;border-radius:12px;background:#fff;box-shadow:0 2px 8px rgba(20,40,80,.08)}
   .subrow .subck{width:20px;height:20px;border-radius:50%;border:2px solid var(--ink-soft);flex:0 0 auto;cursor:pointer;display:grid;place-items:center}
   .subrow .subck.done::after{content:"✓";color:#fff;font-size:12px;font-weight:800}
   .subrow .st{flex:1;min-width:0;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1158,6 +1160,23 @@
   .cap-day{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--ink-soft);
     font-size:12px;font-weight:800;cursor:pointer}
   .cap-day.on{background:color-mix(in srgb,var(--cap-color,#5b93e6) 85%,transparent);border-color:transparent;color:#fff}
+  /* 매트릭스 사분면 — 2×2 배치를 지키되 캡처바에 맞게 납작하게 (요청). */
+  .cap-mxgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .cap-mxgrid button{display:flex;align-items:center;gap:7px;height:42px;padding:0 10px;border:1px solid var(--line);
+    border-radius:11px;background:#fff;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer;text-align:left}
+  .cap-mxgrid button b{flex:0 0 auto;font-size:13px;font-weight:800;color:var(--ink-soft)}
+  .cap-mxgrid button.on{background:color-mix(in srgb,var(--cap-color,#5b93e6) 85%,transparent);border-color:transparent;color:#fff}
+  .cap-mxgrid button.on b{color:#fff}
+  /* 하위 작업 목록 (요청). */
+  .cap-sublist{display:flex;flex-direction:column;gap:5px;margin-bottom:8px;max-height:168px;overflow-y:auto}
+  .cap-subrow{display:flex;align-items:center;gap:9px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff}
+  .cap-subck{width:20px;height:20px;flex:0 0 auto;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;
+    font-size:11px;font-weight:800;color:#fff;cursor:pointer}
+  .cap-subck.on{background:color-mix(in srgb,var(--cap-color,#5b93e6) 85%,transparent);border-color:transparent}
+  .cap-subt{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cap-subrow.done .cap-subt{text-decoration:line-through;color:var(--ink-soft)}
+  .cap-subdel{border:0;background:transparent;color:var(--ink-soft);font-size:17px;line-height:1;cursor:pointer;opacity:.55;padding:0 2px}
+  .cap-subdel:hover{opacity:1;color:#e0564e}
   .cap-note textarea{width:100%;height:90px;border:1px solid var(--line);border-radius:11px;padding:9px 11px;
     font-family:inherit;font-size:14px;resize:vertical;box-sizing:border-box}
   .cap-fmtrow{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
@@ -1402,10 +1421,8 @@
   .modal .mswitch a{color:var(--sky-blue);font-weight:600;cursor:pointer}
   .modal .mclose{position:sticky;float:right;top:0;margin:-6px -4px 0 0;width:30px;height:30px;border:none;
     background:var(--card-2);border-radius:50%;font-size:16px;color:var(--ink-soft);cursor:pointer;z-index:5;display:grid;place-items:center}
-  /* 작업 편집 모달 (요청: 웹에서도 앱처럼 편집) */
   .modal.wide{max-width:320px}
   .elabel{font-size:11.5px;font-weight:700;color:var(--ink-soft);margin:12px 0 6px}
-  .chips{display:flex;flex-wrap:wrap;gap:6px}
   .chip{font-family:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:var(--card-2);color:var(--ink-soft);border-radius:999px;padding:7px 12px;cursor:pointer}
   .chip.on{color:#fff;border-color:transparent}
   .erow{display:flex;gap:8px;align-items:center}
@@ -1413,22 +1430,6 @@
   .ebtns{display:flex;gap:8px;margin-top:16px}
   .ebtns .go{margin-top:0;flex:1}
   .ebtns .del{flex:0 0 auto;white-space:nowrap;border:1px solid var(--line);background:var(--card-2);color:#d5495f;border-radius:12px;padding:11px 16px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
-  .ebtns .play{flex:0 0 auto;min-width:84px;white-space:nowrap;border:0;background:var(--sky-blue);color:#fff;border-radius:12px;padding:11px 12px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
-  .chip.ico{display:inline-flex;align-items:center;gap:5px}
-  .chip.ico .ic{width:15px;height:15px}
-  .etoggles{display:flex;gap:10px;margin-top:12px;font-size:13.5px;color:var(--ink)}
-  .tpill{flex:1;display:flex;align-items:center;justify-content:space-between;cursor:pointer;
-    border:1px solid var(--line);border-radius:12px;padding:11px 14px;background:var(--card-2)}
-  .tpill .tp-l{display:flex;align-items:center;gap:7px;font-weight:600}
-  .tpill .ic{width:17px;height:17px;color:var(--ink-soft)}
-  .tpill input{width:20px;height:20px;accent-color:var(--sky-blue)}
-  .subrow{display:flex;align-items:center;gap:8px;padding:4px 0}
-  .subck{width:20px;height:20px;flex:0 0 auto;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff;cursor:pointer}
-  .subck.on{background:var(--sky-blue);border-color:var(--sky-blue)}
-  .subt{flex:1;font-size:13px}
-  .subt.done{text-decoration:line-through;color:var(--ink-soft)}
-  .subdel{border:0;background:transparent;color:var(--ink-soft);font-size:16px;cursor:pointer;opacity:.5}
-  .subdel:hover{opacity:1;color:#e0564e}
   .stat-big{font-size:15px;margin-bottom:2px}.stat-big b{font-size:19px;color:#E8664F}
   .stat-big .up{color:#E8664F}.stat-big .dn{color:var(--ink-soft)}
   .stat-cheer{font-size:13px;color:var(--ink);background:var(--card-2);border-radius:11px;padding:9px 12px;margin:7px 0 2px}
@@ -1549,20 +1550,11 @@
   .ft-chip.on{color:#ffd76a;background:rgba(255,255,255,.26)}
   .ftlabel{fill:rgba(255,255,255,.62);font-size:12px;font-weight:600}
   /* 보상 (요청) */
-  .rewardrow{align-items:center;gap:8px;flex-wrap:wrap}
-  .rewardrow #eRewardText{min-width:120px}
-  .chip.rmoney{min-width:34px;font-weight:800}
-  .chip.rmoney.on{background:#f7c948;color:#5a4600;border-color:#f0b400}
-  .rmoneylbl{font-size:12px;font-weight:800;color:#b8860b}
-  .rq4{display:flex;align-items:center;gap:4px;font-size:12.5px;white-space:nowrap;color:var(--ink-soft);flex:0 0 auto}
-  .rq4 input{width:18px;height:18px;margin:0}
   .t-reward{font-size:11px;font-weight:800;color:#b8860b;background:rgba(247,201,72,.22);border-radius:999px;padding:2px 8px;
     white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle}
   /* 폰에선 긴 텍스트 칩이 2줄로 깨지므로 심볼만 (요청). */
   @media(max-width:860px){.t-reward .rtext{display:none}.t-reward{max-width:none}}
   .bmoney{font-size:14px;font-weight:800;color:#b8860b;vertical-align:middle}
-  .reward-tip{position:absolute;z-index:5000;width:220px;background:rgba(20,22,30,.92);color:#fff;font-size:12px;line-height:1.45;padding:9px 11px;border-radius:10px;display:flex;gap:6px;align-items:flex-start;box-shadow:0 8px 22px rgba(0,0,0,.3)}
-  .reward-tip .rt-x{margin-left:auto;background:none;border:0;color:#fff;opacity:.8;font-size:12px;cursor:pointer;padding:0 2px}
   .reward-pop{position:fixed;inset:0;z-index:6000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.34)}
   .reward-card{background:#fff;border-radius:22px;padding:26px 24px;width:min(340px,86vw);text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)}
   .reward-emoji{font-size:48px;line-height:1}
@@ -1801,34 +1793,6 @@
     <div class="merr" id="loginErr"></div>
     <button class="go" id="loginGo">로그인</button>
     <div class="mswitch" id="loginSwitch">계정이 없나요? <a id="loginToggle">회원가입</a></div>
-  </div>
-</div>
-
-<!-- 작업 편집 모달 (요청: 웹에서도 앱처럼 편집) -->
-<div class="scrim" id="editScrim">
-  <div class="modal wide">
-    <button class="mclose" id="editClose">✕</button>
-    <h3>작업 편집</h3>
-    <input id="eTitle" placeholder="제목">
-    <div class="elabel">분류</div><div class="chips" id="eCats"></div>
-    <div class="elabel">길이</div><div class="chips" id="eDurs"></div>
-    <div class="elabel">타임라인 배치 (오늘 · 시각)</div>
-    <div class="erow"><input type="time" id="eTime" style="flex:1"><button class="chip" id="eClearTime">빼기</button></div>
-    <div class="elabel">매트릭스</div><div class="chips" id="eQuads"></div>
-
-    <div class="elabel">보상 <span style="font-weight:400;color:var(--muted)">· 끝내면 나에게 주는 선물</span></div>
-    <div class="erow rewardrow">
-      <button class="chip rmoney" id="eRewardMoney" title="가상 돈 보상">₩</button>
-      <input id="eRewardText" placeholder="" style="flex:1">
-      <span id="eRewardMoneyLbl" class="rmoneylbl"></span>
-      <label class="rq4"><input type="checkbox" id="eRewardQ4">Q4 추가</label>
-    </div>
-    <div class="elabel">메모</div>
-    <textarea id="eNote" rows="2" placeholder="메모…" style="width:100%;font-family:inherit;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:11px;background:var(--card-2);color:var(--ink);resize:vertical;box-sizing:border-box"></textarea>
-    <div class="elabel">하위 작업</div>
-    <div id="eSubs"></div>
-    <div class="erow"><input id="eSubAdd" placeholder="하위 작업 추가…" maxlength="80"><button class="chip" id="eSubAddBtn">추가</button></div>
-    <div class="ebtns"><button class="del" id="eDelete">삭제</button><button class="play" id="ePlay">집중 ▶</button><button class="go" id="eSave">저장</button></div>
   </div>
 </div>
 
@@ -2287,6 +2251,7 @@
     grid:svgI('<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'),
     sunrise:svgI('<path d="M3 19h18M7.5 19a4.5 4.5 0 0 1 9 0M12 9.8v2.4M5.9 12.6l1.5 1.5M18.1 12.6l-1.5 1.5M3.5 16h1.8M18.7 16h1.8"/>'),
     curve:svgI('<path d="M6 19v-3.5A7.5 7.5 0 0 1 13.5 8H17"/><path d="M13.8 4.2L17.6 8l-3.8 3.8"/>'),
+    steps:svgI('<path d="M3.5 6.6l1.9 1.9 3.3-3.3"/><path d="M3.5 16.6l1.9 1.9 3.3-3.3"/><path d="M12.5 7h8M12.5 17h8"/>'),
     bold:svgI('<path d="M7 5h6a3.2 3.2 0 0 1 0 6.4H7zM7 11.4h7a3.4 3.4 0 0 1 0 6.8H7z"/>'),
     italic:svgI('<path d="M11 5h6M7 19h6M14 5l-4 14"/>'),
     bullet:svgI('<circle cx="5" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="18" r="1.2" fill="currentColor" stroke="none"/><path d="M9 6h11M9 12h11M9 18h11"/>'),
@@ -3342,11 +3307,11 @@
         lab.style.top=(yFor(hf)-LABEL_H-2)+'px';    // 윗변 바로 위
         lab.innerHTML=icHTML+titleHTML+durHTML;
         var tk2=taskByID(b.taskID);
-        if(tk2)lab.addEventListener('click',function(){openEditor(tk2);});
+        if(tk2)lab.addEventListener('click',function(){openCapture('timeline',{task:tk2});});
         sc.appendChild(lab);
       }
       var task=taskByID(b.taskID);
-      if(task)el.addEventListener('click',function(){openEditor(task);});
+      if(task)el.addEventListener('click',function(){openCapture('timeline',{task:task});});
       el.dataset.bkey=b.taskID+'@'+b.start;   // 좁힘 판정에서 이 블록을 가리키는 키
       sc.appendChild(el);
     });
@@ -3687,114 +3652,12 @@
       first=false;day.setDate(day.getDate()-1);
     }return count;}
   function doHabitAdd(){var el=document.getElementById('habitAdd');var v=(el.value||'').trim();if(!v)return;addHabit({title:v});el.value='';}
-  // 타임라인 블록 드래그로 이동 (요청): 세로로 끌면 시작 시각이 5분 단위로 바뀜.
-  // 움직이지 않으면 클릭 → 편집 모달. 양방향 sync.
-  // 블록 편집 (요청): 평소엔 ✕·핸들 숨김. 꾹(380ms) 누르면 armed —
-  // ✕·핸들이 보이고 가운데/위를 잡아 상하 이동, 핸들로 높이. 그동안 스크롤 정지.
+  // 타임라인 스크롤 잠금 — 마감선·캡슐을 끄는 동안 화면이 같이 밀리지 않게.
   var tlDragging=false;
   document.addEventListener('touchmove',function(e){if(tlDragging)e.preventDefault();},{passive:false});
-  document.addEventListener('pointerdown',function(e){
-    var armed=document.querySelectorAll('#tlScroll .block.armed');
-    if(!armed.length)return;
-    if(e.target.closest('.block.armed'))return;
-    armed.forEach(function(b){b.classList.remove('armed');});
-  },true);
-  function dragBlock(el,t){
-    var sy=0,moved=false,base=null,pending=null,armTimer=null;
-    el.addEventListener('pointerdown',function(e){
-      if(e.target.closest('.block-resize,.bx,.bplay'))return;
-      var isMouse=e.pointerType==='mouse';
-      var armedNow=el.classList.contains('armed')||isMouse;
-      sy=e.clientY;moved=false;pending=null;
-      if(armedNow){
-        base=new Date(t.scheduledStart);tlDragging=true;
-        try{el.setPointerCapture(e.pointerId);}catch(_){}
-      }else{
-        // 꾹 눌러 arm — 8px 이상 움직이면 취소(스크롤로 간주).
-        base=null;
-        var sx0=e.clientX,sy0=e.clientY;
-        armTimer=setTimeout(function(){armTimer=null;el.classList.add('armed');
-          base=new Date(t.scheduledStart);tlDragging=true;
-          if(navigator.vibrate)try{navigator.vibrate(10);}catch(_){}
-        },380);
-        function chk(ev){if(Math.abs(ev.clientX-sx0)+Math.abs(ev.clientY-sy0)>8)cancel();}
-        function cancel(){if(armTimer){clearTimeout(armTimer);armTimer=null;}
-          el.removeEventListener('pointermove',chk);el.removeEventListener('pointerup',cancel);el.removeEventListener('pointercancel',cancel);}
-        el.addEventListener('pointermove',chk);
-        el.addEventListener('pointerup',cancel);el.addEventListener('pointercancel',cancel);
-      }
-    });
-    el.addEventListener('pointermove',function(e){
-      if(base==null)return;var dy=e.clientY-sy;if(Math.abs(dy)>4){moved=true;el.style.cursor='grabbing';}
-      if(moved){e.preventDefault();var nd=new Date(base.getTime()+(dy/PPH)*3600000);var mm=Math.round(nd.getMinutes()/5)*5;nd.setMinutes(mm,0,0);
-        pending=nd;el.style.top=yFor(nd.getHours()+nd.getMinutes()/60)+'px';}
-    });
-    function done(){tlDragging=false;if(base==null)return;el.style.cursor='grab';
-      if(moved&&pending){t.scheduledStart=pending.toISOString();base=null;renderBig();renderMosaic();pushSnapshot();}
-      else{base=null;if(!el.classList.contains('armed'))openEditor(t);}}
-    el.addEventListener('pointerup',done);
-    el.addEventListener('pointercancel',function(){tlDragging=false;base=null;el.style.cursor='grab';});
-  }
-  // 타임라인 블록 아래끝 드래그로 길이(분) 조절 (요청): 5분 스냅, 양방향 sync.
   function durLabel(m){return m>=60?(Math.floor(m/60)+'시간'+(m%60?' '+(m%60)+'분':'')):(m+'분');}
-  function resizeBlock(handle,el,t){
-    var sy=0,baseDur=0,active=false,pending=0;
-    handle.addEventListener('pointerdown',function(e){e.stopPropagation();e.preventDefault();
-      sy=e.clientY;baseDur=t.durationMin||50;active=true;pending=baseDur;tlDragging=true;
-      try{handle.setPointerCapture(e.pointerId);}catch(_){}});
-    handle.addEventListener('pointermove',function(e){if(!active)return;e.stopPropagation();e.preventDefault();
-      var dMin=Math.round(((e.clientY-sy)/PPH*60)/5)*5;pending=Math.max(5,baseDur+dMin);
-      el.style.height=Math.max(28,(pending/60)*PPH-6)+'px';el.querySelector('small').textContent=durLabel(pending);});
-    handle.addEventListener('pointerup',function(e){if(!active)return;e.stopPropagation();active=false;tlDragging=false;
-      if(pending&&pending!==baseDur){t.durationMin=pending;renderBig();renderMosaic();pushSnapshot();}});
-  }
 
-  /* ---------- 작업 편집 모달 (요청: 앱처럼 편집) ---------- */
-  var editTask=null,eCat='focus',eDur=0,eQuad=0;
-  function buildEditChips(){
-    var cc=document.getElementById('eCats');
-    cc.innerHTML=Object.keys(CATS).map(function(id){return '<button class="chip" data-c="'+id+'">'+catIcon(id)+' '+esc(CATS[id].name)+'</button>';}).join('');
-    cc.querySelectorAll('.chip').forEach(function(el){el.addEventListener('click',function(){eCat=el.dataset.c;paintEditChips();});});
-    var dc=document.getElementById('eDurs');
-    dc.innerHTML=[['실시간',0],['25분',25],['50분',50],['90분',90]].map(function(d){return '<button class="chip ico" data-d="'+d[1]+'">'+IC.clock+' '+d[0]+'</button>';}).join('');
-    dc.querySelectorAll('.chip').forEach(function(el){el.addEventListener('click',function(){eDur=+el.dataset.d;paintEditChips();});});
-    var qc=document.getElementById('eQuads');
-    var QIC=[IC.circleO,IC.dots9,IC.star,IC.bolt,IC.clock];
-    qc.innerHTML=[['없음',0],['급·중요',1],['중요',2],['급함',3],['나중',4]].map(function(q){return '<button class="chip ico" data-q="'+q[1]+'">'+QIC[q[1]]+' '+q[0]+'</button>';}).join('');
-    qc.querySelectorAll('.chip').forEach(function(el){el.addEventListener('click',function(){eQuad=+el.dataset.q;paintEditChips();});});
-  }
-  function paintEditChips(){
-    document.querySelectorAll('#eCats .chip').forEach(function(el){var on=el.dataset.c===eCat;el.classList.toggle('on',on);el.style.background=on?catColor(eCat):'';});
-    document.querySelectorAll('#eDurs .chip').forEach(function(el){var on=+el.dataset.d===eDur;el.classList.toggle('on',on);el.style.background=on?'var(--ink)':'';});
-    document.querySelectorAll('#eQuads .chip').forEach(function(el){var on=+el.dataset.q===eQuad;el.classList.toggle('on',on);el.style.background=on?'var(--sky-blue)':'';});
-  }
-  function openEditor(t){
-    editTask=t;eCat=t.categoryID||'focus';eDur=t.durationMin||0;eQuad=t.matrixQuadrant||0;
-    document.getElementById('eTitle').value=t.title||'';
-    if(t.scheduledStart){var d=new Date(t.scheduledStart);
-      document.getElementById('eTime').value=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
-    }else{document.getElementById('eTime').value='';}
-    eRewardIsMoney=(t.rewardMoney||0)>0;
-    document.getElementById('eRewardText').value=eRewardIsMoney?String(t.rewardMoney):(t.rewardText||'');
-    document.getElementById('eRewardQ4').checked=!!t.rewardToQ4;
-    document.getElementById('eNote').value=t.notes||'';
-    paintReward();
-    paintEditChips();renderSubs();
-    document.getElementById('editScrim').classList.add('open');
-  }
-  var eRewardIsMoney=false,eRewardPlaceholder='';
   var REWARD_EXAMPLES=['좋아하는 카페 가기','치킨 시켜 먹기','영화 한 편','낮잠 30분','달콤한 디저트','게임 한 판','산책 다녀오기','웹툰 정주행'];
-  function paintReward(){
-    var btn=document.getElementById('eRewardMoney'),inp=document.getElementById('eRewardText'),lbl=document.getElementById('eRewardMoneyLbl');
-    btn.classList.toggle('on',eRewardIsMoney);
-    if(!eRewardPlaceholder)eRewardPlaceholder=REWARD_EXAMPLES[Math.floor(bRand()*REWARD_EXAMPLES.length)];
-    inp.placeholder=eRewardIsMoney?'금액 (숫자만)':eRewardPlaceholder;
-    inp.inputMode=eRewardIsMoney?'numeric':'text';
-    if(eRewardIsMoney){var n=parseInt((inp.value||'').replace(/[^0-9]/g,''),10);lbl.textContent=(n>0)?moneyStr(n):'';}
-    else lbl.textContent='';
-  }
-  // Math.random 회피용(워크플로 재현성 무관, 웹은 그냥 Math.random 사용).
-  function bRand(){return Math.random();}
   function moneyStr(n){return (n||0).toLocaleString('ko-KR')+'원';}
   // 보상 지급 (요청): 완료 시 한 번만. 돈이면 물통에 쌓고, 이름이면 Q4에 담고 축하.
   function grantReward(t){
@@ -3826,49 +3689,6 @@
     d.addEventListener('click',function(e){if(e.target===d)close();});
     d.querySelector('.reward-ok').addEventListener('click',close);
     document.body.appendChild(d);setTimeout(close,5000);
-  }
-  // 체크 시 뜨는 설명 말풍선 (요청): X 닫기 + 3초 뒤 자동 사라짐.
-  function showRewardTip(anchor,text){
-    var old=document.getElementById('rewardTip');if(old)old.remove();
-    var b=document.createElement('div');b.id='rewardTip';b.className='reward-tip';
-    b.innerHTML='<span></span><button class="rt-x">✕</button>';
-    b.querySelector('span').textContent=text;
-    b.querySelector('.rt-x').addEventListener('click',function(){b.remove();});
-    document.body.appendChild(b);
-    var r=anchor.getBoundingClientRect();
-    b.style.left=Math.max(8,Math.min(window.innerWidth-232,r.left))+'px';
-    b.style.top=(r.top-b.offsetHeight-8+window.scrollY)+'px';
-    setTimeout(function(){if(b.parentNode)b.remove();},3000);
-  }
-  function closeEditor(){document.getElementById('editScrim').classList.remove('open');editTask=null;}
-  // 하위 작업 (요청: 서브태스크 이식) — 체크/추가/삭제 즉시 반영, 저장 시 push.
-  function editSubs(){try{return JSON.parse(editTask.subtasksJSON||'[]');}catch(e){return [];}}
-  function setSubs(s){editTask.subtasksJSON=JSON.stringify(s);renderSubs();}
-  function renderSubs(){
-    var wrap=document.getElementById('eSubs');if(!wrap||!editTask)return;var subs=editSubs();
-    wrap.innerHTML=subs.map(function(s,i){return '<div class="subrow" data-i="'+i+'"><span class="subck'+(s.isDone?' on':'')+'">'+(s.isDone?'✓':'')+'</span><span class="subt'+(s.isDone?' done':'')+'">'+esc(s.title)+'</span><button class="subdel">×</button></div>';}).join('');
-    wrap.querySelectorAll('.subrow').forEach(function(row){var i=+row.dataset.i;
-      row.querySelector('.subck').addEventListener('click',function(){var s=editSubs();s[i].isDone=!s[i].isDone;setSubs(s);});
-      row.querySelector('.subdel').addEventListener('click',function(){var s=editSubs();s.splice(i,1);setSubs(s);});
-    });
-  }
-  function addSub(){var el=document.getElementById('eSubAdd');var v=(el.value||'').trim();if(!v||!editTask)return;var s=editSubs();s.push({id:uuid(),title:v,isDone:false});el.value='';setSubs(s);}
-  function saveEditor(){
-    if(!editTask)return;
-    var tt=(document.getElementById('eTitle').value||'').trim();if(tt)editTask.title=tt;
-    editTask.categoryID=eCat;editTask.durationMin=eDur;editTask.matrixQuadrant=eQuad;
-    editTask.notes=document.getElementById('eNote').value||'';
-    // 보상 저장 (요청).
-    var rt=(document.getElementById('eRewardText').value||'').trim();
-    if(eRewardIsMoney){editTask.rewardMoney=parseInt(rt.replace(/[^0-9]/g,''),10)||0;editTask.rewardText='';editTask.rewardToQ4=false;}
-    else{editTask.rewardText=rt;editTask.rewardMoney=0;editTask.rewardToQ4=document.getElementById('eRewardQ4').checked&&!!rt;}
-    // 시간만 입력 → 오늘(보고 있는 날짜) 그 시각에 배치, 비우면 배치 해제 (요청).
-    var tv=document.getElementById('eTime').value;
-    if(tv){var bd=new Date(calSel);var hm=tv.split(':');bd.setHours(+hm[0],+hm[1],0,0);
-      editTask.scheduledStart=bd.toISOString();if(!editTask.durationMin)editTask.durationMin=50;
-      setPlanFromSchedule(editTask);}                    // 재계획 = 마감선 갱신 (§1)
-    else{editTask.scheduledStart=null;editTask.planDueAt=null;}
-    closeEditor();renderAll();pushSnapshot();
   }
 
   /* ---------- 집중 모드 (요청) ---------- */
@@ -4486,7 +4306,7 @@
   }
   /* 세션 상태만 바뀌었을 때의 즉시 push (시작·종료·일시정지·포모도로 토글). */
   function pushFocusState(){pushSnapshot();}
-  function startFocus(t,opt){closeEditor();fTask=t;fStart=Date.now();fPausedAcc=0;fPauseAt=0;fPaused=false;ftKey='';fAdvanced=false;fWasRest=false;fRestMsg='';
+  function startFocus(t,opt){closeCapture();fTask=t;fStart=Date.now();fPausedAcc=0;fPauseAt=0;fPaused=false;ftKey='';fAdvanced=false;fWasRest=false;fRestMsg='';
     fPlanAdjust=0;                     // 새 세션 = 조절 누적 초기화 (앱 파리티)
     if(fAdjOpen)toggleAdjRow();
     // opt = 원격 채택 (요청): 저쪽 시계·계획·포모도로를 그대로 물려받는다.
@@ -5272,7 +5092,7 @@
         (mxPast?'':'<button class="qadd-top" data-q="'+qd.q+'" title="추가">'+
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg></button>')+'</h3>'+
         '<div class="qbody">'+
-        items.map(function(t){return '<div class="mtask'+(t.isDone?' done':'')+'">'+
+        items.map(function(t){return '<div class="mtask'+(t.isDone?' done':'')+'" data-id="'+t.id+'">'+
           '<div class="swipe-grp lead sm"><button class="sa sa-tomorrow">'+IC.curve+'<b>내일로</b></button>'+
           '<button class="sa sa-star'+(t.isStarred?' on':'')+'">'+IC.star+'<b>'+(t.isStarred?'별표 해제':'별표')+'</b></button></div>'+
           '<div class="swipe-grp trail sm"><button class="sa sa-timeline">'+IC.sunrise+'<b>타임라인</b></button><button class="sa sa-delete">'+IC.trash+'<b>삭제</b></button></div>'+
@@ -5294,7 +5114,8 @@
         if(mxPast)return;
         el.querySelector('.mck').addEventListener('click',function(){t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;if(t.isDone)grantReward(t);renderAll();pushSnapshot();});
         var mi=el.querySelector('.t-memo');if(mi)mi.addEventListener('click',function(e){e.stopPropagation();openMemoPopup(t);});
-        var mt=el.querySelector('.mt-title');mt.style.cursor='pointer';mt.addEventListener('click',function(){openEditor(t);});
+        /* 제목 전용 클릭은 뺐다 — 아래 .mtask-inner 핸들러가 이미 같은 탭을
+           받아 캡처바를 연다. 둘 다 붙어 있으면 한 번의 탭에 두 번 열렸다. */
         var pl=el.querySelector('.play');
         if(pl)pl.addEventListener('click',function(e){e.stopPropagation();startFocus(t);});
         var kb=el.querySelector('.kebab');
@@ -5309,13 +5130,16 @@
       // 제외 셀렉터는 attachMxDrag가 쓰는 것과 같은 목록이라 드래그·스와이프와
       // 충돌하지 않는다. origin='matrix'면 길이 슬라이더 대신 아이콘 옵션 줄이
       // 먼저 떠서 사분면 '+' 버튼과 같은 모습이 된다.
-      b.querySelectorAll('.mtask').forEach(function(el){
+      /* ⚠ 이 배선은 그동안 **한 번도 걸리지 않았다** — `.mtask`에 data-id가
+         없어 taskByID가 늘 빈손이었고, 실제로 열리던 건 제목에 따로 붙은
+         편집 팝업이었다. 팝업을 지우면서 data-id를 채워 되살렸다. */
+      if(!mxPast)b.querySelectorAll('.mtask').forEach(function(el){
         var t2=taskByID(el.dataset.id);if(!t2)return;
         var mi=el.querySelector('.mtask-inner');if(!mi)return;
         mi.style.cursor='pointer';
         mi.addEventListener('click',function(e){
           if(e.target.closest('.mck,.t-memo,.play,.kebab,.star,.sa'))return;
-          openCapture('matrix',{task:t2,quadrant:t2.matrixQuadrant||0});
+          openCapture('matrix',{task:t2});
         });
       });
       var qa=b.querySelector('.qadd-top');
@@ -7039,7 +6863,7 @@
     // 작업 객체를 붙들고 있는 전역들을 새 배열에서 다시 찾는다 — 안 찾으면
     // 열려 있던 편집기·메모창이 버려진 객체에 쓰게 된다 (fetchSnapshot과 같은 이유).
     if(fTask)fTask=taskByID(fTask.id)||null;
-    if(editTask)editTask=taskByID(editTask.id)||null;
+    if(cap.editing)cap.editing=taskByID(cap.editing.id)||null;
     if(memoTask)memoTask=taskByID(memoTask.id)||null;
     undoSuppress=true;                 // 이 push는 다시 토스트를 띄우지 않는다
     renderAll();pushSnapshot();
@@ -7389,10 +7213,6 @@
   document.getElementById('rwWeek').addEventListener('click',function(){rViewMode='week';renderRoutine();});
   document.getElementById('rwMonth').addEventListener('click',function(){rViewMode='month';renderRoutine();});
 
-  /* ---------- 편집 모달 · 집중 모드 배선 (요청) ---------- */
-  buildEditChips();
-  document.getElementById('editClose').addEventListener('click',closeEditor);
-  document.getElementById('editScrim').addEventListener('click',function(e){if(e.target===this)closeEditor();});
   // 일기 배선 (앱 §3)
   document.getElementById('diaryFab').addEventListener('click',function(){openDiaryEntry(newDiaryEntry('free'),true);});
   document.getElementById('diaryPhotoFile').addEventListener('change',function(){
@@ -7569,6 +7389,8 @@
   // D2-6: 작업 추가 아이콘 설정 — 표시 토글 + ≡ 드래그 순서.
   var CAP_ICON_META=[
     ['duration','길이 — 기본 길이 프리셋·슬라이더',true],
+    ['matrix','매트릭스 — 사분면 고르기',false],
+    ['subs','하위 작업 — 단계 나누기',false],
     ['note','메모 — 마크다운 메모',false],
     ['calreg','일정등록 — 캘린더에 저장 (앱)',false],
     ['reward','보상 — 끝내면 나에게 주는 선물',false],
@@ -7633,27 +7455,6 @@
   document.getElementById('memoView').addEventListener('click',memoStartEdit);
   document.getElementById('memoEditBtn').addEventListener('click',memoStartEdit);
   document.getElementById('memoSave').addEventListener('click',memoSavePopup);
-  document.getElementById('eSave').addEventListener('click',saveEditor);
-  document.getElementById('eDelete').addEventListener('click',function(){if(editTask){var t=editTask;closeEditor();deleteTask(t);}});
-  document.getElementById('ePlay').addEventListener('click',function(){if(editTask)startFocus(editTask);});
-  document.getElementById('eClearTime').addEventListener('click',function(){document.getElementById('eTime').value='';});
-  document.getElementById('eSubAddBtn').addEventListener('click',addSub);
-  document.getElementById('eSubAdd').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();addSub();}});
-  // 보상: 돈 토글 · Q4 체크 · 숫자만 (요청) + 설명 말풍선.
-  document.getElementById('eRewardMoney').addEventListener('click',function(){
-    eRewardIsMoney=!eRewardIsMoney;
-    var inp=document.getElementById('eRewardText');
-    if(eRewardIsMoney){inp.value=(inp.value||'').replace(/[^0-9]/g,'');document.getElementById('eRewardQ4').checked=false;
-      showRewardTip(this,'앱에만 있는 가상의 돈이에요. 끝내면 이만큼 ‘번’ 걸로 쳐서, 뇌가 보상을 느끼도록 살짝 속이는 장치예요.');}
-    paintReward();
-  });
-  document.getElementById('eRewardText').addEventListener('input',function(){
-    if(eRewardIsMoney){var d=this.value.replace(/[^0-9]/g,'');if(d!==this.value)this.value=d;}
-    paintReward();
-  });
-  document.getElementById('eRewardQ4').addEventListener('change',function(){
-    if(this.checked)showRewardTip(this,'이 일을 끝내면 이 보상이 매트릭스 ‘사소·여유·보상’ 칸에 자동으로 담겨요. 스스로에게 주는 즐길 거리 목록이 돼요.');
-  });
   document.getElementById('ftPause').addEventListener('click',togglePauseFocus);
   // 요청: 아래 '끝내기' 폐지 — 제목 옆 체크 동그라미로 완료 확인 후 닫힘.
   // 요청: 포스트잇 이외 화면을 터치하면 접혀서 포스트잇1(작은 앞면)로 돌아간다.
@@ -7864,10 +7665,11 @@
      할일 · 매트릭스 · 타임라인 이 하나의 인라인 캡처바를 공유한다:
      색 동그라미 + 기호 버튼 + 입력란, 그 위로 옵션 아이콘 줄(길이·시간배치·
      알림·마감·메모·반복·보상)과 아이콘/색 피커가 스택으로 쌓인다. */
-  var cap={open:false,editing:null,origin:'todo',quadrant:0,detail:'options',iconOpen:false,colorOpen:false,
+  var cap={open:false,editing:null,origin:'todo',detail:'options',iconOpen:false,colorOpen:false,
     draft:{title:'',categoryID:'focus',colorKey:'',iconName:null,durationMin:50,
       scheduledStart:null,reminderOffsets:[],nudgeEnabled:false,dueDate:null,notes:'',
-      repeatDaysMask:0,rewardIsMoney:false,rewardText:'',rewardToQ4:false},
+      repeatDaysMask:0,rewardIsMoney:false,rewardText:'',rewardToQ4:false,
+      matrixQuadrant:0,subtasks:[]},
     calMonth:null,notePlaceholderShown:false};
   // 앱 BlockPalette 대표 12색(부드러운 톤) + 앱 형식 키("rose.0"…)로 저장해 기기 간 색 동기화 성립.
   // lime(연두)은 뺐다 (요청): 쉬는 시간 전용색이라 작업색으로 쓰면 블록
@@ -8135,7 +7937,7 @@
   function capOpen(){return cap.open;}
   function openCapture(origin,opts){
     opts=opts||{};
-    cap.open=true;cap.origin=origin;cap.quadrant=opts.quadrant||0;cap.editing=opts.task||null;
+    cap.open=true;cap.origin=origin;cap.editing=opts.task||null;
     // 앱 파리티: 열자마자 detail 줄 표시 — 타임라인은 길이 슬라이더, 그 외는 옵션 아이콘 줄.
     cap.detail=(origin==='timeline'?'duration':'options');cap.iconOpen=false;cap.colorOpen=false;cap.optionsOpen=true;cap.moreIcons=false;
     cap.draft={title:'',categoryID:(opts.categoryID||'focus'),
@@ -8143,7 +7945,8 @@
       durationMin:(origin==='timeline'?setCaptureDefaultMin():0),
       durEdited:false,durationLocked:false,iconLocked:false,colorLocked:false,
       scheduledStart:opts.scheduledStart||null,reminderOffsets:[],nudgeEnabled:false,dueDate:null,
-      notes:'',repeatDaysMask:0,rewardIsMoney:false,rewardText:'',rewardToQ4:false};
+      notes:'',repeatDaysMask:0,rewardIsMoney:false,rewardText:'',rewardToQ4:false,
+      matrixQuadrant:(origin==='matrix'?(opts.quadrant||0):0),subtasks:[]};
     // 편집 모드: 기존 작업 값으로 초안을 채운다 (요청: 편집 팝업 대신 추가 패널 재사용).
     if(cap.editing){var et=cap.editing;
       cap.draft.title=et.title||'';cap.draft.categoryID=et.categoryID||'focus';
@@ -8155,9 +7958,15 @@
       cap.draft.notes=et.notes||'';cap.draft.repeatDaysMask=et.repeatDaysMask||0;
       cap.draft.rewardIsMoney=(et.rewardMoney||0)>0;
       cap.draft.rewardText=(et.rewardMoney||0)>0?String(et.rewardMoney):(et.rewardText||'');
+      /* 편집 팝업을 없애고 매트릭스·하위 작업을 이 바로 옮겼다 (요청).
+         ⚠ 사분면은 **작업 값이 우선**이다 — opts.quadrant는 매트릭스 셀 '＋'로
+         새로 만들 때 쓰는 기본값이라, 그걸로 덮으면 3번 칸 작업을 눌러 편집만
+         해도 칸이 바뀐다. */
+      cap.draft.matrixQuadrant=et.matrixQuadrant||0;
+      cap.draft.subtasks=parseSubs(et);
     }
     var _cta=document.getElementById('capText');_cta.value=cap.editing?(cap.draft.title||''):'';
-    _cta.placeholder=origin==='timeline'?'예: 35분 영어':(origin==='matrix'?'‘'+quadHint(cap.quadrant)+'’에 담기…':'예: 30분 달리기');
+    _cta.placeholder=origin==='timeline'?'예: 35분 영어':(origin==='matrix'?'‘'+quadHint(cap.draft.matrixQuadrant)+'’에 담기…':'예: 30분 달리기');
     var wrap=document.getElementById('capWrap');wrap.classList.add('open');
     _cta.style.height='';   // 타임라인 2줄 placeholder가 잘리지 않게 (rows="1" 보정)
     if(origin==='timeline'){_cta.style.height='auto';_cta.style.height=Math.max(46,Math.min(_cta.scrollHeight,52))+'px';}
@@ -8215,6 +8024,7 @@
       t.durationMin=cap.draft.durationMin;t.scheduledStart=cap.draft.scheduledStart;
       t.reminderOffsets=cap.draft.reminderOffsets;t.nudgeEnabled=cap.draft.nudgeEnabled;
       t.dueDate=cap.draft.dueDate;t.notes=cap.draft.notes;t.repeatDaysMask=cap.draft.repeatDaysMask;
+      t.matrixQuadrant=cap.draft.matrixQuadrant;t.subtasksJSON=JSON.stringify(cap.draft.subtasks);
       if(cap.draft.rewardIsMoney)t.rewardMoney=parseInt((cap.draft.rewardText||'').replace(/[^0-9]/g,''),10)||0;
       else{t.rewardMoney=0;t.rewardText=cap.draft.rewardText||'';}
       if(t.scheduledStart&&t.durationMin)setPlanFromSchedule(t);
@@ -8234,7 +8044,10 @@
       durationMin:cap.draft.durationMin,scheduledStart:cap.draft.scheduledStart,
       reminderOffsets:cap.draft.reminderOffsets,nudgeEnabled:cap.draft.nudgeEnabled,
       dueDate:cap.draft.dueDate,notes:cap.draft.notes,repeatDaysMask:cap.draft.repeatDaysMask};
-    if(cap.origin==='matrix')o.matrixQuadrant=cap.quadrant;
+    /* 사분면은 이제 초안이 정본이다 (요청: 편집 팝업 폐지) — 매트릭스 셀에서
+       열면 그 칸이 초안 기본값으로 들어가 있고, 어느 화면에서든 바꿀 수 있다. */
+    if(cap.draft.matrixQuadrant)o.matrixQuadrant=cap.draft.matrixQuadrant;
+    if(cap.draft.subtasks.length)o.subtasksJSON=JSON.stringify(cap.draft.subtasks);
     if(cap.origin==='timeline'&&!o.scheduledStart){
       var slot=nextSlotToday(),base=selDate();base.setHours(Math.floor(slot),Math.round((slot%1)*60),0,0);
       o.scheduledStart=base.toISOString();if(!o.durationMin)o.durationMin=50;
@@ -8270,7 +8083,9 @@
     if(batchID){o.rewardBatchID=batchID;
       if(cap.draft.rewardIsMoney)o.rewardMoney=parseInt((cap.draft.rewardText||'').replace(/[^0-9]/g,''),10)||0;
       else{o.rewardText=cap.draft.rewardText;o.rewardToQ4=cap.draft.rewardToQ4;}}
-    if(cap.origin==='matrix')o.matrixQuadrant=cap.quadrant;
+    if(cap.draft.matrixQuadrant)o.matrixQuadrant=cap.draft.matrixQuadrant;
+    /* ⚠ 하위 작업은 **여러 줄 입력엔 안 싣는다** — 한 벌을 여러 작업에
+       복제하는 게 되어 뜻이 어긋난다. 보상만 묶음(batchID)으로 나눈다. */
     addTask(o);
   }
   function capDurLabel(m){return m<=0?'실시간':(m<60?m+'분':(m%60===0?(m/60)+'시간':(Math.floor(m/60)+'시간 '+(m%60)+'분')));}
@@ -8320,6 +8135,8 @@
       var order=[];try{order=JSON.parse(localStorage.getItem('hfCapOrder')||'[]');}catch(_){}
       var defs=[
         ['duration',IC.timer,'길이',false],
+        ['matrix',IC.grid,'매트릭스',!!cap.draft.matrixQuadrant],
+        ['subs',IC.steps,'하위 작업',cap.draft.subtasks.length>0],
         ['note',IC.note,'메모',!!cap.draft.notes],
         ['calreg','<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 2.5v4M16 2.5v4"/><path d="M12 12.8v5.4M9.3 15.5h5.4"/></svg>','일정등록',false],
         ['reward',IC.gift,'보상',(cap.draft.rewardIsMoney||cap.draft.rewardText)],
@@ -8367,6 +8184,12 @@
     } else if(cap.detail==='reward'){
       d.innerHTML=renderRewardPanel();
       wireRewardPanel();
+    } else if(cap.detail==='matrix'){
+      d.innerHTML=renderMatrixPanel();
+      wireMatrixPanel();
+    } else if(cap.detail==='subs'){
+      d.innerHTML=renderSubsPanel();
+      wireSubsPanel();
     }
   }
 
@@ -8642,6 +8465,60 @@
     });
     var q4=document.getElementById('capRewQ4');if(q4)q4.addEventListener('click',function(){cap.draft.rewardToQ4=!cap.draft.rewardToQ4;paintCap();});
     document.getElementById('capRewDone').addEventListener('click',function(){setCapDetail('options');});
+  }
+
+  /* 매트릭스 사분면 (요청: 편집 팝업을 없애고 이 바로 옮김).
+     2×2 배치 그대로 — 아이젠하워 매트릭스는 '어느 쪽·어느 줄'이 곧 의미라
+     칩 한 줄로 눕히면 뜻이 사라진다. 문구는 showMxPick과 같은 MX_LAB. */
+  function renderMatrixPanel(){
+    var q=cap.draft.matrixQuadrant||0;
+    return '<div class="cap-panel"><div class="cap-mxgrid">'+
+      [1,2,3,4].map(function(n){
+        return '<button data-mq="'+n+'"'+(q===n?' class="on"':'')+'><b>'+n+'</b>'+MX_LAB[n]+'</button>';
+      }).join('')+'</div><div class="cap-row" style="margin-top:8px">'+
+      (q?'<button class="cap-chip" data-mq="0">칸 없음</button>':'')+
+      '<button class="cap-done" id="capMxDone">완료</button></div></div>';
+  }
+  function wireMatrixPanel(){
+    document.querySelectorAll('#capDetail [data-mq]').forEach(function(b){
+      b.addEventListener('click',function(){cap.draft.matrixQuadrant=+b.dataset.mq;paintCap();});
+    });
+    document.getElementById('capMxDone').addEventListener('click',function(){setCapDetail('options');});
+  }
+
+  /* 하위 작업 (요청: 편집 팝업을 없애고 이 바로 옮김).
+     ⚠ 초안에만 담고 **제출할 때** 작업에 쓴다 — 캡처바의 다른 값과 같은 규칙
+     (옛 편집 팝업은 체크·삭제를 즉시 반영했다). 그래서 바깥을 눌러 닫으면
+     여기서 만진 것도 함께 버려진다. */
+  function renderSubsPanel(){
+    var subs=cap.draft.subtasks;
+    return '<div class="cap-panel">'+
+      (subs.length?'<div class="cap-sublist">'+subs.map(function(s,i){
+        return '<div class="cap-subrow'+(s.isDone?' done':'')+'"><span class="cap-subck'+(s.isDone?' on':'')+'" data-sck="'+i+'">'+(s.isDone?'✓':'')+'</span>'+
+          '<span class="cap-subt">'+esc(s.title)+'</span><button class="cap-subdel" data-sdel="'+i+'">×</button></div>';
+      }).join('')+'</div>':'')+
+      '<div class="cap-row"><input id="capSubNew" placeholder="하위 작업 추가…" maxlength="80" '+
+        'style="flex:1;min-width:120px;border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-family:inherit">'+
+      '<button class="cap-chip" id="capSubAdd">추가</button>'+
+      '<button class="cap-done" id="capSubDone">완료</button></div></div>';
+  }
+  function wireSubsPanel(){
+    var inp=document.getElementById('capSubNew');
+    function add(){var v=(inp.value||'').trim();if(!v)return;
+      cap.draft.subtasks.push({id:uuid(),title:v,isDone:false});inp.value='';paintCap();
+      var again=document.getElementById('capSubNew');if(again)again.focus();}
+    document.getElementById('capSubAdd').addEventListener('click',add);
+    inp.addEventListener('keydown',function(e){
+      if(e.isComposing||e.keyCode===229)return;                 // 한글 조합 중엔 무시
+      if(e.key==='Enter'){e.preventDefault();add();}});
+    document.querySelectorAll('#capDetail [data-sck]').forEach(function(b){
+      b.addEventListener('click',function(){var i=+b.dataset.sck;
+        cap.draft.subtasks[i].isDone=!cap.draft.subtasks[i].isDone;paintCap();});
+    });
+    document.querySelectorAll('#capDetail [data-sdel]').forEach(function(b){
+      b.addEventListener('click',function(){cap.draft.subtasks.splice(+b.dataset.sdel,1);paintCap();});
+    });
+    document.getElementById('capSubDone').addEventListener('click',function(){setCapDetail('options');});
   }
 
   document.getElementById('capWrap').addEventListener('click',function(e){if(e.target===this)closeCapture();});
