@@ -88,6 +88,7 @@
     border:1px solid var(--dueSel,rgba(245,247,255,.55));border-radius:18px;pointer-events:none}
   /* 마감집게 (D2-3) */
   .due-clamp{position:absolute;left:15%;width:70%;z-index:5;text-align:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
+  .due-clamp .dc-n{color:#F5BFCE;font-weight:800}
   .due-clamp .dc-label{background:rgba(107,107,107,.92);border-radius:11px;height:40px;line-height:40px;padding:0 10px;font-size:11px;font-weight:600;color:#fff;overflow:hidden;white-space:nowrap;margin-bottom:0}
   .due-clamp .dc-grip{width:46px;height:24px;margin:0 auto;background:rgba(107,107,107,.92);border-radius:0 0 17px 17px;cursor:ns-resize;touch-action:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3.5px;padding-bottom:1px}
   .due-clamp .dc-grip i{display:block;width:22px;height:2.5px;border-radius:2px;background:rgba(255,255,255,.8)}
@@ -3491,17 +3492,19 @@
     if(!fut.length){
       var doneCnt=all.filter(function(t){return t.isDone;}).length;
       var spent=Math.round(all.reduce(function(a,t){return a+todayFocusSec(t.id);},0)/60);
-      label=doneCnt?'축하해요! '+doneCnt+'개 작업을 '+hmText(Math.max(1,spent))+' 만에 끝냈어요!':'';
+      label=doneCnt?('축하해요! 작업 <b class="dc-n">'+doneCnt+'개</b>를 '+esc(hmText(Math.max(1,spent)))+' 만에 끝냈어요!'):'';
     }else{
       var totalMin=Math.round((taskDueAt(fut[fut.length-1]).getTime()-Date.now())/60000);
       var lastFut=taskDueAt(fut[fut.length-1]);
       /* 요청 문구: "hh:mm까지 3h 30m 동안 n개를 끝내기" — 남은 시간을 **먼저**
          보여줘야 '이 집게가 그 시간을 쥐고 있다'가 읽힌다. 앱과 같은 문구. */
+      /* ⚠ 개수만 **굵고 연한 핑크** (요청): 한 줄에서 눈이 먼저 닿아야 하는 건
+         "몇 개를 쥐고 있나"다. '를'은 뺀다 — "n개 끝내기". */
       label=('0'+lastFut.getHours()).slice(-2)+':'+('0'+lastFut.getMinutes()).slice(-2)
-        +'까지 '+hmText(totalMin)+' 동안 '+fut.length+'개를 끝내기';
+        +'까지 '+esc(hmText(totalMin))+' 동안 <b class="dc-n">'+fut.length+'개</b> 끝내기';
     }
     if(!label)return;
-    wrap.innerHTML='<div class="dc-label">'+esc(label)+'</div>'+
+    wrap.innerHTML='<div class="dc-label">'+label+'</div>'+
       '<div class="dc-grip"><i></i><i></i><i></i></div>';
     // 손잡이 드래그 (1분 스냅, 비율 스케일)
     var grip=wrap.querySelector('.dc-grip');
@@ -3527,7 +3530,12 @@
         renderBig();ev.preventDefault();
       }
       function up(){document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);
-        tlDragging=false;renderAll();pushSnapshot();}
+        tlDragging=false;renderAll();pushSnapshot();
+        /* 놓은 뒤 토스트 (요청): 한 번에 여러 마감을 옮기는 조작이라
+           **무엇이 얼마나 움직였는지**와 되돌릴 길을 같이 말해 준다. */
+        var moved=Math.round((taskDueAt(orig[orig.length-1].t).getTime()-orig[orig.length-1].due)/60000);
+        if(moved)appToast('마감 '+orig.length+'개가 '+hmText(Math.abs(moved))+' '
+          +(moved>0?'밀렸어요':'당겨졌어요'));}
       document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
     });
     sc.appendChild(wrap);
