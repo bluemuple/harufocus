@@ -113,5 +113,26 @@ const r8 = dayRecordBlocks(key);
 is(r8.length, 1, '사이에 다른 작업이 있으면 안 합쳐져 1분짜리 둘은 사라지고 10분짜리만 남는다');
 is(r8[0].taskID, 't2', '남은 건 10분 집중한 작업');
 
+
+/* ── 겹침 규칙: 이름은 왼쪽, 블록은 오른쪽 (2026-07-23 요청) ──────────────
+   ⚠ **자기 블록도 예외가 아니다**. 예전엔 '자기 블록이 덮으면 이름을 통째로
+   지운다'는 별도 규칙이 있어 같은 화면에 두 방식이 섞였다(앱도 같았다).
+   앱 `TimelineScrollView.dueNarrowed/blockNarrowed`와 한 쌍. */
+{
+  const computeNarrow = new Function(
+    'dueNarrowIds', 'DUE_SLACK', 'DUE_BAND_H',
+    grab('computeNarrow') + '; return computeNarrow;')({}, 8, 20);
+
+  // 자기 마감선(y=100) 바로 위에 붙은 자기 블록
+  let r = computeNarrow([{ id: 'a', y: 100 }], [{ key: 'a', top: 40, bottom: 99 }], []);
+  is(!!r.due.a, true, '자기 블록도 마감선 이름을 왼쪽으로 좁힌다');
+  is(!!r.blk.a, true, '자기 블록이 오른쪽으로 물러난다');
+
+  // 멀리 떨어진 블록은 건드리지 않는다
+  r = computeNarrow([{ id: 'a', y: 100 }], [{ key: 'a', top: 200, bottom: 260 }], []);
+  is(!!r.due.a || !!r.blk.a, false, '안 겹치면 그대로 둔다');
+}
+
 console.log(fail ? `\n${fail}개 실패, ${pass}개 통과` : `${pass}개 통과 (short-block)`);
 process.exit(fail ? 1 : 0);
+

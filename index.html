@@ -3702,16 +3702,11 @@
       var y=yFor(hf);
       var dl=document.createElement('div');dl.className='dueline'+(t.isDone?' done':'')+(editBarOn&&selDueId===t.id?' sel':'');
       dl.style.top=y+'px';dl.dataset.tid=t.id;
-      /* 선이 블록 위를 지나면 텍스트 숨김 (§2).
-         ⚠ **자기 블록일 때만** 숨긴다 (앱 dueTextHidden 파리티, 재설계 개정):
-         예전엔 남의 블록이 덮어도 글자를 통째로 지웠는데, 이제 겹치면
-         이름이 한계선까지 좁아지고 블록이 오른쪽으로 물러나므로 지울 이유가
-         없다. 지우면 "이 선이 무슨 작업인지"를 잃는다. */
-      var covered=recBlocks.some(function(b){
-        if(b.taskID!==t.id)return false;
-        var bs=new Date(b.start),be=new Date(b.end);
-        var y1=yFor(bs.getHours()+bs.getMinutes()/60),y2=yFor(be.getHours()+be.getMinutes()/60);
-        return y>=y1-2&&y<=y2+18;});
+      /* ⚠ 겹칠 때의 규칙은 **하나뿐**이다 (2026-07-23 요청): 이름은 왼쪽,
+         블록은 오른쪽(computeNarrow). 예전엔 '자기 블록이 덮으면 이름을 통째로
+         지운다'는 별도 규칙이 있었는데, 그러면 같은 화면에 두 방식이 섞이고
+         "이 선이 무슨 작업인지"를 잃는다. 이름은 언제나 그린다. */
+
       // 앱 3009b09('지남' 삭제) + 6e4e3de③(dueDisplayMin 배선 제거): 마감선엔
       // 작업명 + 작업 자체 길이만. 0분이면 생략.
       /* 마감선이 '지금' 선보다 위(=이미 지난 마감)면, 계획 길이 대신
@@ -3746,7 +3741,7 @@
         /* ⚠ ▶ 는 **선 시작점**으로 나왔다 (앱 파리티): 이름·길이가 길어져도
            구조적으로 x가 안 움직인다. 심볼은 블록에만 두고 마감선엔 없다. */
         '<button class="dl-play" title="집중 시작">'+IC.play+'</button>'+
-        (covered?'':'<div class="dl-text'+(t.isDone?' done':'')+'"><span class="dl-title">'+esc(t.title)+'</span></div>')+
+        '<div class="dl-text'+(t.isDone?' done':'')+'"><span class="dl-title">'+esc(t.title)+'</span></div>'+
         '<div class="dl-right"><b>'+clockTxt+'</b><i>'+lenTxt+'</i></div>'+
         '<button class="dl-x" title="마감선만 삭제">✕</button>';
       var pb=dl.querySelector('.dl-play');if(pb)pb.addEventListener('click',function(e){e.stopPropagation();startFocus(t);});
