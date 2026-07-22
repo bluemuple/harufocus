@@ -1836,7 +1836,12 @@
   .me-act button.me-chip{flex:0 1 auto;padding:10px 15px;font-size:14px;font-weight:700;border-radius:999px}
   .me-act button.me-chip.on{border-color:var(--sky-blue);color:var(--ink);
     box-shadow:0 0 0 2px rgba(93,140,255,.25)}
+  /* 고른 뒤에만 색이 찬다 (요청) — 색 = '이제 누를 차례'라는 신호. */
   .me-act button.go{background:var(--sky-blue);border-color:transparent;color:#fff}
+  /* ⚠ `.warn`(빨간 글자)이 뒤에 있어 같은 명시도면 이긴다 — 빨간 배경에
+     빨간 글자가 되어 **글자가 사라졌다**. 둘이 겹칠 때를 따로 못 박는다. */
+  .me-act button.danger,.me-act button.warn.danger{background:#FF3B30;
+    border-color:transparent;color:#fff}
   /* 좌우 여백이 남아돌던 자리 — 글자만큼만 차지한다 (요청). */
   /* ⚠ 전역 `.modal .go{width:100%}`가 있어 width를 되돌리지 않으면 안 줄어든다. */
   .me-act button.narrow{flex:0 1 auto;width:auto;padding-left:16px;padding-right:14px;margin-top:0}
@@ -9766,8 +9771,7 @@
     var a=meTodayTasks().slice().sort(function(x,y){return goalRemainMin(y)-goalRemainMin(x);});
     return a[0]||null;
   }
-  var meSel=null;      // 목록 칩에서 고른 작업 id (pick2 = 하나만)
-  var meSelSet=[];     // 여러 개 고를 때 (pick1 = 남길 것들)
+  var meSelSet=[];     // 목록 칩에서 고른 것들 (pick1=남길 것 · pick2=덜어낼 것)
   /* '내일로' 화살 (스와이프 버튼과 같은 기호 — 요청). */
   function tmrArrow(){
     return '<svg class="tmr" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
@@ -9777,7 +9781,7 @@
   /* 짐작에 답하는 자리를 그린다. */
   function paintMeAct(k){
     var box=document.getElementById('meAct');if(!box)return;
-    box.innerHTML='';meSel=null;meSelSet=[];
+    box.innerHTML='';meSelSet=[];
     // ⚠ 얼굴을 바꿨는데 스크롤이 남아 있으면 말풍선이 잘린 채로 뜬다.
     var top=document.querySelector('.me-top');if(top)top.scrollTop=0;
     var ask=ME_ASK[k];
@@ -9792,48 +9796,57 @@
         b.onclick=function(){closeMeSheet();openCapture('todo');};
         box.appendChild(b);return;
       }
+      /* 실행 버튼은 **고르기 전엔 흰 말풍선**, 고른 뒤에 색이 찬다 (요청) —
+         색이 곧 '이제 누를 차례'라는 신호다. 아무것도 안 골랐는데 눌러 보라고
+         떠 있으면 거짓말이 된다. */
+      var actBtns=[];
+      function syncActs(){
+        var on=meSelSet.length>0;
+        actBtns.forEach(function(b){b.classList.toggle(b.dataset.tone||'go',on);});
+      }
       /* ⚠ pick1의 실행 버튼은 **칩보다 위**에 온다 (요청): 엘리 바로 아래에서
          꼬리로 이어져야 '엘리가 제안하고, 나는 아래에서 고른다'가 된다. */
       if(ask==='pick1'){
-        var go=document.createElement('button');go.className='go narrow tail-c';
+        var go=document.createElement('button');go.className='narrow tail-c';
         go.innerHTML='이것(들)만 남기고 나머지는 내일로'+tmrArrow();
         go.onclick=function(){
           if(!meSelSet.length){meSay('남길 것을 골라 줘. 여러 개도 돼.');return;}
           var move=meTodayTasks().filter(function(t){return meSelSet.indexOf(t.id)<0;});
           if(!move.length){meDone('다 남겼네. 그럼 그대로 가 보자.');return;}
-          meConfirmDefer(move,meSelSet.length);
+          meConfirmDefer(move,'오늘은 '+meSelSet.length+'개만. 나머지 '+move.length
+            +'개는 내일의 내가 볼게.');
         };
-        box.appendChild(go);
+        actBtns.push(go);box.appendChild(go);
+      }
+      if(ask==='pick2'){
+        /* pick1과 같은 구조 — 실행 버튼이 엘리 바로 아래, 칩은 그 아래.
+           두 버튼이라 꼬리도 2지선다처럼 좌/우에서 엘리를 가리킨다. */
+        var tm=document.createElement('button');tm.className='tail-l';tm.textContent='내일로';
+        tm.onclick=function(){
+          var sel=meSelTasks();if(!sel.length){meSay('미룰 것을 골라 줘. 여러 개도 돼.');return;}
+          meConfirmDefer(sel,'내일로 미뤘어. 오늘은 여기까지.');
+        };
+        var del=document.createElement('button');del.className='warn tail-r';
+        del.dataset.tone='danger';del.textContent='지우기';
+        del.onclick=function(){
+          var sel=meSelTasks();if(!sel.length){meSay('지울 것을 골라 줘. 여러 개도 돼.');return;}
+          meConfirmDelete(sel);
+        };
+        actBtns.push(tm);actBtns.push(del);
+        box.appendChild(tm);box.appendChild(del);
       }
       list.forEach(function(t){
         var c=document.createElement('button');c.className='me-chip';c.textContent=t.title||'할 일';
         c.onclick=function(){
-          if(ask==='pick1'){
-            // 여러 개 남길 수 있다 (요청) — 하루가 한 가지로만 되어 있진 않다.
-            var i=meSelSet.indexOf(t.id);
-            if(i<0){meSelSet.push(t.id);c.classList.add('on');}
-            else{meSelSet.splice(i,1);c.classList.remove('on');}
-            return;
-          }
-          meSel=t.id;
-          [].forEach.call(box.querySelectorAll('.me-chip'),function(x){x.classList.remove('on');});
-          c.classList.add('on');
+          // 둘 다 **여러 개** 고를 수 있다 (요청) — 하루가 한 가지로만 되어 있진 않다.
+          var i=meSelSet.indexOf(t.id);
+          if(i<0){meSelSet.push(t.id);c.classList.add('on');}
+          else{meSelSet.splice(i,1);c.classList.remove('on');}
+          syncActs();
         };
         box.appendChild(c);
       });
-      if(ask==='pick2'){
-        var tm=document.createElement('button');tm.textContent='내일로';
-        tm.onclick=function(){
-          var t=taskByID(meSel);if(!t){meSay('하나만 골라 줘.');return;}
-          taskDeferTomorrow(t);meDone('내일로 미뤘어. 오늘은 여기까지.');
-        };
-        var del=document.createElement('button');del.className='warn';del.textContent='지우기';
-        del.onclick=function(){
-          var t=taskByID(meSel);if(!t){meSay('하나만 골라 줘.');return;}
-          deleteTask(t);meDone('지웠어. 안 해도 되는 일이었을지도.');
-        };
-        box.appendChild(tm);box.appendChild(del);
-      }
+      syncActs();
       return;
     }
     /* 2지선다는 **엘리 입에서 나온다** — 좌우 버튼의 꼬리가 위(엘리)를 향한다. */
@@ -9851,23 +9864,40 @@
   }
   /* ⚠ 미루기는 **되돌리기 어려운 일**이다 (오늘 목록에서 통째로 사라진다).
      그래서 이름을 다 보여 주고 한 번 더 묻는다 — 어디서 다시 볼 수 있는지도. */
-  function meConfirmDefer(move,keepN){
-    var last=move[move.length-1].title||'할 일';
-    var names=move.map(function(t){return '‘'+(t.title||'할 일')+'’';}).join(', ');
-    // 마지막 이름의 받침에 맞춰 조사를 고른다 ('을(를)'은 사람 말이 아니다).
-    meSay(names+josa(last,'을','를')+' 내일로 미룰까?');
+  function meNames(list){
+    return list.map(function(t){return '‘'+(t.title||'할 일')+'’';}).join(', ');
+  }
+  /* 고른 칩들의 실제 작업 (여러 개). */
+  function meSelTasks(){
+    return meTodayTasks().filter(function(t){return meSelSet.indexOf(t.id)>=0;});
+  }
+  /* 확인 한 단계 — 이름을 다 보여 주고, 취소하면 고르던 자리로 돌아온다. */
+  function meConfirmStep(question,noteText,yesText,yesTone,onYes){
+    meSay(question);
     var box=document.getElementById('meAct');box.innerHTML='';
-    var note=document.createElement('div');note.className='me-note';
-    note.textContent='미룬 일은 할 일 → '+tomorrowLabel()+'에서 볼 수 있어요';
+    var back=manualState()||avatarState();
+    var note=document.createElement('div');note.className='me-note';note.textContent=noteText;
     box.appendChild(note);
-    var yes=document.createElement('button');yes.className='go';yes.textContent='미룰게';
-    yes.onclick=function(){
-      var n=0;move.forEach(function(t){taskDeferTomorrow(t);n++;});
-      meDone('오늘은 '+keepN+'개만. 나머지 '+n+'개는 내일의 내가 볼게.');
-    };
+    var yes=document.createElement('button');yes.className=yesTone;yes.textContent=yesText;
+    yes.onclick=onYes;
     var no=document.createElement('button');no.textContent='아니, 그대로';
-    no.onclick=function(){meSay(ME_LINE.overload||'');paintMeAct('overload');};
+    no.onclick=function(){meSay(ME_LINE[back]||'');paintMeAct(back);};
     box.appendChild(yes);box.appendChild(no);
+  }
+  function meConfirmDefer(move,doneLine){
+    var last=move[move.length-1].title||'할 일';
+    // 마지막 이름의 받침에 맞춰 조사를 고른다 ('을(를)'은 사람 말이 아니다).
+    meConfirmStep(meNames(move)+josa(last,'을','를')+' 내일로 미룰까?',
+      '미룬 일은 할 일 → '+tomorrowLabel()+'에서 볼 수 있어요','미룰게','go',
+      function(){move.forEach(function(t){taskDeferTomorrow(t);});meDone(doneLine);});
+  }
+  /* ⚠ 지우기는 **되돌릴 수 없다** — 미루기보다 더 세게 묻는다. */
+  function meConfirmDelete(sel){
+    var last=sel[sel.length-1].title||'할 일';
+    meConfirmStep(meNames(sel)+josa(last,'을','를')+' 지울까?',
+      '지운 일은 되돌릴 수 없어요','지울게','danger',
+      function(){var n=sel.length;sel.forEach(function(t){deleteTask(t);});
+        meDone(n+'개 지웠어. 안 해도 되는 일이었을지도.');});
   }
   /* 말풍선만 바꾼다 (짐작 → 답 → 결과). */
   function meSay(text){document.getElementById('meLine').textContent=text;
