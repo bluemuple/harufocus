@@ -3552,6 +3552,12 @@
     var fut=todayDueLines(false).filter(function(t){return taskDueAt(t).getTime()>Date.now();});
     var all=todayDueLines(true);
     if(!all.length)return;
+    /* ⚠ **지금 라인 아래에 마감선이 하나도 없으면 집게를 아예 안 띄운다**
+       (요청 2026-07-23): 집게는 '앞으로 남은 마감들'을 비율로 늘였다 줄이는
+       손잡이다. 오늘 마감이 전부 지나갔으면 조작할 대상이 없는데도, 마지막
+       (이미 지난) 선 아래에 손잡이가 덩그러니 남아 '지금 라인 위'에 떠 있는
+       것처럼 보였다. 잡아도 아무 일이 안 일어나는 손잡이는 없느니만 못하다. */
+    if(!fut.length)return;
     var last=all[all.length-1],lastDue=taskDueAt(last);
     var hf=lastDue.getHours()+lastDue.getMinutes()/60;if(hf<TS||hf>TE)return;
     var wrap=document.createElement('div');wrap.className='due-clamp';
