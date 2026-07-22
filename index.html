@@ -7297,10 +7297,12 @@
        워터마크를 올린다(내가 쓴 행도 한 번은 도로 받는다 — 그게 안전하다).
      ⚠ **표가 없으면 자동 폴백**: supabase-sundial-domains.sql을 아직 안 돌린
        계정에서는 404가 오고, 그때는 예전 방식 그대로 동작한다.
-     ⚠ **지금은 이중 쓰기**(DOMAIN_BLOB_DROP=false): 스냅샷에도 세션·일기를
-       그대로 실어 보낸다. 행이 제대로 쌓이는 걸 눈으로 확인한 뒤에 이 스위치를
-       켜면 그때부터 스냅샷이 작아진다. 지금 끄면 되돌릴 수 없는 쪽이 먼저다. */
-  var DOMAIN_BLOB_DROP=false;
+     ✅ **2단계 켬**(2026-07-22): 표에 세션·일기가 실제로 쌓이는 걸 확인한 뒤
+       올렸다 — 이제 스냅샷에서 둘을 뺀다(실측 690B→165B).
+     ⚠ 앱 `SundialSnapshot.dropDomainsFromBlob`과 **같이** 켠다. 한쪽만 켜져도
+       안전하긴 하다 — 받는 쪽이 `domains` 표식을 보고 빈 배열로 로컬을 지우지
+       않는다(normalize의 prev 보존 / 앱 apply의 ownedByTable 가드). */
+  var DOMAIN_BLOB_DROP=true;
   var DOMAINS=[
     // ver = '이 항목이 바뀌었나'를 재는 값. 세션은 한 번 쓰이면 안 바뀌는
     // 기록이라 상수, 일기는 본문 수정이 있어 updatedAt을 쓴다.
