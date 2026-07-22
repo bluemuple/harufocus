@@ -5268,13 +5268,14 @@
     var sub=a[i];
     a.splice(i,1);t.subtasksJSON=JSON.stringify(a);
     var slot=nextSlotToday();
-    var nt={id:uuid(),title:sub.title,categoryID:t.categoryID||'focus',
-      colorKey:t.colorKey||null,iconName:t.iconName||null,
+    /* ⚠ 반드시 **addTask/newTask 공장**을 거친다 (요청 버그): 손으로 객체를
+       만들어 밀어 넣으면 앱 `TaskDTO`의 **필수 필드**(colorKey·notes·
+       subtasksJSON·reminderOffsets·createdAt …)가 비어, 앱이 **스냅샷 전체를
+       디코딩 실패**해 조용히 **모든 동기화가 멈춘다**(집중 미러링까지). */
+    addTask({title:sub.title,categoryID:t.categoryID||'focus',
+      colorKey:t.colorKey||'',iconName:t.iconName||null,
       durationMin:30,scheduledStart:todayAt(Math.floor(slot),(slot%1)*60),
-      isDone:!!sub.isDone,createdAt:new Date().toISOString()};
-    setPlanFromSchedule(nt);
-    (DATA.tasks=DATA.tasks||[]).push(nt);
-    renderAll();pushSnapshot();
+      isDone:!!sub.isDone});
   }
   /* 하위 작업 한 벌을 배열에서 빼고 저장 — 할일·매트릭스 공용. */
   function deleteSubtask(t,i){
@@ -9665,12 +9666,9 @@
      ⚠ 죄책감 문구를 붙이지 않는다 — 쉼도 계획의 일부다. */
   function mePlaceBlock(title,cat,min){
     var now=new Date(),m=Math.floor(now.getMinutes()/5)*5;
-    var t={id:uuid(),title:title,categoryID:cat,durationMin:min,
-      scheduledStart:todayAt(now.getHours(),m),createdAt:new Date().toISOString()};
-    setPlanFromSchedule(t);
-    (DATA.tasks=DATA.tasks||[]).push(t);
-    renderAll();pushSnapshot();
-    return t;
+    // ⚠ 공장을 거친다 — 위 subToTimeline의 주석 참조(필수 필드 누락 = 앱 동기화 정지).
+    return addTask({title:title,categoryID:cat,durationMin:min,
+      scheduledStart:todayAt(now.getHours(),m)});
   }
   /* 가장 무거운 것 = 오늘 남은 계획이 가장 큰 작업. */
   function meHeaviest(){
