@@ -82,10 +82,15 @@
   .eb-slider.drag{background:rgba(255,255,255,.22);color:#fff}
   .eb-slider.drag i{background:#fff}
   @media(min-width:1100px){.edit-bar{left:10px;right:auto;width:380px;bottom:74px}}
-  /* 체크 동그라미(.dl-radio는 top:-33)가 아웃라인 위로 삐져나와 잘려 보였다
-     → 위로 10px 올리고 그만큼 키워 아래 끝은 그대로 (요청). */
-  .dueline.selected::after{content:"";position:absolute;left:8px;right:-6px;top:-37px;height:54px;
-    border:1px solid var(--dueSel,rgba(245,247,255,.55));border-radius:18px;pointer-events:none}
+  /* ⑥ 편집 모드 선택 표시 (요청 2026-07-23) — 예전의 **둥근 네모 선택 상자를
+     없앴다**. 상자는 이름·기호까지 통째로 감싸 "무엇이 선택됐나"보다 "네모가
+     하나 더 생겼다"로 읽혔다.
+     지금은 **▶ + 마감선 + 오른쪽 캡슐을 한 몸으로 두르는 1px 아웃라인**이다:
+     왼쪽 끝은 ▶ 동그라미(left:41)에서 시작해 오른쪽 캡슐 끝에서 닫힌다.
+     ▶를 따로 두르지 않으므로 ▶와 선이 한 몸으로 보인다.
+     색은 낮=어두운 잉크 / 밤=밝은 잉크 — --onSky가 이미 그렇게 뒤집힌다. */
+  .dueline.outlined::after{content:"";position:absolute;left:41px;right:0;top:-15px;height:30px;
+    border:1px solid var(--onSky,#141827);opacity:.55;border-radius:15px;pointer-events:none}
   /* 마감집게 (D2-3) */
   .due-clamp{position:absolute;left:15%;width:70%;z-index:5;text-align:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
   .due-clamp .dc-n{color:#F5BFCE;font-weight:800}
@@ -152,12 +157,22 @@
   .ghost-due{position:absolute;left:0;right:8px;height:0;z-index:9;pointer-events:none}
   .ghost-due .gd-wire{position:absolute;left:56px;right:0;top:-1px;height:2px;border-radius:2px;
     background:var(--tl-accent,#5b93e6);opacity:.95}
-  .ghost-due .gd-wire::before{content:"";position:absolute;right:-2px;top:-2px;width:6px;height:6px;
+  .ghost-due .gd-wire::before{content:"";position:absolute;left:-3px;top:-2px;width:6px;height:6px;
     border-radius:50%;background:inherit}
-  .ghost-due .gd-lab{position:absolute;left:60px;top:-26px;display:flex;align-items:center;gap:6px;
-    background:rgba(20,28,50,.9);color:#fff;font-size:11.5px;font-weight:700;padding:4px 9px;
-    border-radius:999px;white-space:nowrap}
-  .ghost-due .gd-lab i{font-style:normal;opacity:.75;font-weight:600}
+  /* 고스트(떨어뜨리는 중)와 **추가된 뒤 마감선의 요소 위치·크기가 같아야** 한다
+     (요청 ②): 놓는 순간 글자가 옮겨 다니면 "내가 놓은 그 자리인가"를 의심하게
+     된다. 그래서 아래 세 값은 .dueline의 것과 **같은 수**로 맞춰 둔다 —
+     이름 left:104/bottom:5, 캡슐 right:0/top:-13. 한쪽을 고치면 다른 쪽도. */
+  .ghost-due .gd-lab{position:absolute;left:104px;right:102px;bottom:5px;
+    display:flex;align-items:flex-end;gap:5px;white-space:nowrap;overflow:hidden;
+    color:var(--onSky,#141827);font-size:20px;font-weight:600}
+  .ghost-due .gd-lab b{font-weight:600;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .ghost-due .gd-lab i{flex:none;font-style:normal;font-size:11.5px;font-weight:600;opacity:.72;line-height:1.5}
+  .ghost-due .gd-cap{position:absolute;right:0;top:-13px;padding:4px 9px;border-radius:11px;
+    background:var(--tl-accent,#80CDE9);color:var(--tl-onaccent,#141827);
+    font-size:11.5px;font-weight:700;line-height:1.2;white-space:nowrap;
+    box-shadow:0 2px 6px rgba(20,40,80,.22)}
+  .tl-night .ghost-due .gd-cap{background:#273B9E;color:#F5F7FF}
   h2{position:relative}
   .h2-sub{font-size:16px;font-weight:400;color:var(--ink-soft);margin-left:6px}
   /* 전역: 꾹 눌러 텍스트 선택 금지(입력란 제외) + 확대 금지 (요청). */
@@ -279,67 +294,56 @@
      DOM 뒤라 위에 깔려, ▶ 버튼이 지금 캡슐과 겹치면 캡슐이 탭을 가로챘다.
      칠 순서와 히트테스트가 같이 뒤집힌다. */
   .dueline{position:absolute;left:0;right:8px;height:0;z-index:5}
+  /* ⑤ 원격 동기화로 자리가 바뀔 때만 붙는다 — 내 손가락으로 끌 땐 절대 안 붙는다. */
+  .dueline.sync-move{transition:top .3s ease}
   /* 마감선 가로 3구역 (앱 파리티):
        [▶] ○ 작업명 …… (선 위, 아랫변 기준 = 선이 밑줄)      08:33까지
        ─────────────────────────────────────────────         45분 남음
      ⚠ 오른쪽은 **캡슐 없이** 하늘 잉크색 글자. 고정 회색은 밤하늘에서
      사라지므로 --onSky에 투명도만 준다. 잡을 때만 캡슐 배경이 떠오른다. */
+  /* ⚠ 선 **오른쪽 끝의 작은 점은 없앴다** (요청 2026-07-23 ②): 그 자리는 이제
+     `hh:mm까지` 캡슐이 쓰고, 점이 남으면 캡슐 뒤로 반쯤 비쳐 지저분했다.
+     왼쪽 점(::before)은 ▶ 아래에서 선의 시작을 잇는 역할이라 남는다. */
   .dueline .dl-wire{position:absolute;left:56px;right:0;top:-0.75px;height:1.5px;background:var(--tl-accent,#5b93e6);border-radius:2px;opacity:.9}
-  .dueline .dl-wire::before,.dueline .dl-wire::after{content:"";position:absolute;top:-2.75px;
+  .dueline .dl-wire::before{content:"";position:absolute;top:-2.75px;left:-3px;
     width:7px;height:7px;border-radius:50%;background:inherit}
-  .dueline .dl-wire::before{left:-3px}
-  .dueline .dl-wire::after{right:-3px}
-  /* 편집 모드에선 오른쪽 끝 점을 뺀다 — 손잡이 캡슐이 그 자리를 쓴다 (요청). */
-  .tl-editing .dueline .dl-wire::after{display:none}
-  /* 편집 모드에서 지금 고른 마감선 — 선을 굵게 (요청: 무엇이 선택됐는지). */
-  .tl-editing .dueline.sel .dl-wire{height:3px;top:-1.5px;opacity:1}
+  /* 편집 모드 선택 표시는 굵은 선이 아니라 **아웃라인**이다 (요청 ⑥ — 아래
+     .dueline.outlined 참조). 선 굵기는 건드리지 않는다. */
   /* ▶ = 선의 시작점 한가운데 (앱 파리티): 이름·길이가 길어져도 x가 안 움직인다. */
   .dueline .dl-play{position:absolute;left:41px;top:-15px;z-index:2;
     width:30px;height:30px;border-radius:50%;border:0;flex:none;
     background:var(--tl-accent,var(--sky-blue));color:var(--tl-onaccent,#fff);cursor:pointer;display:inline-grid;place-items:center;vertical-align:middle;pointer-events:auto}
   .dueline .dl-play svg{width:13px;height:13px;margin-left:1px}
-  .dueline .dl-text{position:absolute;left:104px;right:112px;bottom:5px;font-size:20px;font-weight:600;color:var(--onSky,#141827);
-    white-space:nowrap;max-width:calc(100% - 150px);display:flex;align-items:center;gap:4px;pointer-events:none}
+  /* ⚠ ○ · 작업명 · duration의 **아랫변이 같은 y**에 놓인다 (요청 ②):
+     align-items:flex-end + 셋 다 bottom:5px. 가운데 정렬이던 예전엔 글꼴
+     크기가 다른 duration이 이름보다 살짝 떠 보였다. */
+  .dueline .dl-text{position:absolute;left:104px;right:102px;bottom:5px;font-size:20px;font-weight:600;color:var(--onSky,#141827);
+    white-space:nowrap;max-width:calc(100% - 150px);display:flex;align-items:flex-end;gap:5px;pointer-events:none}
   .dueline .dl-text .dl-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
   /* 심볼 색 = 작업명 글자색 상속 (앱 6e4e3de①: 선·캡슐·▶가 이미 테마색, 작업색은 포모도로 링 담당) */
   .dueline .dl-text .dl-ic{flex:none;display:inline-flex;align-items:center;color:inherit}
   .dueline .dl-text .dl-ic svg{width:17px;height:17px}
-  /* duration = 캡슐 'hh:mm까지'와 같은 크기 (앱 dueDurationFont .caption2 + durationOpacity .75) */
-  /* ⚠ **폭을 미리 예약**한다 (요청): 마감선을 위아래로 끌면 durLabel이
-     '2시간'↔'2시간 8분'처럼 길이가 변해 오른쪽 ▶ 버튼이 좌우로 흔들렸다.
-     durLabel이 낼 수 있는 가장 긴 문자열('20시간 48분')을 이 폰트(11px/600)로
-     실측하면 60.88px — 62px를 잡아 두면 어떤 duration에도 ▶가 안 움직인다.
-     ⚠ 작업명은 예약 대상이 아니다 — 이름이 길어지면 ▶도 따라 밀린다(요청). */
-  .dueline .dl-text .dl-dur{flex:none;font-size:11px;font-weight:600;opacity:.75;
-    min-width:62px}
-  /* 오른쪽 2줄 — 위=시각(잉크 85%), 아래=남음·지남(잉크 62%). 선 끝 점이
-     보이게 16px 안으로 들인다. 잡거나 편집 모드일 때만 캡슐이 떠오른다. */
-  .dueline .dl-right{position:absolute;right:16px;top:-16px;width:84px;text-align:right;
-    line-height:1.28;pointer-events:auto;cursor:ns-resize;padding:0;border-radius:11px;
-    transition:background .15s ease,padding .15s ease}
-  .dueline .dl-right b{display:block;font-size:11.5px;font-weight:600;color:var(--onSky,#141827);opacity:.85}
-  /* '까지' 아래 여백과 '남음' 위 여백을 같게 (요청): 글꼴 상하 여백이
-     달라 위가 붙어 보였다 — 아랫줄만 2px 내린다. */
-  .dueline .dl-right i{display:block;font-style:normal;font-size:11px;color:var(--onSky,#141827);
-    opacity:.62;margin-top:2px}
-  .tl-editing .dueline .dl-right,.dueline .dl-right.grab{
-    background:var(--tl-accent,#80CDE9);padding:4px 8px;box-shadow:0 2px 6px rgba(0,0,0,.22)}
-  .tl-editing .dueline .dl-right b,.dueline .dl-right.grab b,
-  .tl-editing .dueline .dl-right i,.dueline .dl-right.grab i{color:var(--tl-onaccent,#141827);opacity:1}
-  .tl-editing .dueline .dl-right i,.dueline .dl-right.grab i{opacity:.78}
-  .dueline .dl-cap{position:absolute;right:0;top:-9px;background:var(--tl-accent,#80CDE9);color:var(--tl-onaccent,#141827);font-size:11px;font-weight:800;
-    border-radius:999px;padding:2px 6px;box-shadow:0 3px 8px rgba(20,40,80,.22);cursor:ns-resize;touch-action:none;user-select:none}
-  .tl-night .dl-cap{background:#273B9E;color:#F5F7FF}
-  /* 편집 모드 마감 캡슐 드래그 어포던스 (앱 TimelineScrollView 파리티) */
-  /* 위·아래 화살표는 **같은 SVG를 뒤집어** 쓴다 — 예전엔 ⌃/⌄ 글리프라
-     서체에 따라 크기와 광학 중심이 서로 달랐다 (요청: 크기 통일). */
-  .dueline .dl-chev{position:absolute;left:50%;font-style:normal;line-height:0;
-    color:var(--onSky,#141827);opacity:.85;pointer-events:none;
-    filter:drop-shadow(0 1px 1px rgba(255,255,255,.35))}
-  .dueline .dl-chev svg{width:13px;height:13px;display:block}
-  .dueline .dl-chev.up{top:-14px;transform:translateX(-50%)}
-  .dueline .dl-chev.dn{bottom:-14px;transform:translateX(-50%) rotate(180deg)}
-  .dueline .dl-radio{position:absolute;left:70px;bottom:6px;width:26px;height:26px;border-radius:50%;
+  /* duration은 이제 **작업명의 일부**다 (요청 ②): 오른쪽 캡슐에서 이름 옆으로
+     옮겼다. 그래서 폭을 예약하지 않는다 — 예약은 "오른쪽에 ▶가 있어 흔들리면
+     안 된다"는 옛 배치의 사정이었고, 지금은 이름 뒤에 붙어 흔들릴 것이 없다. */
+  .dueline .dl-text .dl-dur{flex:none;font-size:11.5px;font-weight:600;opacity:.72;
+    line-height:1.5}
+  /* 오른쪽 = **`hh:mm까지` 캡슐 하나**. 작업을 떨어뜨릴 때의 파란 캡슐과 같은
+     모양이라, 놓는 순간 자리도 크기도 그대로 남는다 (요청 ②). */
+  /* right:0 = **선의 오른쪽 끝과 캡슐의 오른쪽 끝을 같은 x에** 둔다. 8px면
+     선이 캡슐 뒤로 8px 삐져나와 꼬리처럼 보였다. */
+  .dueline .dl-right{position:absolute;right:0;top:-13px;text-align:right;
+    pointer-events:auto;cursor:ns-resize;padding:4px 9px;border-radius:11px;
+    background:var(--tl-accent,#80CDE9);box-shadow:0 2px 6px rgba(20,40,80,.22);
+    transition:box-shadow .15s ease}
+  .dueline .dl-right b{display:block;font-size:11.5px;font-weight:700;color:var(--tl-onaccent,#141827);line-height:1.2}
+  .tl-night .dueline .dl-right{background:#273B9E}
+  .tl-night .dueline .dl-right b{color:#F5F7FF}
+  .dueline .dl-right.grab{box-shadow:0 4px 12px rgba(0,0,0,.32)}
+  /* (옛 .dl-cap은 삭제 — 이제 .dl-right 자체가 그 캡슐이다.) */
+  /* (옛 .dl-chev 위·아래 화살표는 삭제됐다 — 요청 ④: 위 화살표는 없애고
+     아래 화살표만 캡슐에 바짝 붙인다. 웹은 애초에 그리지 않고 있었다.) */
+  .dueline .dl-radio{position:absolute;left:70px;bottom:5px;width:26px;height:26px;border-radius:50%;
     border:2px solid var(--onSky,#141827);background:transparent;cursor:pointer;color:#fff;font-size:16px;
     font-weight:800;display:grid;place-items:center;box-shadow:0 1px 4px rgba(20,40,80,.25)}
   .dueline .dl-radio.on{background:var(--dc,#4F8AD1);border-color:var(--dc,#4F8AD1)}
@@ -358,17 +362,28 @@
      떨지 않는다. */
   /* ⚠ 왼쪽만 밀면 **오른쪽 2줄 글자를 덮는다**(요청 버그). 오른쪽 글자는
      right:16px + 폭 84 = 오른쪽 끝에서 100px를 쓰므로 그만큼 비운다. */
-  /* 오른쪽 글자의 실제 왼쪽 끝 = 8(.dueline right) + 16(.dl-right right)
-     + 84(폭) = 오른쪽 끝에서 **108px**. 6px 틈을 두어 114. */
-  .block.rec.pushed{left:169px;right:89px}
+  /* 오른쪽 캡슐의 실제 왼쪽 끝 = 8(.dueline right) + 캡슐 폭(≈72) = 오른쪽
+     끝에서 **80px**. 6px 틈을 두어 86. */
+  .block.rec.pushed{left:169px;right:86px}
+  /* ③ (요청 2026-07-23) 2컬럼이 될 때 — 이름은 왼쪽, 블록은 오른쪽으로 갈릴
+     때 — **마감선 이름과 블록 이름 둘 다 기호를 뗀다**. 좁아진 자리에서
+     기호는 이름 글자 수만 깎아 먹는다. 안 갈릴 땐 둘 다 기호가 있다. */
+  .dueline.narrow .dl-text .dl-ic{display:none}
+  .block.rec.pushed>.bic{display:none}
+  .rec-lab.narrow .bic{display:none}
   .dueline .dl-text{transition:right .15s ease}
   .dueline.narrow .dl-text{right:auto;max-width:65px}
   /* ⚠ 2줄은 **좁힘과 별개**다 (요청): 이름이 한 줄에 안 들어가면 겹치든 안
      겹치든 작은 2줄로 흐른다 — 앱 ViewThatFits(큰 1줄이 안 맞으면 작은 2줄)와
      같은 규칙. 예전엔 .narrow에만 걸려 있어 안 겹치면 '영어영어…'로 잘렸다.
      넘치는지는 CSS로 못 알므로 렌더 뒤 scrollWidth로 재서 클래스를 붙인다. */
-  .dueline.twoline .dl-text .dl-title{font-size:12px;line-height:1.16;white-space:normal;
-    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  /* ⚠ 2줄일 때 duration은 **이름의 일부처럼** 흐른다 (요청 ②): 인라인이라
+     이름이 넘치면 duration이 둘째 줄로 자연히 내려가고, 이름이 그래도 길면
+     JS가 이름 끝을 `…`로 깎는다 — **duration은 절대 안 잘린다**.
+     (line-clamp로 통째로 자르면 잘리는 쪽이 duration이 된다.) */
+  .dueline.twoline .dl-text{display:block;white-space:normal;font-size:12px;line-height:1.16}
+  .dueline.twoline .dl-text .dl-title{display:inline;overflow:visible;text-overflow:clip;white-space:normal}
+  .dueline.twoline .dl-text .dl-dur{display:inline;font-size:11px;margin-left:4px;white-space:nowrap}
   /* 아주 짧은 블록: 안쪽 여백 없이 색 막대만 — 높이가 곧 시간이다. */
   /* "5분 미만이라 안 남겼어요" 하단 토스트 (요청) — 앱 캡슐과 같은 톤. */
   /* ⚠ bottom은 **+ FAB 위**로 (실측: FAB top 678 / 뷰포트 812 → 148px면
@@ -400,6 +415,22 @@
   .rec-lab .bic svg{width:14px;height:14px}
   .rec-lab .btitle{overflow:hidden;text-overflow:ellipsis;min-width:0}
   .rec-lab small{font-weight:600;opacity:.72;font-size:11px}
+  /* ① 계획 잔여 = 블록 **아래로 이어지는 빗금** (요청 2026-07-23).
+     컬러 블록과 같은 좌우 폭·같은 모서리라 한 덩어리로 읽히고, 윗변은 각지게
+     두어 컬러의 아랫변과 이가 맞는다. **글자는 절대 안 들어간다** — duration은
+     컬러 영역 우하단에만 쓴다. */
+  /* ⚠ **연하게**: 빗금은 "아직 안 한 계획"이라 기록(컬러)보다 반드시 약해야
+     한다. 처음엔 쉼 빗금(.bhatch)의 회색을 그대로 썼는데, 90분짜리가 하늘을
+     통째로 덮는 잿빛 판이 돼 기록보다 세 보였다. 지금은 **그 작업 색**을
+     아주 옅게 깔아, 어느 작업의 계획인지도 색으로 읽힌다. */
+  /* ⚠ 선택자는 반드시 `.block.plan-hatch` — `.plan-hatch` 하나면 뒤에 오는
+     `.block{left:52px;right:14px}`와 명시도가 같아 **나중 규칙에 진다**.
+     실제로 빗금만 블록보다 넓게 그려졌다(같은 함정: .drag-ghost·.nav-ghost). */
+  .block.plan-hatch{left:64px;right:62px;padding:0;border-radius:0 0 10px 10px;z-index:2;
+    border:1px dashed;border-top:0;pointer-events:none;box-shadow:none;opacity:.85}
+  .block.plan-hatch.pushed{left:169px;right:86px}
+  /* 빗금이 이어 붙는 블록은 아랫변을 각지게 — 컬러와 빗금이 한 덩어리로 읽힌다. */
+  .block.rec.has-plan{border-bottom-left-radius:0;border-bottom-right-radius:0}
   .block.rec .bhatch{position:absolute;left:0;right:0;z-index:1;pointer-events:none;
     background:repeating-linear-gradient(45deg,rgba(120,130,150,.45) 0 6px,rgba(235,240,248,.5) 6px 12px)}
   .block.rec .brest{position:absolute;left:0;right:0;z-index:1;pointer-events:none;background:rgba(107,194,250,.9)}
@@ -3478,6 +3509,8 @@
     return '<span class="t-dur">'+durLabel(g-done)+' 남음</span>';
   }
   // 마감집게 (D2-3): 마지막 선 아래, 드래그 = 미래 미완료 선 간격 비율 스케일.
+  /* 집게를 쥐고 있는 동안만 true — 조작 대상 마감선 전부에 아웃라인이 뜬다 (요청 ⑥). */
+  var clampDragging=false;
   function addDueClamp(sc){
     if(dayOffset!==0)return;
     if(!editBarOn)return;          // 요청: 집게는 편집 모드에서만 보인다
@@ -3510,7 +3543,7 @@
     var grip=wrap.querySelector('.dc-grip');
     grip.addEventListener('pointerdown',function(e){
       if(!fut.length)return;
-      e.preventDefault();tlDragging=true;
+      e.preventDefault();tlDragging=true;clampDragging=true;renderBig();
       var y0=e.clientY,now0=Date.now();
       var orig=fut.map(function(t){return {t:t,due:taskDueAt(t).getTime(),dur:t.durationMin};});
       var oldTotal=orig[orig.length-1].due-now0;
@@ -3530,7 +3563,7 @@
         renderBig();ev.preventDefault();
       }
       function up(){document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);
-        tlDragging=false;renderAll();pushSnapshot();
+        tlDragging=false;clampDragging=false;renderAll();pushSnapshot();
         /* 놓은 뒤 토스트 (요청): 한 번에 여러 마감을 옮기는 조작이라
            **무엇이 얼마나 움직였는지**와 되돌릴 길을 같이 말해 준다. */
         var moved=Math.round((taskDueAt(orig[orig.length-1].t).getTime()-orig[orig.length-1].due)/60000);
@@ -3620,6 +3653,8 @@
      마감선을 끌 때 넓힘↔좁힘이 계속 튄다. 한 번 좁아지면 8px 이상 벌어져야
      되돌린다. */
   var DUE_BAND_H=30, DUE_SLACK=8, dueNarrowIds={};
+  /* 다음 renderBig 한 번만 마감선 이동을 애니메이션한다 (⑤). 원격 반영 경로에서만 켠다. */
+  var syncAnimPending=false;
   /* labRects = 짧은 블록의 '윗변 위 라벨'(.rec-lab). 마감선 제목 띠와 **같은
      규칙**을 쓴다 — 라벨과 겹치는 블록도 오른쪽으로 물러나고, 라벨은 그
      한계선까지 좁아진다. (예전엔 라벨 뒤에 반투명 알약을 깔아 가렸다.)
@@ -3658,6 +3693,20 @@
     }
     var sc=document.getElementById('tlScroll');
     var prevScroll=(batchIds!=null||tlDragging)?sc.scrollTop:null;   // 배치/드래그 중 스크롤 유지
+    /* ⑤ 동기화 이동 애니메이션 (요청 2026-07-23): 다른 기기에서 마감을 옮겨
+       이쪽 위치가 바뀌면 **0.3초 상하 이동**으로 따라간다 — 선이 순간이동하면
+       "내가 안 한 변화"가 언제 일어났는지 못 본다. egress와는 무관하다(이미
+       받은 데이터를 그리는 방식일 뿐).
+       ⚠ **끄는 중에는 반드시 꺼야 한다** — 손가락보다 선이 0.3초 늦게 따라오면
+       조작이 고무줄이 된다. 그래서 '원격 변경일 때만'(syncAnimPending)이다.
+       렌더가 DOM을 통째로 새로 만들므로, 옛 y를 기억했다가 새 요소를 옛 자리에
+       놓고 다음 프레임에 새 자리로 보내는 FLIP으로 그린다. */
+    var prevDueTops=null;
+    if(syncAnimPending){
+      prevDueTops={};
+      [...sc.querySelectorAll('.dueline')].forEach(function(el){
+        prevDueTops[el.dataset.tid]=parseFloat(el.style.top)||0;});
+    }
     sc.innerHTML='';
     // 요청: 취침(마감) 시각 줄엔 오른쪽 끝에 '취침' 표시 + 그 아래 설정 안내.
     var bedH=Math.floor(((DATA.settings&&DATA.settings.bedMinutes!=null)?DATA.settings.bedMinutes:1380)/60);
@@ -3690,6 +3739,59 @@
     var nowMs=Date.now();
     // ① 기록 블록 (§3): 세션에서 파생 — 실색 채움 + 쉼(갭)=빗금(위치 그대로).
     var recBlocks=dayRecordBlocks(tk);
+    /* ── ① 계획 잔여 빗금 (요청 2026-07-23) ──────────────────────────────
+       블록 **위쪽 컬러 = 실제 집중한 초**, 그 아랫변이 멈춘 순간의 '지금' 선에
+       닿는다. 그 아래로 **계획에서 아직 안 한 만큼이 빗금**으로 이어져 지금 선
+       아래(미래)까지 뻗는다 — 예: 2분 집중 + 30분 계획 → 컬러 2분 + 빗금 28분.
+       그래야 ① 블록이 높아 글자 여유가 생기고 ② 계획했던 길이가 보이며
+       ③ 나중에 같은 작업을 다시 하면 빗금 아래가 채워지는 게 자연스럽다.
+       ⚠ **다른 작업을 재생하면 그 지점에서 자른다** — 블록이 겹치면 둘 다 못
+       읽는다. 잘리는 건 빗금뿐이고 컬러는 남는다.
+       ⚠ 같은 작업을 다시 집중하면 컬러는 **'지금' 라인부터** 채워진다(빗금
+       자리부터가 아니다) — 새 기록 블록이 제 실제 시각에 생기므로 저절로 그렇다. */
+    var nextStartAfter=(function(){
+      var starts=recBlocks.map(function(b){return b.start;}).sort(function(a,b){return a-b;});
+      return function(ms){
+        for(var i=0;i<starts.length;i++)if(starts[i]>ms)return starts[i];
+        return Infinity;
+      };
+    })();
+    var planCum=Object.create(null);
+    recBlocks.slice().sort(function(a,b){return a.start-b.start;}).forEach(function(b){
+      var t=taskByID(b.taskID);
+      /* ⚠ 재생 중인 블록은 `foc`가 아직 0이다 (세션이 안 끝나 누적 전).
+         그대로 두면 빗금이 계획 전체 길이로 튀어, 자라는 컬러 아래에서
+         빗금이 안 줄어든다. 지금 블록은 **실제로 흐른 시간(쉼 제외)**으로 센다. */
+      var focMs=(b.foc||0)*1000;
+      if(b.active){
+        var restMs=(b.rest||[]).reduce(function(a,r){return a+(r.e-r.s);},0);
+        focMs=Math.max(focMs,(b.end-b.start)-restMs);
+      }
+      planCum[b.taskID]=(planCum[b.taskID]||0)+focMs;
+      var planMs=(t&&(t.durationMin||0)>0&&!t.isDone)?t.durationMin*60000:0;
+      b.planRemainMs=Math.max(0,planMs-planCum[b.taskID]);
+    });
+    recBlocks.forEach(function(b){
+      if(!(b.planRemainMs>0))return;
+      var hs=b.end,he=Math.min(b.end+b.planRemainMs,nextStartAfter(b.end));
+      if(he<=hs)return;
+      var d0=new Date(hs),hf1=hourFrac(hs);
+      var d1=new Date(he),hf2=hourFrac(he);if(d1.getDate()!==d0.getDate())hf2=24;
+      if(hf2<=TS||hf1>=TE)return;
+      hf1=Math.max(hf1,TS);hf2=Math.min(hf2,TE);
+      if(hf2<=hf1)return;
+      var ph=document.createElement('div');
+      ph.className='block plan-hatch';
+      ph.dataset.bkey=b.taskID+'@'+b.start;      // 제 블록과 같은 좁힘 상태를 따른다
+      ph.style.top=yFor(hf1)+'px';
+      ph.style.height=Math.max(2,(hf2-hf1)*PPH)+'px';
+      var pc=catColor(b.categoryID);
+      ph.style.borderColor=hexA(pc,0.45);
+      ph.style.background='repeating-linear-gradient(45deg,'+hexA(pc,0.30)+' 0 5px,'+hexA(pc,0.07)+' 5px 10px)';
+      sc.appendChild(ph);
+      b.hasPlanHatch=true;
+      any=true;
+    });
     recBlocks.forEach(function(b){
       var d=new Date(b.start),hf=hourFrac(b.start);
       var ef=new Date(b.end),hfe=hourFrac(b.end);if(ef.getDate()!==d.getDate())hfe=24;
@@ -3700,7 +3802,7 @@
          `최소 20px`(짧은 블록이 실제보다 길게 그려짐) 보정을 뺐다.
          2px 하한은 0높이로 사라지는 것만 막는 최소값이다. */
       var hpx=Math.max(2,(hfe-hf)*PPH);el.style.height=hpx+'px';
-      el.className='block rec'+(b.active?' active':'')+(hpx>=44?' big':'');
+      el.className='block rec'+(b.active?' active':'')+(hpx>=44?' big':'')+(b.hasPlanHatch?' has-plan':'');
       el.style.background=hexA(col,0.9);el.style.border='1.7px solid '+hexA(col,0.9);
       var span=b.end-b.start;
       var hatches=b.rest.map(function(r){
@@ -3739,7 +3841,7 @@
       return t.scheduledStart&&(t.durationMin||0)>0&&!t.isRewardItem&&
         dateKey(taskDueAt(t).toISOString())===tk;
     }).sort(function(a,b){return taskDueAt(a)-taskDueAt(b);});
-    var prevDue=null;
+    var prevDueMs=null;
     /* '지금' 선의 시간분수 — 마감선 라벨이 이걸 기준으로 남음/지남을 정한다.
        ⚠ **여기 클램프가 요청 버그의 진짜 원인이었다**: 지금이 타임라인 창
        (기상~취침) 밖이면 지금 선을 TS+1.5(≈08:30) 자리로 **대체해 그리는데**,
@@ -3749,11 +3851,18 @@
     var nowHf=nowHourFrac();
     lines.forEach(function(t){
       var due=taskDueAt(t),hf=due.getHours()+due.getMinutes()/60;
-      if(hf<TS||hf>TE){prevDue=due;return;}
+      if(hf<TS||hf>TE){prevDueMs=due.getTime();return;}
       any=true;
-      // 표시 n분 = 이전 마감선(지나갔으면 지금)→이 마감선 (§2, 파생값).
-      // now 보정은 내 마감이 미래일 때만 (앱 규칙) — 지난 선은 durationMin 폴백.
-      prevDue=due;
+      /* 작업명 오른쪽 duration = **여기까지 남은 시간** (요청 2026-07-23 ②):
+         앵커는 '이전 마감선(아직 안 지났으면)' 또는 '지금 선'. 작업을 타임라인에
+         떨어뜨릴 때 고스트가 보여 주던 그 값과 **같은 수·같은 자리**라, 놓는
+         순간 글자가 바뀌지 않는다. 지난 마감엔 앵커가 없으니 계획 길이로 돌아간다. */
+      var anchorMs=(prevDueMs!=null&&(dayOffset!==0||prevDueMs>Date.now()))?prevDueMs
+        :(dayOffset===0?Date.now():new Date(t.scheduledStart).getTime());
+      var availMin=Math.round((due.getTime()-anchorMs)/60000);
+      var durTxt=(availMin>0)?hmText(availMin)
+        :((t.durationMin||0)>0?hmText(t.durationMin):'');
+      prevDueMs=due.getTime();
       var y=yFor(hf);
       var dl=document.createElement('div');dl.className='dueline'+(t.isDone?' done':'')+(editBarOn&&selDueId===t.id?' sel':'');
       dl.style.top=y+'px';dl.dataset.tid=t.id;
@@ -3770,34 +3879,21 @@
       /* 오른쪽 2줄 (앱 파리티): 위=시각, 아래=남음·지남. 지난 마감은
          '까지'를 뗀다 — 지난 약속에 '까지'는 어색하다. */
       var hhmmTxt=('0'+due.getHours()).slice(-2)+':'+('0'+due.getMinutes()).slice(-2);
-      /* ⚠ 남음/지남은 **선을 그린 값과 같은 것**으로 판단한다 (요청 버그:
-         마감선이 '지금' 선 **위**인데 "남음"이 떴다 — 글자가 그림과 모순).
-         선은 hf(시각의 시간분수)로, '지금' 선은 nowHf로 그리므로 그 둘의
-         차이가 곧 화면에서 보이는 거리다. 절대시각(Date.now)으로 따로
-         계산하면 날짜·시간대가 어긋나는 순간 그림과 어긋난다. */
-      var past=(dayOffset===0&&nowHf!=null&&hf<nowHf);
-      var clockTxt=past?hhmmTxt:(hhmmTxt+'까지');
-      var lenTxt;
-      if(past){
-        /* 요청 문구 그대로 "몇 분(몇 시간)" — 1시간 넘으면 **시간 단위로
-           축약**한다('3시간 20분 지남' 아님). 읽기 쉽고, 폭도 최대
-           55.4px('20시간 지남')라 ▶ 예약폭 62px 안에 들어와 마감선을 끌어
-           지남으로 바뀌는 순간에도 버튼이 안 흔들린다. */
-        var pm=Math.max(1,Math.round((nowHf-hf)*60));
-        lenTxt=hmText(pm)+' 지남';
-      }else if(dayOffset===0&&nowHf!=null){
-        /* 아직 안 지난 오늘 마감 — 남은 시간. 축약 규칙은 '지남'과 같다:
-           같은 자리를 번갈아 쓰므로 폭도 같이 묶여야 흔들리지 않는다. */
-        var rm=Math.max(1,Math.round((hf-nowHf)*60));
-        lenTxt=hmText(rm)+' 남음';
-      }else lenTxt=(t.durationMin||0)>0?durLabel(t.durationMin):'';
+      /* 오른쪽은 **`hh:mm까지` 하나뿐**이다 (요청 2026-07-23 ②).
+         '~남음'과 선 오른쪽 끝의 작은 점을 뺐다: 남은 시간은 이제 작업명
+         오른쪽에 있고(위 durTxt), 같은 수를 두 곳에 쓰면 어느 쪽을 봐야 할지
+         모른다. 캡슐 모양은 **작업을 떨어뜨릴 때의 파란 캡슐과 같다**. */
       dl.innerHTML='<div class="dl-wire"></div>'+
         '<button class="dl-radio'+(t.isDone?' on':'')+'" title="완료" style="--dc:'+catColor(t.categoryID)+'">'+(t.isDone?'✓':'')+'</button>'+
         /* ⚠ ▶ 는 **선 시작점**으로 나왔다 (앱 파리티): 이름·길이가 길어져도
-           구조적으로 x가 안 움직인다. 심볼은 블록에만 두고 마감선엔 없다. */
+           구조적으로 x가 안 움직인다. */
         '<button class="dl-play" title="집중 시작">'+IC.play+'</button>'+
-        '<div class="dl-text'+(t.isDone?' done':'')+'"><span class="dl-title">'+esc(t.title)+'</span></div>'+
-        '<div class="dl-right"><b>'+clockTxt+'</b><i>'+lenTxt+'</i></div>'+
+        /* 기호는 **2컬럼이 아닐 때만** 보인다 (요청 ③) — .narrow에서 CSS가 숨긴다.
+           블록 이름의 기호와 한 쌍으로 움직인다. */
+        '<div class="dl-text'+(t.isDone?' done':'')+'"><span class="dl-ic">'+taskIcon(t)+'</span>'+
+          '<span class="dl-title">'+esc(t.title)+'</span>'+
+          (durTxt?'<span class="dl-dur">'+durTxt+'</span>':'')+'</div>'+
+        '<div class="dl-right"><b>'+hhmmTxt+'까지</b></div>'+
         '<button class="dl-x" title="마감선만 삭제">✕</button>';
       var pb=dl.querySelector('.dl-play');if(pb)pb.addEventListener('click',function(e){e.stopPropagation();startFocus(t);});
       // D2-2 마감 동그라미: 완료 토글 (보상 지급 + 취소선)
@@ -3808,7 +3904,13 @@
       dl.querySelector('.dl-x').addEventListener('click',function(e){e.stopPropagation();
         t.scheduledStart=null;t.planDueAt=null;
         renderBig();renderMosaic();renderTodo();pushSnapshot();});
-      if(editBarOn&&t.id===selDueId)dl.classList.add('selected');
+      /* 아웃라인이 뜨는 두 경우 (요청 ⑥):
+         ① 편집 모드에서 지금 고른 선 하나.
+         ② **마감집게를 끄는 동안**엔 조작 대상(지금 선 아래 미완료) 전부 —
+            "이 집게가 무엇을 움직이는지"를 잡은 순간에 보여 준다.
+            놓으면 다시 ①만 남는다. */
+      if(editBarOn&&t.id===selDueId)dl.classList.add('outlined');
+      if(clampDragging&&!t.isDone&&nowHf!=null&&hf>nowHf)dl.classList.add('outlined');
       /* 편집 모드에선 마감선을 건드리면 **그 선이 선택**된다 (요청).
          예전엔 편집 bar의 ▲▽로만 옮길 수 있어, 고치려는 선을 눈으로 보면서
          화살표를 여러 번 눌러야 했다. 드래그(마감 이동)와 겹치지 않게
@@ -3826,6 +3928,14 @@
       },true);
       if(!t.isDone)attachDueDrag(dl,t);
       sc.appendChild(dl);
+      if(prevDueTops&&prevDueTops[t.id]!=null&&Math.abs(prevDueTops[t.id]-y)>0.5){
+        dl.style.top=prevDueTops[t.id]+'px';
+        dl.classList.add('sync-move');
+        (function(el,ny){requestAnimationFrame(function(){requestAnimationFrame(function(){
+          el.style.top=ny+'px';
+          setTimeout(function(){el.classList.remove('sync-move');},340);
+        });});})(dl,y);
+      }
     });
     var nf=(nowHf!=null)?nowHf:TS+1.5;   // 라벨과 **같은 수** (위 참조)
     if(dayOffset===0){
@@ -3848,11 +3958,30 @@
       labRects.forEach(function(l){l.el.classList.toggle('narrow',!!res.lab[l.key]);});
       /* 좁힘이 정해진 뒤에 넘침을 잰다 — 좁아지면 폭이 달라지므로 순서가 중요. */
       dueTops.forEach(function(d){
-        var ti=d.el.querySelector('.dl-title');if(!ti)return;
+        var tx=d.el.querySelector('.dl-text'),ti=d.el.querySelector('.dl-title');
+        if(!tx||!ti)return;
         d.el.classList.remove('twoline');
-        if(ti.scrollWidth>ti.clientWidth+1)d.el.classList.add('twoline');
+        if(!(ti.scrollWidth>ti.clientWidth+1))return;   // 한 줄에 들어간다
+        d.el.classList.add('twoline');
+        /* 2줄이 됐으면 이름 끝을 `…`로 깎아 **duration이 밀려나지 않게** 한다
+           (요청 ②: 길이는 절대 안 잘린다). 인라인 흐름이라 CSS만으론 못 하고,
+           들어가는 최대 글자 수를 이분탐색으로 찾는다. 2줄이 된 마감선에만
+           도는 경로라 레이아웃 읽기 비용도 그만큼만 든다. */
+        var full=ti.dataset.full||ti.textContent;ti.dataset.full=full;
+        var lh=parseFloat(getComputedStyle(tx).lineHeight)||14,maxH=lh*2+1;
+        if(tx.scrollHeight<=maxH)return;
+        var lo=0,hi=full.length;
+        while(lo<hi){
+          var mid=Math.ceil((lo+hi)/2);
+          ti.textContent=full.slice(0,mid)+'…';
+          if(tx.scrollHeight<=maxH)lo=mid;else hi=mid-1;
+        }
+        ti.textContent=full.slice(0,lo)+'…';
       });
       blkRects.forEach(function(b){b.el.classList.toggle('pushed',!!res.blk[b.key]);});
+      // 빗금은 제 블록과 **같은 폭**이어야 한 덩어리로 읽힌다.
+      [...sc.querySelectorAll('.plan-hatch')].forEach(function(el){
+        el.classList.toggle('pushed',!!res.blk[el.dataset.bkey]);});
     })();
     addBatchHandles(sc);                                  // 배치 조절 핸들 (요청)
     addDueClamp(sc);                                      // 마감집게 (D2-3)
@@ -3863,6 +3992,7 @@
     updateTlSky();
     if(prevScroll!=null){sc.scrollTop=prevScroll;}
     else setTimeout(function(){sc.scrollTop=Math.max(0,yFor(nf)-60);updateTlSky();},30);
+    syncAnimPending=false;      // 한 번의 원격 반영에 한 번만 (⑤)
     var lbl=dayOffset===0?'오늘':dayOffset===-1?'어제':dayOffset===1?'내일':'';
     try{document.getElementById('tlDate').textContent=selDate().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'})+(lbl?' · '+lbl:'');}catch(e){}
   }
@@ -4097,7 +4227,11 @@
   // 타임라인 스크롤 잠금 — 마감선·캡슐을 끄는 동안 화면이 같이 밀리지 않게.
   var tlDragging=false;
   document.addEventListener('touchmove',function(e){if(tlDragging)e.preventDefault();},{passive:false});
-  function durLabel(m){return m>=60?(Math.floor(m/60)+'시간'+(m%60?' '+(m%60)+'분':'')):(m+'분');}
+  /* 시간 길이 표기는 **앱·웹·모든 화면이 하나**다: `3h 30m` · `45m` · `2h`
+     (요청 2026-07-23). 예전의 '1시간 30분'은 같은 뜻을 두 글꼴 폭으로 쓰게 해
+     타임라인에서 자리를 예약해 두기 어려웠고, 마감선·할일·매트릭스가 서로
+     다른 표기를 섞어 썼다. hmText 하나로 모은다. */
+  function durLabel(m){return hmText(m);}
 
   var REWARD_EXAMPLES=['좋아하는 카페 가기','치킨 시켜 먹기','영화 한 편','낮잠 30분','달콤한 디저트','게임 한 판','산책 다녀오기','웹툰 정주행'];
   function moneyStr(n){return (n||0).toLocaleString('ko-KR')+'원';}
@@ -5555,13 +5689,17 @@
           T=Math.max(base.getTime()+TS*3600000,Math.min(base.getTime()+TE*3600000,T));
           dropAt=T;
           var d=new Date(T),hf=d.getHours()+d.getMinutes()/60;
+          // 매트릭스에서 끌어올 때도 **같은 고스트** — 할일에서 끌 때와 다르면
+          // 같은 동작이 두 얼굴을 갖는다 (요청 ②).
           if(!gdue){gdue=document.createElement('div');gdue.className='ghost-due';
-            gdue.innerHTML='<div class="gd-wire"></div><div class="gd-lab"></div>';sc.appendChild(gdue);}
+            gdue.innerHTML='<div class="gd-wire"></div><div class="gd-lab"></div><div class="gd-cap"></div>';
+            sc.appendChild(gdue);}
           gdue.style.top=yFor(hf)+'px';
           var anchor=dropAnchorMs(T,t),avail=Math.max(0,Math.round((T-anchor)/60000));
-          gdue.querySelector('.gd-lab').innerHTML=
-            ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+'까지'+
-            '<i>'+((anchor>Date.now()+1000)?'이전 마감부터':'지금부터')+' '+durLabel(avail)+'</i>';
+          gdue.querySelector('.gd-lab').innerHTML='<b>'+esc(t.title||'')+'</b>'+
+            (avail>0?'<i>'+hmText(avail)+'</i>':'');
+          gdue.querySelector('.gd-cap').textContent=
+            ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+'까지';
           ev.preventDefault();return;
         }
         dropAt=null;if(gdue){gdue.remove();gdue=null;}
@@ -7399,6 +7537,7 @@
       // fTask는 옛 DATA.tasks를 가리키던 참조 — 새 배열에서 다시 찾지 않으면
       // 이후 편집이 버려진 객체에 쓰인다 (집중 중 pull의 잠복 버그).
       if(fTask){var again=taskByID(fTask.id);if(again)fTask=again;}
+      syncAnimPending=true;      // ⑤ 원격 반영 — 마감선은 미끄러져 이동한다
       renderAll();
       paintPomoChip();   // 원격에서 포모도로 설정이 바뀌었을 수 있다 (요청)
       // 되살아난 게 있었으면 지운 상태를 다시 올린다 — 그래야 앱도 따라 지운다.
@@ -7947,13 +8086,17 @@
       dropAt=T;
       var d=new Date(T),hf=d.getHours()+d.getMinutes()/60;
       if(!gdue){gdue=document.createElement('div');gdue.className='ghost-due';
-        gdue.innerHTML='<div class="gd-wire"></div><div class="gd-lab"></div>';sc.appendChild(gdue);}
+        gdue.innerHTML='<div class="gd-wire"></div><div class="gd-lab"></div><div class="gd-cap"></div>';
+        sc.appendChild(gdue);}
       gdue.style.top=yFor(hf)+'px';
+      /* 추가 뒤 마감선과 **같은 값·같은 자리**: 왼쪽엔 이름 + 여기까지 남은 시간,
+         오른쪽 캡슐엔 `hh:mm까지`. 예전엔 '지금부터 2시간' 한 덩어리가 선 위에
+         떠 있다가, 놓는 순간 전혀 다른 배치로 바뀌었다 (요청 ②). */
       var anchor=dropAnchorMs(T,t),avail=Math.max(0,Math.round((T-anchor)/60000));
-      var fromLbl=(anchor>Date.now()+1000)?'이전 마감부터':'지금부터';
-      gdue.querySelector('.gd-lab').innerHTML=
-        ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+'까지'+
-        '<i>'+fromLbl+' '+durLabel(avail)+'</i>';
+      gdue.querySelector('.gd-lab').innerHTML='<b>'+esc(t.title||'')+'</b>'+
+        (avail>0?'<i>'+hmText(avail)+'</i>':'');
+      gdue.querySelector('.gd-cap').textContent=
+        ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+'까지';
     }
     function end(){
       window.removeEventListener('pointermove',move);
@@ -8479,7 +8622,7 @@
   function pollSync(){
     if(document.hidden||!session||pushTimer||pushing)return;
     if(domainsOK!==false&&(domTick++%5)===0)
-      pullDomains().then(function(any){if(any)renderAll();});
+      pullDomains().then(function(any){if(any){syncAnimPending=true;renderAll();}});
     freshToken().then(function(tok){if(!tok)throw 0;
       return fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=updated_at,device_id',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok}});})
     .then(function(r){return r.json();}).then(function(rows){
