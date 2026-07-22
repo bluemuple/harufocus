@@ -3344,9 +3344,14 @@
   /* 화면에 그려진 '지금' 선의 시간분수 — 창(기상~취침) 밖이면 TS+1.5로
      대체된다. 마감선 라벨·연필 선택이 **모두 이 값을 기준**으로 해야
      그림과 어긋나지 않는다 (요청 버그: 지금 선 위 마감선이 '아래'로 잡혔다). */
+  /* ⚠⚠ **시간을 속이지 않는다** (요청 버그: 새벽 5시 12분인데 '지금' 선이
+     08:30에 있었다). 예전엔 지금이 기상 시각보다 이르면 `TS+1.5`라는 **가짜
+     자리**를 돌려줬다 — 그러면 선만 틀리는 게 아니라 '남음/지남', 블록 위치,
+     가장 가까운 마감 판정까지 전부 그 거짓말 위에서 계산된다.
+     화면 밖으로 나가는 문제는 renderBig이 **타임라인 범위를 넓혀서** 푼다. */
   function nowHourFrac(){
     if(dayOffset!==0)return null;
-    var h=hourFrac(Date.now());return h<TS?TS+1.5:h;
+    return hourFrac(Date.now());
   }
   function nearestDueId(){
     var lines=todayDueLines(false);if(!lines.length)return null;
@@ -3622,11 +3627,39 @@
     TS=Math.max(0,Math.floor((sset.wakeMinutes!=null?sset.wakeMinutes:420)/60));
     TE=Math.min(24,Math.ceil((sset.bedMinutes!=null?sset.bedMinutes:1380)/60));
     if(TE<=TS+2)TE=24;
+    /* '지금'이 기상 전(또는 취침 후)이면 **그 시각까지 범위를 넓힌다** —
+       지금 선을 가짜 자리에 그리는 대신, 진짜 자리가 보이게 한다. 오늘만. */
+    if(dayOffset===0){
+      var nowH=hourFrac(Date.now());
+      if(nowH<TS)TS=Math.max(0,Math.floor(nowH));
+      if(nowH>TE)TE=Math.min(24,Math.ceil(nowH));
+    }
     var sc=document.getElementById('tlScroll');
     var prevScroll=(batchIds!=null||tlDragging)?sc.scrollTop:null;   // 배치/드래그 중 스크롤 유지
     sc.innerHTML='';
     // 요청: 취침(마감) 시각 줄엔 오른쪽 끝에 '취침' 표시 + 그 아래 설정 안내.
     var bedH=Math.floor(((DATA.settings&&DATA.settings.bedMinutes!=null)?DATA.settings.bedMinutes:1380)/60);
+    /* ⚠ 오늘의 **기록·계획이 범위 밖이면 그것까지 넓힌다**. 예전엔 기상
+       시각(TS) 위에서 끝난 집중 블록이 음수 top으로 그려져 **화면에서 잘려
+       사라졌다** — 앱에서 새벽에 끝낸 집중이 웹에 안 보이던 원인(요청).
+       타임라인은 그날 실제로 있었던 일을 다 담아야 한다. */
+    (function(){
+      var k=selKey();
+      (dayRecordBlocks(k)||[]).forEach(function(b){
+        var bs=new Date(b.start),be=new Date(b.end);
+        var sf=hourFrac(b.start);
+        if(sf<TS)TS=Math.max(0,Math.floor(sf));
+        if(be.getDate()===bs.getDate()){var ef=hourFrac(b.end);if(ef>TE)TE=Math.min(24,Math.ceil(ef));}
+      });
+      (DATA.tasks||[]).forEach(function(t){
+        if(!t.scheduledStart||(t.durationMin||0)<=0||t.isRewardItem)return;
+        if(dateKey(taskDueAt(t).toISOString())!==k)return;
+        var sf=hourFrac(new Date(t.scheduledStart).getTime());
+        var df=hourFrac(taskDueAt(t).getTime());
+        if(sf<TS)TS=Math.max(0,Math.floor(sf));
+        if(df>TE)TE=Math.min(24,Math.ceil(df));
+      });
+    })();
     var html='';for(var h=TS;h<=TE;h++){var isBed=((h%24)===bedH);
       html+='<div class="hour'+(isBed?' bed':'')+'"><span class="lbl">'+(h%24).toString().padStart(2,'0')+':00</span><span class="rule"></span>'
         +(isBed?'<span class="bedmark">\u{1F319} 취침</span><span class="bedhint">취침 시각은 설정에서 바꿀 수 있어요</span>':'')+'</div>';}
