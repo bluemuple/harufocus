@@ -82,15 +82,20 @@
   .eb-slider.drag{background:rgba(255,255,255,.22);color:#fff}
   .eb-slider.drag i{background:#fff}
   @media(min-width:1100px){.edit-bar{left:10px;right:auto;width:380px;bottom:74px}}
-  /* ⑥ 편집 모드 선택 표시 (요청 2026-07-23) — 예전의 **둥근 네모 선택 상자를
-     없앴다**. 상자는 이름·기호까지 통째로 감싸 "무엇이 선택됐나"보다 "네모가
-     하나 더 생겼다"로 읽혔다.
-     지금은 **▶ + 마감선 + 오른쪽 캡슐을 한 몸으로 두르는 1px 아웃라인**이다:
-     왼쪽 끝은 ▶ 동그라미(left:41)에서 시작해 오른쪽 캡슐 끝에서 닫힌다.
-     ▶를 따로 두르지 않으므로 ▶와 선이 한 몸으로 보인다.
-     색은 낮=어두운 잉크 / 밤=밝은 잉크 — --onSky가 이미 그렇게 뒤집힌다. */
-  .dueline.outlined::after{content:"";position:absolute;left:41px;right:0;top:-15px;height:30px;
-    border:1px solid var(--onSky,#141827);opacity:.55;border-radius:15px;pointer-events:none}
+  /* ⑥ 편집 모드 선택 표시 = **채움 반전** (요청 2026-07-23, 유저가 고른 안).
+     예전의 둥근 네모 아웃라인은 삭제 — 상자는 "무엇이 선택됐나"보다 "네모가
+     하나 더 생겼다"로 읽혔고, 이미 가로선이 빽빽한 화면에 획을 하나 더 얹었다.
+     지금은 고른 마감선의 **▶·선·캡슐이 통째로 잉크색**(낮=어두운·밤=밝은)이
+     된다. '선택 = 채워짐'이라는 익숙한 규칙이라 설명이 필요 없고, 집게를
+     끌면 대상 전부가 같이 반전돼 몇 개가 움직이는지 한눈에 읽힌다.
+     ⚠ 잉크 위에 얹히는 글자는 **잉크의 정반대**여야 한다 — 낮 잉크는 어두우니
+       글자는 밝게, 밤 잉크는 밝으니 글자는 어둡게(.tl-night가 뒤집는다). */
+  .dueline.selfill .dl-wire{background:var(--onSky,#141827);opacity:1}
+  .dueline.selfill .dl-play,.dueline.selfill .dl-right{background:var(--onSky,#141827)}
+  .dueline.selfill .dl-play{color:#F5F7FF}
+  .dueline.selfill .dl-right b{color:#F5F7FF}
+  .tl-night .dueline.selfill .dl-play{color:#141827}
+  .tl-night .dueline.selfill .dl-right b{color:#141827}
   /* 마감집게 (D2-3) */
   .due-clamp{position:absolute;left:15%;width:70%;z-index:5;text-align:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
   .due-clamp .dc-n{color:#F5BFCE;font-weight:800}
@@ -3950,8 +3955,8 @@
          ② **마감집게를 끄는 동안**엔 조작 대상(지금 선 아래 미완료) 전부 —
             "이 집게가 무엇을 움직이는지"를 잡은 순간에 보여 준다.
             놓으면 다시 ①만 남는다. */
-      if(editBarOn&&t.id===selDueId)dl.classList.add('outlined');
-      if(clampDragging&&!t.isDone&&nowHf!=null&&hf>nowHf)dl.classList.add('outlined');
+      if(editBarOn&&t.id===selDueId)dl.classList.add('selfill');
+      if(clampDragging&&!t.isDone&&nowHf!=null&&hf>nowHf)dl.classList.add('selfill');
       /* 편집 모드에선 마감선을 건드리면 **그 선이 선택**된다 (요청).
          예전엔 편집 bar의 ▲▽로만 옮길 수 있어, 고치려는 선을 눈으로 보면서
          화살표를 여러 번 눌러야 했다. 드래그(마감 이동)와 겹치지 않게
