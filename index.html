@@ -1729,8 +1729,10 @@
      하면 정렬이 맞는다. 따로 자르면 손이 허공을 짚는다. */
   .me-stage{position:relative;width:100%;aspect-ratio:420/415;margin:2px 0 6px}
   .me-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
-  .me-hand{opacity:0;transform:translate(14%,14%);
-    transition:opacity .34s ease,transform .5s cubic-bezier(.22,1,.36,1)}
+  /* ⚠ 새 손 그림은 **팔이 길어져** 예전 거리(14%)로는 들어오는 느낌이 안 나고
+     제자리에서 나타나는 것처럼 보인다 — 화면 밖에서 들어오도록 더 멀리서. */
+  .me-hand{opacity:0;transform:translate(34%,26%);
+    transition:opacity .34s ease,transform .55s cubic-bezier(.22,1,.36,1)}
   .me-stage.care .me-hand{opacity:1;transform:none}
   /* 집중 중: 툭 치고 **물러난다** (방해하지 않는 게 이 상태의 전부다). */
   .me-stage.care.withdraw .me-hand{opacity:0;transform:translate(18%,18%)}
@@ -5161,8 +5163,10 @@
     /* 할 일이 하나도 없을 때 (요청 set_d): 글자 한 줄 대신 **빈 노트 앞에 앉아
        기다리는 엘리**. ⚠ 엘리는 말하지 않는다 — 한 줄은 내 말투로 남긴다. */
     if(!scheduled.length&&!backlog.length){
-      list.innerHTML='<div class="scene-empty"><img src="assets/scene_empty.png" alt="">'+
+      list.innerHTML='<div class="scene-empty"><img id="seImg" src="assets/scene_empty.png" alt="">'+
         '<div class="se-line">오늘은 아직 비어 있어. 하나만 적어 볼까.</div></div>';
+      eleWordImg('scene_empty',eleTint(),function(u){
+        var el=document.getElementById('seImg');if(el&&u)el.src=u;});
       return;}
     if(scheduled.length){
       var mon=(calSel.getMonth()+1),day=calSel.getDate();
@@ -9548,7 +9552,11 @@
   var AVATAR_STATES=['focus','phone','distract','overload','messy','tired','refuse'];
   function avatarSVG(state){
     var st=(AVATAR_STATES.indexOf(state)>=0)?state:'focus';
-    return '<img src="assets/avatar_'+st+'.png" alt="" aria-hidden="true">';
+    // 유저가 고른 색을 **몸에만** 굽는다 — 소품은 `-fix`로 원색 그대로(eleWordImg 규약).
+    var id='ava-'+st+'-'+Math.random().toString(16).slice(2,7);
+    eleWordImg('avatar_'+st,eleTint(),function(u){
+      var el=document.getElementById(id);if(el&&u)el.src=u;});
+    return '<img id="'+id+'" src="assets/avatar_'+st+'.png" alt="" aria-hidden="true">';
   }
   /* 지금 내 상태 → 아바타 (설계 법칙: 엘리는 마스코트가 아니라 **내 마음**이다.
      말은 캡슐 글이 하고, 엘리는 **보여주기만** 한다).
@@ -9769,8 +9777,18 @@
   /* 무대에 전신 엘리를 세우고, care면 돌봄 손이 들어온다. */
   function paintMeStage(k,care){
     var st=document.getElementById('meStage');if(!st)return;
-    document.getElementById('meFull').src='assets/full_'+k+'.png';
-    document.getElementById('meHand').src='assets/hand_'+k+'.png';
+    var full=document.getElementById('meFull'),hand=document.getElementById('meHand');
+    full.src='assets/full_'+k+'.png';
+    eleWordImg('full_'+k,eleTint(),function(u){if(u&&full.dataset.k===k)full.src=u;});
+    full.dataset.k=k;
+    /* ⚠ **폰 상태엔 손을 넣지 않는다** (요청): 폰을 보는데 손이 다가오면 어떤
+       모양이든 '내놔'로 읽힌다 — 필요한 건 재촉이 아니라 왜 들었는지 묻는 것뿐. */
+    hand.style.display=(k==='phone')?'none':'';
+    if(k!=='phone'){
+      hand.src='assets/hand_'+k+'.png';
+      eleWordImg('hand_'+k,eleTint(),function(u){if(u&&hand.dataset.k===k)hand.src=u;});
+      hand.dataset.k=k;
+    }
     document.getElementById('meLine').textContent=care?(ME_LINE[k]||''):'';
     document.getElementById('meBubble').classList.toggle('hide',!care);
     /* ⚠ 손은 **다시 들어와야** 한다: 클래스가 이미 붙어 있으면 transition이
@@ -9788,8 +9806,13 @@
     var cur=manualState();
     g.innerHTML=AVATAR_STATES.map(function(k){
       return '<button class="me-item'+(k===cur?' on':'')+'" data-me="'+k+'">'
-        +'<img src="assets/avatar_'+k+'.png" alt="">'+ME_LABEL[k]+'</button>';
+        +'<img id="mei-'+k+'" src="assets/avatar_'+k+'.png" alt="">'+ME_LABEL[k]+'</button>';
     }).join('');
+    // 고른 색은 그리드에도 똑같이 (한 화면에 두 색이면 딴 코끼리로 보인다).
+    AVATAR_STATES.forEach(function(k){
+      eleWordImg('avatar_'+k,eleTint(),function(u){
+        var el=document.getElementById('mei-'+k);if(el&&u)el.src=u;});
+    });
     // 열 때는 지금 상태를 그냥 보여 준다 — 손은 **내가 고른 뒤에만** 들어온다.
     paintMeStage(cur||avatarState(),false);
     document.getElementById('meAct').innerHTML='';
