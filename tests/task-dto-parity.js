@@ -56,6 +56,29 @@ const made = newTask({});
 const missing = required.filter((f) => made[f] === undefined);
 t('newTask()가 앱 필수 필드를 모두 채운다 (빠지면: ' + missing.join(',') + ')', missing.length === 0);
 
+/* ⚠⚠ **undefined를 넘겨도 살아남는가** — 2026-07-22에 이걸로 동기화가 통째로
+   멈췄다. 캡처 패널이 `colorKey: cap.draft.colorKey`로 undefined를 넘겼고,
+   Object.assign이 기본값 ''를 덮어썼고, JSON.stringify가 그 키를 빼 버렸고,
+   앱은 `keyNotFound("colorKey")`로 **스냅샷 전체**를 못 읽었다.
+   그래서 여기선 **JSON 왕복 뒤에** 필드가 살아 있는지 본다 — 객체에 키가
+   있는지만 보면 undefined를 놓친다. */
+const sloppy = newTask({ title: 'x', colorKey: undefined, categoryID: undefined,
+  notes: undefined, repeatDaysMask: undefined, reminderOffsets: undefined,
+  nudgeEnabled: undefined, durationMin: undefined, subtasksJSON: undefined });
+const round = JSON.parse(JSON.stringify(sloppy));
+const lost = required.filter((f) => round[f] === undefined);
+t('undefined를 넘겨도 필수 필드가 JSON에 남는다 (사라지면: ' + lost.join(',') + ')', lost.length === 0);
+
+// 이미 망가진 작업을 고쳐 주는가 (자가 회복 — 서버에 남은 옛 데이터).
+const healTask = new Function('uuid', 'newTask',
+  grab('healTask') + '; return healTask;')(
+  () => '00000000-0000-0000-0000-000000000000', newTask);
+const broken = JSON.parse(JSON.stringify(newTask({ title: 'x' })));
+delete broken.colorKey; delete broken.notes; delete broken.reminderOffsets;
+const healed = JSON.parse(JSON.stringify(healTask(broken)));
+const still = required.filter((f) => healed[f] === undefined);
+t('healTask()가 빠진 필수 필드를 메운다 (남으면: ' + still.join(',') + ')', still.length === 0);
+
 // ── 작업을 **공장 밖에서** 만들어 밀어 넣는 곳이 없는가 ──────────────────
 /* addTask()/newTask() 안의 push는 정상. 그 밖에서 DATA.tasks.push(...)를
    직접 하면 필드가 빠질 위험이 그대로 살아난다. */

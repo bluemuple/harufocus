@@ -3966,7 +3966,15 @@
     return u.toUpperCase();  // Swift UUID 관례
   }
   // 앱 TaskDTO의 모든 필수 필드를 채운 새 작업 (누락 시 앱 디코딩 실패 방지).
-  function newTask(o){return Object.assign({
+  /* ⚠⚠ **undefined는 무시한다** — 이걸 어기면 동기화가 통째로 멈춘다.
+     `Object.assign`은 값이 undefined인 키도 **덮어쓰고**, `JSON.stringify`는
+     그 키를 **통째로 빼 버린다**. 그러면 앱 `TaskDTO`의 필수 필드가 없는
+     작업이 스냅샷에 섞이고, 앱은 **스냅샷 전체 디코딩에 실패**해 할 일·매트릭스·
+     타임라인이 전부 멈춘다(2026-07-22 실제 발생: 캡처 패널의 `colorKey`가
+     undefined였다 — 폰 로그 `keyNotFound("colorKey") … tasks[7]`).
+     그러니 호출부가 `colorKey:cap.draft.colorKey`처럼 무심코 undefined를
+     넘겨도 여기서 막는다. */
+  function newTask(o){var d=Object.assign({
     id:uuid(),title:'',categoryID:'focus',colorKey:'',iconName:null,repeatDaysMask:0,
     scheduledStart:null,durationMin:0,isDone:false,isStarred:false,notes:'',dueDate:null,
     matrixQuadrant:0,countTarget:0,countDone:0,subtasksJSON:'[]',recurrenceRaw:'',
@@ -3974,7 +3982,24 @@
     focusLockUsed:false,actualFocusedSec:0,cumulativeFocusedSec:0,lastFocusedAt:null,
     createdAt:new Date().toISOString(),restSpansJSON:'[]',completedAt:null,
     rewardText:'',rewardMoney:0,rewardToQ4:false,isRewardItem:false,rewardGranted:false,matrixSort:0
-  },o||{});}
+  });
+    Object.keys(o||{}).forEach(function(k){if(o[k]!==undefined)d[k]=o[k];});
+    return d;}
+  /* 이미 서버에 올라간 **망가진 작업을 고친다** — 필수 필드가 빠진 게 있으면
+     기본값으로 메운다. 이게 있어야 한 번 망가진 계정이 스스로 회복한다
+     (고쳐진 객체가 다음 push에 그대로 올라간다). */
+  function healTask(t){
+    if(!t||typeof t!=='object')return t;
+    var d=newTask({});
+    Object.keys(d).forEach(function(k){
+      if(k==='id'||k==='createdAt')return;               // 새로 만들면 안 되는 것
+      if(t[k]===undefined)t[k]=d[k];
+    });
+    if(!t.id)t.id=uuid();
+    if(!t.createdAt)t.createdAt=new Date().toISOString();
+    return t;
+  }
+  function healTasks(a){return (a||[]).map(healTask);}
   function setPlanFromSchedule(t){                      // planDueAt = 만들 때 계획 끝 (§1·§2)
     if(t.scheduledStart&&(t.durationMin||0)>0)
       t.planDueAt=new Date(new Date(t.scheduledStart).getTime()+t.durationMin*60000).toISOString();
@@ -7240,6 +7265,8 @@
       if(dm[d.k]&&!(o[d.k]&&o[d.k].length)&&prev&&prev[d.k]&&prev[d.k].length)o[d.k]=prev[d.k];
     });
     ensureIds(o);
+    // 서버에 이미 망가진 작업이 있으면 여기서 고쳐 받는다 (자가 회복).
+    o.tasks=healTasks(o.tasks);
     return o;
   }
   // id 보장 (버그): DEMO 시드·구 데이터엔 id가 없어 t.id가 전부 undefined였다.
@@ -7328,7 +7355,9 @@
     return d;}
   function currentSnap(){
     serverSnap=serverSnap||{schemaVersion:1,tasks:[],habits:[],sessions:[],settings:null};
-    serverSnap.tasks=DATA.tasks;serverSnap.habits=DATA.habits;
+    /* ⚠ 올리기 직전에 한 번 더 메운다 — 필수 필드가 빠진 작업이 하나라도
+       올라가면 앱이 스냅샷 **전체**를 못 읽어 모든 동기화가 멈춘다. */
+    serverSnap.tasks=healTasks(DATA.tasks);serverSnap.habits=DATA.habits;
     serverSnap.sessions=(DATA.sessions&&DATA.sessions.length)?DATA.sessions:(serverSnap.sessions||[]);
     if(DATA.settings)serverSnap.settings=DATA.settings;
     // diary 왕복 보존 (앱 핸드오프 §8): 서버에 있었거나 웹이 항목을 만든 경우에만 실어 보낸다.
