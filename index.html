@@ -721,6 +721,12 @@
   .sub-del{position:absolute;top:0;bottom:0;right:0;width:64px;border:0;background:#FF3B30;color:#fff;
     cursor:pointer;display:grid;place-items:center;padding:0}   /* 모서리는 행의 overflow:hidden이 깎는다 */
   .sub-del svg{width:17px;height:17px}
+  /* 오른쪽으로 밀면 나오는 '타임라인으로' (요청) — 부모 bar의 같은 액션과 한 쌍.
+     ⚠ 버튼은 행 **뒤**에 깔리고 미는 건 .sub-in뿐이라, 닫혀 있으면 불투명한
+     안쪽에 완전히 가려진다(빨강이 비치던 버그와 같은 규칙). */
+  .sub-tl{position:absolute;top:0;bottom:0;left:0;width:64px;border:0;background:var(--sky-blue);color:#fff;
+    cursor:pointer;display:grid;place-items:center;padding:0}
+  .sub-tl svg{width:18px;height:18px}
   /* ⚠ 관성으로 튕기듯이 (요청) — 부모 bar와 같은 스프링 느낌. 살짝 넘어갔다
      돌아오는 곡선이라 손을 뗀 뒤가 '툭' 끊기지 않는다. */
   /* ⚠ 모서리는 **감싸는 행과 같아야** 한다 — 예전엔 안쪽이 12px, 행이 16px이라
@@ -746,6 +752,7 @@
   .mx-subs{display:flex;flex-direction:column;gap:4px;margin:-2px 0 6px 16px}
   .mx-sub{position:relative;border-radius:10px;overflow:hidden;box-shadow:0 2px 7px rgba(20,40,80,.10)}   /* 부모 .mtask와 같은 모서리 */
   .mx-sub .sub-in{gap:7px;padding:5px 9px;background:#fff;border-radius:10px}
+  .mx-sub .sub-del,.mx-sub .sub-tl{width:52px}
   .mx-sub .sub-del{width:52px}
   .mx-sub .sub-ck{width:17px;height:17px;flex:0 0 auto;border-radius:50%;border:2px solid var(--dc,#9aa3b2);
     display:grid;place-items:center;font-size:10px;font-weight:800;color:#fff;cursor:pointer}
@@ -1694,6 +1701,11 @@
   /* ⚠ inline 요소엔 transform이 안 먹는다 — 반드시 inline-block. */
   .mbtn .mlab{display:inline-block;transition:transform .18s cubic-bezier(.2,.8,.2,1),
     color .18s ease,opacity .18s ease;transform-origin:center top}
+  /* 하위 작업 수정 모드 (요청): 고칠 수 있는 건 제목뿐이라 나머지 줄은 접는다.
+     ⚠ 남겨 두면 색·길이를 바꿔도 저장되지 않아 '먹통 버튼'이 된다. */
+  #capWrap.sub-mode #iconPanelWrap,#capWrap.sub-mode #colorRowWrap,
+  #capWrap.sub-mode .cap-detail,#capWrap.sub-mode .cap-dot,
+  #capWrap.sub-mode .cap-icon{display:none}
   .mbtn.just .mlab{transform:scale(1.42);color:var(--ink);opacity:1}
   body.night .mbtn.just .mlab{color:#fff}
 
@@ -4959,7 +4971,8 @@
       /* ⚠ 배경은 행이 아니라 **.sub-in**에 준다 (요청 H3): 행은 이제 삭제
          버튼을 담는 틀이라, 행에 색을 칠하면 버튼이 그 밑에 깔려 안 보인다. */
       var r=document.createElement('div');r.className='subrow'+(s.isDone?' done':'');
-      r.innerHTML='<button class="sub-del" title="삭제">'+IC.trash+'</button>'+
+      r.innerHTML='<button class="sub-tl" title="타임라인으로">'+IC.sunrise+'</button>'+
+        '<button class="sub-del" title="삭제">'+IC.trash+'</button>'+
         /* ⚠ 틴트는 **불투명 바닥 위에** 얹는다 (요청 버그: 닫혔는데 삭제 버튼이
            비쳐 보임). 인라인 배경은 CSS의 `background:#fff`를 통째로 덮어써,
            10% 틴트만 남아 뒤 빨강이 그대로 비쳤다 — 앱 SubtaskRow가
@@ -4968,7 +4981,10 @@
         '<span class="subck'+(s.isDone?' done':'')+'" style="border-color:'+(s.isDone?'#8a93a5':col)+(s.isDone?';background:#8a93a5':'')+'"></span>'+
         '<span class="st">'+esc(s.title)+'</span></div>';
       r.querySelector('.subck').addEventListener('click',function(e){e.stopPropagation();toggleSubtask(t,i);});
-      attachSubSwipe(r,function(){deleteSubtask(t,i);});
+      /* 이름을 누르면 부모와 **같은 캡처 패널**이 열려 고칠 수 있다 (요청). */
+      r.querySelector('.st').addEventListener('click',function(e){
+        e.stopPropagation();openCapture('sub',{subOf:t,subIndex:i});});
+      attachSubSwipe(r,function(){deleteSubtask(t,i);},function(){subToTimeline(t,i);});
       panel.appendChild(r);
     });
     var add=document.createElement('div');add.className='subadd';
@@ -5114,11 +5130,32 @@
      ⚠ 미는 건 `.sub-in`뿐 — 삭제 버튼은 행 뒤에 깔려 있어야 드러난다.
      ⚠ 세로 잠금(lock)이 필수다: 안 걸면 목록을 세로로 훑을 때마다 행이
      좌우로 흔들린다. 부모 bar 스와이프(attachMxSwipe)와 같은 규칙. */
-  function attachSubSwipe(row,onDelete){
+  /* 열려 있는 하위 작업 줄 (요청: 다른 곳을 누르면 닫힌다). */
+  var subSwipeOpen=null;
+  function closeSubSwipe(){
+    if(!subSwipeOpen)return;
+    var el=subSwipeOpen;subSwipeOpen=null;
+    el.style.transition='transform .2s cubic-bezier(.3,0,.2,1)';
+    el.style.transform='translateX(0)';
+    if(el._subSet)el._subSet(0);
+    var r=el.closest('.subrow,.mx-sub');if(r)r.classList.remove('sw-open','sw-open-l');
+  }
+  /* ⚠ 캡처(pointerdown, capture 단계)로 잡는다 — 행 안의 버튼·체크는 자기
+     핸들러가 먼저 도는데, 그때도 '다른 줄'이면 닫아야 한다. */
+  document.addEventListener('pointerdown',function(e){
+    if(!subSwipeOpen)return;
+    if(e.target.closest('.subrow,.mx-sub')===subSwipeOpen.closest('.subrow,.mx-sub'))return;
+    closeSubSwipe();
+  },true);
+
+  function attachSubSwipe(row,onDelete,onTimeline){
     var inner=row.querySelector('.sub-in');if(!inner)return;
     var W=row.classList.contains('mx-sub')?52:64;
     var sx=0,sy=0,cur=0,base=0,drag=false,lock='';
-    function set(x){cur=x;inner.style.transform='translateX('+x+'px)';row.classList.toggle('sw-open',x<-4);}
+    function set(x){cur=x;inner.style.transform='translateX('+x+'px)';
+      row.classList.toggle('sw-open',x<-4);row.classList.toggle('sw-open-l',x>4);
+      if(x)subSwipeOpen=inner;else if(subSwipeOpen===inner)subSwipeOpen=null;}
+    inner._subSet=set;
     inner.addEventListener('pointerdown',function(e){
       if(e.pointerType==='mouse')return;      // 마우스는 버튼이 늘 보이므로 스와이프 없음
       sx=e.clientX;sy=e.clientY;base=cur;drag=true;lock='';inner.style.transition='none';});
@@ -5127,17 +5164,41 @@
       if(!lock){if(Math.abs(dx)<6&&Math.abs(dy)<6)return;lock=Math.abs(dx)>Math.abs(dy)?'x':'y';}
       if(lock!=='x')return;e.preventDefault();
       /* 버튼 폭을 넘겨 더 밀면 **저항을 주고 조금만** 따라간다 — 손을 떼면
-         다시 오른쪽으로 돌아와 버튼이 제 폭으로 보인다 (요청). 딱 잘라
-         멈추면 '벽에 부딪힌' 느낌이라 더 밀 수가 없다. */
-      var x=base+dx;
+         다시 돌아와 버튼이 제 폭으로 보인다 (요청). 딱 잘라 멈추면 '벽에
+         부딪힌' 느낌이라 더 밀 수가 없다. 좌·우 같은 곡선. */
+      var x=base+dx,L=onTimeline?W:0;
       if(x<-W)x=-W-Math.min(26,Math.pow(-(x+W),0.6)*2.2);
-      set(Math.min(0,x));});
+      else if(x>L)x=L+Math.min(26,Math.pow(x-L,0.6)*2.2);
+      set(x);});
     function end(){if(!drag)return;drag=false;
       inner.style.transition='transform .2s cubic-bezier(.3,0,.2,1)';
-      set(cur<-W*0.5?-W:0);}
+      if(cur<-W*0.5)set(-W);
+      else if(onTimeline&&cur>W*0.5)set(W);
+      else set(0);}
     inner.addEventListener('pointerup',end);inner.addEventListener('pointercancel',end);
     var del=row.querySelector('.sub-del');
-    if(del)del.addEventListener('click',function(e){e.stopPropagation();onDelete();});
+    if(del)del.addEventListener('click',function(e){e.stopPropagation();closeSubSwipe();onDelete();});
+    var tl=row.querySelector('.sub-tl');
+    if(tl&&onTimeline)tl.addEventListener('click',function(e){e.stopPropagation();closeSubSwipe();onTimeline();});
+  }
+  /* 하위 작업을 **독립 작업으로 올려** 타임라인에 놓는다 (요청: 부모 bar의
+     '타임라인으로'와 같은 자리·같은 동작).
+     ⚠ 하위 작업엔 제목뿐이라 색·기호는 **부모에서 물려받는다** — 그래야
+     타임라인에서 어느 일에 딸린 것인지 알아본다.
+     ⚠ 올린 뒤엔 부모의 하위 목록에서 **뺀다**: 같은 일이 두 군데 남으면
+     어느 쪽을 체크해야 하는지 모른다. 실행 취소는 아래 undo bar가 받는다. */
+  function subToTimeline(t,i){
+    var a=parseSubs(t);if(!a[i])return;
+    var sub=a[i];
+    a.splice(i,1);t.subtasksJSON=JSON.stringify(a);
+    var slot=nextSlotToday();
+    var nt={id:uuid(),title:sub.title,categoryID:t.categoryID||'focus',
+      colorKey:t.colorKey||null,iconName:t.iconName||null,
+      durationMin:30,scheduledStart:todayAt(Math.floor(slot),(slot%1)*60),
+      isDone:!!sub.isDone,createdAt:new Date().toISOString()};
+    setPlanFromSchedule(nt);
+    (DATA.tasks=DATA.tasks||[]).push(nt);
+    renderAll();pushSnapshot();
   }
   /* 하위 작업 한 벌을 배열에서 빼고 저장 — 할일·매트릭스 공용. */
   function deleteSubtask(t,i){
@@ -5154,6 +5215,7 @@
     var col=taskDisplayColor(t);
     return '<div class="mx-subs" data-for="'+t.id+'">'+subs.map(function(s,i){
       return '<div class="mx-sub'+(s.isDone?' done':'')+'" data-i="'+i+'">'+
+        '<button class="sub-tl" title="타임라인으로">'+IC.sunrise+'</button>'+
         '<button class="sub-del" title="삭제">'+IC.trash+'</button>'+
         '<div class="sub-in"><span class="sub-ck'+(s.isDone?' on':'')+'" style="--dc:'+col+'">'+(s.isDone?'✓':'')+'</span>'+
         '<span class="sub-t">'+esc(s.title)+'</span></div></div>';
@@ -5434,7 +5496,10 @@
         wrap.querySelectorAll('.mx-sub').forEach(function(row){
           var i=+row.dataset.i;
           row.querySelector('.sub-ck').addEventListener('click',function(e){e.stopPropagation();toggleSubtask(pt,i);});
-          attachSubSwipe(row,function(){deleteSubtask(pt,i);});
+          // 이름 탭 = 캡처 패널로 수정 (요청, 할일 쪽과 같은 규칙).
+          var st=row.querySelector('.sub-t');
+          if(st)st.addEventListener('click',function(e){e.stopPropagation();openCapture('sub',{subOf:pt,subIndex:i});});
+          attachSubSwipe(row,function(){deleteSubtask(pt,i);},function(){subToTimeline(pt,i);});
         });
       });
       var qa=b.querySelector('.qadd-top');
@@ -8495,6 +8560,9 @@
   function openCapture(origin,opts){
     opts=opts||{};
     cap.open=true;cap.origin=origin;cap.editing=opts.task||null;
+    /* 하위 작업 수정 (요청): 부모와 **같은 패널**을 쓰되 고칠 수 있는 건
+       제목뿐이다(데이터가 {title,isDone}뿐). 색·기호·길이 줄은 CSS로 접는다. */
+    cap.editingSub=(origin==='sub'&&opts.subOf)?{t:opts.subOf,i:opts.subIndex}:null;
     // 앱 파리티: 열자마자 detail 줄 표시 — 타임라인은 길이 슬라이더, 그 외는 옵션 아이콘 줄.
     cap.detail=(origin==='timeline'?'duration':'options');cap.iconOpen=false;cap.colorOpen=false;cap.optionsOpen=true;cap.moreIcons=false;
     cap.draft={title:'',categoryID:(opts.categoryID||'focus'),
@@ -8522,9 +8590,14 @@
       cap.draft.matrixQuadrant=et.matrixQuadrant||0;
       cap.draft.subtasks=parseSubs(et);
     }
-    var _cta=document.getElementById('capText');_cta.value=cap.editing?(cap.draft.title||''):'';
+    if(cap.editingSub){
+      var _sa=parseSubs(cap.editingSub.t)[cap.editingSub.i];
+      cap.draft.title=(_sa&&_sa.title)||'';
+    }
+    var _cta=document.getElementById('capText');_cta.value=(cap.editing||cap.editingSub)?(cap.draft.title||''):'';
     _cta.placeholder=origin==='timeline'?'예: 35분 영어':(origin==='matrix'?'‘'+quadHint(cap.draft.matrixQuadrant)+'’에 담기…':'예: 30분 달리기');
     var wrap=document.getElementById('capWrap');wrap.classList.add('open');
+    wrap.classList.toggle('sub-mode',!!cap.editingSub);
     _cta.style.height='';   // 타임라인 2줄 placeholder가 잘리지 않게 (rows="1" 보정)
     if(origin==='timeline'){_cta.style.height='auto';_cta.style.height=Math.max(46,Math.min(_cta.scrollHeight,52))+'px';}
     var mb=document.querySelector('.mbar');if(mb)mb.style.display='none';
@@ -8535,7 +8608,8 @@
     setTimeout(positionCap,60);
   }
   function closeCapture(){
-    cap.editing=null;
+    cap.editing=null;cap.editingSub=null;
+    document.getElementById('capWrap').classList.remove('sub-mode');
     cap.open=false;
     document.getElementById('capText').blur();
     var wrap=document.getElementById('capWrap');wrap.classList.remove('open');wrap.style.bottom='';
@@ -8572,6 +8646,13 @@
   function submitCapture(){
     var raw=(document.getElementById('capText').value||'').trim();
     if(!raw)return;
+    // 하위 작업은 제목만 고친다 (요청).
+    if(cap.editingSub){
+      var sub=cap.editingSub,arr=parseSubs(sub.t);
+      if(arr[sub.i]){arr[sub.i].title=raw.split('\n')[0].trim();
+        sub.t.subtasksJSON=JSON.stringify(arr);}
+      closeCapture();renderAll();pushSnapshot();return;
+    }
     // 편집 모드 (요청): 새로 만들지 않고 그 작업을 갱신한다.
     if(cap.editing){
       var t=cap.editing,ti=raw.split('\n')[0].trim();
