@@ -5154,10 +5154,21 @@
 
   // 작업 막대 좌우 스와이프 → 뒤에 숨은 액션 버튼 노출 (요청: 폰).
   var swipeOpen=null;
+  /* ⚠ 매트릭스 bar(.mtask)도 같은 장부를 쓴다 (요청 2026-07-23): 예전엔
+     attachMxSwipe만 자기 클로저에 열린 상태를 감춰 둬, 매트릭스에서 한 줄을
+     열어 둔 채 다른 줄을 밀거나 빈 곳을 눌러도 그대로 열려 있었다. */
   function closeSwipe(){
-    if(!swipeOpen)return;var innerEl=swipeOpen,rowEl=innerEl.closest('.task');
+    if(!swipeOpen)return;var innerEl=swipeOpen,rowEl=innerEl.closest('.task,.mtask');
     innerEl.style.transition='transform .2s cubic-bezier(.3,0,.2,1)';innerEl.style.transform='translateX(0)';
     if(rowEl)rowEl.classList.remove('sw-left','sw-right','mx-open');swipeOpen=null;}
+  /* 열려 있는 스와이프는 **화면에 하나뿐**이다 (요청 2026-07-23).
+     할일 bar · 매트릭스 bar · 하위 작업 줄이 서로 다른 장부를 쓰던 탓에,
+     하나를 열어 둔 채 다른 줄을 밀면 둘 다 열린 채 남았다. 어느 줄이든
+     **밀기 시작하는 순간** 이걸 부른다. */
+  function closeOtherSwipes(mine){
+    if(swipeOpen&&swipeOpen!==mine)closeSwipe();
+    if(subSwipeOpen&&subSwipeOpen!==mine)closeSubSwipe();
+  }
   function attachSwipe(row,t,placed){
     var inner=row.querySelector('.task-inner'),sx=0,sy=0,cur=0,startCur=0,drag=false,lock='';
     var LW=128,RW=128;   // 오른쪽 스와이프(내일로+매트릭스) · 왼쪽 스와이프(타임라인+삭제)
@@ -5168,7 +5179,7 @@
     // ②오른쪽으로 밀면 왼쪽으로 튀었다. 시작값을 실제 transform에서 읽어 동기화한다.
     function curX(){var m=/translateX\((-?[\d.]+)px\)/.exec(inner.style.transform||'');return m?parseFloat(m[1]):0;}
     inner.addEventListener('pointerdown',function(e){if(e.pointerType==='mouse')return;
-      if(swipeOpen&&swipeOpen!==inner)closeSwipe();
+      closeOtherSwipes(inner);
       cur=curX();sx=e.clientX;sy=e.clientY;startCur=cur;drag=true;lock='';inner.style.transition='none';});
     inner.addEventListener('pointermove',function(e){if(!drag)return;
       var dx=e.clientX-sx,dy=e.clientY-sy;
@@ -5519,10 +5530,14 @@
   function closeSubSwipe(){
     if(!subSwipeOpen)return;
     var el=subSwipeOpen;subSwipeOpen=null;
-    el.style.transition='transform .2s cubic-bezier(.3,0,.2,1)';
+    var ease='.2s cubic-bezier(.3,0,.2,1)';
+    el.style.transition='transform '+ease;
     el.style.transform='translateX(0)';
+    var r=el.closest('.subrow,.mx-sub');
+    // 드러난 버튼 폭도 같이 되돌린다 — 밀다 만 채로 닫히면 폭이 늘어난 채 남는다.
+    if(r)r.querySelectorAll('.sub-del,.sub-tl').forEach(function(b){b.style.transition='width '+ease;});
     if(el._subSet)el._subSet(0);
-    var r=el.closest('.subrow,.mx-sub');if(r)r.classList.remove('sw-open','sw-open-l');
+    if(r)r.classList.remove('sw-open','sw-open-l');
   }
   /* ⚠ 캡처(pointerdown, capture 단계)로 잡는다 — 행 안의 버튼·체크는 자기
      핸들러가 먼저 도는데, 그때도 '다른 줄'이면 닫아야 한다. */
@@ -5535,14 +5550,29 @@
   function attachSubSwipe(row,onDelete,onTimeline){
     var inner=row.querySelector('.sub-in');if(!inner)return;
     var W=row.classList.contains('mx-sub')?52:64;
+    var delEl=row.querySelector('.sub-del'),tlEl=row.querySelector('.sub-tl');
     var sx=0,sy=0,cur=0,base=0,drag=false,lock='';
-    function set(x){cur=x;inner.style.transform='translateX('+x+'px)';
+    /* ⚠ 버튼 **폭이 밀린 만큼 자란다** (요청 2026-07-23): 예전엔 폭이 64로
+       못 박혀 있어, 버튼 폭을 넘겨 더 밀면 그 너머가 빈칸으로 뚫려 뒤 배경이
+       비쳤다 — "너무 왼쪽으로 밀면 빨간 버튼 왼쪽이 빨갛지 않다"는 그 증상.
+       폭을 max(W, 민 거리)로 두면 ①넘어간 자리까지 같은 색으로 차고
+       ②아이콘은 place-items:center라 **손을 따라 나갔다가 같이 돌아온다**.
+       좌(파랑 타임라인)·우(빨강 삭제) 같은 규칙. */
+    function paintReveal(x){
+      if(delEl)delEl.style.width=Math.max(W,-x)+'px';
+      if(tlEl)tlEl.style.width=Math.max(W,x)+'px';
+    }
+    function set(x){cur=x;inner.style.transform='translateX('+x+'px)';paintReveal(x);
       row.classList.toggle('sw-open',x<-4);row.classList.toggle('sw-open-l',x>4);
       if(x)subSwipeOpen=inner;else if(subSwipeOpen===inner)subSwipeOpen=null;}
     inner._subSet=set;
     inner.addEventListener('pointerdown',function(e){
       if(e.pointerType==='mouse')return;      // 마우스는 버튼이 늘 보이므로 스와이프 없음
-      sx=e.clientX;sy=e.clientY;base=cur;drag=true;lock='';inner.style.transition='none';});
+      closeOtherSwipes(inner);                // 화면에 열린 스와이프는 하나뿐 (요청)
+      sx=e.clientX;sy=e.clientY;base=cur;drag=true;lock='';
+      inner.style.transition='none';
+      if(delEl)delEl.style.transition='none';
+      if(tlEl)tlEl.style.transition='none';});
     inner.addEventListener('pointermove',function(e){
       if(!drag)return;var dx=e.clientX-sx,dy=e.clientY-sy;
       if(!lock){if(Math.abs(dx)<6&&Math.abs(dy)<6)return;lock=Math.abs(dx)>Math.abs(dy)?'x':'y';}
@@ -5555,7 +5585,11 @@
       else if(x>L)x=L+Math.min(26,Math.pow(x-L,0.6)*2.2);
       set(x);});
     function end(){if(!drag)return;drag=false;
-      inner.style.transition='transform .2s cubic-bezier(.3,0,.2,1)';
+      var ease='.2s cubic-bezier(.3,0,.2,1)';
+      inner.style.transition='transform '+ease;
+      // 폭도 같은 곡선으로 되돌아와야 아이콘이 내용과 한 몸으로 움직인다.
+      if(delEl)delEl.style.transition='width '+ease;
+      if(tlEl)tlEl.style.transition='width '+ease;
       if(cur<-W*0.5)set(-W);
       else if(onTimeline&&cur>W*0.5)set(W);
       else set(0);}
@@ -5612,8 +5646,13 @@
     function set(x){cur=x;inner.style.transform='translateX('+x+'px)';
       el.classList.toggle('sw-left',x>4);el.classList.toggle('sw-right',x<-4);}
     function doTomorrow(){var d=new Date();d.setDate(d.getDate()+1);d.setHours(0,0,0,0);t.deferredUntil=d.toISOString();renderAll();pushSnapshot();}
+    /* ⚠ 시작값은 클로저의 cur이 아니라 **실제 transform**에서 읽는다: 바깥에서
+       closeSwipe()가 닫으면 transform만 0이 되고 cur은 -100으로 남아, 살짝만
+       밀어도 확 열리고 반대로 밀면 튄다 (attachSwipe가 겪은 그 버그). */
+    function curX(){var m=/translateX\((-?[\d.]+)px\)/.exec(inner.style.transform||'');return m?parseFloat(m[1]):0;}
     inner.addEventListener('pointerdown',function(e){if(e.pointerType==='mouse')return;
-      sx=e.clientX;sy=e.clientY;startCur=cur;raw=cur;drag=true;lock='';inner.style.transition='none';});
+      closeOtherSwipes(inner);
+      cur=curX();sx=e.clientX;sy=e.clientY;startCur=cur;raw=cur;drag=true;lock='';inner.style.transition='none';});
     inner.addEventListener('pointermove',function(e){if(!drag||mxDragging)return;
       var dx=e.clientX-sx,dy=e.clientY-sy;
       if(!lock){if(Math.abs(dx)<6&&Math.abs(dy)<6)return;lock=Math.abs(dx)>Math.abs(dy)?'x':'y';}
@@ -5623,8 +5662,10 @@
       if(raw>LW)x=LW+(raw-LW)*0.3;   // 내일로 풀스와이프 오버드래그 (저항)
       set(x);});
     function end(){if(!drag)return;drag=false;inner.style.transition='transform .2s cubic-bezier(.3,0,.2,1)';
-      if(raw>LW+40){set(0);doTomorrow();return;}   // 풀스와이프 → 내일로 즉시 실행 (앱 파리티)
-      if(cur>LW*0.5)set(LW);else if(cur<-RW*0.5)set(-RW);else set(0);}
+      if(raw>LW+40){set(0);swipeOpen=null;doTomorrow();return;}   // 풀스와이프 → 내일로 즉시 실행 (앱 파리티)
+      if(cur>LW*0.5){set(LW);swipeOpen=inner;}
+      else if(cur<-RW*0.5){set(-RW);swipeOpen=inner;}
+      else{set(0);if(swipeOpen===inner)swipeOpen=null;}}
     inner.addEventListener('pointerup',end);inner.addEventListener('pointercancel',end);
     var bt=el.querySelector('.sa-tomorrow');if(bt)bt.addEventListener('click',doTomorrow);
     var bs=el.querySelector('.sa-star');if(bs)bs.addEventListener('click',function(){
@@ -9048,7 +9089,9 @@
   document.addEventListener('pointerdown',function(e){
     if(!swipeOpen)return;
     if(e.target.closest('.sa')||e.target.closest('.mx-pick'))return;
-    var row=e.target.closest('.task');
+    // ⚠ 매트릭스 bar(.mtask)도 같은 규칙 (요청): 예전엔 .task만 봐서, 매트릭스에서
+    //    열어 둔 줄이 빈 곳을 눌러도 안 닫혔다.
+    var row=e.target.closest('.task,.mtask');
     if(row&&row.contains(swipeOpen))return;              // 열린 행은 드래그 핸들러가 처리
     closeSwipe();
   },true);
