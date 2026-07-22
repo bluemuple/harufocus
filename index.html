@@ -13,6 +13,8 @@
   :root{
     --ink:#1b2436; --ink-soft:#5a6478; --line:#e6ebf3; --card:#fff; --card-2:#f6f8fc;
     --accent:#f2c14e; --sky-blue:#5b93e6;
+    /* '지금 나' 말풍선 테두리 — 그림에서 말을 떼어 내는 선이라 진해야 한다. */
+    --bub-line:#7b8494;
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -1721,13 +1723,30 @@
   .mbtn.just .mlab{transform:scale(1.42);color:var(--ink);opacity:1}
   body.night .mbtn.just .mlab{color:#fff}
 
-  /* '지금 나' 시트 — 캡슐 아바타를 눌러 내가 직접 상태를 고른다 (요청). */
-  .me-modal{max-width:340px}
+  /* '지금 나' 시트 — 캡슐 아바타를 눌러 내가 직접 상태를 고른다 (요청).
+     ⚠ 시트 높이를 **고정**한다: 얼굴을 바꿀 때마다 선택지 높이가 달라지는데,
+     늘어난 만큼 아래 얼굴 칸이 오르내리면 누르려던 자리가 도망간다(요청 버그).
+     높이를 못 박고 위 장면만 스크롤하면 얼굴 칸은 언제나 같은 자리다. */
+  .me-modal{max-width:340px;position:relative;overflow:hidden;
+    display:flex;flex-direction:column;height:min(86vh,660px);max-height:86vh}
+  /* 닫기는 **위**에 있어야 한다 — 아래 버튼은 내용이 길어지면 화면 밖으로 밀린다. */
+  .me-x{position:absolute;top:10px;right:12px;width:30px;height:30px;border:0;border-radius:50%;
+    background:var(--card-2);color:var(--ink-soft);font-size:13px;font-weight:800;cursor:pointer;
+    line-height:1;font-family:inherit;z-index:2}
+  /* ① 말풍선-엘리-선택지는 **한 장면**이다 (흰 배경 그대로). */
+  /* ⚠ 말풍선·엘리는 **줄어들지 않는다**(flex:0 0 auto): 선택지가 길면 엘리가
+     납작해진다(실제로 그렇게 났다 — 과부하에서 코끼리가 손톱만 해졌다).
+     남는 자리는 선택지가 갖고, 넘치면 선택지 안에서만 스크롤한다. */
+  .me-top{flex:1 1 auto;display:flex;flex-direction:column;overflow-y:auto}
+  .me-bubble,.me-stage{flex:0 0 auto}
+  /* ② 얼굴 고르는 칸 — 연한 배경 큰 라운드로 위 장면과 갈라 놓는다. */
+  .me-pick{flex:0 0 auto;background:var(--card-2);border-radius:20px;padding:8px 8px 6px;margin-top:8px}
+  .me-hint{font-size:10.5px;font-weight:600;color:var(--ink-soft);text-align:center;opacity:.8;margin-top:2px}
   /* 전신 무대 (요청 BCD): 고른 상태의 엘리가 크게 서고, **돌봄 손**이
      오른쪽 아래에서 들어와 그 상태에 맞는 몸짓을 한 번 한다.
      ⚠ 전신과 손은 **같은 캔버스에서 같은 상자로 잘랐다** — 그래서 겹치기만
      하면 정렬이 맞는다. 따로 자르면 손이 허공을 짚는다. */
-  .me-stage{position:relative;width:100%;aspect-ratio:420/415;margin:2px 0 6px}
+  .me-stage{position:relative;width:100%;height:clamp(112px,17vh,150px);margin:0 0 2px}
   .me-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
   /* ⚠ 새 손 그림은 **팔이 길어져** 예전 거리(14%)로는 들어오는 느낌이 안 나고
      제자리에서 나타나는 것처럼 보인다 — 화면 밖에서 들어오도록 더 멀리서. */
@@ -1744,16 +1763,34 @@
     78%{transform:translateY(-7%) rotate(-5deg)}
     100%{transform:none}
   }
+  /* 딴 데 갔을 때: 손이 **주황색 책 밑에서 받쳐** 두 번 들어 보인다 (요청).
+     '돌아가라'가 아니라 '이거였잖아'를 손으로 가리키는 몸짓이다. */
+  .me-stage.care.present .me-hand{animation:mePresent 1.4s ease both}
+  @keyframes mePresent{
+    0%{transform:none}
+    25%{transform:translateY(-4%)}
+    50%{transform:none}
+    75%{transform:translateY(-4%)}
+    100%{transform:none}
+  }
   /* 그리고 **물러난다** (몰입한 사람 곁에 머무르지 않는다). */
   .me-stage.care.withdraw .me-hand{opacity:0;transform:translate(18%,18%);animation:none}
   /* 말풍선 — 문구는 반드시 이 안에 있어야 한다 (그냥 텍스트로 두면 누가
-     말하는지 사라진다). 꼬리는 **오른쪽 아래**, 손이 들어오는 쪽이다. */
-  .me-bubble{position:relative;align-self:stretch;margin:2px 6px 12px;padding:11px 14px;
-    background:var(--card-2);border-radius:16px;font-size:14px;font-weight:600;
-    color:var(--ink);text-align:center;line-height:1.35;min-height:20px}
-  .me-bubble::after{content:"";position:absolute;right:26px;bottom:-6px;width:14px;height:14px;
-    background:var(--card-2);transform:rotate(45deg);border-radius:3px}
-  .me-bubble:empty,.me-bubble.hide{display:none}
+     말하는지 사라진다). 꼬리는 **오른쪽 아래**, 손이 들어오는 쪽이다.
+     ⚠ 이 말은 엘리가 하는 게 아니다 — 화면 밖의 내가 한다. 그래서 진한
+     테두리로 엘리 그림에서 떼어 내고, 꼬리를 **길게 비스듬히** 빼서 엘리가
+     아니라 화면 밖을 가리키게 한다(요청). */
+  .me-bubble{position:relative;align-self:stretch;margin:2px 6px 16px;padding:11px 14px;
+    background:var(--card-2);border:1.5px solid var(--bub-line,#6b7280);border-radius:16px;
+    font-size:14px;font-weight:600;color:var(--ink);text-align:center;line-height:1.35;
+    min-height:62px;display:flex;align-items:center;justify-content:center}
+  /* 회전한 네모의 튀어나온 모서리 = 꼬리. 뿌리는 말풍선 배경이 덮어 이음매가 없다. */
+  .me-bubble::after{content:"";position:absolute;right:24px;bottom:-15px;width:16px;height:26px;
+    background:var(--card-2);border-right:1.5px solid var(--bub-line,#6b7280);
+    border-bottom:1.5px solid var(--bub-line,#6b7280);border-radius:0 0 4px 0;
+    transform:rotate(26deg)}
+  /* ⚠ 숨길 때 display:none이면 아래가 통째로 올라온다 — 자리는 남긴다. */
+  .me-bubble.hide{visibility:hidden}
   /* 빈 할 일 (요청 set_d scene_empty) — 카드가 아니라 하늘 위에 그냥 놓인다. */
   /* ⚠ 데스크톱 할일 목록은 **CSS 다단(columns)**이다 — 그냥 두면 그림과 글이
      서로 다른 단으로 흩어진다(실제로 그렇게 났다). 두 단을 가로지르게 못 박는다. */
@@ -1761,26 +1798,42 @@
     padding:18px 0 8px;opacity:.92;column-span:all;break-inside:avoid}
   .scene-empty img{width:150px;height:auto}
   .se-line{font-size:13.5px;font-weight:600;color:var(--onSky,#141827);opacity:.75}
-  .me-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 12px}
-  .me-item{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 4px 8px;
+  .me-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+  .me-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 3px 6px;
     border:1px solid var(--line);border-radius:14px;background:var(--card-2);cursor:pointer;
     font-family:inherit;font-size:11.5px;font-weight:600;color:var(--ink);line-height:1.25;text-align:center}
-  .me-item img{width:44px;height:44px;object-fit:contain}
+  .me-item img{width:38px;height:38px;object-fit:contain}
   .me-item.on{border-color:var(--sky-blue);box-shadow:0 0 0 2px rgba(93,140,255,.28)}
-  .me-auto{width:100%;padding:11px;border:0;border-radius:12px;background:var(--card-2);
-    font-family:inherit;font-size:13px;font-weight:700;color:var(--ink-soft);cursor:pointer}
-  /* 짐작에 답하는 자리 — 2지선다 또는 오늘 목록 칩. */
-  .me-act{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
-  .me-act:empty{display:none}
+  /* 짐작에 답하는 자리 — 2지선다 또는 오늘 목록 칩.
+     ⚠ 선택지는 **엘리에게 붙인다**(요청) — 엘리가 하는 대답이라, 떨어져 있으면
+     앱이 주는 메뉴처럼 보인다. 위 여백을 0으로 두고 꼬리로 이어 붙인다. */
+  .me-act{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 2px 4px;
+    flex:1 1 auto;min-height:118px;align-content:flex-start}
   .me-act button{flex:1 1 44%;padding:11px 10px;border:1px solid var(--line);border-radius:13px;
-    background:var(--card);font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer}
+    background:var(--card);font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);
+    cursor:pointer;position:relative}
   .me-act button.wide{flex:1 1 100%}
+  /* 위(엘리)를 향하는 꼬리 — 이 말은 엘리 입에서 나온다. */
+  .me-act button.tail-l::after,.me-act button.tail-r::after,.me-act button.tail-c::after{
+    content:"";position:absolute;top:-6px;width:13px;height:13px;background:inherit;
+    border-top:1px solid var(--line);border-left:1px solid var(--line);
+    border-radius:3px 0 0 0;transform:rotate(45deg)}
+  .me-act button.tail-l::after{right:18px}      /* 왼쪽 버튼 → 오른쪽 위(엘리) */
+  .me-act button.tail-r::after{left:18px}       /* 오른쪽 버튼 → 왼쪽 위(엘리) */
+  .me-act button.tail-c::after{left:50%;margin-left:-7px}
+  /* ⚠ 파란 버튼의 꼬리는 테두리가 아니라 같은 파랑이어야 이어 붙는다. */
+  .me-act button.go.tail-c::after{border-color:transparent}
   /* ⚠ 클래스 이름을 `chip`으로 두면 **기존 전역 .chip.on(흰 글자)**과 부딪혀
      고른 칩이 흰 글자·흰 배경이 된다(실제로 그렇게 났다). 이름을 분리한다. */
-  .me-act button.me-chip{flex:0 1 auto;padding:8px 12px;font-size:12.5px;font-weight:600;border-radius:999px}
+  /* 작업 캡슐 — 덜어낼 것을 고르는 자리라 **읽히는 크기**여야 한다 (요청). */
+  .me-act button.me-chip{flex:0 1 auto;padding:10px 15px;font-size:14px;font-weight:700;border-radius:999px}
   .me-act button.me-chip.on{border-color:var(--sky-blue);color:var(--ink);
     box-shadow:0 0 0 2px rgba(93,140,255,.25)}
   .me-act button.go{background:var(--sky-blue);border-color:transparent;color:#fff}
+  /* 좌우 여백이 남아돌던 자리 — 글자만큼만 차지한다 (요청). */
+  /* ⚠ 전역 `.modal .go{width:100%}`가 있어 width를 되돌리지 않으면 안 줄어든다. */
+  .me-act button.narrow{flex:0 1 auto;width:auto;padding-left:16px;padding-right:14px;margin-top:0}
+  .me-act button .tmr{display:inline-block;vertical-align:-3px;margin-left:6px;width:15px;height:15px}
   .me-act button.warn{color:#FF3B30}
   .me-act input{flex:1 1 100%;padding:11px 12px;border:1px solid var(--line);border-radius:13px;
     background:var(--card);font-family:inherit;font-size:14px;color:var(--ink);outline:none}
@@ -2301,19 +2354,28 @@
      한다. 고른 상태는 2시간만 유지하고 그 뒤엔 다시 자동으로 돌아간다. -->
 <div class="scrim" id="meScrim">
   <div class="modal me-modal">
+    <button class="me-x" id="meX" aria-label="닫기">✕</button>
     <h3>지금 나는</h3>
-    <!-- 전신 엘리 + 돌봄 손 (set_b·set_c) — 같은 1024 캔버스라 그대로 겹친다. -->
-    <!-- ⚠ 말풍선 꼬리가 **손 쪽(=화면 밖의 나)**을 가리킨다. 이게 있어야
-         '내가 나에게 말한다'가 성립하고, 없으면 앱의 훈수로 읽힌다. -->
-    <div class="me-bubble" id="meBubble"><span id="meLine"></span></div>
-    <div class="me-stage" id="meStage">
-      <img class="me-full" id="meFull" alt="">
-      <img class="me-hand" id="meHand" alt="">
+    <!-- ① 장면 = 말풍선 + 엘리 + 선택지. 셋이 **한 덩어리**여야 대화로 읽힌다
+         (아래 얼굴 고르는 칸과는 배경으로 갈라 놓는다). -->
+    <div class="me-top">
+      <!-- ⚠ 말풍선 꼬리는 **엘리를 가리키지 않는다** — 화면 밖(오른쪽 아래)의
+           나를 향해 길게 뻗는다. 엘리 쪽으로 향하면 엘리가 말하는 게 된다. -->
+      <div class="me-bubble" id="meBubble"><span id="meLine"></span></div>
+      <!-- 전신 엘리 + 돌봄 손 (set_b·set_c) — 같은 1024 캔버스라 그대로 겹친다. -->
+      <div class="me-stage" id="meStage">
+        <img class="me-full" id="meFull" alt="">
+        <img class="me-hand" id="meHand" alt="">
+      </div>
+      <!-- 짐작에 답하는 자리 (2지선다 / 오늘 목록 칩).
+           ⚠ 높이를 고정한다 — 안 그러면 얼굴을 바꿀 때마다 아래 칸이 들썩인다. -->
+      <div class="me-act" id="meAct"></div>
     </div>
-    <!-- 짐작에 탭 한 번으로 답하는 자리 (2지선다 / 오늘 목록 칩). -->
-    <div class="me-act" id="meAct"></div>
-    <div class="me-grid" id="meGrid"></div>
-    <button class="me-auto" id="meAuto">자동으로 두기</button>
+    <!-- ② 얼굴 고르는 칸 — 연한 배경으로 위 장면과 갈라 놓는다. -->
+    <div class="me-pick">
+      <div class="me-grid" id="meGrid"></div>
+      <div class="me-hint">고른 얼굴을 다시 누르면 자동으로 돌아가요</div>
+    </div>
   </div>
 </div>
 <div class="scrim setpage" id="aboutScrim">
@@ -9685,11 +9747,20 @@
     var a=meTodayTasks().slice().sort(function(x,y){return goalRemainMin(y)-goalRemainMin(x);});
     return a[0]||null;
   }
-  var meSel=null;      // 목록 칩에서 고른 작업 id
+  var meSel=null;      // 목록 칩에서 고른 작업 id (pick2 = 하나만)
+  var meSelSet=[];     // 여러 개 고를 때 (pick1 = 남길 것들)
+  /* '내일로' 화살 (스와이프 버튼과 같은 기호 — 요청). */
+  function tmrArrow(){
+    return '<svg class="tmr" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+      +'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'
+      +'<path d="M4 15a6 6 0 0 1 6-6h9"/><path d="M15 5l4.5 4-4.5 4"/></svg>';
+  }
   /* 짐작에 답하는 자리를 그린다. */
   function paintMeAct(k){
     var box=document.getElementById('meAct');if(!box)return;
-    box.innerHTML='';meSel=null;
+    box.innerHTML='';meSel=null;meSelSet=[];
+    // ⚠ 얼굴을 바꿨는데 스크롤이 남아 있으면 말풍선이 잘린 채로 뜬다.
+    var top=document.querySelector('.me-top');if(top)top.scrollTop=0;
     var ask=ME_ASK[k];
     if(!ask)return;
     if(ask==='pick1'||ask==='pick2'){
@@ -9702,24 +9773,37 @@
         b.onclick=function(){closeMeSheet();openCapture('todo');};
         box.appendChild(b);return;
       }
+      /* ⚠ pick1의 실행 버튼은 **칩보다 위**에 온다 (요청): 엘리 바로 아래에서
+         꼬리로 이어져야 '엘리가 제안하고, 나는 아래에서 고른다'가 된다. */
+      if(ask==='pick1'){
+        var go=document.createElement('button');go.className='go narrow tail-c';
+        go.innerHTML='이것(들)만 남기고 나머지는 내일로'+tmrArrow();
+        go.onclick=function(){
+          if(!meSelSet.length){meSay('남길 것을 골라 줘. 여러 개도 돼.');return;}
+          var n=0;meTodayTasks().forEach(function(t){
+            if(meSelSet.indexOf(t.id)<0){taskDeferTomorrow(t);n++;}});
+          if(!n){meDone('다 남겼네. 그럼 그대로 가 보자.');return;}
+          meDone('오늘은 '+meSelSet.length+'개만. 나머지 '+n+'개는 내일의 내가 볼게.');
+        };
+        box.appendChild(go);
+      }
       list.forEach(function(t){
         var c=document.createElement('button');c.className='me-chip';c.textContent=t.title||'할 일';
         c.onclick=function(){
+          if(ask==='pick1'){
+            // 여러 개 남길 수 있다 (요청) — 하루가 한 가지로만 되어 있진 않다.
+            var i=meSelSet.indexOf(t.id);
+            if(i<0){meSelSet.push(t.id);c.classList.add('on');}
+            else{meSelSet.splice(i,1);c.classList.remove('on');}
+            return;
+          }
           meSel=t.id;
           [].forEach.call(box.querySelectorAll('.me-chip'),function(x){x.classList.remove('on');});
           c.classList.add('on');
         };
         box.appendChild(c);
       });
-      if(ask==='pick1'){
-        var go=document.createElement('button');go.className='wide go';go.textContent='이것만 남기고 나머지는 내일로';
-        go.onclick=function(){
-          if(!meSel){meSay('하나만 골라 줘.');return;}
-          var n=0;meTodayTasks().forEach(function(t){if(t.id!==meSel){taskDeferTomorrow(t);n++;}});
-          meDone('오늘은 하나만. 나머지 '+n+'개는 내일의 내가 볼게.');
-        };
-        box.appendChild(go);
-      }else{
+      if(ask==='pick2'){
         var tm=document.createElement('button');tm.textContent='내일로';
         tm.onclick=function(){
           var t=taskByID(meSel);if(!t){meSay('하나만 골라 줘.');return;}
@@ -9734,8 +9818,10 @@
       }
       return;
     }
-    ask.forEach(function(pair){
+    /* 2지선다는 **엘리 입에서 나온다** — 좌우 버튼의 꼬리가 위(엘리)를 향한다. */
+    ask.forEach(function(pair,i){
       var b=document.createElement('button');b.textContent=pair[1];
+      b.className=(ask.length===2?(i===0?'tail-l':'tail-r'):'');
       b.onclick=function(){meAnswer(k,pair[0]);};
       box.appendChild(b);
     });
@@ -9786,24 +9872,29 @@
   function paintMeStage(k,care){
     var st=document.getElementById('meStage');if(!st)return;
     var full=document.getElementById('meFull'),hand=document.getElementById('meHand');
+    /* ⚠ dataset.k를 **먼저** 박는다: eleWordImg는 캐시가 있으면 콜백을
+       **동기로** 부르는데, 그때 dataset.k가 아직 옛 상태면 가드에 걸려
+       소품(-fix)이 없는 몸통만 남는다(실제로 그렇게 났다 — 책이 사라졌다). */
+    full.dataset.k=k;
     full.src='assets/full_'+k+'.png';
     eleWordImg('full_'+k,eleTint(),function(u){if(u&&full.dataset.k===k)full.src=u;});
-    full.dataset.k=k;
     /* ⚠ **폰 상태엔 손을 넣지 않는다** (요청): 폰을 보는데 손이 다가오면 어떤
        모양이든 '내놔'로 읽힌다 — 필요한 건 재촉이 아니라 왜 들었는지 묻는 것뿐. */
     hand.style.display=(k==='phone')?'none':'';
     if(k!=='phone'){
+      hand.dataset.k=k;
       hand.src='assets/hand_'+k+'.png';
       eleWordImg('hand_'+k,eleTint(),function(u){if(u&&hand.dataset.k===k)hand.src=u;});
-      hand.dataset.k=k;
     }
     document.getElementById('meLine').textContent=care?(ME_LINE[k]||''):'';
     document.getElementById('meBubble').classList.toggle('hide',!care);
     /* ⚠ 손은 **다시 들어와야** 한다: 클래스가 이미 붙어 있으면 transition이
        안 돌아 그림만 바뀐다. 한 번 떼고 강제 리플로우 뒤 다시 붙인다. */
-    st.classList.remove('care','withdraw','praise');
+    st.classList.remove('care','withdraw','praise','present');
     if(care){
       void st.offsetWidth;st.classList.add('care');
+      /* 딴 데 갔을 때: 들어온 손이 책을 두 번 들어 보인다. */
+      if(k==='distract')setTimeout(function(){st.classList.add('present');},560);
       /* ⚠ 집중 중일 땐 손이 **따봉을 두 번 하고 물러난다** — 잘 하고 있는데
          곁에 머무르면 감시가 된다. 들어오는 데 .55s가 걸리니 그 뒤에 칭찬을
          시작하고, 칭찬(.9s)이 끝나면 물러난다. */
@@ -9840,6 +9931,15 @@
         /* ⚠ 고르자마자 닫지 않는다 (요청 BCD): 전신 엘리가 그 상태가 되고
            **손이 들어와** 한 번 돌봐 준 뒤에 내가 닫는다. 그게 이 화면의 값이다. */
         var k=b.dataset.me;
+        /* ⚠ '자동으로 두기' 버튼은 없앴다 (요청: 내용이 길어지면 화면 밖으로
+           밀려 소용이 없다). 대신 **고른 얼굴을 다시 누르면** 자동으로 돌아간다. */
+        if(manualState()===k){
+          setManualState(null);
+          [].forEach.call(g0().querySelectorAll('.me-item'),function(x){x.classList.remove('on');});
+          paintMeStage(avatarState(),false);
+          document.getElementById('meAct').innerHTML='';
+          return;
+        }
         setManualState(k);
         [].forEach.call(g0().querySelectorAll('.me-item'),function(x){
           x.classList.toggle('on',x.dataset.me===k);});
@@ -9850,9 +9950,7 @@
         if(k==='focus')setTimeout(closeMeSheet,1500);
       }
     });
-    document.getElementById('meAuto').addEventListener('click',function(){
-      setManualState(null);sc.classList.remove('open');
-    });
+    document.getElementById('meX').addEventListener('click',closeMeSheet);
     function g0(){return document.getElementById('meGrid');}
     /* ⚠ 아바타 탭은 캡슐 본래 동작(신호 해제·다음 문구)을 **뺏지 않는다** —
        stopPropagation으로 여기서 끊는다. 캡슐의 나머지 자리는 그대로다. */
