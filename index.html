@@ -163,7 +163,7 @@
      (요청 ②): 놓는 순간 글자가 옮겨 다니면 "내가 놓은 그 자리인가"를 의심하게
      된다. 그래서 아래 세 값은 .dueline의 것과 **같은 수**로 맞춰 둔다 —
      이름 left:104/bottom:5, 캡슐 right:0/top:-13. 한쪽을 고치면 다른 쪽도. */
-  .ghost-due .gd-lab{position:absolute;left:104px;right:102px;bottom:5px;
+  .ghost-due .gd-lab{position:absolute;left:115px;right:96px;bottom:5px;
     display:flex;align-items:flex-end;gap:5px;white-space:nowrap;overflow:hidden;
     color:var(--onSky,#141827);font-size:20px;font-weight:600}
   .ghost-due .gd-lab b{font-weight:600;overflow:hidden;text-overflow:ellipsis;min-width:0}
@@ -288,7 +288,10 @@
   .now .pill{background:#FC9975;color:#fff;font-weight:800;font-size:11px;padding:3px 8px;border-radius:8px}
   .now .wire{flex:1;height:2px;background:#FC9975;border-radius:2px;position:relative;margin-left:-2px}
   /* 요청: 지금 라인의 작은 동그라미는 왼쪽 → 오른쪽 끝으로 */
-  .now .wire::before{content:"";position:absolute;right:-3px;top:-2.5px;width:7px;height:7px;border-radius:50%;background:#FC9975}
+  /* ⚠ 오른쪽 끝 점은 **선 안쪽에** 붙인다 (요청 2026-07-23): 점 오른쪽 끝과
+     마감선 `hh:mm까지` 캡슐 오른쪽 끝이 x축에서 **같은 자리**여야 한다.
+     -3px면 점만 3px 더 나가 두 줄의 오른쪽 끝이 어긋나 보였다. */
+  .now .wire::before{content:"";position:absolute;right:0;top:-2.5px;width:7px;height:7px;border-radius:50%;background:#FC9975}
   /* 마감선 (델타 §2): 계획 = 가로 선. 텍스트는 선의 밑줄처럼 위에. */
   /* ⚠ z-index가 '지금' 라인(4)보다 높아야 한다 (요청): 둘 다 4였고 '지금'이
      DOM 뒤라 위에 깔려, ▶ 버튼이 지금 캡슐과 겹치면 캡슐이 탭을 가로챘다.
@@ -310,14 +313,17 @@
   /* 편집 모드 선택 표시는 굵은 선이 아니라 **아웃라인**이다 (요청 ⑥ — 아래
      .dueline.outlined 참조). 선 굵기는 건드리지 않는다. */
   /* ▶ = 선의 시작점 한가운데 (앱 파리티): 이름·길이가 길어져도 x가 안 움직인다. */
-  .dueline .dl-play{position:absolute;left:41px;top:-15px;z-index:2;
+  /* ⚠ left는 41 → **52** (요청 2026-07-23): 시각 라벨(.hour .lbl)이 14..48을
+     쓰는데 ▶(30px)가 41부터라 7px를 덮어 "09:00"이 가려졌다. 52면 4px 띄고
+     비껴간다. 아래 ○·이름도 같은 11px씩 오른쪽으로 — 서로의 간격은 그대로. */
+  .dueline .dl-play{position:absolute;left:52px;top:-15px;z-index:2;
     width:30px;height:30px;border-radius:50%;border:0;flex:none;
     background:var(--tl-accent,var(--sky-blue));color:var(--tl-onaccent,#fff);cursor:pointer;display:inline-grid;place-items:center;vertical-align:middle;pointer-events:auto}
   .dueline .dl-play svg{width:13px;height:13px;margin-left:1px}
   /* ⚠ ○ · 작업명 · duration의 **아랫변이 같은 y**에 놓인다 (요청 ②):
      align-items:flex-end + 셋 다 bottom:5px. 가운데 정렬이던 예전엔 글꼴
      크기가 다른 duration이 이름보다 살짝 떠 보였다. */
-  .dueline .dl-text{position:absolute;left:104px;right:102px;bottom:5px;font-size:20px;font-weight:600;color:var(--onSky,#141827);
+  .dueline .dl-text{position:absolute;left:115px;right:96px;bottom:5px;font-size:20px;font-weight:600;color:var(--onSky,#141827);
     white-space:nowrap;max-width:calc(100% - 150px);display:flex;align-items:flex-end;gap:5px;pointer-events:none}
   .dueline .dl-text .dl-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
   /* 심볼 색 = 작업명 글자색 상속 (앱 6e4e3de①: 선·캡슐·▶가 이미 테마색, 작업색은 포모도로 링 담당) */
@@ -343,7 +349,7 @@
   /* (옛 .dl-cap은 삭제 — 이제 .dl-right 자체가 그 캡슐이다.) */
   /* (옛 .dl-chev 위·아래 화살표는 삭제됐다 — 요청 ④: 위 화살표는 없애고
      아래 화살표만 캡슐에 바짝 붙인다. 웹은 애초에 그리지 않고 있었다.) */
-  .dueline .dl-radio{position:absolute;left:70px;bottom:5px;width:26px;height:26px;border-radius:50%;
+  .dueline .dl-radio{position:absolute;left:81px;bottom:5px;width:26px;height:26px;border-radius:50%;
     border:2px solid var(--onSky,#141827);background:transparent;cursor:pointer;color:#fff;font-size:16px;
     font-weight:800;display:grid;place-items:center;box-shadow:0 1px 4px rgba(20,40,80,.25)}
   .dueline .dl-radio.on{background:var(--dc,#4F8AD1);border-color:var(--dc,#4F8AD1)}
@@ -356,7 +362,9 @@
      쉼 컬러코딩 (앱 f9cd0c1②, e1c402d⑤ 개정): 세션 '안'의 쉼(포모도로 휴식·일시정지)
      = solid 하늘색(.brest), 정지로 나갔다 재개한 '갭' = 빗금(.bhatch).
      웹 dayRecordBlocks의 rest는 전부 세션 사이 갭이라 현재는 .bhatch만 쓴다. */
-  .block.rec{left:64px;right:62px;cursor:pointer;transition:left .15s ease}
+  /* ⚠ right는 62 → **84** (요청 2026-07-23): 캡슐이 선 끝까지 나가면서
+     오른쪽 끝에서 80px를 쓴다 — 62면 블록이 캡슐 밑으로 18px 파고들었다. */
+  .block.rec{left:64px;right:84px;cursor:pointer;transition:left .15s ease}
   /* 마감선 제목 띠와 겹칠 때만 블록이 오른쪽으로 물러난다 (앱 파리티).
      늘 좁히면 블록이 손해라 **겹칠 때만**. 히스테리시스가 있어 경계에서
      떨지 않는다. */
@@ -364,7 +372,7 @@
      right:16px + 폭 84 = 오른쪽 끝에서 100px를 쓰므로 그만큼 비운다. */
   /* 오른쪽 캡슐의 실제 왼쪽 끝 = 8(.dueline right) + 캡슐 폭(≈72) = 오른쪽
      끝에서 **80px**. 6px 틈을 두어 86. */
-  .block.rec.pushed{left:169px;right:86px}
+  .block.rec.pushed{left:186px;right:86px}
   /* ③ (요청 2026-07-23) 2컬럼이 될 때 — 이름은 왼쪽, 블록은 오른쪽으로 갈릴
      때 — **마감선 이름과 블록 이름 둘 다 기호를 뗀다**. 좁아진 자리에서
      기호는 이름 글자 수만 깎아 먹는다. 안 갈릴 땐 둘 다 기호가 있다. */
@@ -372,7 +380,16 @@
   .block.rec.pushed>.bic{display:none}
   .rec-lab.narrow .bic{display:none}
   .dueline .dl-text{transition:right .15s ease}
-  .dueline.narrow .dl-text{right:auto;max-width:65px}
+  /* ⚠ **2컬럼일 때만** 한 단계 줄인다 (요청 2026-07-23). 이름 왼쪽·블록
+     오른쪽으로 갈리면 이름이 쓸 폭이 절반 이하로 떨어지는데, 거기서 큰 서체를
+     고집하면 두 글자 만에 말줄임이 된다. **안 갈릴 땐 지금처럼 큼직하게** —
+     유저가 못 박은 조건이라 .narrow에만 건다.
+     크기는 보통의 작업명 길이(한글 2~6자) 기준: 17px면 한 줄에 3자, 2줄이면
+     6자까지 온전히 들어간다. 폭(65px)은 경계선을 같이 민 덕에 그대로다. */
+  .dueline.narrow .dl-text{right:auto;max-width:65px;font-size:17px}
+  /* duration도 같이 한 단계 — 좁은 자리에서 이건 절대 안 잘리므로(요청 ②),
+     여기서 1px을 아끼면 그만큼 **이름 글자가 더 들어간다**. */
+  .dueline.narrow .dl-text .dl-dur{font-size:10.5px}
   /* ⚠ 2줄은 **좁힘과 별개**다 (요청): 이름이 한 줄에 안 들어가면 겹치든 안
      겹치든 작은 2줄로 흐른다 — 앱 ViewThatFits(큰 1줄이 안 맞으면 작은 2줄)와
      같은 규칙. 예전엔 .narrow에만 걸려 있어 안 겹치면 '영어영어…'로 잘렸다.
@@ -382,8 +399,15 @@
      JS가 이름 끝을 `…`로 깎는다 — **duration은 절대 안 잘린다**.
      (line-clamp로 통째로 자르면 잘리는 쪽이 duration이 된다.) */
   .dueline.twoline .dl-text{display:block;white-space:normal;font-size:12px;line-height:1.16}
+  .dueline.narrow.twoline .dl-text{font-size:11.5px}
   .dueline.twoline .dl-text .dl-title{display:inline;overflow:visible;text-overflow:clip;white-space:normal}
-  .dueline.twoline .dl-text .dl-dur{display:inline;font-size:11px;margin-left:4px;white-space:nowrap}
+  /* ⚠ 2줄일 땐 duration의 line-height를 **줄에 맞춘다** (요청 버그): 평소의
+     1.5(=16.5px)가 그 줄만 3px 높여, "2줄 높이"를 재는 클램프가 늘 초과로
+     판정했다 — 그래서 이름이 `보…` 한 글자로 깎였다. 재는 값과 그리는 값이
+     달라지면 이렇게 조용히 어긋난다. */
+  .dueline.twoline .dl-text .dl-dur{display:inline;font-size:11px;margin-left:4px;
+    white-space:nowrap;line-height:inherit}
+  .dueline.narrow.twoline .dl-text .dl-dur{font-size:10.5px}
   /* 아주 짧은 블록: 안쪽 여백 없이 색 막대만 — 높이가 곧 시간이다. */
   /* "5분 미만이라 안 남겼어요" 하단 토스트 (요청) — 앱 캡슐과 같은 톤. */
   /* ⚠ bottom은 **+ FAB 위**로 (실측: FAB top 678 / 뷰포트 812 → 148px면
@@ -410,7 +434,7 @@
     font-size:12.5px;font-weight:700;color:var(--onSky,#141827)}
   /* 겹칠 땐 물러난 블록의 왼쪽 끝(169px)까지만 — 6px 틈을 둔다.
      마감선 제목의 `.dueline.narrow .dl-text`와 같은 문법. */
-  .rec-lab.narrow{max-width:99px}
+  .rec-lab.narrow{max-width:116px}
   .rec-lab .bic{flex:none;display:inline-flex;align-items:center;color:inherit}
   .rec-lab .bic svg{width:14px;height:14px}
   .rec-lab .btitle{overflow:hidden;text-overflow:ellipsis;min-width:0}
@@ -426,9 +450,9 @@
   /* ⚠ 선택자는 반드시 `.block.plan-hatch` — `.plan-hatch` 하나면 뒤에 오는
      `.block{left:52px;right:14px}`와 명시도가 같아 **나중 규칙에 진다**.
      실제로 빗금만 블록보다 넓게 그려졌다(같은 함정: .drag-ghost·.nav-ghost). */
-  .block.plan-hatch{left:64px;right:62px;padding:0;border-radius:0 0 10px 10px;z-index:2;
+  .block.plan-hatch{left:64px;right:84px;padding:0;border-radius:0 0 10px 10px;z-index:2;
     border:1px dashed;border-top:0;pointer-events:none;box-shadow:none;opacity:.85}
-  .block.plan-hatch.pushed{left:169px;right:86px}
+  .block.plan-hatch.pushed{left:186px;right:86px}
   /* 빗금이 이어 붙는 블록은 아랫변을 각지게 — 컬러와 빗금이 한 덩어리로 읽힌다. */
   .block.rec.has-plan{border-bottom-left-radius:0;border-bottom-right-radius:0}
   .block.rec .bhatch{position:absolute;left:0;right:0;z-index:1;pointer-events:none;
