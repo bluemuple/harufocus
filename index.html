@@ -817,6 +817,18 @@
   .topcap{position:fixed;top:calc(10px + env(safe-area-inset-top));right:12px;z-index:40;display:flex;align-items:center;gap:7px;
     max-width:62vw;border:0;background:rgba(255,255,255,.82);backdrop-filter:blur(5px);box-shadow:0 2px 10px rgba(20,40,80,.16);
     border-radius:999px;padding:8px 14px;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--ink);cursor:pointer;overflow:hidden}
+  /* ⚠ 말풍선 **꼬리**가 이 앱의 단 하나의 규칙을 시각적으로 성립시킨다:
+     "엘리는 말하지 않는다. 말은 언제나 내가 한다." 꼬리가 엘리가 아니라
+     **화면 밖의 나**(폰을 쥔 오른손)를 가리켜야 '내가 나에게 말한다'가 된다.
+     꼬리가 없으면 같은 문장이 **앱의 훈수**로 읽힌다.
+     ⚠ 위로 향하게 하지 말 것 — 상태바·노치와 겹친다. 오른쪽 아래 45°. */
+  .topcap::after{content:"";position:absolute;right:16px;bottom:-5px;width:12px;height:12px;
+    background:rgba(255,255,255,.82);transform:rotate(45deg);border-radius:2px;
+    box-shadow:2px 2px 6px rgba(20,40,80,.10)}
+  body.night .topcap::after{background:rgba(30,34,50,.72)}
+  /* 꼬리가 캡슐 밖으로 나가야 하므로 overflow는 안쪽 글자에만 건다. */
+  .topcap{overflow:visible}
+  .topcap .tc-body{overflow:hidden}
   .topcap .tc-ic{flex:0 0 auto;display:grid;place-items:center;color:var(--ink-soft)}
   .topcap .tc-ic svg{width:15px;height:15px}
   .topcap .tc-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1720,8 +1732,16 @@
   .me-hand{opacity:0;transform:translate(14%,14%);
     transition:opacity .34s ease,transform .5s cubic-bezier(.22,1,.36,1)}
   .me-stage.care .me-hand{opacity:1;transform:none}
-  .me-line{font-size:13.5px;font-weight:600;color:var(--ink);text-align:center;
-    min-height:19px;margin-bottom:10px}
+  /* 집중 중: 툭 치고 **물러난다** (방해하지 않는 게 이 상태의 전부다). */
+  .me-stage.care.withdraw .me-hand{opacity:0;transform:translate(18%,18%)}
+  /* 말풍선 — 문구는 반드시 이 안에 있어야 한다 (그냥 텍스트로 두면 누가
+     말하는지 사라진다). 꼬리는 **오른쪽 아래**, 손이 들어오는 쪽이다. */
+  .me-bubble{position:relative;align-self:stretch;margin:2px 6px 12px;padding:11px 14px;
+    background:var(--card-2);border-radius:16px;font-size:14px;font-weight:600;
+    color:var(--ink);text-align:center;line-height:1.35;min-height:20px}
+  .me-bubble::after{content:"";position:absolute;right:26px;bottom:-6px;width:14px;height:14px;
+    background:var(--card-2);transform:rotate(45deg);border-radius:3px}
+  .me-bubble:empty,.me-bubble.hide{display:none}
   /* 빈 할 일 (요청 set_d scene_empty) — 카드가 아니라 하늘 위에 그냥 놓인다. */
   /* ⚠ 데스크톱 할일 목록은 **CSS 다단(columns)**이다 — 그냥 두면 그림과 글이
      서로 다른 단으로 흩어진다(실제로 그렇게 났다). 두 단을 가로지르게 못 박는다. */
@@ -1737,6 +1757,21 @@
   .me-item.on{border-color:var(--sky-blue);box-shadow:0 0 0 2px rgba(93,140,255,.28)}
   .me-auto{width:100%;padding:11px;border:0;border-radius:12px;background:var(--card-2);
     font-family:inherit;font-size:13px;font-weight:700;color:var(--ink-soft);cursor:pointer}
+  /* 짐작에 답하는 자리 — 2지선다 또는 오늘 목록 칩. */
+  .me-act{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+  .me-act:empty{display:none}
+  .me-act button{flex:1 1 44%;padding:11px 10px;border:1px solid var(--line);border-radius:13px;
+    background:var(--card);font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer}
+  .me-act button.wide{flex:1 1 100%}
+  /* ⚠ 클래스 이름을 `chip`으로 두면 **기존 전역 .chip.on(흰 글자)**과 부딪혀
+     고른 칩이 흰 글자·흰 배경이 된다(실제로 그렇게 났다). 이름을 분리한다. */
+  .me-act button.me-chip{flex:0 1 auto;padding:8px 12px;font-size:12.5px;font-weight:600;border-radius:999px}
+  .me-act button.me-chip.on{border-color:var(--sky-blue);color:var(--ink);
+    box-shadow:0 0 0 2px rgba(93,140,255,.25)}
+  .me-act button.go{background:var(--sky-blue);border-color:transparent;color:#fff}
+  .me-act button.warn{color:#FF3B30}
+  .me-act input{flex:1 1 100%;padding:11px 12px;border:1px solid var(--line);border-radius:13px;
+    background:var(--card);font-family:inherit;font-size:14px;color:var(--ink);outline:none}
   /* 아바타는 눌리는 것처럼 보여야 한다 — 캡슐 안에서 살짝 반응. */
   .topcap .tc-ava{cursor:pointer;transition:transform .12s ease}
   .topcap .tc-ava:active{transform:scale(.92)}
@@ -2256,11 +2291,15 @@
   <div class="modal me-modal">
     <h3>지금 나는</h3>
     <!-- 전신 엘리 + 돌봄 손 (set_b·set_c) — 같은 1024 캔버스라 그대로 겹친다. -->
+    <!-- ⚠ 말풍선 꼬리가 **손 쪽(=화면 밖의 나)**을 가리킨다. 이게 있어야
+         '내가 나에게 말한다'가 성립하고, 없으면 앱의 훈수로 읽힌다. -->
+    <div class="me-bubble" id="meBubble"><span id="meLine"></span></div>
     <div class="me-stage" id="meStage">
       <img class="me-full" id="meFull" alt="">
       <img class="me-hand" id="meHand" alt="">
     </div>
-    <div class="me-line" id="meLine"></div>
+    <!-- 짐작에 탭 한 번으로 답하는 자리 (2지선다 / 오늘 목록 칩). -->
+    <div class="me-act" id="meAct"></div>
     <div class="me-grid" id="meGrid"></div>
     <button class="me-auto" id="meAuto">자동으로 두기</button>
   </div>
@@ -4548,7 +4587,12 @@
   }
   /* 세션 상태만 바뀌었을 때의 즉시 push (시작·종료·일시정지·포모도로 토글). */
   function pushFocusState(){pushSnapshot();}
-  function startFocus(t,opt){closeCapture();fTask=t;fStart=Date.now();fPausedAcc=0;fPauseAt=0;fPaused=false;ftKey='';fAdvanced=false;fWasRest=false;fRestMsg='';
+  function startFocus(t,opt){closeCapture();
+    /* ⚠ 집중을 시작하면 내가 골라 둔 상태를 **해제**한다 (요청): ▶를 눌렀는데
+       캡슐이 아직 '폰만 보고 있어'면 앱이 나를 **낡은 이름으로 부르는** 셈이다.
+       2시간 만료와 별개로, 다음 집중이 곧 새 사실이다. */
+    setManualState(null);
+    fTask=t;fStart=Date.now();fPausedAcc=0;fPauseAt=0;fPaused=false;ftKey='';fAdvanced=false;fWasRest=false;fRestMsg='';
     fPlanAdjust=0;                     // 새 세션 = 조절 누적 초기화 (앱 파리티)
     if(fAdjOpen)toggleAdjRow();
     // opt = 원격 채택 (요청): 저쪽 시계·계획·포모도로를 그대로 물려받는다.
@@ -9579,24 +9623,165 @@
     overload:'할 게 너무 많아',messy:'머리가 엉켰어',tired:'지쳤어',refuse:'하기 싫어'};
   /* 고른 상태에 내가 나에게 하는 한 줄 (요청 설계 법칙: 엘리는 말하지 않는다).
      ⚠ 위로도 잔소리도 아니다 — 지금을 인정하고 **다음 한 걸음만** 말한다. */
+  /* ⚠ 원칙: **짐작하되 지시하지 않는다**, 행동을 지적하지 않고 **짐을 짚는다**.
+     예전 문구들은 전부 행동만 나무라고("딴 데 갔네, 돌아가자") 그 아래 있는
+     이유(할 일이 너무 많거나 어렵거나 귀찮음)는 건드리지 않았다. */
   var ME_LINE={
-    focus:'잘 되고 있어. 이대로 조금만 더.',
-    phone:'폰은 잠깐 뒤집어 두자.',
-    distract:'딴 데 갔네. 하던 자리로 돌아가자.',
-    overload:'다 못 해. 오늘은 하나만 고르자.',
-    messy:'엉킨 채로 둬도 돼. 한 줄만 적자.',
-    tired:'지쳤네. 10분만 쉬자.',
-    refuse:'하기 싫은 날도 있지. 그냥 옆에 있을게.'};
+    focus:'좋다. 방해 안 할게.',
+    phone:'재밌는 거 보고 있었구나.',
+    distract:'이것도 좋은 일인데, 지금 하려던 건 아니었지?',
+    overload:'다 보려니까 아무것도 안 보이지.',
+    messy:'무슨 일 있었어?',
+    tired:'몸이 먼저 지쳤네.',
+    refuse:'그래, 오늘은 좀 그런 날이야.'};
+  /* 짐작에 답하는 2지선다 (요청 흐름 4단계). 상태마다 두 갈래이고, 각 갈래가
+     **서로 다른 화면**으로 간다. overload·refuse는 선택지가 아니라 **오늘 목록**
+     자체를 보여준다 — 짐을 말로만 짚지 않고 실제로 덜어내는 게 이 화면의 값이다. */
+  var ME_ASK={
+    focus:null,                                   // 방해하지 않는다 — 바로 닫는다
+    phone:[['rest','쉬고 싶어서'],['hard','시작하기 싫어서']],
+    distract:[['big','너무 커서'],['fun','그냥 재밌어서']],
+    overload:'pick1',
+    messy:[['work','일 때문'],['life','일 아닌 것 때문']],
+    tired:[['lie','5분 눕기'],['walk','5분 걷기']],
+    refuse:'pick2'
+  };
+  /* 오늘 계획된 미완료 작업 (목록 칩용). */
+  function meTodayTasks(){
+    var tk=todayKey();
+    return (DATA.tasks||[]).filter(function(t){
+      return !t.isDone&&!t.isRewardItem&&t.scheduledStart&&
+        dateKey(taskDueAt(t).toISOString())===tk;});
+  }
+  /* 지금부터 n분짜리 블록 하나를 놓는다 (쉼·첫 조각 공용).
+     ⚠ 죄책감 문구를 붙이지 않는다 — 쉼도 계획의 일부다. */
+  function mePlaceBlock(title,cat,min){
+    var now=new Date(),m=Math.floor(now.getMinutes()/5)*5;
+    var t={id:uuid(),title:title,categoryID:cat,durationMin:min,
+      scheduledStart:todayAt(now.getHours(),m),createdAt:new Date().toISOString()};
+    setPlanFromSchedule(t);
+    (DATA.tasks=DATA.tasks||[]).push(t);
+    renderAll();pushSnapshot();
+    return t;
+  }
+  /* 가장 무거운 것 = 오늘 남은 계획이 가장 큰 작업. */
+  function meHeaviest(){
+    var a=meTodayTasks().slice().sort(function(x,y){return goalRemainMin(y)-goalRemainMin(x);});
+    return a[0]||null;
+  }
+  var meSel=null;      // 목록 칩에서 고른 작업 id
+  /* 짐작에 답하는 자리를 그린다. */
+  function paintMeAct(k){
+    var box=document.getElementById('meAct');if(!box)return;
+    box.innerHTML='';meSel=null;
+    var ask=ME_ASK[k];
+    if(!ask)return;
+    if(ask==='pick1'||ask==='pick2'){
+      var list=meTodayTasks();
+      if(!list.length){
+        meSay(ask==='pick1'?'오늘 계획이 비어 있네. 그럼 덜어낼 것도 없다.'
+                           :'목록이 비어 있네. 그럼 지울 것도 없다.');
+        var b=document.createElement('button');b.className='wide';
+        b.textContent='하나만 적어둘까? 오늘 안 해도 돼.';
+        b.onclick=function(){closeMeSheet();openCapture('todo');};
+        box.appendChild(b);return;
+      }
+      list.forEach(function(t){
+        var c=document.createElement('button');c.className='me-chip';c.textContent=t.title||'할 일';
+        c.onclick=function(){
+          meSel=t.id;
+          [].forEach.call(box.querySelectorAll('.me-chip'),function(x){x.classList.remove('on');});
+          c.classList.add('on');
+        };
+        box.appendChild(c);
+      });
+      if(ask==='pick1'){
+        var go=document.createElement('button');go.className='wide go';go.textContent='이것만 남기고 나머지는 내일로';
+        go.onclick=function(){
+          if(!meSel){meSay('하나만 골라 줘.');return;}
+          var n=0;meTodayTasks().forEach(function(t){if(t.id!==meSel){taskDeferTomorrow(t);n++;}});
+          meDone('오늘은 하나만. 나머지 '+n+'개는 내일의 내가 볼게.');
+        };
+        box.appendChild(go);
+      }else{
+        var tm=document.createElement('button');tm.textContent='내일로';
+        tm.onclick=function(){
+          var t=taskByID(meSel);if(!t){meSay('하나만 골라 줘.');return;}
+          taskDeferTomorrow(t);meDone('내일로 미뤘어. 오늘은 여기까지.');
+        };
+        var del=document.createElement('button');del.className='warn';del.textContent='지우기';
+        del.onclick=function(){
+          var t=taskByID(meSel);if(!t){meSay('하나만 골라 줘.');return;}
+          deleteTask(t);meDone('지웠어. 안 해도 되는 일이었을지도.');
+        };
+        box.appendChild(tm);box.appendChild(del);
+      }
+      return;
+    }
+    ask.forEach(function(pair){
+      var b=document.createElement('button');b.textContent=pair[1];
+      b.onclick=function(){meAnswer(k,pair[0]);};
+      box.appendChild(b);
+    });
+  }
+  /* 말풍선만 바꾼다 (짐작 → 답 → 결과). */
+  function meSay(text){document.getElementById('meLine').textContent=text;
+    document.getElementById('meBubble').classList.remove('hide');}
+  /* 행동까지 끝났을 때: 결과를 말하고 닫는 버튼만 남긴다. */
+  function meDone(text){
+    meSay(text);
+    var box=document.getElementById('meAct');box.innerHTML='';
+    var b=document.createElement('button');b.className='wide go';b.textContent='닫기';
+    b.onclick=closeMeSheet;box.appendChild(b);
+  }
+  function closeMeSheet(){document.getElementById('meScrim').classList.remove('open');}
+  /* 2지선다에 답했을 때 — 갈래마다 다른 화면. */
+  function meAnswer(k,choice){
+    var box=document.getElementById('meAct');
+    if(choice==='rest'){mePlaceBlock('쉬기','rest',10);meDone('10분 쉼을 놔뒀어. 진짜 쉬는 거야.');return;}
+    if(choice==='lie'){mePlaceBlock('눕기','rest',5);meDone('5분 눕기. 그다음은 그때 생각하자.');return;}
+    if(choice==='walk'){mePlaceBlock('걷기','health',5);meDone('5분 걷기. 몸부터 풀자.');return;}
+    if(choice==='hard'||choice==='big'||choice==='fun'){
+      var t=meHeaviest();
+      var name=t?(t.title||'그 일'):null;
+      mePlaceBlock(name?('첫 10분 · '+name):'첫 10분','focus',10);
+      meDone(name?('‘'+name+'’ 첫 10분만. 첫 줄만 정하면 돼.')
+                 :'첫 10분만. 첫 줄만 정하면 돼.');
+      return;
+    }
+    if(choice==='work'||choice==='life'){
+      meSay('한 줄로 꺼내 두자. 머릿속에서 내려놓게.');
+      box.innerHTML='';
+      var inp=document.createElement('input');inp.placeholder='엉킨 것 한 줄';
+      var ok=document.createElement('button');ok.className='wide go';ok.textContent='적어 두기';
+      ok.onclick=function(){
+        var v=(inp.value||'').trim();
+        if(!v){closeMeSheet();return;}
+        // ⚠ newDiaryEntry(kind, extra)는 **자기가 DATA.diary에 넣는다** — 또 push하면 두 벌.
+        newDiaryEntry('note',{text:v});
+        renderAll();pushSnapshot();
+        meDone('적어 뒀어. 이제 머리에서 지워도 돼.');
+      };
+      box.appendChild(inp);box.appendChild(ok);inp.focus();
+      return;
+    }
+  }
   /* 무대에 전신 엘리를 세우고, care면 돌봄 손이 들어온다. */
   function paintMeStage(k,care){
     var st=document.getElementById('meStage');if(!st)return;
     document.getElementById('meFull').src='assets/full_'+k+'.png';
     document.getElementById('meHand').src='assets/hand_'+k+'.png';
-    document.getElementById('meLine').textContent=ME_LINE[k]||'';
+    document.getElementById('meLine').textContent=care?(ME_LINE[k]||''):'';
+    document.getElementById('meBubble').classList.toggle('hide',!care);
     /* ⚠ 손은 **다시 들어와야** 한다: 클래스가 이미 붙어 있으면 transition이
        안 돌아 그림만 바뀐다. 한 번 떼고 강제 리플로우 뒤 다시 붙인다. */
-    st.classList.remove('care');
-    if(care){void st.offsetWidth;st.classList.add('care');}
+    st.classList.remove('care','withdraw');
+    if(care){
+      void st.offsetWidth;st.classList.add('care');
+      /* ⚠ 집중 중일 땐 손이 **툭 치고 물러난다** — 몰입한 사람을 방해하지 않는
+         게 그 상태의 전부다. 다가와서 머무르면 정반대 뜻이 된다. */
+      if(k==='focus')setTimeout(function(){st.classList.add('withdraw');},650);
+    }
   }
   function openMeSheet(){
     var g=document.getElementById('meGrid');if(!g)return;
@@ -9607,6 +9792,7 @@
     }).join('');
     // 열 때는 지금 상태를 그냥 보여 준다 — 손은 **내가 고른 뒤에만** 들어온다.
     paintMeStage(cur||avatarState(),false);
+    document.getElementById('meAct').innerHTML='';
     document.getElementById('meScrim').classList.add('open');
   }
   (function(){
@@ -9617,10 +9803,15 @@
       if(b){
         /* ⚠ 고르자마자 닫지 않는다 (요청 BCD): 전신 엘리가 그 상태가 되고
            **손이 들어와** 한 번 돌봐 준 뒤에 내가 닫는다. 그게 이 화면의 값이다. */
-        setManualState(b.dataset.me);
+        var k=b.dataset.me;
+        setManualState(k);
         [].forEach.call(g0().querySelectorAll('.me-item'),function(x){
-          x.classList.toggle('on',x.dataset.me===b.dataset.me);});
-        paintMeStage(b.dataset.me,true);
+          x.classList.toggle('on',x.dataset.me===k);});
+        paintMeStage(k,true);
+        paintMeAct(k);
+        /* ⚠ '집중하고 있어'는 **바로 닫는다** — 방해하지 않는 게 그 상태의 전부다.
+           손이 툭 치고 물러나는 것만 보여주고 사라진다. */
+        if(k==='focus')setTimeout(closeMeSheet,1500);
       }
     });
     document.getElementById('meAuto').addEventListener('click',function(){
