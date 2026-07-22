@@ -4742,6 +4742,21 @@
     var el=focusElapsed();
     fTask.actualFocusedSec=(fTask.actualFocusedSec||0)+el;fTask.cumulativeFocusedSec=(fTask.cumulativeFocusedSec||0)+el;fTask.lastFocusedAt=new Date().toISOString();
     if(el>=5){if(!DATA.sessions)DATA.sessions=[];DATA.sessions.push({id:uuid(),taskID:fTask.id,taskTitle:fTask.title||'',categoryID:fTask.categoryID||'focus',start:new Date(fStart).toISOString(),end:new Date().toISOString(),focusedSec:el});}
+    /* ⚠⚠ **작업에도 블록 자리를 찍는다** (앱 FocusManager.end 파리티).
+       웹은 블록을 **세션**에서 그리지만 앱은 **작업 필드**(scheduledStart +
+       기록 길이)에서 그린다. 그래서 이걸 안 하면 웹에서 정지한 집중이
+       아이폰 타임라인엔 **아예 안 나온다**(요청 버그). 규칙도 앱과 같다 —
+       끝낸 블록은 **아랫변이 '지금' 라인에 닿는다**.
+       ⚠ 2분 미만은 앱처럼 자리를 안 찍는다(기록·누적은 위에서 이미 남겼다). */
+    if(el>=SHORT_FOCUS_SEC||keepShortBlocks()){
+      var nowMs=Date.now();
+      var anchorMs=fTask.scheduledStart?new Date(fTask.scheduledStart).getTime():fStart;
+      var spanSec=Math.max(60,(nowMs-anchorMs)/1000);
+      fTask.durationMin=Math.max(1,Math.round(spanSec/60));
+      fTask.scheduledStart=new Date(nowMs-fTask.durationMin*60000).toISOString();
+      fTask.recordedSpanSec=fTask.durationMin*60;
+      if(!fTask.planDueAt)setPlanFromSchedule(fTask);   // 마감선 자리 (없던 작업만)
+    }
     /* 2분 미만이면 블록을 안 그린다 (요청) — 기록(세션·누적)은 위에서 이미
        남겼고, 여기선 "왜 안 보이지?" 소리를 안 듣게 안내 플래그만 세운다. */
     shortSkipPending=(el>=5&&el<SHORT_FOCUS_SEC&&!keepShortBlocks())?el:0;
