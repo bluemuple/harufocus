@@ -259,9 +259,19 @@
     background:radial-gradient(circle at 50% 45%,#fff9e0,#ffe79a 46%,rgba(255,224,150,0) 72%);
     filter:drop-shadow(0 0 22px rgba(255,231,150,.55))}
   /* 달 — 해와 같은 투영(시간각 x·고도 y). 위상은 moonSVG, 위치·투명도는 JS. */
+  /* ⚠ iOS사파리 스크롤 시 **달이 지나간 자리에 사각형 잔상**이 남던 것 수정
+     (요청 2026-07-23, 첨부): 원인 두 개가 겹쳤다.
+     ① 바깥 `filter:drop-shadow`는 요소 밖으로 번지는데, 스크롤로 달이 움직일 때
+        사파리가 그 번진 영역을 못 지워 사각형 유령을 남긴다.
+     ② 안쪽 SVG feGaussianBlur도 움직이는 요소에선 필터 영역이 잔상으로 남는다.
+     → drop-shadow를 없애고, 번지지 않는 **합성 글로우**(::before 방사형)로 대체.
+       그리고 `translateZ(0)+will-change`로 달을 **제 합성 레이어**에 올려, 스크롤
+       매 프레임 통째로 다시 그리게 한다(잔상 소멸). `contain:paint`로 칠 영역도 가둔다. */
   #tlMoon{position:absolute;width:34px;height:34px;pointer-events:none;z-index:0;
-    transform:translate(-50%,-50%);opacity:0;transition:opacity .4s linear;
-    filter:drop-shadow(0 0 9px rgba(210,225,255,.5))}
+    transform:translate(-50%,-50%) translateZ(0);will-change:transform,left,top;
+    opacity:0;transition:opacity .4s linear}
+  #tlMoon::before{content:"";position:absolute;inset:-9px;border-radius:50%;z-index:-1;
+    background:radial-gradient(circle,rgba(210,225,255,.5),rgba(210,225,255,0) 70%)}
   #tlMoon svg{width:34px;height:34px;display:block}
   /* 시간축에 고정된 해·달 — 스크롤하면 함께 움직인다 (요청). */
   .tl-sun{position:absolute;left:50%;width:64px;height:64px;border-radius:50%;transform:translateX(-50%);
@@ -3826,7 +3836,15 @@
     });
     recBlocks.forEach(function(b){
       if(!(b.planRemainMs>0))return;
-      var hs=b.end,he=Math.min(b.end+b.planRemainMs,nextStartAfter(b.end));
+      /* ⚠ 빗금은 **'지금 선 아래(미래)'에서만 시작한다** (요청 2026-07-23 재신고).
+         ①의 원문도 "지금 선 아래(미래)로 뻗는다"였다. 예전엔 `hs=b.end`라
+         블록이 **끝난 시각**(집중을 멈춘 과거)에서 빗금을 시작했는데, 시간이
+         흐르면 그 시작점이 지금 선 위로 올라와, **끝낸 블록과 지금 선 사이에
+         빗금이 끼어** "블록이 지금 선까지 안 내려간다"처럼 보였다(첨부).
+         지금(Date.now())보다 위는 이미 지나간 자리다 — 거기에 '앞으로 할 계획'
+         빗금을 그리는 건 앞뒤가 안 맞는다. 방금 끝낸 블록은 아랫변이 지금 선에
+         닿아 있고(end≈now), 빗금은 그 아래로만 뻗는다. */
+      var hs=Math.max(b.end,Date.now()),he=Math.min(hs+b.planRemainMs,nextStartAfter(hs));
       if(he<=hs)return;
       var d0=new Date(hs),hf1=hourFrac(hs);
       var d1=new Date(he),hf2=hourFrac(he);if(d1.getDate()!==d0.getDate())hf2=24;
