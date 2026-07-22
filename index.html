@@ -723,8 +723,11 @@
   .sub-del svg{width:17px;height:17px}
   /* ⚠ 관성으로 튕기듯이 (요청) — 부모 bar와 같은 스프링 느낌. 살짝 넘어갔다
      돌아오는 곡선이라 손을 뗀 뒤가 '툭' 끊기지 않는다. */
+  /* ⚠ 모서리는 **감싸는 행과 같아야** 한다 — 예전엔 안쪽이 12px, 행이 16px이라
+     네 귀퉁이 호 사이로 **빨강이 실낱처럼 비쳤다**(요청 버그: 닫혔는데 삭제
+     버튼 윤곽이 보임). inherit면 .subrow(16)·.mx-sub(10) 양쪽에 저절로 맞는다. */
   .sub-in{position:relative;z-index:1;display:flex;align-items:center;gap:10px;
-    border-radius:12px;transition:transform .28s cubic-bezier(.22,1.2,.36,1);touch-action:pan-y}
+    border-radius:inherit;transition:transform .28s cubic-bezier(.22,1.2,.36,1);touch-action:pan-y}
   /* 인라인 하위작업 목록 (앱 SubtaskListEditor 파리티). */
   /* 하위 작업 = 부모 bar '아래'의 형제 블록 (요청). 보통 bar보다 살짝 낮다. */
   .subpanel{margin:-4px 0 9px 26px;display:flex;flex-direction:column;gap:5px}
@@ -1042,8 +1045,11 @@
     box-shadow:0 4px 12px rgba(20,40,80,.12);cursor:pointer;overflow:hidden}
   .d-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--dc,#9AA3B2);z-index:2}
   /* F7: 여백·배경은 **미는 안쪽(.d-in)**으로 — 카드에 두면 뒤 삭제 버튼이 가려진다. */
-  .d-card .d-in{padding:10px 12px 10px 15px;background:rgba(255,255,255,.95);border-radius:14px;flex-direction:column;align-items:stretch;gap:0}
-  .d-card.dark .d-in{background:rgba(30,38,60,.92)}
+  /* ⚠ 안쪽은 **불투명**이어야 한다 — .95면 뒤 삭제 버튼이 5%만큼 비친다
+     (요청 버그: 닫혔는데 빨강 윤곽이 보임). 카드 자체는 하늘 위에서
+     반투명한 그대로 두고, 미는 안쪽만 막는다. */
+  .d-card .d-in{padding:10px 12px 10px 15px;background:var(--card);border-radius:14px;flex-direction:column;align-items:stretch;gap:0}
+  .d-card.dark .d-in{background:#1e263c}
   /* 삭제는 할일과 같은 빨강·휴지통이되 **entry bar처럼 약간 반투명** (요청). */
   .d-card .d-del{width:72px;background:rgba(255,59,48,.82);backdrop-filter:blur(2px)}
   .d-card.dark{background:rgba(30,38,60,.92);color:#e8ecf6}
@@ -4954,7 +4960,11 @@
          버튼을 담는 틀이라, 행에 색을 칠하면 버튼이 그 밑에 깔려 안 보인다. */
       var r=document.createElement('div');r.className='subrow'+(s.isDone?' done':'');
       r.innerHTML='<button class="sub-del" title="삭제">'+IC.trash+'</button>'+
-        '<div class="sub-in" style="background:'+colAlpha(col,0.10)+'">'+
+        /* ⚠ 틴트는 **불투명 바닥 위에** 얹는다 (요청 버그: 닫혔는데 삭제 버튼이
+           비쳐 보임). 인라인 배경은 CSS의 `background:#fff`를 통째로 덮어써,
+           10% 틴트만 남아 뒤 빨강이 그대로 비쳤다 — 앱 SubtaskRow가
+           `.background(틴트).background(.background)`로 두 겹인 것과 같은 이유. */
+        '<div class="sub-in" style="background:linear-gradient('+colAlpha(col,0.10)+','+colAlpha(col,0.10)+'),var(--card)">'+
         '<span class="subck'+(s.isDone?' done':'')+'" style="border-color:'+(s.isDone?'#8a93a5':col)+(s.isDone?';background:#8a93a5':'')+'"></span>'+
         '<span class="st">'+esc(s.title)+'</span></div>';
       r.querySelector('.subck').addEventListener('click',function(e){e.stopPropagation();toggleSubtask(t,i);});
@@ -5116,7 +5126,12 @@
       if(!drag)return;var dx=e.clientX-sx,dy=e.clientY-sy;
       if(!lock){if(Math.abs(dx)<6&&Math.abs(dy)<6)return;lock=Math.abs(dx)>Math.abs(dy)?'x':'y';}
       if(lock!=='x')return;e.preventDefault();
-      set(Math.max(-W,Math.min(0,base+dx)));});
+      /* 버튼 폭을 넘겨 더 밀면 **저항을 주고 조금만** 따라간다 — 손을 떼면
+         다시 오른쪽으로 돌아와 버튼이 제 폭으로 보인다 (요청). 딱 잘라
+         멈추면 '벽에 부딪힌' 느낌이라 더 밀 수가 없다. */
+      var x=base+dx;
+      if(x<-W)x=-W-Math.min(26,Math.pow(-(x+W),0.6)*2.2);
+      set(Math.min(0,x));});
     function end(){if(!drag)return;drag=false;
       inner.style.transition='transform .2s cubic-bezier(.3,0,.2,1)';
       set(cur<-W*0.5?-W:0);}
