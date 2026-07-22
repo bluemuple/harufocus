@@ -3814,7 +3814,14 @@
         focMs=Math.max(focMs,(b.end-b.start)-restMs);
       }
       planCum[b.taskID]=(planCum[b.taskID]||0)+focMs;
-      var planMs=(t&&(t.durationMin||0)>0&&!t.isDone)?t.durationMin*60000:0;
+      /* ⚠ **계획 총량은 만들 때 계획(createdDurationMin)이다 — durationMin이
+         아니다** (요청 2026-07-23: "빗금이 늘어나면 안 돼"). 마감선을 아래로
+         끌면 nudgeDueTo가 durationMin을 '지금~마감'으로 키운다. 여기서
+         durationMin을 쓰면 그 늘어난 값이 곧 빗금 길이가 돼, 하지도 않은
+         계획이 빗금으로 자란다. createdDurationMin은 캡슐 드래그에 안 흔들려
+         (D2-1), 빗금은 처음 세운 계획에 붙박여 있는다. */
+      var planM=(t&&!t.isDone)?(t.createdDurationMin||t.durationMin||0):0;
+      var planMs=planM>0?planM*60000:0;
       b.planRemainMs=Math.max(0,planMs-planCum[b.taskID]);
     });
     recBlocks.forEach(function(b){
