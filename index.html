@@ -909,7 +909,8 @@
      **화면 밖의 나**(폰을 쥔 오른손)를 가리켜야 '내가 나에게 말한다'가 된다.
      꼬리가 없으면 같은 문장이 **앱의 훈수**로 읽힌다.
      ⚠ 위로 향하게 하지 말 것 — 상태바·노치와 겹친다. 오른쪽 아래 45°. */
-  .topcap::after{content:"";position:absolute;right:16px;bottom:-5px;width:12px;height:12px;
+  /* 코끼리가 오른쪽 끝 앵커가 됐으므로 꼬리는 코끼리 **왼쪽**(글 알약 아래)에서 뻗는다. */
+  .topcap::after{content:"";position:absolute;right:60px;bottom:-5px;width:12px;height:12px;
     background:rgba(255,255,255,.82);transform:rotate(45deg);border-radius:2px;
     box-shadow:2px 2px 6px rgba(20,40,80,.10)}
   body.night .topcap::after{background:rgba(30,34,50,.72)}
@@ -1773,19 +1774,29 @@
   /* 캡슐 — 아바타 + 본문(인용문/귀속) */
   /* 아바타 원 — 엘리 그림이 원 안에 꽉 차게. 배경은 아주 옅게 깔아 투명
      PNG가 캡슐 위에서 붕 뜨지 않게 한다. */
+  /* 코끼리 = 우상단 고정 원형 앵커 (요청 2026-07-23 개편). 하늘색 옅은 틴트 배경. */
   .topcap .tc-ava{flex:0 0 auto;width:24px;height:24px;border-radius:50%;
-    display:grid;place-items:center;overflow:hidden;background:rgba(120,130,160,.14)}
+    display:grid;place-items:center;overflow:hidden;background:rgba(150,190,235,.20)}
   .topcap .tc-ava svg,.topcap .tc-ava img{width:100%;height:100%;display:block;
-    border-radius:50%;object-fit:cover}
+    border-radius:50%;object-fit:cover;transition:filter .55s ease}
+  /* 평소엔 **조용한 무채색**(거의 배경). 상태가 바뀔 때만 .sharp로 잠깐 또렷. */
+  .topcap .tc-ava.quiet img{filter:grayscale(.92) brightness(1.05) opacity(.6)}
+  .topcap .tc-ava.quiet.sharp img{filter:none}
   .topcap .tc-body{min-width:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;line-height:1.25}
+  /* 아이들 물음표 배지 — 코끼리 오른쪽 위 모서리. 평소 숨김, .idle에서만. */
+  .topcap .tc-q{position:absolute;right:6px;top:2px;width:16px;height:16px;border-radius:50%;
+    display:none;place-items:center;font-size:11px;font-weight:800;line-height:1;
+    background:var(--accent,#5B7CE0);color:#fff;box-shadow:0 1px 3px rgba(20,40,80,.3)}
+  .topcap.idle .tc-q{display:grid}
   .topcap .tc-sub{font-size:10.5px;font-weight:600;opacity:.62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
   .topcap .tc-sub:empty{display:none}
 
   @media(max-width:1099px){
-    /* 제목 줄이 사라진 만큼 캡슐을 키운다 (요청): 거의 전폭·2줄 허용. */
-    .topcap{left:12px;right:12px;max-width:none;min-height:42px;padding:6px 14px;font-size:13px}
-    .topcap .tc-ava{width:30px;height:30px}
-    .topcap .tc-txt{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+    /* 개편(요청 2026-07-23): 전폭·2줄을 버리고 **우측 고정 앵커 + 왼쪽으로 흐르는
+       콘텐츠폭 알약**으로. 코끼리(40px)는 늘 같은 자리, 글은 한 줄로 왼쪽에 흐른다. */
+    .topcap{left:auto;right:12px;max-width:82vw;min-height:44px;padding:5px 8px 5px 15px;font-size:13.5px;gap:9px}
+    .topcap .tc-ava{width:40px;height:40px}
+    .topcap .tc-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     /* 제목 줄이 비었으므로 그만큼 아래 콘텐츠를 위로. */
     .view>h2{margin-top:0;margin-bottom:6px;min-height:0}
   }
@@ -1957,7 +1968,10 @@
     </div>
   </div>
   <!-- 우상단 회전 캡슐 (요청: 다짐·집중합계·해질녘·해돋이·D-day 번갈아, 아래로 전환). -->
-  <button class="topcap" id="topCap"><span class="tc-ava" id="tcAva"></span><span class="tc-ic" id="tcIc"></span><span class="tc-body"><span class="tc-txt" id="tcTxt"></span><span class="tc-sub" id="tcSub"></span></span></button>
+  <!-- '지금 나' 상단바 (요청 2026-07-23 개편): 코끼리를 **우상단 고정 원형 앵커**로,
+       글은 그 왼쪽으로 흐른다(폭이 변해도 코끼리는 안 움직인다 = 늘 같은 탭 자리).
+       코끼리는 평소 **조용한 무채색**(quiet), 상태가 바뀔 때만 얼굴이 잠깐 또렷(sharp). -->
+  <button class="topcap" id="topCap"><span class="tc-ic" id="tcIc"></span><span class="tc-body"><span class="tc-txt" id="tcTxt"></span><span class="tc-sub" id="tcSub"></span></span><span class="tc-ava quiet" id="tcAva"></span><span class="tc-q">?</span></button>
   <!-- 방금 한 일 + 실행 취소 (요청 첨부4·5) -->
   <!-- 편집 모드에서만 (요청): 무슨 키를 쓸 수 있는지 -->
   <button class="cal-today" id="calToday">오늘로</button>
@@ -8655,6 +8669,8 @@
   document.getElementById('navEditBtn').addEventListener('click',toggleNavEdit);
   document.getElementById('topCap').addEventListener('click',function(){
     if(capSignal&&capSignal.text){capSignal=null;startBarRotation();return;}   // 신호는 눌러서 해제
+    // 아이들('지금, 좀 어때?')이면 캡슐 전체가 '지금 나' 시트를 연다 (요청 개편 #2).
+    if(this.classList.contains('idle')){openMeSheet();return;}
     var keys=capPool();
     if(keys[barIdx]==='myword'){openVow();return;}  // 내 말이면 작성 팝업 (요청)
     barAdvance();
@@ -10012,7 +10028,9 @@
   function capContent(k){
     if(k==='myword'){
       var w=myWordPick();
-      if(!w)return {txt:eleName()+'에게 한마디',sub:''};
+      // 아이들: 적어 둔 다짐·일기가 없으면 코끼리가 '지금, 좀 어때?'로 말을 건다
+      // (요청 개편 #2). 탭하면 '지금 나' 시트가 열린다. idle 표시로 물음표 배지도 켠다.
+      if(!w)return {txt:'지금, 좀 어때?',sub:'',idle:true};
       return {txt:'“'+w.text+'”',sub:'— '+w.who};
     }
     if(k==='dusk'){
@@ -10110,10 +10128,22 @@
   /* 아바타만 다시 그린다 — 글은 몇 분에 한 번 도는데(회전) 상태는 ▶를 누른
      그 순간 바뀌어야 한다. ⚠ 같은 상태면 <img>를 다시 만들지 않는다: 캐시에서
      오더라도 새로 만들면 그림이 한 번 깜빡인다. */
+  var avaSharpTimer=null;
   function paintAvatar(){
     var ava=document.getElementById('tcAva');if(!ava)return;
     var st=avatarState();
-    if(ava.dataset.state!==st){ava.dataset.state=st;ava.innerHTML=avatarSVG(st);}
+    if(ava.dataset.state!==st){
+      var first=(ava.dataset.state===undefined);
+      ava.dataset.state=st;ava.innerHTML=avatarSVG(st);
+      /* 상태가 **바뀔 때만** 얼굴이 잠깐 또렷해진다(요청 개편 #3) — 평소엔 조용한
+         무채색으로 배경에 물러나 있다가, 마음이 달라진 순간에만 눈에 든다.
+         첫 페인트(부팅)는 조용히 시작한다. */
+      if(!first){
+        ava.classList.add('sharp');
+        clearTimeout(avaSharpTimer);
+        avaSharpTimer=setTimeout(function(){ava.classList.remove('sharp');},1800);
+      }
+    }
   }
   /* '지금 나' 시트 (요청): 아바타를 누르면 7종 중에서 내가 고른다. */
   var ME_LABEL={focus:'집중하고 있어',phone:'폰만 보고 있어',distract:'자꾸 딴 데 가',
@@ -10572,6 +10602,8 @@
     // 아바타가 있으면 작은 아이콘은 중복이라 숨긴다 (요청 B).
     paintAvatar();
     document.getElementById('tcIc').style.display='none';
+    // 아이들('지금, 좀 어때?')일 때만 코끼리에 물음표 배지 (요청 개편 #2).
+    cap.classList.toggle('idle',!!c.idle);
     // 귀속 줄은 **자리가 있을 때만** — 2줄 캡슐(모바일)에서만 그린다.
     // 데스크톱은 캡슐이 한 줄짜리 좁은 알약이라 인용문만 남긴다.
     cap.classList.toggle('two-line',window.innerWidth<1100);
