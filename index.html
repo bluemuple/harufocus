@@ -1838,6 +1838,14 @@
   /* ② 얼굴 고르는 칸 — 연한 배경 큰 라운드로 위 장면과 갈라 놓는다. */
   .me-pick{flex:0 0 auto;background:var(--card-2);border-radius:20px;padding:8px 8px 6px;margin-top:8px}
   .me-hint{font-size:10.5px;font-weight:600;color:var(--ink-soft);text-align:center;opacity:.8;margin-top:2px}
+  /* ③ 다짐/멘트 적는 란 (요청 개편 #4) — 시트 하단, 캡슐에 남는 한마디. */
+  .me-vow{flex:0 0 auto;display:flex;align-items:center;gap:8px;margin-top:8px}
+  .me-vow input{flex:1 1 auto;min-width:0;padding:10px 13px;border:1.5px solid var(--line);
+    border-radius:13px;background:var(--card);font-family:inherit;font-size:13.5px;color:var(--ink);outline:none}
+  .me-vow button{flex:0 0 auto;width:40px;height:40px;border-radius:12px;border:0;
+    display:grid;place-items:center;cursor:pointer;background:var(--sky-blue,#5B7CE0);color:#fff}
+  .me-vow button svg{width:19px;height:19px}
+  .me-vow button.saved{background:#34C759}
   /* 전신 무대 (요청 BCD): 고른 상태의 엘리가 크게 서고, **돌봄 손**이
      오른쪽 아래에서 들어와 그 상태에 맞는 몸짓을 한 번 한다.
      ⚠ 전신과 손은 **같은 캔버스에서 같은 상자로 잘랐다** — 그래서 겹치기만
@@ -2516,6 +2524,12 @@
     <div class="me-pick">
       <div class="me-grid" id="meGrid"></div>
       <div class="me-hint">고른 얼굴을 다시 누르면 자동으로 돌아가요</div>
+    </div>
+    <!-- ③ 다짐/멘트 적는 란 (요청 개편 #4): 여기 적으면 상단 캡슐 말풍선에 남는다.
+         언제든 여는 팝업 대신 '지금 나' 안으로 통합. 회전 풀에서는 뺐다. -->
+    <div class="me-vow">
+      <input id="meVowInput" placeholder="지금 나에게 한마디… (캡슐에 남아요)" maxlength="40">
+      <button id="meVowSave" aria-label="저장"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></button>
     </div>
   </div>
 </div>
@@ -8698,10 +8712,11 @@
   document.getElementById('navEditBtn').addEventListener('click',toggleNavEdit);
   document.getElementById('topCap').addEventListener('click',function(){
     if(capSignal&&capSignal.text){capSignal=null;startBarRotation();return;}   // 신호는 눌러서 해제
-    // 아이들('지금, 좀 어때?')이면 캡슐 전체가 '지금 나' 시트를 연다 (요청 개편 #2).
+    // 개편 #2·#4: 아이들이든 내 다짐이든 캡슐을 누르면 '지금 나' 시트를 연다
+    // (다짐 적는 란이 시트 안으로 통합됐다 — 옛 openVow 팝업 대신).
     if(this.classList.contains('idle')){openMeSheet();return;}
     var keys=capPool();
-    if(keys[barIdx]==='myword'){openVow();return;}  // 내 말이면 작성 팝업 (요청)
+    if(keys[barIdx]==='myword'){openMeSheet();return;}   // 다짐이면 시트에서 고친다
     barAdvance();
   });
   function openVow(){
@@ -10030,26 +10045,16 @@
     if(S.ddayDate&&Date.now()-lastDdayAt>=DDAY_COOLDOWN_MS)out.push('dday');   // 3순위 — 10분 쿨다운
     return out;
   }
-  /* 2순위 '내 말 되돌려주기' — 설정 한마디 + 내가 쓴 일기에서 하나.
-     ⚠ DATA.diary 항목은 {id,date,text,kind,updatedAt} (newDiaryEntry 확인). */
+  /* 캡슐에 남는 다짐 (요청 개편 #4) — '지금 나' 시트 안에서 적은 한마디.
+     ⚠ 예전엔 여기서 지난 일기까지 돌려 보여 줬는데(내 말 되돌려주기), 개편으로
+     **회전 풀에서 뺐다** — 다짐만 캡슐에 남기고, 일기는 일기 페이지에 둔다.
+     귀속('오늘 아침의 나')도 없앴다: 방금 적은 다짐에 붙이면 거짓말이 된다. */
   var WD=['일','월','화','수','목','금','토'];
   function myWordPick(){
-    var S=DATA.settings||{},out=[];
+    var S=DATA.settings||{};
     var motto=(S.motto||S.todayVow||'').trim();
-    if(motto)out.push({id:'motto',text:motto,who:'오늘 아침의 나'});
-    var cut=Date.now()-30*86400000;
-    (DATA.diary||[]).forEach(function(e){
-      var tx=(e.text||'').trim();if(!tx)return;
-      var d=new Date(e.date);if(isNaN(d)||d.getTime()<cut)return;
-      out.push({id:e.id,text:tx.split('\n')[0],
-                who:'지난 '+WD[d.getDay()]+'요일의 나'});
-    });
-    if(!out.length)return null;
-    // 같은 걸 연속으로 두 번 보여주지 않는다.
-    var pool=out.length>1?out.filter(function(x){return x.id!==lastMyWordId;}):out;
-    var pick=pool[Math.abs(barWordTick)%pool.length];
-    lastMyWordId=pick.id;
-    return pick;
+    if(!motto)return null;
+    return {id:'motto',text:motto,who:''};
   }
   /* 한국어 날짜 세는 말 — '사흘'처럼 읽히게 (요청 문구). */
   function daysKo(n){return ['오늘','하루','이틀','사흘','나흘','닷새','엿새','이레','여드레','아흐레','열흘'][n]||(n+'일');}
@@ -10060,7 +10065,7 @@
       // 아이들: 적어 둔 다짐·일기가 없으면 코끼리가 '지금, 좀 어때?'로 말을 건다
       // (요청 개편 #2). 탭하면 '지금 나' 시트가 열린다. idle 표시로 물음표 배지도 켠다.
       if(!w)return {txt:'지금, 좀 어때?',sub:'',idle:true};
-      return {txt:'“'+w.text+'”',sub:'— '+w.who};
+      return {txt:'“'+w.text+'”',sub:w.who?('— '+w.who):''};
     }
     if(k==='dusk'){
       var ss=todaySunset();if(!ss)return {txt:'',sub:''};
@@ -10553,7 +10558,19 @@
     // 열 때는 지금 상태를 그냥 보여 준다 — 손은 **내가 고른 뒤에만** 들어온다.
     paintMeStage(cur||avatarState(),false);
     document.getElementById('meAct').innerHTML='';
+    // 다짐 란은 지금 다짐으로 채워 둔다 (요청 개편 #4).
+    var vi=document.getElementById('meVowInput');
+    if(vi){var S=DATA.settings||{};vi.value=(S.motto||S.todayVow||'').trim();}
+    var vs=document.getElementById('meVowSave');if(vs)vs.classList.remove('saved');
     document.getElementById('meScrim').classList.add('open');
+  }
+  /* 다짐 저장 (요청 개편 #4) — 시트 안에서 적으면 캡슐 말풍선에 남는다. */
+  function meVowSave(){
+    if(!DATA.settings)DATA.settings={};
+    DATA.settings.motto=(document.getElementById('meVowInput').value||'').trim();
+    barIdx=0;paintBar(false);pushSnapshot();
+    var vs=document.getElementById('meVowSave');
+    if(vs){vs.classList.add('saved');setTimeout(function(){vs.classList.remove('saved');},1200);}
   }
   (function(){
     var sc=document.getElementById('meScrim');if(!sc)return;
@@ -10584,6 +10601,11 @@
       }
     });
     document.getElementById('meX').addEventListener('click',closeMeSheet);
+    // 다짐 저장 (요청 개편 #4)
+    var vsBtn=document.getElementById('meVowSave');
+    if(vsBtn)vsBtn.addEventListener('click',function(e){e.stopPropagation();meVowSave();});
+    var vInp=document.getElementById('meVowInput');
+    if(vInp)vInp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();meVowSave();this.blur();}});
     function g0(){return document.getElementById('meGrid');}
     /* ⚠ 아바타 탭은 캡슐 본래 동작(신호 해제·다음 문구)을 **뺏지 않는다** —
        stopPropagation으로 여기서 끊는다. 캡슐의 나머지 자리는 그대로다. */
