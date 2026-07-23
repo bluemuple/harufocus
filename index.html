@@ -262,10 +262,13 @@
   #tlGround{position:absolute;left:0;width:100%;pointer-events:none;z-index:0;
     background-size:100% 100%;background-repeat:no-repeat;background-position:top center}
   /* 해 — 시간각(x)·고도(y)로 하늘을 가로지른다 (앱 CelestialLayer 태양). JS가 위치·투명도. */
-  #tlSun{position:absolute;width:58px;height:58px;border-radius:50%;pointer-events:none;z-index:0;
-    transform:translate(-50%,-50%);opacity:0;transition:opacity .4s linear;
-    background:radial-gradient(circle at 50% 45%,#fff9e0,#ffe79a 46%,rgba(255,224,150,0) 72%);
-    filter:drop-shadow(0 0 22px rgba(255,231,150,.55))}
+  /* 태양 (요청 2026-07-23): 유저가 준 파스텔 실사 이미지에 맞춰 — 크림 코어에서
+     주황 코로나로 번지다 바깥에서 완전히 투명해진다. drop-shadow 글로우는 뺐다
+     (달 잔상과 같은 원인 + 코로나가 곧 글로우라 불필요). 제 레이어에 올려 잔상 방지. */
+  #tlSun{position:absolute;width:112px;height:112px;border-radius:50%;pointer-events:none;z-index:0;
+    transform:translate(-50%,-50%) translateZ(0);will-change:transform,left,top;
+    opacity:0;transition:opacity .4s linear;
+    background:radial-gradient(circle at 50% 48%,#fff8e0 0%,#fff0b8 14%,#ffe084 25%,#ffc463 33%,rgba(255,170,86,.55) 43%,rgba(255,146,66,.26) 56%,rgba(255,140,60,0) 74%)}
   /* 달 — 해와 같은 투영(시간각 x·고도 y). 위상은 moonSVG, 위치·투명도는 JS. */
   /* ⚠ iOS사파리 스크롤 시 **달이 지나간 자리에 사각형 잔상**이 남던 것 수정
      (요청 2026-07-23, 첨부): 원인은 요소 밖으로 번지는 빛(drop-shadow·합성 글로우)이다 —
