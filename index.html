@@ -4181,6 +4181,40 @@
   }
   document.getElementById('dayPrev').addEventListener('click',function(){dayOffset--;renderBig();});
   document.getElementById('dayNext').addEventListener('click',function(){dayOffset++;renderBig();});
+  /* 위로 계속 스크롤하면 어제로 (요청 2026-07-23): 타임라인 맨 위에서 더 올리면
+     전날로 넘어가 그 날의 **아래쪽**에서 이어지고, 맨 아래에서 더 내리면 다음 날
+     위쪽으로. 렌더는 하루 단위 그대로 재사용해 드래그·편집이 안 깨진다.
+     ⚠ **7일 전까지만**(유저 확답) — 그 너머는 날짜 버튼(‹)으로. 리소스 부담 없다. */
+  var TL_MAX_BACK=7,TL_MAX_FWD=7,tlPageCd=0;
+  function tlTryPage(dir){
+    var sc=document.getElementById('tlScroll');if(!sc)return false;
+    if(performance.now()<tlPageCd)return false;
+    if(tlDragging||mxDragging||editBarOn||batchIds!=null)return false;   // 조작 중엔 안 넘긴다
+    if(dir<0){
+      if(sc.scrollTop>2)return false;                 // 맨 위에서만
+      if(dayOffset<=-TL_MAX_BACK)return false;         // 7일 전 한계
+      tlPageCd=performance.now()+500;dayOffset--;renderBig();
+      setTimeout(function(){sc.scrollTop=Math.max(0,sc.scrollHeight-sc.clientHeight);updateTlSky();updateNowCap();},50);
+      return true;
+    }else{
+      if(sc.scrollTop<sc.scrollHeight-sc.clientHeight-2)return false;    // 맨 아래에서만
+      if(dayOffset>=TL_MAX_FWD)return false;
+      tlPageCd=performance.now()+500;dayOffset++;renderBig();
+      setTimeout(function(){sc.scrollTop=0;updateTlSky();updateNowCap();},50);
+      return true;
+    }
+  }
+  (function(){var sc=document.getElementById('tlScroll');if(!sc)return;
+    sc.addEventListener('wheel',function(e){
+      if(e.deltaY<0)tlTryPage(-1);else if(e.deltaY>0)tlTryPage(1);},{passive:true});
+    var ty=0,tActive=false;
+    sc.addEventListener('touchstart',function(e){ty=e.touches[0].clientY;tActive=true;},{passive:true});
+    sc.addEventListener('touchmove',function(e){
+      if(!tActive)return;var dy=e.touches[0].clientY-ty;
+      if(dy>50){if(tlTryPage(-1))tActive=false;}
+      else if(dy<-50){if(tlTryPage(1))tActive=false;}},{passive:true});
+    sc.addEventListener('touchend',function(){tActive=false;},{passive:true});
+  })();
   // 타임라인에서 직접 작업 추가 (요청): 지금(또는 다음 빈 슬롯)에 블록을 만들고
   // 편집 모달을 열어 모든 옵션을 설정. 보고 있는 날짜에 배치된다.
   document.getElementById('tlAdd').addEventListener('click',function(){openCapture('timeline');});
