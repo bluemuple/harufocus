@@ -3176,24 +3176,41 @@
     return pal;
   }
   function dayMs(){return 86400000;}
+  // 특정 순간(Date)의 하늘 팔레트 — 해 고도 기준. (3일 스크롤: 연속 시각을 그대로 넣는다.)
+  function tlSkyForDate(dt){
+    var s=sunAltAt(dt,obsLat(),obsLng());
+    var pal=skyPalette(s.alt,s.H<0);pal.H=s.H;return pal;
+  }
   function updateTlSky(){
     var sc=document.getElementById('tlScroll');if(!sc)return;
-    // 화면 중앙에 보이는 시각으로 하늘색을 정한다 (앱: 스크롤 중앙 = displayedDate).
+    /* 화면 중앙이 어느 밴드의 몇 시인지 → **연속 시각(dt)**으로 하늘·해·달을 정한다.
+       3일(어제·오늘·내일)이 이어지므로, 스크롤 중앙의 시각이 밴드를 넘나들며
+       연속으로 흐른다 — 그래야 해·달이 중간에 멈추지 않고 하루의 호를 그린다. */
     var centerY=sc.scrollTop+sc.clientHeight/2;
-    // 3일 밴드: 중앙이 어느 밴드의 몇 시인지 (밴드 안 상대 위치로 하늘색을 정한다).
-    var localY=(tlDayH>0)?(centerY-Math.floor(centerY/tlDayH)*tlDayH):centerY;
+    /* ⚠ 밴드는 **실제 요소 위치**로 찾는다 — 렌더 때 잡은 tlDayH는 레이아웃 전이면
+       0이라 한낮이 밤으로 계산됐다(요청 버그). offsetTop/Height는 여기선 항상 유효. */
+    var lanes=sc.querySelectorAll('.tl-day'),bandIdx=1,bandTop=0;
+    for(var _li=0;_li<lanes.length;_li++){
+      var _lt=lanes[_li].offsetTop,_lh=lanes[_li].offsetHeight;
+      if(centerY<_lt+_lh||_li===lanes.length-1){bandIdx=_li;bandTop=_lt;break;}
+    }
+    var localY=centerY-bandTop;
     var h=TS+(localY-14)/PPH;h=Math.max(0,Math.min(24,h));
-    var p=tlSkyFor(h),vb=document.getElementById('view-big'),r=vb.style;
+    var mid=new Date();mid.setHours(0,0,0,0);
+    var dt=new Date(mid.getTime()+(dayOffset+bandIdx-1)*dayMs()+h*3600000);
+    var p=tlSkyForDate(dt),vb=document.getElementById('view-big'),r=vb.style;
     // 하늘: 위=top, 아래(지평선)=horizon. 밴딩을 줄이려 중간 블렌드 한 점을 더 둔다.
     r.setProperty('--tl-top',p.top);
     r.setProperty('--tl-mid',lerpHex(parseInt(p.top.slice(1),16),parseInt(p.horizon.slice(1),16),0.55));
     r.setProperty('--tl-bot',p.horizon);
-    // 새벽·노을의 따뜻한 지평선 글로우 (앱 glowStrength).
+    // 해의 가로 위치(시간각) — 글로우가 **해가 있는 쪽**에서 피게 미리 구한다 (요청 리얼리즘).
+    var sunX=Math.max(4,Math.min(96,50+42*((p.H||0)/(Math.PI/2))));
+    // 새벽·노을의 따뜻한 지평선 글로우 (앱 glowStrength). 해 근처 땅·하늘이 물든다.
     var glow=document.getElementById('tlGlow');
     if(!glow){glow=document.createElement('div');glow.id='tlGlow';vb.insertBefore(glow,vb.firstChild);}
-    // 글로우는 **지평선(82%)** 에 얹는다 — 노을은 땅과 하늘이 만나는 자리에서 핀다.
-    glow.style.background='radial-gradient(135% 42% at 50% 82%,'+p.warm+' 0%,rgba(0,0,0,0) 68%)';
-    glow.style.opacity=(p.glow*0.55).toFixed(3);
+    // 글로우는 **지평선(82%)** + **해의 x** 에 얹는다 — 노을은 해가 걸린 자리에서 핀다.
+    glow.style.background='radial-gradient(120% 46% at '+sunX.toFixed(1)+'% 82%,'+p.warm+' 0%,rgba(0,0,0,0) 66%)';
+    glow.style.opacity=(p.glow*0.62).toFixed(3);
     // ⚠ 첫 호출은 타임라인이 막 보이기 시작해 #view-big 측정값이 0일 수 있다.
     // 그러면 땅 높이 0·별 미생성으로 첫 화면이 깨진다(스크롤 전). 뷰포트 크기로
     // 폴백해 첫 호출부터 올바르게 그린다.
@@ -3234,15 +3251,20 @@
     //   y: 고도 90°=화면 4.5%(천정), 0°=지평선 82%. 지평선 아래면 서서히 숨긴다.
     var sun=document.getElementById('tlSun');
     if(!sun){sun=document.createElement('div');sun.id='tlSun';vb.insertBefore(sun,glow.nextSibling);}
-    var st=(p.H||0)/(Math.PI/2), sunX=Math.max(4,Math.min(96,50+42*st));
     var sunY=0.82*skH-(p.alt/90)*0.775*skH;
     sun.style.left=sunX.toFixed(2)+'%'; sun.style.top=sunY.toFixed(1)+'px';
-    sun.style.opacity=Math.max(0,Math.min(1,(p.alt+1.5)/3)).toFixed(2);   // 지평선서 부드럽게 사라짐
-    // 달 — 해와 같은 투영. 위치는 이 순간의 달 고도·시간각, 위상은 오늘 것.
+    /* ⚠ **fade in/out 하지 않는다** (요청): 예전엔 지평선 근처에서 opacity로 서서히
+       나타났다 사라졌는데, 이제 해는 늘 또렷하고 **땅(언덕)이 가려** 뒤에서 떠오르고
+       뒤로 진다(#tlSun은 #tlGround보다 뒤 레이어라 저절로 가려진다). 밤엔 지평선
+       한참 아래라 화면 밖이다. */
+    sun.style.opacity='1';
+    /* 새벽·노을엔 해가 **붉고 옅게** 물든다 (요청 리얼리즘) — 고도가 낮을수록 강하게. */
+    var low=Math.max(0,Math.min(1,(9-p.alt)/16));
+    sun.style.filter=low>0.02?('saturate('+(1+low*0.7).toFixed(2)+') brightness('+(1-low*0.14).toFixed(2)+') hue-rotate('+(-low*16).toFixed(0)+'deg)'):'';
+    // 달 — 해와 같은 투영. **연속 시각(dt)**으로 위치를 정한다(3일 스크롤에서 안 멈추게).
     var moon=document.getElementById('tlMoon');
     if(!moon){moon=document.createElement('div');moon.id='tlMoon';vb.insertBefore(moon,glow.nextSibling);}
-    var mdt=new Date();mdt.setHours(0,0,0,0);
-    mdt=new Date(mdt.getTime()+h*3600000+dayOffset*dayMs());
+    var mdt=dt;
     var mp=moonAltAt(mdt,obsLat(),obsLng());
     var mtan=mp.H/(Math.PI/2), moonX=Math.max(4,Math.min(96,50+42*mtan));
     var moonY=0.82*skH-(mp.alt/90)*0.775*skH;
