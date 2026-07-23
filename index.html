@@ -1945,6 +1945,31 @@
   .me-act button.warn{color:#FF3B30}
   .me-act input{flex:1 1 100%;padding:11px 12px;border:1px solid var(--line);border-radius:13px;
     background:var(--card);font-family:inherit;font-size:14px;color:var(--ink);outline:none}
+  /* ── 글쓰기 플로우 (요청 개편 #5·#6) ── */
+  /* 코끼리 왼쪽 작은 말풍선 — 이 말풍선만 **코끼리가 말한다**(유저 지정 예외). */
+  .me-side{position:absolute;left:2px;top:20px;max-width:48%;z-index:3;
+    padding:7px 11px;border:0;border-radius:14px 14px 14px 5px;
+    background:var(--sky-blue,#5B7CE0);color:#fff;font-family:inherit;
+    font-size:12px;font-weight:700;line-height:1.3;cursor:pointer;text-align:left;
+    box-shadow:0 3px 10px rgba(20,40,80,.22);animation:meSideIn .28s ease both}
+  @keyframes meSideIn{0%{opacity:0;transform:translateY(4px) scale(.96)}100%{opacity:1;transform:none}}
+  /* 오른쪽(코끼리)을 향하는 꼬리 — 이 말은 코끼리 입에서 나온다. */
+  .me-side::after{content:"";position:absolute;right:-4px;top:50%;margin-top:-6px;width:12px;height:12px;
+    background:inherit;transform:rotate(45deg);border-radius:0 3px 0 0}
+  /* 입력 한 줄 + 저장(✓)/취소(✕) 기호 버튼. */
+  .me-write{display:flex;align-items:center;gap:8px;flex:1 1 100%;margin-top:2px}
+  .me-write input{flex:1 1 auto;min-width:0;padding:11px 13px;border:1.5px solid var(--line);
+    border-radius:13px;background:var(--card);font-family:inherit;font-size:14px;color:var(--ink);outline:none}
+  .me-write button{flex:0 0 auto;width:42px;height:42px;border-radius:12px;border:0;
+    display:grid;place-items:center;cursor:pointer;padding:0}
+  .me-write .mw-ok{background:var(--sky-blue,#5B7CE0);color:#fff}
+  .me-write .mw-no{background:var(--card-2);color:var(--ink-soft)}
+  .me-write button svg{width:20px;height:20px}
+  /* 프롬프트 피커 — 큰 말풍선에 ▲ 프롬프트 ▼ (세로). 화살표=더 있음·랜덤. */
+  #meLine.mp-wrap{display:flex;flex-direction:column;align-items:center;gap:1px}
+  #meLine .mp-ar{font-size:11px;opacity:.45;cursor:pointer;line-height:1;padding:2px 8px}
+  #meLine .mp-txt{border:0;background:none;font-family:inherit;font-size:14px;font-weight:700;
+    color:var(--ink);cursor:pointer;text-align:center;line-height:1.35;padding:1px 4px}
   /* 아바타는 눌리는 것처럼 보여야 한다 — 캡슐 안에서 살짝 반응. */
   .topcap .tc-ava{cursor:pointer;transition:transform .12s ease}
   .topcap .tc-ava:active{transform:scale(.92)}
@@ -2478,6 +2503,10 @@
       <div class="me-stage" id="meStage">
         <img class="me-full" id="meFull" alt="">
         <img class="me-hand" id="meHand" alt="">
+        <!-- 코끼리 **왼쪽 작은 말풍선** (요청 개편 #5) — 글쓰기 중에만 뜬다.
+             이 말풍선만은 코끼리가 직접 말한다("아이디어가 필요해"류, 매번 랜덤).
+             누르면 큰 말풍선에 프롬프트 피커가 뜬다. 큰 말풍선·캡슐은 여전히 '내가 나에게'. -->
+        <button class="me-side" id="meSide" style="display:none"></button>
       </div>
       <!-- 짐작에 답하는 자리 (2지선다 / 오늘 목록 칩).
            ⚠ 높이를 고정한다 — 안 그러면 얼굴을 바꿀 때마다 아래 칸이 들썩인다. -->
@@ -10203,6 +10232,7 @@
   /* 짐작에 답하는 자리를 그린다. */
   function paintMeAct(k){
     var box=document.getElementById('meAct');if(!box)return;
+    meWriteEnd();                       // 다른 얼굴로 넘어가면 글쓰기 모드·작은 말풍선을 접는다
     box.innerHTML='';meSelSet=[];
     // ⚠ 얼굴을 바꿨는데 스크롤이 남아 있으면 말풍선이 잘린 채로 뜬다.
     var top=document.querySelector('.me-top');if(top)top.scrollTop=0;
@@ -10268,6 +10298,10 @@
         };
         box.appendChild(c);
       });
+      // 덜어내기 대신 **글로 꺼내 두는** 길도 연다 (요청 Q1: 작업 + 글쓰기 둘 다).
+      var wb=document.createElement('button');wb.className='wide';wb.textContent='하고 싶은 말이 있어';
+      wb.onclick=function(){meStartWriting(k);};
+      box.appendChild(wb);
       syncActs();
       return;
     }
@@ -10322,7 +10356,7 @@
         meDone(n+'개 지웠어. 안 해도 되는 일이었을지도.');});
   }
   /* 말풍선만 바꾼다 (짐작 → 답 → 결과). */
-  function meSay(text){document.getElementById('meLine').textContent=text;
+  function meSay(text){var l=document.getElementById('meLine');l.className='';l.textContent=text;
     document.getElementById('meBubble').classList.remove('hide');}
   /* 행동까지 끝났을 때: 결과를 말하고 닫는 버튼만 남긴다. */
   function meDone(text){
@@ -10331,35 +10365,135 @@
     var b=document.createElement('button');b.className='wide go';b.textContent='닫기';
     b.onclick=closeMeSheet;box.appendChild(b);
   }
-  function closeMeSheet(){document.getElementById('meScrim').classList.remove('open');}
-  /* 2지선다에 답했을 때 — 갈래마다 다른 화면. */
+  function closeMeSheet(){meWriteEnd();document.getElementById('meScrim').classList.remove('open');}
+
+  /* ── 글쓰기 플로우 (요청 개편 #5·#6) ────────────────────────────────
+     각 갈래에서 [하고 싶은 말이 있어]를 누르면 입력 한 줄이 열린다. 큰 말풍선엔
+     '내가 다 들어줄게'류(글 쓰고 싶게). 코끼리 왼쪽 작은 말풍선엔 '아이디어가
+     필요해'류(매번 랜덤) — 누르면 큰 말풍선에 프롬프트 피커(위/아래 화살표로 더
+     있음, 아무 버튼=랜덤 프롬프트). 유저 확답: 작업조작은 그대로 두고 글쓰기를
+     **옵션으로 더한다**, 갈래 문구는 담백하게.
+     ⚠ 이 작은 말풍선만은 **코끼리가 말한다**(유저가 지정한 예외) — 큰 말풍선·캡슐은
+        여전히 '내가 나에게'. */
+  var ME_THEME={rest:'rest',lie:'rest',walk:'rest',hard:'start',refuse:'start',
+    big:'load',overload:'load',fun:'fun',work:'tangle',life:'tangle'};
+  var ME_PROMPTS={
+    rest:['지금 몸에서 가장 쉬고 싶은 곳은 어디야?','오늘 나를 가장 지치게 한 건 뭐였을까?',
+      '5분 뒤에 뭘 하면 조금 나아질까?','쉬는 게 왜 이렇게 어렵게 느껴질까?',
+      '지금 딱 하나만 내려놓는다면?','마지막으로 푹 쉰 게 언제였지?',
+      '몸이 나한테 뭐라고 말하는 것 같아?','아무것도 안 해도 되는 10분이 생긴다면?',
+      '지금 제일 편한 자세는 뭐야?','오늘 하루, 나한테 수고했다고 한마디.'],
+    start:['시작이 왜 이렇게 무겁게 느껴질까?','딱 첫 줄만 쓴다면 뭐라고 쓸래?',
+      '이걸 미루면 나중의 나는 어떤 기분일까?','완벽하지 않아도 된다면 지금 뭘 할래?',
+      '이 일에서 제일 하기 싫은 부분은 뭐야?','5분만 한다면 어디부터 손댈래?',
+      '다 끝낸 나는 뭐라고 말해줄까?','지금 나를 붙잡고 있는 건 뭘까?',
+      '이 일이 끝나면 뭐가 편해질까?','아주 작게 쪼갠다면 첫 조각은 뭐야?'],
+    load:['머릿속에 떠다니는 걸 다 적어볼까?','이 중에 오늘 꼭 해야 하는 건 몇 개일까?',
+      '하나만 남긴다면 뭘 남길래?','내일의 나에게 넘겨도 되는 건 뭐야?',
+      '지금 제일 마음을 무겁게 하는 건 뭘까?','다 못 해도 괜찮다면 어떤 기분이야?',
+      '남이 이 목록을 본다면 뭐라고 할까?','이 중에 사실 안 해도 되는 건 없을까?',
+      '지금 딱 하나만 고른다면?','이 무게를 반으로 줄이려면 뭘 뺄까?'],
+    fun:['지금 끌리는 그건 나한테 뭘 주고 있어?','그게 왜 지금 더 재밌게 느껴질까?',
+      '딴짓이 채워주는 건 어떤 마음일까?','이따 마음껏 하려면 지금 뭘 먼저 할까?',
+      '지금 진짜 하고 싶은 건 뭐야?','그 재미를 5분만 즐기고 온다면?',
+      '딴 데로 간 마음은 뭘 피하고 싶었을까?','지금 이 순간 제일 궁금한 건 뭐야?',
+      '그걸 하고 나면 어떤 기분이 들까?','잠깐 쉬어도 된다고, 나한테 한마디.'],
+    tangle:['지금 머릿속에서 제일 시끄러운 건 뭐야?','그 생각은 언제부터 맴돌기 시작했을까?',
+      '한 줄로 꺼내 놓으면 뭐라고 쓸래?','지금 마음을 색이나 날씨로 표현한다면?',
+      '누구한테 이 얘길 털어놓고 싶어?','이 엉킨 실 끝을 하나 잡는다면 어디야?',
+      '지금 나한테 필요한 말은 뭘까?','오늘 있었던 일 중 아직 안 끝난 게 있어?',
+      '이 기분에 이름을 붙인다면?','지금 나를 가장 편하게 해줄 한 가지는?']};
+  var PICKER_INVITES=['같이 찾아볼까?','뭐라고 쓸까?','말문이 막혔어?','생각이 안 나?',
+    '내가 골라줄까?','빈칸이 어렵지.','한 줄이면 돼.','아무거나 골라 봐.','시작만 하면 돼.','떠오르는 게 없어?'];
+  var WRITE_INVITES=['내가 다 들어줄게. 편하게 적어.','뭐든 괜찮아. 지금 떠오르는 대로.',
+    '한 줄이면 돼. 나만 볼 거야.','틀린 말은 없어. 그냥 적어 봐.'];
+  function mePick(a){return a[Math.floor(Math.random()*a.length)];}
+  var meWriteInp=null,meWriteBranch=null;
+  /* 글쓰기 모드 진입 — 입력 한 줄 + 저장(✓)/취소(✕) + 코끼리 왼쪽 작은 말풍선. */
+  function meStartWriting(branch){
+    meWriteBranch=branch;
+    meSay(mePick(WRITE_INVITES));
+    var box=document.getElementById('meAct');box.innerHTML='';
+    var row=document.createElement('div');row.className='me-write';
+    var inp=document.createElement('input');inp.placeholder='지금 마음 한 줄';inp.maxLength=200;
+    meWriteInp=inp;
+    var no=document.createElement('button');no.className='mw-no';no.setAttribute('aria-label','취소');
+    no.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+    var ok=document.createElement('button');ok.className='mw-ok';ok.setAttribute('aria-label','저장');
+    ok.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>';
+    ok.onclick=meWriteSave;
+    no.onclick=function(){meWriteEnd();var b=manualState()||avatarState();meSay(ME_LINE[b]||'');paintMeAct(b);};
+    inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();meWriteSave();}});
+    row.appendChild(no);row.appendChild(inp);row.appendChild(ok);
+    box.appendChild(row);
+    // 코끼리 왼쪽 작은 말풍선 (매번 랜덤 초대) → 프롬프트 피커를 연다.
+    var side=document.getElementById('meSide');
+    side.textContent=mePick(PICKER_INVITES);
+    side.style.display='';
+    side.onclick=function(){meShowPicker(branch);};
+    setTimeout(function(){inp.focus();},30);
+  }
+  function meWriteSave(){
+    var v=(meWriteInp&&meWriteInp.value||'').trim();
+    if(!v){if(meWriteInp)meWriteInp.focus();return;}   // 빈 건 저장 안 함(취소는 ✕)
+    newDiaryEntry('note',{text:v});
+    renderAll();pushSnapshot();
+    meWriteEnd();
+    meDone('적어 뒀어. 이제 머리에서 지워도 돼.');
+  }
+  function meWriteEnd(){
+    var side=document.getElementById('meSide');if(side){side.style.display='none';side.onclick=null;}
+    var l=document.getElementById('meLine');if(l)l.className='';   // 피커 세로 레이아웃 해제
+    meWriteInp=null;meWriteBranch=null;
+  }
+  /* 프롬프트 피커 — 큰 말풍선에 프롬프트 하나 + 위/아래 화살표(더 있음 표시).
+     아무 화살표=랜덤 다음 프롬프트, 프롬프트를 누르면 입력에 채운다. */
+  function meShowPicker(branch){
+    var pool=ME_PROMPTS[ME_THEME[branch]]||ME_PROMPTS.tangle;
+    var p=mePick(pool);
+    var bub=document.getElementById('meBubble');bub.classList.remove('hide');
+    var line=document.getElementById('meLine');line.className='mp-wrap';
+    line.innerHTML='<span class="mp-ar" data-r="1">▲</span>'
+      +'<button class="mp-txt" type="button"></button>'
+      +'<span class="mp-ar" data-r="1">▼</span>';
+    line.querySelector('.mp-txt').textContent=p;
+    // 프롬프트를 고르면 **큰 말풍선에 질문으로 남긴다** — 입력창은 비워 두고 그 질문에
+    // 답을 쓴다(질문 자체가 일기로 저장되지 않게). 답만 저장된다.
+    line.querySelector('.mp-txt').onclick=function(){
+      meSay(p);
+      if(meWriteInp)meWriteInp.focus();
+    };
+    [].forEach.call(line.querySelectorAll('.mp-ar'),function(a){
+      a.onclick=function(){meShowPicker(branch);};});
+  }
+  /* 갈래 화면 — 기존 작업조작 버튼 + [하고 싶은 말이 있어](요청 Q1: 둘 다). */
+  function meBranch(sayLine,actLabel,actFn,branch){
+    meSay(sayLine);
+    var box=document.getElementById('meAct');box.innerHTML='';
+    var a=document.createElement('button');a.className='wide go';a.textContent=actLabel;
+    a.onclick=actFn;
+    var w=document.createElement('button');w.className='wide';w.textContent='하고 싶은 말이 있어';
+    w.onclick=function(){meStartWriting(branch);};
+    box.appendChild(a);box.appendChild(w);
+  }
+  /* 2지선다에 답했을 때 — 갈래 화면(작업 + 글쓰기). work/life는 곧장 글쓰기. */
   function meAnswer(k,choice){
-    var box=document.getElementById('meAct');
-    if(choice==='rest'){mePlaceBlock('쉬기','rest',10);meDone('10분 쉼을 놔뒀어. 진짜 쉬는 거야.');return;}
-    if(choice==='lie'){mePlaceBlock('눕기','rest',5);meDone('5분 눕기. 그다음은 그때 생각하자.');return;}
-    if(choice==='walk'){mePlaceBlock('걷기','health',5);meDone('5분 걷기. 몸부터 풀자.');return;}
+    if(choice==='rest'){meBranch('쉬고 싶었구나. 그래도 돼.','10분 쉼 놔두기',
+      function(){mePlaceBlock('쉬기','rest',10);meDone('10분 쉼을 놔뒀어. 진짜 쉬는 거야.');},'rest');return;}
+    if(choice==='lie'){meBranch('몸이 먼저 눕고 싶구나.','5분 눕기 놔두기',
+      function(){mePlaceBlock('눕기','rest',5);meDone('5분 눕기. 그다음은 그때 생각하자.');},'lie');return;}
+    if(choice==='walk'){meBranch('좀 걷고 싶구나.','5분 걷기 놔두기',
+      function(){mePlaceBlock('걷기','health',5);meDone('5분 걷기. 몸부터 풀자.');},'walk');return;}
     if(choice==='hard'||choice==='big'||choice==='fun'){
-      var t=meHeaviest();
-      var name=t?(t.title||'그 일'):null;
-      mePlaceBlock(name?('첫 10분 · '+name):'첫 10분','focus',10);
-      meDone(name?('‘'+name+'’ 첫 10분만. 첫 줄만 정하면 돼.')
-                 :'첫 10분만. 첫 줄만 정하면 돼.');
-      return;
+      var t=meHeaviest(),name=t?(t.title||'그 일'):null;
+      var say=choice==='hard'?'시작이 무겁지.':(choice==='big'?'할 게 많아서 그래.':'재밌는 게 당기지.');
+      meBranch(say,name?('‘'+name+'’ 첫 10분만'):'첫 10분만',function(){
+        mePlaceBlock(name?('첫 10분 · '+name):'첫 10분','focus',10);
+        meDone(name?('‘'+name+'’ 첫 10분만. 첫 줄만 정하면 돼.'):'첫 10분만. 첫 줄만 정하면 돼.');
+      },choice);return;
     }
     if(choice==='work'||choice==='life'){
-      meSay('한 줄로 꺼내 두자. 머릿속에서 내려놓게.');
-      box.innerHTML='';
-      var inp=document.createElement('input');inp.placeholder='엉킨 것 한 줄';
-      var ok=document.createElement('button');ok.className='wide go';ok.textContent='적어 두기';
-      ok.onclick=function(){
-        var v=(inp.value||'').trim();
-        if(!v){closeMeSheet();return;}
-        // ⚠ newDiaryEntry(kind, extra)는 **자기가 DATA.diary에 넣는다** — 또 push하면 두 벌.
-        newDiaryEntry('note',{text:v});
-        renderAll();pushSnapshot();
-        meDone('적어 뒀어. 이제 머리에서 지워도 돼.');
-      };
-      box.appendChild(inp);box.appendChild(ok);inp.focus();
+      meStartWriting(choice);   // 엉킨 것 꺼내기 = 곧장 글쓰기(프롬프트 피커 포함)
       return;
     }
   }
