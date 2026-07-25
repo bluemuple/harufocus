@@ -3093,51 +3093,103 @@
   }
 
   // ── 타임라인 천체 (요청: 스크롤 시 해·달 위치 + 달 위상 + 하늘색 동적) ──
-  // 태양의 남중(가장 높음)은 정오, 달은 위상에 따라 남중 시각이 밀린다.
-  var SYNODIC=29.530588853, NEW_MOON=Date.UTC(2000,0,6,18,14)/86400000;
-  function moonAge(date){var d=date.getTime()/86400000-NEW_MOON;return ((d%SYNODIC)+SYNODIC)%SYNODIC;}
-  function moonPhase(date){return moonAge(date)/SYNODIC;}   // 0 신월 .5 보름 1 신월
-  // 달 남중 시각(대략): 신월=정오, 보름=자정. 위상 0..1 → 12h..(다음날)12h.
-  function moonTransitHour(date){return (12+24*moonPhase(date))%24;}
-  // 위상 SVG: 밝은 원반 + 어두운 종결선(터미네이터 타원).
-  function moonSVG(date){
-    var p=moonPhase(date),r=16,cx=17,cy=17;
-    var mag=Math.cos(p*2*Math.PI);            // 1 신월(안 보임) … -1 보름(꽉 참)
-    var rx=Math.abs(mag)*r;
-    var big=p<0.5?1:0;                          // 오른쪽/왼쪽 반원
-    var inner=(mag>0)?(p<0.5?1:0):(p<0.5?0:1);  // 초승/그믐 vs 볼록
-    var lit='M '+cx+' '+(cy-r)+' a '+r+' '+r+' 0 0 '+big+' 0 '+(2*r)+
+  // 달 황경·황위·거리 — Meeus 47장 절단 급수(앱 LunarEngine과 같은 48항,
+  // ±0.01–0.05°). 옛 1항 근사(오차 ~1.5°, 월출 ±수 분)를 대체한다 (요청:
+  // 전 세계 어디서든 위치·모양·방향이 실제와 같게).
+  // 항: [D,M,M',F, Σl(1e-6°), Σr(1e-3km)] / [D,M,M',F, Σb(1e-6°)]
+  var MOON_LON=[[0,0,1,0,6288774,-20905355],[2,0,-1,0,1274027,-3699111],
+    [2,0,0,0,658314,-2955968],[0,0,2,0,213618,-569925],[0,1,0,0,-185116,48888],
+    [0,0,0,2,-114332,-3149],[2,0,-2,0,58793,246158],[2,-1,-1,0,57066,-152138],
+    [2,0,1,0,53322,-170733],[2,-1,0,0,45758,-204586],[0,1,-1,0,-40923,-129620],
+    [1,0,0,0,-34720,108743],[0,1,1,0,-30383,104755],[2,0,0,-2,15327,10321],
+    [0,0,1,2,-12528,0],[0,0,1,-2,10980,79661],[4,0,-1,0,10675,-34782],
+    [0,0,3,0,10034,-23210],[4,0,-2,0,8548,-21636],[2,1,-1,0,-7888,24208],
+    [2,1,0,0,-6766,30824],[1,0,-1,0,-5163,-8379],[1,1,0,0,4987,-16675],
+    [2,-1,1,0,4036,-12831],[2,0,2,0,3994,-10445],[4,0,0,0,3861,-11650],
+    [2,0,-3,0,3665,14403],[0,1,-2,0,-2689,-7003]];
+  var MOON_LAT=[[0,0,0,1,5128122],[0,0,1,1,280602],[0,0,1,-1,277693],
+    [2,0,0,-1,173237],[2,0,-1,1,55413],[2,0,-1,-1,46271],[2,0,0,1,32573],
+    [0,0,2,1,17198],[2,0,1,-1,9266],[0,0,2,-1,8822],[2,-1,0,-1,8216],
+    [2,0,-2,-1,4324],[2,0,1,1,4200],[2,1,0,-1,-3359],[2,-1,-1,1,2463],
+    [2,-1,0,1,2211],[2,-1,-1,-1,2065],[0,1,-1,-1,-1870],[4,0,-1,-1,1828],
+    [0,1,0,1,-1794]];
+  // d = J2000 기준 경과일 → {lon,lat(도), dist(km)}.
+  function moonEclipticMeeus(d){
+    // ⚠ rad는 한 줄로 자체완결 — tests/sun-location-parity가 '첫 rad 줄'을
+    //   상수로 뽑아 쓰므로 이 줄에 자유변수가 붙으면 그 하네스가 깨진다.
+    var rad=Math.PI/180;
+    var t=d/36525, t2=t*t, t3=t2*t, t4=t3*t;
+    var lp=218.3164477+481267.88123421*t-0.0015786*t2+t3/538841-t4/65194000;
+    var D =297.8501921+445267.1114034*t-0.0018819*t2+t3/545868-t4/113065000;
+    var M =357.5291092+35999.0502909*t-0.0001536*t2+t3/24490000;
+    var Mp=134.9633964+477198.8675055*t+0.0087414*t2+t3/69699-t4/14712000;
+    var F =93.2720950+483202.0175233*t-0.0036539*t2-t3/3526000+t4/863310000;
+    var a1=119.75+131.849*t, a2=53.09+479264.290*t, a3=313.45+481266.484*t;
+    var e=1-0.002516*t-0.0000074*t2;
+    var sumL=0,sumR=0,sumB=0,i,tm,arg,ecc;
+    for(i=0;i<MOON_LON.length;i++){tm=MOON_LON[i];
+      arg=rad*(tm[0]*D+tm[1]*M+tm[2]*Mp+tm[3]*F);
+      ecc=Math.abs(tm[1])===1?e:(Math.abs(tm[1])===2?e*e:1);
+      sumL+=tm[4]*ecc*Math.sin(arg);sumR+=tm[5]*ecc*Math.cos(arg);}
+    for(i=0;i<MOON_LAT.length;i++){tm=MOON_LAT[i];
+      arg=rad*(tm[0]*D+tm[1]*M+tm[2]*Mp+tm[3]*F);
+      ecc=Math.abs(tm[1])===1?e:(Math.abs(tm[1])===2?e*e:1);
+      sumB+=tm[4]*ecc*Math.sin(arg);}
+    // 부가 보정 (금성·목성·편평도 — Meeus 47).
+    sumL+=3958*Math.sin(rad*a1)+1962*Math.sin(rad*(lp-F))+318*Math.sin(rad*a2);
+    sumB+=-2235*Math.sin(rad*lp)+382*Math.sin(rad*a3)
+        +175*Math.sin(rad*(a1-F))+175*Math.sin(rad*(a1+F))
+        +127*Math.sin(rad*(lp-Mp))-115*Math.sin(rad*(lp+Mp));
+    var lon=(lp+sumL/1000000)%360;if(lon<0)lon+=360;
+    return {lon:lon,lat:sumB/1000000,dist:385000.56+sumR/1000};
+  }
+  // 태양 황경(라디안) — sunAltAt과 같은 SunCalc 공식 (위상 이각용으로 공유).
+  function sunEclLon(d){
+    var rad=Math.PI/180,M=rad*(357.5291+0.98560028*d);
+    return M+rad*(1.9148*Math.sin(M)+0.02*Math.sin(2*M)+0.0003*Math.sin(3*M))+rad*102.9372+Math.PI;
+  }
+  // 실제 위상 (요청: synodic 근사 폐기, 앱 LunarEngine.phase 파리티) —
+  // 태양·달 황경 차(이각)로 조명률 k와 차오름(waxing)을 구한다.
+  function moonIllum(date){
+    var rad=Math.PI/180,d=date.getTime()/86400000-0.5+2440588-2451545;
+    var m=moonEclipticMeeus(d);
+    var elong=rad*m.lon-sunEclLon(d);              // λ☾ − λ☉
+    var psi=Math.acos(Math.min(1,Math.max(-1,Math.cos(rad*m.lat)*Math.cos(elong))));
+    var k=(1+Math.cos(Math.PI-psi))/2;             // 조명률
+    return {k:k,waxing:Math.sin(elong)>0};
+  }
+  // 위상 SVG (요청: 실제 이각 k 기반): 밝은 면을 **오른쪽(+x)에 고정**해 그리고
+  // #tlMoon의 rotate가 실제 하늘 방향으로 돌린다 (앱 drawMoonDisc와 같은 규약 —
+  // 예전의 왁싱/웨이닝 좌우 분기는 회전이 대신한다).
+  function moonSVG(k){
+    var r=16,cx=17,cy=17;
+    var mag=Math.abs(2*k-1);                    // 0 반달 … 1 신월/보름
+    var rx=mag*r;
+    /* ⚠ sweep 의미: 두 번째(터미네이터) 타원 호가 bottom→top으로 갈 때
+       sweep=0이면 **오른쪽(밝은 쪽)으로 불룩** → 반원−렌즈 = 초승,
+       sweep=1이면 왼쪽으로 불룩 → 반원+렌즈 = 볼록. 옛 코드는 이걸 반대로
+       매핑해 초승↔볼록이 뒤집혀 있었다(하네스 렌더로 실측 확인). */
+    var inner=k<0.5?0:1;                        // 초승(밝음<반) vs 볼록(밝음>반)
+    var lit='M '+cx+' '+(cy-r)+' a '+r+' '+r+' 0 0 1 0 '+(2*r)+
             ' a '+rx.toFixed(2)+' '+r+' 0 0 '+inner+' 0 '+(-2*r)+' z';
     /* F5 (요청): 낮달처럼 **터미네이터(밝은 면과 어두운 면의 경계)를 흐리게**.
-       실제 낮달은 경계가 칼로 자른 듯 선명하지 않고, 어두운 면은 하늘에 묻혀
-       거의 안 보인다(받은 참고 사진 4장이 전부 그렇다).
-       ⚠ **바깥 둘레(limb)는 선명해야 한다** — 통째로 blur하면 달이 솜뭉치가 된다.
-       그래서 밝은 면만 blur한 뒤 **원으로 클립**한다: 경계는 부드럽고 둘레는 또렷.
-       ⚠ 보름달은 터미네이터가 없으므로(rx=r) blur를 걸지 않는다 — 걸면 둘레만
-       흐려져 손해다. */
-    var full=Math.abs(mag)>0.94;                 // 거의 보름 = 경계 없음
-    var uid='m'+Math.abs(Math.round(mag*1000));  // 필터 id 충돌 방지
-    var blurAmt=(1-Math.abs(mag)*0.45).toFixed(2);   // 초승달일수록 더 부드럽게
+       ⚠ **바깥 둘레(limb)는 선명해야 한다** — 밝은 면만 blur한 뒤 원으로 클립.
+       ⚠ 신월·보름 근처(mag>0.94)는 터미네이터가 없어 blur를 안 건다. */
+    var isFull=k>0.94, noBlur=mag>0.94;
+    var uid='m'+Math.round(k*1000);              // 필터 id 충돌 방지
+    var blurAmt=(1-mag*0.45).toFixed(2);         // 초승달일수록 더 부드럽게
     return '<svg viewBox="0 0 34 34">'+
-      (full?'':'<defs>'+
+      (noBlur?'':'<defs>'+
         '<clipPath id="c'+uid+'"><circle cx="'+cx+'" cy="'+cy+'" r="'+r+'"/></clipPath>'+
         '<filter id="f'+uid+'" x="-30%" y="-30%" width="160%" height="160%">'+
           '<feGaussianBlur stdDeviation="'+blurAmt+'"/></filter></defs>')+
       // 어두운 면은 **완전히 투명**(유저 요청 2026-07-23) — 하늘이 그대로 비친다.
-      // 보름달만 원반 전체가 밝으니 채운다.
-      (full?'<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="#eef3ff"/>':'')+
-      (full
-        ? '<path d="'+lit+'" fill="#eef3ff"/>'
+      // 보름달만 원반 전체가 밝으니 채운다 (신월 근처는 실낱 조각만).
+      (isFull?'<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="#eef3ff"/>':'')+
+      (noBlur
+        ? (isFull?'':'<path d="'+lit+'" fill="#eef3ff"/>')
         : '<g clip-path="url(#c'+uid+')"><path d="'+lit+'" fill="#eef3ff" filter="url(#f'+uid+')"/></g>')+
       '</svg>';
-  }
-  function addCelestial(sc){
-    var sun=document.createElement('div');sun.className='tl-sun';sun.style.top=(yFor(12.5)-32)+'px';sc.appendChild(sun);
-    var now=new Date();var mh=moonTransitHour(now);
-    // 낮 타임라인(TS..TE)에 들어오는 시각으로 달을 놓는다 (없으면 이른 새벽/늦은밤).
-    var mHour=(mh>=TS&&mh<=TE)?mh:(mh<TS?TS+1:TE-1);
-    var moon=document.createElement('div');moon.className='tl-moon';moon.style.top=(yFor(mHour)-17)+'px';
-    moon.innerHTML=moonSVG(now);sc.appendChild(moon);
   }
   // ── 하늘색을 **실제 태양 고도**로 (요청: 앱을 따라해 · 다양한 색) ──────────
   // 예전엔 시각(hour)에 3색을 선형보간해 색이 단조롭고 새벽/노을이 밋밋했다.
@@ -3152,29 +3204,44 @@
   function sunAltAt(date,lat,lng){
     var rad=Math.PI/180,dayMs=86400000,J1970=2440588,J2000=2451545,e=rad*23.4397;
     var d=date.getTime()/dayMs-0.5+J1970-J2000;
-    var M=rad*(357.5291+0.98560028*d);
-    var L=M+rad*(1.9148*Math.sin(M)+0.02*Math.sin(2*M)+0.0003*Math.sin(3*M))+rad*102.9372+Math.PI;
+    var L=sunEclLon(d);
     var dec=Math.asin(Math.sin(e)*Math.sin(L));
     var ra=Math.atan2(Math.sin(L)*Math.cos(e),Math.cos(L));
     var lw=rad*-lng,phi=rad*lat,th=rad*(280.16+360.9856235*d)-lw,H=th-ra;
     while(H>Math.PI)H-=2*Math.PI;while(H<=-Math.PI)H+=2*Math.PI;
     var alt=Math.asin(Math.sin(phi)*Math.sin(dec)+Math.cos(phi)*Math.cos(dec)*Math.cos(H));
-    return {alt:alt/rad,H:H,dec:dec};
+    return {alt:alt/rad,H:H,dec:dec,ra:ra};
   }
-  // 달 고도(도)·시간각 H(라디안) — SunCalc 축약 월력(황경/황위→적경/적위→고도).
-  // 해와 같은 투영에 얹으려는 것이라 좌표계는 sunAltAt과 동일하게 맞춘다.
+  // 달 고도(도)·시간각 H(라디안) — Meeus 풀 급수(위 moonEclipticMeeus)로
+  // 황경/황위→적경/적위→고도. 해와 같은 투영에 얹으므로 좌표계는 sunAltAt과 동일.
   function moonAltAt(date,lat,lng){
     var rad=Math.PI/180,dayMs=86400000,J1970=2440588,J2000=2451545,e=rad*23.4397;
     var d=date.getTime()/dayMs-0.5+J1970-J2000;
-    var L=rad*(218.316+13.176396*d), M=rad*(134.963+13.064993*d), F=rad*(93.272+13.229350*d);
-    var lambda=L+rad*6.289*Math.sin(M);        // 달 황경
-    var beta=rad*5.128*Math.sin(F);            // 달 황위
+    var m=moonEclipticMeeus(d);
+    var lambda=rad*m.lon, beta=rad*m.lat;
     var ra=Math.atan2(Math.sin(lambda)*Math.cos(e)-Math.tan(beta)*Math.sin(e),Math.cos(lambda));
     var dec=Math.asin(Math.sin(beta)*Math.cos(e)+Math.cos(beta)*Math.sin(e)*Math.sin(lambda));
     var lw=rad*-lng,phi=rad*lat,th=rad*(280.16+360.9856235*d)-lw,H=th-ra;
     while(H>Math.PI)H-=2*Math.PI;while(H<=-Math.PI)H+=2*Math.PI;
     var alt=Math.asin(Math.sin(phi)*Math.sin(dec)+Math.cos(phi)*Math.cos(dec)*Math.cos(H));
     return {alt:alt/rad,H:H,dec:dec,ra:ra};
+  }
+  // 밝은 면 방향 (앱 LunarEngine.brightLimbVector 파리티, 요청: 방향도 실제처럼):
+  //   χ = 밝은 면의 위치각(Meeus 48.5, 하늘 북→동), q = 시차각(달에서 본 천정).
+  //   west=−sinχ(하늘 서쪽 성분, 차트 오른쪽 = 항상 그려진 해가 있는 쪽),
+  //   up=cos(χ−q)(천정 성분 = 맨눈으로 보는 상하 기울기 그대로).
+  // 화면 회전은 atan2(−up, west) — 픽셀 척도를 곱하지 않는다(앱 moonTiltRotation
+  // 주석 참조: 세로 4× 스트레치가 기울기를 절벽으로 세운다).
+  function moonLimbVector(date,lat,lng){
+    var rad=Math.PI/180;
+    var s=sunAltAt(date,lat,lng), m=moonAltAt(date,lat,lng);
+    var dRA=s.ra-m.ra;
+    var chi=Math.atan2(Math.cos(s.dec)*Math.sin(dRA),
+      Math.sin(s.dec)*Math.cos(m.dec)-Math.cos(s.dec)*Math.sin(m.dec)*Math.cos(dRA));
+    var phi=rad*lat;
+    var q=Math.atan2(Math.sin(m.H),
+      Math.tan(phi)*Math.cos(m.dec)-Math.sin(m.dec)*Math.cos(m.H));
+    return {west:-Math.sin(chi),up:Math.cos(chi-q)};
   }
   // 앱 SkyPalette.palette 포팅: 고도(도)+새벽여부 → top/horizon/별알파/글로우.
   function skyPalette(alt,isDawn){
@@ -3295,9 +3362,16 @@
     var moonY=0.82*skH-(mp.alt/90)*0.775*skH;
     moon.style.left=moonX.toFixed(2)+'%'; moon.style.top=moonY.toFixed(1)+'px';
     moon.style.opacity=Math.max(0,Math.min(1,(mp.alt+1.5)/3)).toFixed(2);
-    if(!moon.dataset.day||moon.dataset.day!==mdt.toDateString()){   // 위상은 하루 한 번만 갱신
-      moon.innerHTML=moonSVG(new Date());moon.dataset.day=mdt.toDateString();
-    }
+    // 회전 (요청: 방향도 실제 하늘처럼) — 밝은 면(+x에 그림)을 진짜 기울기로.
+    // ⚠ 스타일시트의 translate(-50%,-50%) translateZ(0)를 인라인에도 담아야
+    //   덮어써도 중심 정렬·iOS 잔상 수정(레이어 승격)이 유지된다.
+    var lv=moonLimbVector(mdt,obsLat(),obsLng());
+    moon.style.transform='translate(-50%,-50%) translateZ(0) rotate('
+      +Math.atan2(-lv.up,lv.west).toFixed(4)+'rad)';
+    // 위상은 실제 이각 k 기준, 0.5% 바뀔 때만 SVG 재생성 — 어제·내일 밴드로
+    // 스크롤하면 그 시각의 위상이 그려진다(옛 '오늘 고정' 절충 폐기).
+    var ill=moonIllum(mdt), phKey=''+Math.round(ill.k*200);
+    if(moon.dataset.ph!==phKey){moon.innerHTML=moonSVG(ill.k);moon.dataset.ph=phKey;}
     // 고정 2단계 액센트·잉크 (앱 SkyTheme.timelineFixed): 밤 = 태양고도 −3° 밑.
     var night=p.alt<-3;
     vb.classList.toggle('tl-night',night);
