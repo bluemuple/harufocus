@@ -1898,7 +1898,9 @@
      ⚠ 이 말은 엘리가 하는 게 아니다 — 화면 밖의 내가 한다. 그래서 진한
      테두리로 엘리 그림에서 떼어 내고, 꼬리를 **길게 비스듬히** 빼서 엘리가
      아니라 화면 밖을 가리키게 한다(요청). */
-  .me-bubble{position:relative;align-self:stretch;margin:2px 6px 16px;padding:11px 14px;
+  /* ⚠ sticky (요청 Stage2) — 한마디 탭에서 입력에 포커스하면 .me-top이 스크롤돼
+     칭찬 질문(말풍선)이 위로 사라졌다. 위에 붙여 **쓰는 내내 질문이 보이게** 한다. */
+  .me-bubble{position:sticky;top:0;z-index:2;align-self:stretch;margin:2px 6px 16px;padding:11px 14px;
     background:var(--card-2);border:1.5px solid var(--bub-line,#6b7280);border-radius:16px;
     font-size:14px;font-weight:600;color:var(--ink);text-align:center;line-height:1.35;
     min-height:62px;display:flex;align-items:center;justify-content:center}
@@ -1963,6 +1965,25 @@
   .me-act button.warn{color:#FF3B30}
   .me-act input{flex:1 1 100%;padding:11px 12px;border:1px solid var(--line);border-radius:13px;
     background:var(--card);font-family:inherit;font-size:14px;color:var(--ink);outline:none}
+  /* [한 걸음 | 한마디] 세그먼트 탭 (요청 Stage2 2026-07-24) — meAct 안 가로 전체. */
+  .me-act .me-tabs{flex:1 1 100%;display:flex;gap:4px;background:var(--card-2);
+    border-radius:12px;padding:3px;margin:0 2px 8px}
+  .me-act .me-tabs button{flex:1 1 0;padding:8px 6px;border:0;border-radius:9px;background:transparent;
+    font-family:inherit;font-size:13px;font-weight:700;color:var(--ink-soft);cursor:pointer}
+  .me-act .me-tabs button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.09)}
+  .me-act .me-pane{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-content:flex-start}
+  /* 날 칭찬해줘 — 한마디 탭 도움 버튼 (요청 #d): 켜면 큰 말풍선이 칭찬 질문 피커. */
+  .me-act .me-praise{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;width:auto;
+    padding:7px 13px;border:0;border-radius:999px;background:var(--card-2);color:var(--ink-soft);
+    font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;margin:0 auto 0 0}
+  .me-act .me-praise svg{width:14px;height:14px}
+  .me-act .me-praise.on{background:rgba(93,140,255,.16);color:var(--sky-blue)}
+  /* 집중 머무르기 — 카운트다운 버튼 (요청 #c). */
+  .me-act .me-stay{flex:1 1 100%;display:flex;flex-direction:column;align-items:center;gap:2px;
+    padding:12px;border:1px solid var(--line);border-radius:13px;background:var(--card-2);cursor:pointer;
+    font-family:inherit;color:var(--ink)}
+  .me-act .me-stay b{font-size:14.5px;font-weight:800}
+  .me-act .me-stay span{font-size:11px;color:var(--ink-soft)}
   /* ── 글쓰기 플로우 (요청 개편 #5·#6) ── */
   /* 코끼리 왼쪽 작은 말풍선 — 이 말풍선만 **코끼리가 말한다**(유저 지정 예외). */
   .me-side{position:absolute;left:2px;top:20px;max-width:48%;z-index:3;
@@ -10286,11 +10307,26 @@
     tired:[['lie','5분 눕기'],['walk','5분 걷기']],
     refuse:'pick2'
   };
+  /* '한마디' 탭 말풍선 멘트 (요청 2026-07-24 Stage2 — 앱 inputAsk 파리티):
+     한 걸음(짐작)과 달리, 여기선 **내가 나에게 적도록** 짧게 청한다. */
+  var ME_INPUT_ASK={focus:'이 집중, 한마디로 남겨둘까?',phone:'손이 간 이유, 나한테만 적어봐.',
+    distract:'지금 마음은 어디 있어?',overload:'가장 무거운 하나, 여기 내려놔.',
+    messy:'엉킨 생각, 한 줄로 꺼내자.',tired:'지금 나한테 필요한 말은?',refuse:'왜 싫은지, 솔직하게 적어봐.'};
+  /* '날 칭찬해줘' 질문 (요청 #d: statement 아니라 **질문** — 스스로 칭찬을 쓰게).
+     앱 praiseQ와 같은 10개. 큰 말풍선에서 ▲▼로 넘긴다. */
+  var PRAISE_Q=['오늘 나의 어떤 점이 기특해?','여기까지 온 나에게 뭐라고 해줄까?',
+    '남들은 몰라도 내가 아는 나의 노력은?','지금 잘 버티고 있는 건 뭐야?',
+    '작지만 오늘 해낸 것 하나는?','나를 아끼는 사람이라면 지금 뭐라고 할까?',
+    '결과 말고, 애쓴 과정 중 뭐가 자랑스러워?','힘든데도 포기 안 한 나에게 한마디?',
+    '과거의 나라면 지금의 나를 어떻게 칭찬할까?','오늘의 나에게 고마운 점은?'];
+  var meTab=0, mePraiseOn=false, mePraiseIdx=0;    // 감정 안 탭 상태 (요청 #g·#d)
+  var meFocusLeft=0, meFocusStay=false;            // 집중 카운트다운 (요청 #c)
   /* 오늘 계획된 미완료 작업 (목록 칩용). */
   function meTodayTasks(){
     var tk=todayKey();
     return (DATA.tasks||[]).filter(function(t){
-      return !t.isDone&&!t.isRewardItem&&t.scheduledStart&&
+      // '지금 나'가 놓은 것(쉬기·눕기·걷기·첫10분)은 덜어내기 목록에서 제외 (요청 #a).
+      return !t.isDone&&!t.isRewardItem&&!t.viaMeState&&t.scheduledStart&&
         dateKey(taskDueAt(t).toISOString())===tk;});
   }
   /* 지금부터 n분짜리 블록 하나를 놓는다 (쉼·첫 조각 공용).
@@ -10298,7 +10334,8 @@
   function mePlaceBlock(title,cat,min){
     var now=new Date(),m=Math.floor(now.getMinutes()/5)*5;
     // ⚠ 공장을 거친다 — 위 subToTimeline의 주석 참조(필수 필드 누락 = 앱 동기화 정지).
-    return addTask({title:title,categoryID:cat,durationMin:min,
+    // viaMeState=true → 이 블록은 다음번 덜어내기 목록엔 안 뜬다 (요청 #a).
+    return addTask({title:title,categoryID:cat,durationMin:min,viaMeState:true,
       scheduledStart:todayAt(now.getHours(),m)});
   }
   /* 가장 무거운 것 = 오늘 남은 계획이 가장 큰 작업. */
@@ -10313,13 +10350,33 @@
       +'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'
       +'<path d="M4 15a6 6 0 0 1 6-6h9"/><path d="M15 5l4.5 4-4.5 4"/></svg>';
   }
-  /* 짐작에 답하는 자리를 그린다. */
+  /* 감정을 고르면 [한 걸음 | 한마디] 탭 (요청 #g 2026-07-24 Stage2).
+     한 걸음 = 짐작에 답하기(기존), 한마디 = 상단바·일기로 남기기 + 날 칭찬해줘.
+     집중(focus)만은 예외 — 방해하지 않되 카운트다운으로 닫힌다(요청 #c). */
   function paintMeAct(k){
     var box=document.getElementById('meAct');if(!box)return;
     meWriteEnd();                       // 다른 얼굴로 넘어가면 글쓰기 모드·작은 말풍선을 접는다
-    box.innerHTML='';meSelSet=[];
+    box.innerHTML='';meSelSet=[];meTab=0;mePraiseOn=false;
     // ⚠ 얼굴을 바꿨는데 스크롤이 남아 있으면 말풍선이 잘린 채로 뜬다.
     var top=document.querySelector('.me-top');if(top)top.scrollTop=0;
+    if(k==='focus'){meFocusCountdown();return;}     // 집중: 카운트다운(#c)
+    var bar=document.createElement('div');bar.className='me-tabs';
+    var t0=document.createElement('button'),t1=document.createElement('button');
+    t0.type='button';t1.type='button';t0.textContent='한 걸음';t1.textContent='한마디';t0.className='on';
+    function sel(i){
+      meTab=i;t0.classList.toggle('on',i===0);t1.classList.toggle('on',i===1);
+      if(i===0){mePraiseOn=false;meSay(ME_LINE[k]||'');meRenderStep(k);}
+      else{meSay(ME_INPUT_ASK[k]||'');meRenderWord(k);}
+    }
+    t0.onclick=function(){sel(0);};t1.onclick=function(){sel(1);};
+    bar.appendChild(t0);bar.appendChild(t1);box.appendChild(bar);
+    var pane=document.createElement('div');pane.className='me-pane';pane.id='meTabPane';box.appendChild(pane);
+    meRenderStep(k);                    // 기본은 한 걸음
+  }
+  /* '한 걸음' 탭 — 짐작에 답하는 자리(2지선다 / 오늘 목록 칩). */
+  function meRenderStep(k){
+    var box=document.getElementById('meTabPane');if(!box)return;
+    box.innerHTML='';meSelSet=[];
     var ask=ME_ASK[k];
     if(!ask)return;
     if(ask==='pick1'||ask==='pick2'){
@@ -10382,10 +10439,6 @@
         };
         box.appendChild(c);
       });
-      // 덜어내기 대신 **글로 꺼내 두는** 길도 연다 (요청 Q1: 작업 + 글쓰기 둘 다).
-      var wb=document.createElement('button');wb.className='wide';wb.textContent='하고 싶은 말이 있어';
-      wb.onclick=function(){meStartWriting(k);};
-      box.appendChild(wb);
       syncActs();
       return;
     }
@@ -10396,6 +10449,73 @@
       b.onclick=function(){meAnswer(k,pair[0]);};
       box.appendChild(b);
     });
+  }
+  /* '한마디' 탭 (요청 #e·#d 2026-07-24) — 입력 한 줄 → 일기(word)+상단바 캡슐.
+     [날 칭찬해줘]를 누르면 큰 말풍선이 **칭찬 질문 피커**가 된다(질문형, #d).
+     host를 주면 그 안에 그린다(집중 머무르기엔 탭 pane이 없어 직접 넘긴다). */
+  function meRenderWord(k,host){
+    var pane=host||document.getElementById('meTabPane');if(!pane)return;pane.innerHTML='';
+    var pr=document.createElement('button');pr.type='button';pr.className='me-praise';
+    pr.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1L12 21l8.8-8.3a5 5 0 0 0 0-7.1z"/></svg>날 칭찬해줘';
+    pr.onclick=function(){
+      mePraiseOn=!mePraiseOn;pr.classList.toggle('on',mePraiseOn);
+      if(mePraiseOn){mePraiseIdx=0;meShowPraise();}else{meSay(ME_INPUT_ASK[k]||'');}
+    };
+    pane.appendChild(pr);
+    var row=document.createElement('div');row.className='me-write';
+    var inp=document.createElement('input');inp.placeholder='지금 마음 한 줄';inp.maxLength=200;meWriteInp=inp;
+    var ok=document.createElement('button');ok.type='button';ok.className='mw-ok';ok.setAttribute('aria-label','저장');
+    ok.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>';
+    ok.onclick=meSaveLine;
+    inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();meSaveLine();}});
+    row.appendChild(inp);row.appendChild(ok);pane.appendChild(row);
+    setTimeout(function(){inp.focus();},30);
+  }
+  /* 칭찬 질문 피커 (요청 #d) — 큰 말풍선에 질문 하나 + ▲▼(더 있음). 질문은
+     **statement가 아니라 질문**이라 스스로 칭찬을 쓰게 유도한다. */
+  function meShowPraise(){
+    var bub=document.getElementById('meBubble');bub.classList.remove('hide');
+    var line=document.getElementById('meLine');line.className='mp-wrap';
+    line.innerHTML='<span class="mp-ar" data-d="-1">▲</span>'
+      +'<button class="mp-txt" type="button"></button>'
+      +'<span class="mp-ar" data-d="1">▼</span>';
+    var n=PRAISE_Q.length;
+    line.querySelector('.mp-txt').textContent=PRAISE_Q[((mePraiseIdx%n)+n)%n];
+    line.querySelector('.mp-txt').onclick=function(){if(meWriteInp)meWriteInp.focus();};
+    [].forEach.call(line.querySelectorAll('.mp-ar'),function(a){
+      a.onclick=function(){mePraiseIdx+=parseInt(a.dataset.d,10);meShowPraise();};});
+  }
+  /* 한마디 저장 (요청 #e) — 일기(kind:word, shownInBar) + 상단바 캡슐 motto + 토스트. */
+  function meSaveLine(){
+    var v=(meWriteInp&&meWriteInp.value||'').trim();
+    if(!v){if(meWriteInp)meWriteInp.focus();return;}
+    if(!DATA.settings)DATA.settings={};
+    DATA.settings.motto=v;                              // 상단바 캡슐
+    newDiaryEntry('word',{text:v,shownInBar:true});     // 일기 + 상단바 회전
+    renderDiary();barIdx=0;paintBar(false);pushSnapshot();
+    meWriteEnd();
+    meDone('일기에 담아뒀어. 위에도 띄워 둘게.');
+  }
+  /* 집중(focus): 방해하지 않되 **카운트다운**으로 닫힌다 (요청 #c). '잠깐, 나
+     여기 있을래'를 누르면 카운트다운을 멈추고 한마디 자리를 연다(집중을 기록). */
+  function meFocusCountdown(){
+    var box=document.getElementById('meAct');if(!box)return;box.innerHTML='';
+    meFocusLeft=5;meFocusStay=false;
+    var b=document.createElement('button');b.type='button';b.className='me-stay';
+    function paint(){b.innerHTML='<b>잠깐, 나 여기 있을래</b><span>'+Math.max(0,meFocusLeft)+'초 뒤 닫혀요</span>';}
+    paint();
+    b.onclick=function(){
+      meFocusStay=true;box.innerHTML='';
+      meSay(ME_INPUT_ASK.focus||'');
+      var pane=document.createElement('div');pane.className='me-pane';box.appendChild(pane);
+      meRenderWord('focus',pane);
+    };
+    box.appendChild(b);
+    (function tick(){setTimeout(function(){
+      if(manualState()!=='focus'||meFocusStay)return;   // 다른 얼굴·머무르기면 멈춘다(#c)
+      meFocusLeft--;
+      if(meFocusLeft<=0){closeMeSheet();}else{paint();tick();}
+    },1000);})();
   }
   /* 내일 날짜 표기 — '할 일 → 7.23' 처럼 **어디서 다시 만나는지**를 알려 준다. */
   function tomorrowLabel(){
@@ -10573,7 +10693,7 @@
       var say=choice==='hard'?'시작이 무겁지.':(choice==='big'?'할 게 많아서 그래.':'재밌는 게 당기지.');
       meBranch(say,name?('‘'+name+'’ 첫 10분만'):'첫 10분만',function(){
         mePlaceBlock(name?('첫 10분 · '+name):'첫 10분','focus',10);
-        meDone(name?('‘'+name+'’ 첫 10분만. 첫 줄만 정하면 돼.'):'첫 10분만. 첫 줄만 정하면 돼.');
+        meDone(name?('‘'+name+'’ 딱 10분만 해볼까? 시작하면 그다음은 쉬워.'):'딱 10분만 해볼까? 시작하면 그다음은 쉬워.');
       },choice);return;
     }
     if(choice==='work'||choice==='life'){
@@ -10674,9 +10794,8 @@
           x.classList.toggle('on',x.dataset.me===k);});
         paintMeStage(k,true);
         paintMeAct(k);
-        /* ⚠ '집중하고 있어'는 **바로 닫는다** — 방해하지 않는 게 그 상태의 전부다.
-           손이 툭 치고 물러나는 것만 보여주고 사라진다. */
-        if(k==='focus')setTimeout(closeMeSheet,1500);
+        /* ⚠ '집중하고 있어'는 이제 **바로 닫지 않는다** (요청 #c): paintMeAct의
+           meFocusCountdown이 '잠깐, 나 여기 있을래' 버튼 + 카운트다운으로 닫는다. */
       }
     });
     document.getElementById('meX').addEventListener('click',closeMeSheet);
