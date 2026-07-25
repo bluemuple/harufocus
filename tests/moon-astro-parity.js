@@ -143,8 +143,14 @@ const TIMES = [Date.UTC(2026, 3, 21, 11, 30), Date.UTC(2026, 3, 21, 19, 45),
   const sweepOf = svg => (svg.match(/a [\d.]+ 16 0 0 (\d) 0 -32/) || [])[1];
   ok(sweepOf(moonSVG(0.2)) === '0', '초승(k=0.2) 터미네이터 sweep=0');
   ok(sweepOf(moonSVG(0.8)) === '1', '볼록(k=0.8) 터미네이터 sweep=1');
-  ok(moonSVG(0.01).indexOf('<circle') < 0, '신월 근처엔 원반을 안 그린다');
-  ok(moonSVG(0.99).indexOf('<circle') >= 0, '보름은 원반을 채운다');
+  // ⚠ '<circle'만 찾으면 clipPath의 마스크 원까지 걸린다 — **채움 원반**은
+  //   fill 속성이 붙은 것만이다.
+  const fullDisc = svg => /<circle[^>]*fill=/.test(svg);
+  ok(!fullDisc(moonSVG(0.01)), '신월 근처엔 원반을 안 그린다');
+  ok(fullDisc(moonSVG(0.99)), '보름은 원반을 채운다');
+  // k∈(0.94,0.97]은 아직 보름이 아니다 — isFull 문턱이 noBlur와 어긋나
+  // 보름 원반+죽은 blur path를 겹치던 결함(적대 리뷰) 회귀 방지.
+  ok(!fullDisc(moonSVG(0.95)), 'k=0.95는 아직 보름 원반이 아니다');
 }
 
 if (failed) { console.error('moon-astro-parity: ' + failed + ' FAILED'); process.exit(1); }

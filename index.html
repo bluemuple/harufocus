@@ -280,11 +280,8 @@
     transform:translate(-50%,-50%) translateZ(0);will-change:transform,left,top;
     opacity:0;transition:opacity .4s linear}
   #tlMoon svg{width:34px;height:34px;display:block}
-  /* 시간축에 고정된 해·달 — 스크롤하면 함께 움직인다 (요청). */
-  .tl-sun{position:absolute;left:50%;width:64px;height:64px;border-radius:50%;transform:translateX(-50%);
-    background:radial-gradient(circle at 50% 45%,#fff8dc,#ffe89a 45%,rgba(255,224,150,0) 72%);
-    box-shadow:0 0 40px 14px rgba(255,231,150,.55);pointer-events:none;z-index:0}
-  .tl-moon{position:absolute;left:64%;width:34px;height:34px;pointer-events:none;z-index:0}
+  /* (죽은 코드였던 .tl-sun/.tl-moon 규칙 제거 — addCelestial 폐기와 함께.
+     실제 해·달은 #tlSun/#tlMoon(id)이다.) */
   .tl-scroll{position:absolute;inset:0;overflow-y:auto;padding:0 0 190px}
   /* 3일(어제·오늘·내일) 연속 스크롤 (요청 2026-07-23): 각 날을 한 밴드로 쌓는다.
      padding-top:14는 yFor의 +14 기준과 맞춘다(블록·시간줄 정렬). 밴드끼리 이음선. */
@@ -3175,7 +3172,10 @@
     /* F5 (요청): 낮달처럼 **터미네이터(밝은 면과 어두운 면의 경계)를 흐리게**.
        ⚠ **바깥 둘레(limb)는 선명해야 한다** — 밝은 면만 blur한 뒤 원으로 클립.
        ⚠ 신월·보름 근처(mag>0.94)는 터미네이터가 없어 blur를 안 건다. */
-    var isFull=k>0.94, noBlur=mag>0.94;
+    /* ⚠ isFull은 noBlur의 보름 쪽(mag>0.94 ⇔ k>0.97)과 정렬 — 0.94로 두면
+       k∈(0.94,0.97]에서 보름 원반 위에 안 보이는 blur path를 겹쳐 그리고
+       달이 ~2.3일 일찍 완전 보름으로 스냅됐다(적대 리뷰 실측). */
+    var isFull=k>0.97, noBlur=mag>0.94;
     var uid='m'+Math.round(k*1000);              // 필터 id 충돌 방지
     var blurAmt=(1-mag*0.45).toFixed(2);         // 초승달일수록 더 부드럽게
     return '<svg viewBox="0 0 34 34">'+
