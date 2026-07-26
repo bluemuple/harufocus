@@ -51,7 +51,9 @@
   .tl-fabs{position:fixed;right:22px;bottom:calc(78px + env(safe-area-inset-bottom));display:none;align-items:center;gap:12px;z-index:15}
   body[data-m="timeline"] .tl-fabs{display:flex}
   /* '지금' 캡슐 (요청 2026-07-23): 지금 선이 화면 밖일 때만. 밤=파란 캡슐, 낮=밝은 캡슐. */
-  .tl-nowcap{display:none;align-items:center;gap:4px;height:44px;padding:0 16px 0 13px;border:0;cursor:pointer;
+  /* '지금' 캡슐 — 왼쪽 아래 고정 (요청 2026-07-26, FAB 줄과 분리). */
+  .tl-nowcap{position:fixed;left:16px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:15;
+    display:none;align-items:center;gap:4px;height:44px;padding:0 16px 0 13px;border:0;cursor:pointer;
     border-radius:999px;font-weight:800;font-size:14.5px;font-family:inherit;
     background:var(--accent,#5B7CE0);color:#fff;box-shadow:0 6px 16px rgba(20,40,80,.28);
     transition:background .3s,color .3s}
@@ -135,7 +137,9 @@
   .tl-datebox>.ic{width:17px;height:17px;color:var(--ink-soft);margin-right:2px}
   .tl-datebox .tl-date{font-weight:800;font-size:13.5px;color:var(--ink);padding:0 2px;white-space:nowrap}
   .tl-seg{margin-left:0}
-  @media(max-width:860px){.tl-top .tl-seg{display:none}}
+  /* 모바일 아이콘 최소화 (요청 2026-07-26): '+ 작업'은 아래 + FAB과 완전 중복이라
+     숨긴다. 상단엔 [날짜박스][편집]만 남는다. */
+  @media(max-width:860px){.tl-top .tl-seg{display:none}.tl-top .tladd{display:none}}
   .tladd{margin-left:8px;border:0;background:var(--sky-blue);color:#fff;font-family:inherit;font-weight:700;font-size:13px;border-radius:9px;padding:7px 13px;cursor:pointer}
   .tledit{margin-left:8px;border:1px solid var(--line);background:var(--card-2);color:var(--ink-soft);font-family:inherit;font-weight:700;font-size:13px;border-radius:9px;padding:7px 13px;cursor:pointer}
   .tledit.on{background:var(--sky-blue);color:#fff;border-color:var(--sky-blue)}
@@ -292,6 +296,13 @@
   .tl-day.today .tl-daysep{opacity:.72;color:var(--accent,#5B7CE0)}
   .hour{position:relative;height:120px;padding-left:52px}
   .hour .lbl{position:absolute;left:14px;top:-8px;font-size:12px;color:var(--onSky,#141827);opacity:.75;font-variant-numeric:tabular-nums}
+  /* 날짜 경계 큰 날짜 (요청): 자정선(밴드 첫 줄) 왼쪽·큼직·불투명. */
+  .hour .lbl.datebig{font-size:19px;font-weight:800;opacity:1;top:-12px;white-space:nowrap}
+  /* 좌측 상단 floating 날짜 (요청): 항상 같은 크기, 40% 투명. 다음 날짜가
+     올라오면 밀려난다(transform은 JS가 계산). 스크롤과 무관하게 뷰포트 고정. */
+  #tlDateFloat{position:absolute;left:14px;top:calc(8px + env(safe-area-inset-top));z-index:23;
+    font-size:19px;font-weight:800;color:var(--onSky,#141827);opacity:.4;pointer-events:none;
+    white-space:nowrap;will-change:transform}
   .hour .rule{position:absolute;left:46px;right:14px;top:0;height:1px;background:var(--onSky,#141827);opacity:.14}
   /* 취침(마감) 시각 줄 (요청) */
   .hour.bed .rule{opacity:.34}
@@ -542,12 +553,17 @@
      터치(hover:none)엔 호버가 없으니 적용하지 않는다 — 폰은 단일 컬럼이라
      애초에 + 가 하나뿐이라 헷갈릴 일도 없다. */
   @media (hover:hover) and (min-width:1101px){
-    .pane-tl .tl-plusbtn,.pane-tl .mo-toggle,
+    .pane-tl .tl-fabs,
     .pane-tabs .page-fab{transition:opacity .18s ease}
-    .layout:has(.pane-tabs:hover) .pane-tl .tl-plusbtn,
-    .layout:has(.pane-tabs:hover) .pane-tl .mo-toggle{opacity:.3}
+    .layout:has(.pane-tabs:hover) .pane-tl .tl-fabs{opacity:.3}
     .layout:has(.pane-tl:hover) .pane-tabs .page-fab{opacity:.3}
   }
+  /* 모자이카 전환 FAB (요청 2026-07-26: 편집 연필 왼쪽) — 연필과 같은 톤. */
+  .tl-mofab.on{background:var(--card);color:var(--ink)}
+  /* 스크롤 중 UI 투명화 (요청): '지금'·모자이카·편집·추가가 스크롤하는 동안만
+     반투명해지고, 멈추면 다시 또렷해진다 — 상단 캡슐(capFade)과 같은 리듬. */
+  .tl-fabs,.tl-nowcap{transition:opacity .18s ease}
+  body.tl-uifade .tl-fabs,body.tl-uifade .tl-nowcap{opacity:.25}
 
   .mo-toggle{position:absolute;top:calc(10px + env(safe-area-inset-top));right:12px;z-index:24;
     width:34px;height:34px;border:0;border-radius:10px;cursor:pointer;padding:6px;
@@ -1464,8 +1480,12 @@
        셋 다 top:14px / height:44px 라 세로 가운데가 정확히 맞는다. */
     /* 캡슐·버튼 높이 = 제목 '글자' 높이(27px 폰트 → 31.5px). 제목 박스는 44로
        두되 세로 중심(36)은 셋 다 같게 맞춘다: 32px 짜리는 top 20. */
-    .topcap{left:16px;top:20px;transform:none;right:auto;height:32px;padding:0 13px;
-      max-width:376px}          /* 타임라인 우측변(400)까지만 — 넘치면 조각내 슬라이드 */
+    /* '지금 좀 어때' 캡슐 — 우측 상단, desk-nav(동그라미 4개) 왼쪽 (요청
+       2026-07-26). desk-nav = right:16 + 32×4 + 9×3 ≈ 155px 폭. */
+    .topcap{left:auto;top:20px;transform:none;right:195px;height:32px;padding:0 13px;
+      max-width:34vw}
+    /* '지금' 캡슐·FAB — 타임라인 페인(왼쪽 400px) 안 좌하단. */
+    .tl-nowcap{left:18px;bottom:18px}
     .view.on>h2{position:fixed;top:14px;left:calc(400px + 26px);z-index:46;margin:0;height:44px;
       display:flex;align-items:center;gap:10px;font-size:27px;letter-spacing:-.03em}
     /* ⚠기본 .undobar 규칙이 이 미디어쿼리보다 '뒤'에 선언돼 있어 같은 명시도로는
@@ -2065,17 +2085,8 @@
       </div>
       <div class="tl-body">
         <div id="view-big">
-          <!-- ▦ 보기 바꾸기 (요청): '만들기·고치기'와 성격이 달라 아래 FAB가
-               아니라 **칸 위**에 둔다 — 아래 버튼 수가 안 늘어난다.
-               ⚠ 원래 tl-top의 세그먼트가 이 역할이었는데 PC에선
-               `.pane-tl .tl-top{display:none}`, 폰에선 ≤860px에서 .tl-seg가
-               숨겨져 **어느 화면에서도 안 보였다**. -->
-          <button class="mo-toggle" id="moToggle" title="모자이크 보기 (M)" aria-label="모자이크 보기">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/>
-              <rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>
-            </svg>
-          </button>
+          <!-- (모자이카 전환 버튼은 하단 FAB 줄(.tl-fabs)로 이동 — 요청 2026-07-26:
+               편집(연필) 왼쪽에 나란히.) -->
           <div class="tl-scroll" id="tlScroll"></div>
           <!-- 요청: 타임라인 코끼리 이미지 삭제 — 엘리는 상단 '엘리에게 한마디'로만 -->
           <button class="ele-tip" id="eleTip" title="엘리" style="display:none">
@@ -2273,9 +2284,12 @@
 </div>
 
 <!-- 타임라인 우하단 버튼 + 한 번에 계획하기 (요청: 앱 파리티) -->
+<!-- '지금' 캡슐은 왼쪽 아래로 (요청 2026-07-26) — FAB 줄과 분리. -->
+<button class="tl-nowcap" id="tlNowCap" title="지금으로"><svg class="nc-ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg><span>지금</span></button>
 <div class="tl-fabs">
-  <button class="tl-nowcap" id="tlNowCap" title="지금으로"><svg class="nc-ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg><span>지금</span></button>
   <button class="tl-donebtn" id="batchDone">확인</button>
+  <!-- 모자이카 전환 — 편집(연필) 왼쪽 (요청 2026-07-26). -->
+  <button class="tl-batchbtn tl-mofab" id="moToggle" title="모자이크 보기 (M)" aria-label="모자이크 보기" style="width:44px;height:44px"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="width:19px;height:19px"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg></button>
   <button class="tl-batchbtn" id="dueEditFab" title="마감선 편집" style="display:none;width:44px;height:44px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/></svg></button>
   <button class="tl-plusbtn" id="tlFab" title="작업 추가"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
 </div>
@@ -3374,6 +3388,27 @@
     // 스크롤하면 그 시각의 위상이 그려진다(옛 '오늘 고정' 절충 폐기).
     var ill=moonIllum(mdt), phKey=''+Math.round(ill.k*200);
     if(moon.dataset.ph!==phKey){moon.innerHTML=moonSVG(ill.k);moon.dataset.ph=phKey;}
+    /* 좌측 상단 floating 날짜 + 밀어내기 (요청 2026-07-26):
+       지금 보는 날의 날짜를 40% 투명으로 상단에 고정. 스크롤업으로 다음
+       밴드의 고정 날짜(자정선 왼쪽 큰 날짜)가 이 자리에 접근하면 그만큼
+       위로 밀려나고, 지나가면 새 날로 바뀐다. 자기 밴드의 고정 날짜가
+       아직 이 자리에 보이면 숨긴다(글자 겹침 방지). */
+    var fd=document.getElementById('tlDateFloat');
+    if(!fd){fd=document.createElement('div');fd.id='tlDateFloat';vb.appendChild(fd);}
+    var fTop=8, fH=26, topY=sc.scrollTop;
+    var curLane=lanes[0], nxtLane=null;
+    for(var _fi=0;_fi<lanes.length;_fi++){
+      if(lanes[_fi].offsetTop<=topY+fTop)curLane=lanes[_fi];
+      else{nxtLane=lanes[_fi];break;}
+    }
+    fd.textContent=(curLane&&curLane.dataset.dbig)||'';
+    var fPush=0;
+    if(nxtLane){var fGap=nxtLane.offsetTop-topY-fTop;
+      if(fGap<fH+8)fPush=(fH+8)-fGap;}
+    fd.style.transform='translateY('+(-Math.min(fPush,fH+16))+'px)';
+    // 자기 고정 날짜(밴드 머리)가 float 자리 아래에 아직 보이면 중복 — 숨김.
+    var fOwn=curLane&&(curLane.offsetTop+14+8)>topY;
+    fd.style.opacity=fOwn?'0':'.4';
     // 고정 2단계 액센트·잉크 (앱 SkyTheme.timelineFixed): 밤 = 태양고도 −3° 밑.
     var night=p.alt<-3;
     vb.classList.toggle('tl-night',night);
@@ -3383,9 +3418,16 @@
     r.setProperty('--dueSel',night?'rgba(245,247,255,.55)':'rgba(20,24,39,.55)');   // 선택 마감선 아웃라인 (앱 onSky@0.55)
   }
   // 스크롤은 rAF로 스로틀 — CSS 변수만 갱신해 빠릿하게 (요청).
+  // + 스크롤 동안 '지금'·모자이카·편집·추가 반투명, 멈추면 또렷 (요청 2026-07-26).
+  var tlUiFadeTimer=null;
+  function tlUiFade(){
+    document.body.classList.add('tl-uifade');
+    clearTimeout(tlUiFadeTimer);
+    tlUiFadeTimer=setTimeout(function(){document.body.classList.remove('tl-uifade');},420);
+  }
   (function(){var sc=document.getElementById('tlScroll'),tick=false;
     if(!sc)return;
-    sc.addEventListener('scroll',function(){if(tick)return;tick=true;
+    sc.addEventListener('scroll',function(){tlUiFade();if(tick)return;tick=true;
       requestAnimationFrame(function(){updateTlSky();updateNowCap();tick=false;});},{passive:true});
   })();
   /* '지금' 캡슐 (요청 2026-07-23, 앱 파리티): '지금' 선이 타임라인 화면 밖으로
@@ -3965,18 +4007,12 @@
   }
 
   function renderBig(){
-    // 기상·취침 설정이 타임라인 시간대를 정한다 (요청).
+    /* 24시간 풀 렌더 (요청 2026-07-26): 옛 기상~취침 범위는 23시~익일 7시가
+       비어 밤에 달·별이 사라졌다. 앱처럼 각 날을 0~24시로 그린다 — 비용은
+       시간줄 몇 줄뿐. 기상·취침 시각은 범위가 아니라 **마커**로만 쓴다. */
     var sset=DATA.settings||{};
-    TS=Math.max(0,Math.floor((sset.wakeMinutes!=null?sset.wakeMinutes:420)/60));
-    TE=Math.min(24,Math.ceil((sset.bedMinutes!=null?sset.bedMinutes:1380)/60));
-    if(TE<=TS+2)TE=24;
-    /* '지금'이 기상 전(또는 취침 후)이면 **그 시각까지 범위를 넓힌다** —
-       지금 선을 가짜 자리에 그리는 대신, 진짜 자리가 보이게 한다. 오늘만. */
-    if(dayOffset===0){
-      var nowH=hourFrac(Date.now());
-      if(nowH<TS)TS=Math.max(0,Math.floor(nowH));
-      if(nowH>TE)TE=Math.min(24,Math.ceil(nowH));
-    }
+    var wakeH=Math.max(0,Math.floor((sset.wakeMinutes!=null?sset.wakeMinutes:420)/60));
+    TS=0;TE=24;
     var sc=document.getElementById('tlScroll');
     var prevScroll=(batchIds!=null||tlDragging)?sc.scrollTop:null;   // 배치/드래그 중 스크롤 유지
     /* ⑤ 동기화 이동 애니메이션 (요청 2026-07-23): 다른 기기에서 마감을 옮겨
@@ -4024,24 +4060,31 @@
        offsetTop으로 보정한다. */
     var nowMs=Date.now();
     var TLWIN=[-1,0,1], tlTodayLane=null, tlPrimaryLane=null, tlTodayNf=null;
-    var sc0=sc, gTS=TS;   // 밖(스크롤 컨테이너)·전역 TS(콜백서 var TS 섀도잉 전에 잡아 둔다)
+    var sc0=sc, gTS=TS, gWakeH=wakeH;   // 밖(스크롤 컨테이너)·전역 TS(콜백서 var TS 섀도잉 전에 잡아 둔다)
     TLWIN.forEach(function(rel){
       var _dd=selDate();_dd.setDate(_dd.getDate()+rel);
       var tk=dateKey(_dd.toISOString());
       var isToday=(dayOffset+rel===0);
       var lane=document.createElement('div');lane.className='tl-day'+(isToday?' today':'');
       var sc=lane;   // ⚠ 이 콜백 안의 모든 append는 밴드(lane)로 간다
-      // 어제 밴드는 **12시(정오)부터** 시작한다 (요청) — 오늘·내일은 기상 시각(gTS)부터.
-      var bandTS=(rel<0)?Math.max(12,gTS):gTS;
+      // 어제 밴드만 12시(정오)부터 (요청 유지) — 오늘·내일은 0시부터 24시간.
+      var bandTS=(rel<0)?12:0;
       var TS=bandTS;                       // 콜백 안 시간줄·클립 판정 기준 (섀도잉)
       tlBandTS=bandTS;                     // yFor 기준 (이 밴드를 그리는 동안)
       lane.dataset.ts=bandTS;              // updateTlSky의 밴드 시각 환산용
-      var sep=document.createElement('div');sep.className='tl-daysep';
-      sep.textContent=isToday?'오늘':_dd.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',weekday:'short'});
-      lane.appendChild(sep);
-      var html='';for(var h=TS;h<=TE;h++){var isBed=((h%24)===bedH);
-        html+='<div class="hour'+(isBed?' bed':'')+'"><span class="lbl">'+(h%24).toString().padStart(2,'0')+':00</span><span class="rule"></span>'
-          +(isBed?'<span class="bedmark">\u{1F319} 취침</span><span class="bedhint">취침 시각은 설정에서 바꿀 수 있어요</span>':'')+'</div>';}
+      // 날짜 경계 큰 날짜 (요청): 자정(밴드 첫 줄) 왼쪽에 큼직하게·불투명.
+      var dbig=(isToday?'오늘 ':'')+_dd.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',weekday:'short'});
+      lane.dataset.dbig=dbig;
+      /* 시간줄 0~23시 (요청: 24시간) — 자정선은 밴드 이음선이 대신한다.
+         첫 줄 라벨은 시각 대신 **큰 날짜**(날짜 경계 표시), 기상·취침은 마커로. */
+      var html='';for(var h=TS;h<TE;h++){var isBed=((h%24)===bedH),isWake=(h===gWakeH&&h>0);
+        html+='<div class="hour'+(isBed?' bed':'')+'">'
+          +(h===bandTS?'<span class="lbl datebig">'+dbig+'</span>'
+                      :'<span class="lbl">'+(h%24).toString().padStart(2,'0')+':00</span>')
+          +'<span class="rule"></span>'
+          +(isBed?'<span class="bedmark">\u{1F319} 취침</span><span class="bedhint">취침 시각은 설정에서 바꿀 수 있어요</span>':'')
+          +(isWake?'<span class="bedmark">☀️ 기상</span>':'')
+          +'</div>';}
       lane.insertAdjacentHTML('beforeend',html);
       var any=false;
     // ① 기록 블록 (§3): 세션에서 파생 — 실색 채움 + 쉼(갭)=빗금(위치 그대로).
@@ -4339,7 +4382,7 @@
     renderMeadow();applyScenery();                        // 들풀·반딧불·장소 (§1·§7)
     // (요청) 태양·달 제거 — 동적 하늘색만 유지.
     updateTlSky();
-    var scrollNf=(tlTodayNf!=null)?tlTodayNf:(TS+1.5);
+    var scrollNf=(tlTodayNf!=null)?tlTodayNf:(wakeH+1.5);   // 지금이 없으면 기상 무렵으로
     var scrollY=Math.max(0,tlEditTop+yFor(scrollNf)-60);   // 오늘 밴드의 '지금'으로
     if(prevScroll!=null){sc.scrollTop=prevScroll;}
     else setTimeout(function(){sc.scrollTop=scrollY;updateTlSky();updateNowCap();},30);

@@ -33,7 +33,9 @@ t('기상(07시) 전 05:12도 그대로 5.2', Math.abs(nowFn() - 5.2) < 1e-9);
 // ② 범위가 지금·오늘 기록·오늘 계획까지 넓어진다
 const big = html.slice(html.indexOf('function renderBig('));
 const head = big.slice(0, big.indexOf("var html='';for(var h=TS"));
-t('지금이 범위 밖이면 범위를 넓힌다', /nowH<TS\)TS=/.test(head) && /nowH>TE\)TE=/.test(head));
+// 2026-07-26: 범위가 24시간 고정이 되면서 '지금 밖이면 넓히기'는 무의미해졌다 —
+// 대신 **하루 전체(0~24)** 보장을 검사한다 (밤 23~07시에 달·별이 사라지던 원인 제거).
+t('타임라인 범위는 24시간 고정 (0~24)', /TS=0;TE=24;/.test(head));
 t('오늘 기록 블록까지 담는다', /dayRecordBlocks\(k\)/.test(head) && /sf<TS\)TS=/.test(head));
 t('오늘 계획(마감선)까지 담는다', /taskDueAt\(t\)/.test(head) && /df>TE\)TE=/.test(head));
 
