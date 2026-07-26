@@ -304,11 +304,17 @@
      미세하게 작아져 보였다(요청 수정). 둘 다 비례숫자로 동일하게. */
   .hour .lbl.datebig{font-size:19px;font-weight:800;opacity:1;top:-12px;white-space:nowrap;
     font-variant-numeric:normal;letter-spacing:0}
-  /* 좌측 상단 floating 날짜 (요청): 항상 같은 크기, 40% 투명. 다음 날짜가
-     올라오면 밀려난다(transform은 JS가 계산). 스크롤과 무관하게 뷰포트 고정. */
+  /* 좌측 상단 floating 날짜 (요청): 같은 크기, 40% 투명(값은 JS가 --fop로).
+     다음 날짜가 올라오면 밀려난다(transform은 JS가 계산). 뷰포트 고정. */
   #tlDateFloat{position:absolute;left:14px;top:calc(8px + env(safe-area-inset-top));z-index:23;
-    font-size:19px;font-weight:800;color:var(--onSky,#141827);opacity:.4;pointer-events:none;
+    font-size:19px;font-weight:800;color:var(--onSky,#141827);opacity:var(--fop,0);
+    transition:opacity .35s ease;pointer-events:none;
     white-space:nowrap;will-change:transform;font-variant-numeric:normal;letter-spacing:0}
+  /* 모바일 (유저 확정 2026-07-27 B안): 도킹 날짜는 **스크롤 중에만** 반투명으로
+     보이고, 멈추면 사라진다 — 정지 화면의 하늘을 가리지 않는다. 상단바('지금
+     좀 어때' 캡슐)는 스크롤과 무관하게 항상 불투명. PC·아이패드(861px+)는
+     우측 섹션에 상단바가 있어 겹치지 않으므로 기존(항상 표시) 유지. */
+  @media(max-width:860px){body:not(.tl-uifade) #tlDateFloat{opacity:0}}
   .hour .rule{position:absolute;left:46px;right:14px;top:0;height:1px;background:var(--onSky,#141827);opacity:.14}
   /* 취침(마감) 시각 줄 (요청) */
   .hour.bed .rule{opacity:.34}
@@ -3430,8 +3436,11 @@
       // 도킹 직후 1.0 → 40px 지나며 0.4로. 밀려나는 중엔 같이 잦아들어 사라진다.
       var fOp=Math.max(0.4,1-0.6*Math.min(1,fOver/fBlend));
       if(fPush>0)fOp=Math.max(0,fOp*(1-fPush/(fH+8)));
-      fd.style.opacity=fOp.toFixed(2);
-    }else{fd.style.opacity='0';}
+      /* inline opacity가 아니라 --fop 변수로: 모바일 정지 시 CSS가
+         opacity:0으로 덮어 스스로 사라진다 (유저 확정 B안 — tl-uifade
+         제거 타이머(420ms)가 곧 '스크롤 멈춤' 신호라 JS 추가 호출이 없다). */
+      fd.style.setProperty('--fop',fOp.toFixed(2));
+    }else{fd.style.setProperty('--fop','0');}
     // 고정 2단계 액센트·잉크 (앱 SkyTheme.timelineFixed): 밤 = 태양고도 −3° 밑.
     var night=p.alt<-3;
     vb.classList.toggle('tl-night',night);
