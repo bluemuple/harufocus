@@ -81,20 +81,13 @@ const TIMES = [Date.UTC(2026, 3, 21, 11, 30), Date.UTC(2026, 3, 21, 19, 45),
   Date.UTC(2026, 3, 24, 5, 0), Date.UTC(2026, 3, 24, 14, 0),
   Date.UTC(2026, 6, 20, 3, 0), Date.UTC(2026, 11, 21, 18, 0)];
 {
-  // 가로 부호 = 언제나 '그려진 해가 있는 쪽' (sinχ ∝ −sin dHA라서 수학적 항등).
-  let sideBad = 0, upBad = 0, n = 0;
+  // (right, up) = (sinψ, cosψ) — **관측자 시야각 그 자체** (앱 bdd3266b 파리티).
+  // 독립 alt/az bearing 공식과 두 성분 모두 일치해야 한다.
+  let rightBad = 0, upBad = 0;
   for (const [lat, lng] of CITIES) for (const t of TIMES) {
     const d = new Date(t);
     const s = sunAltAt(d, lat, lng), m = moonAltAt(d, lat, lng);
     const lv = moonLimbVector(d, lat, lng);
-    let dHA = s.H - m.H;
-    while (dHA > Math.PI) dHA -= 2 * Math.PI;
-    while (dHA <= -Math.PI) dHA += 2 * Math.PI;
-    if (Math.abs(Math.sin(dHA)) > 1e-4) {
-      n++;
-      if ((lv.west > 0) !== (Math.sin(dHA) > 0)) sideBad++;
-    }
-    // up 성분 = alt/az 방위(bearing) 공식과 일치해야 한다 (독립 좌표계 항등식).
     const rad = Math.PI / 180, phi = rad * lat;
     function az(p) {   // 방위각(북 기준 시계방향, 라디안) — 앱 horizontal()과 동일 규약
       return Math.atan2(Math.sin(p.H), Math.cos(p.H) * Math.sin(phi) - Math.tan(p.dec) * Math.cos(phi)) + Math.PI;
@@ -103,10 +96,21 @@ const TIMES = [Date.UTC(2026, 3, 21, 11, 30), Date.UTC(2026, 3, 21, 19, 45),
     const vert = Math.cos(aM) * Math.sin(aS) - Math.sin(aM) * Math.cos(aS) * Math.cos(dAz);
     const horiz = Math.sin(dAz) * Math.cos(aS);
     const norm = Math.hypot(vert, horiz);
-    if (norm > 1e-9 && Math.abs(lv.up - vert / norm) > 0.02) upBad++;
+    if (norm > 1e-9) {
+      if (Math.abs(lv.up - vert / norm) > 0.02) upBad++;
+      if (Math.abs(lv.right - horiz / norm) > 0.02) rightBad++;
+    }
   }
-  ok(sideBad === 0, '가로 부호 불변식 (' + n + '장면 중 위반 ' + sideBad + ')');
   ok(upBad === 0, 'up = alt/az bearing 항등식 (위반 ' + upBad + ')');
+  ok(rightBad === 0, 'right = alt/az bearing 항등식 (위반 ' + rightBad + ')');
+
+  // 반구 관례 (유저 실측 장면): 남반구 왁싱=왼쪽·웨이닝=오른쪽, 북반구 왁싱=오른쪽.
+  const chcWax = moonLimbVector(new Date(Date.UTC(2026, 6, 26, 7, 40)), -43.53, 172.63);
+  ok(chcWax.right < 0, '크라이스트처치 왁싱 gibbous = 밝은면 왼쪽 (실측 그 장면)');
+  const seoulWax = moonLimbVector(new Date(Date.UTC(2026, 6, 26, 12, 0)), 37.5665, 126.978);
+  ok(seoulWax.right > 0, '서울 왁싱 gibbous = 밝은면 오른쪽');
+  const chcWane = moonLimbVector(new Date(Date.UTC(2026, 7, 7, 18, 30)), -43.53, 172.63);
+  ok(chcWane.right > 0, '크라이스트처치 웨이닝 = 밝은면 오른쪽');
 }
 
 // ── 5. 저녁 초승달(서울): 밝은 면이 해 쪽(오른쪽)-아래를 본다 ──
@@ -115,7 +119,7 @@ const TIMES = [Date.UTC(2026, 3, 21, 11, 30), Date.UTC(2026, 3, 21, 19, 45),
   const s = sunAltAt(d, 37.5665, 126.978), m = moonAltAt(d, 37.5665, 126.978);
   const ill = moonIllum(d), lv = moonLimbVector(d, 37.5665, 126.978);
   ok(s.alt < 0 && m.alt > 0 && ill.k < 0.5, '장면 전제(해 짐·달 떠 있음·초승)');
-  ok(lv.west > 0, '저녁 초승달: 해 쪽(오른쪽)을 본다');
+  ok(lv.right > 0, '저녁 초승달: 오른쪽(진 해 방향)을 본다');
   ok(lv.up < 0, '저녁 초승달: 아래(진 해 쪽)를 본다');
 }
 
@@ -125,7 +129,7 @@ const TIMES = [Date.UTC(2026, 3, 21, 11, 30), Date.UTC(2026, 3, 21, 19, 45),
   for (let i = 0; i <= 40; i++) {
     const d = new Date(Date.UTC(2026, 3, 21, 14, 40) + i * 120000);
     const lv = moonLimbVector(d, 37.5665, 126.978);
-    const r = Math.atan2(-lv.up, lv.west);
+    const r = Math.atan2(-lv.up, lv.right);
     if (prev !== null) {
       let g = Math.abs(r - prev);
       if (g > Math.PI) g = 2 * Math.PI - g;

@@ -3226,12 +3226,14 @@
     var alt=Math.asin(Math.sin(phi)*Math.sin(dec)+Math.cos(phi)*Math.cos(dec)*Math.cos(H));
     return {alt:alt/rad,H:H,dec:dec,ra:ra};
   }
-  // 밝은 면 방향 (앱 LunarEngine.brightLimbVector 파리티, 요청: 방향도 실제처럼):
+  // 밝은 면 방향 — **관측자 시야 그대로** (앱 bdd3266b 파리티, 유저 실측 확정):
   //   χ = 밝은 면의 위치각(Meeus 48.5, 하늘 북→동), q = 시차각(달에서 본 천정).
-  //   west=−sinχ(하늘 서쪽 성분, 차트 오른쪽 = 항상 그려진 해가 있는 쪽),
-  //   up=cos(χ−q)(천정 성분 = 맨눈으로 보는 상하 기울기 그대로).
-  // 화면 회전은 atan2(−up, west) — 픽셀 척도를 곱하지 않는다(앱 moonTiltRotation
-  // 주석 참조: 세로 4× 스트레치가 기울기를 절벽으로 세운다).
+  //   right=−sin(χ−q)=sinψ (시야의 오른쪽 성분 — 남/북반구 반전이 q에서 자동),
+  //   up=cos(χ−q)=cosψ (천정 성분). 화면의 달 기울기 = 고개 들어 보는 실제 기울기.
+  // ⚠ 옛 정의(가로=차트 서쪽 −sinχ)는 달을 북쪽 하늘로 보는 남반구에서 시야의
+  //   거울상이라 좌우가 반대로 보였다(크라이스트처치 왁싱 gibbous 실측 —
+  //   실제 밝은면 왼쪽인데 오른쪽을 밝힘). 시야각 직접 렌더링으로 교체.
+  // 화면 회전은 atan2(−up, right) — 픽셀 척도를 곱하지 않는다(앱 주석 참조).
   function moonLimbVector(date,lat,lng){
     var rad=Math.PI/180;
     var s=sunAltAt(date,lat,lng), m=moonAltAt(date,lat,lng);
@@ -3241,7 +3243,7 @@
     var phi=rad*lat;
     var q=Math.atan2(Math.sin(m.H),
       Math.tan(phi)*Math.cos(m.dec)-Math.sin(m.dec)*Math.cos(m.H));
-    return {west:-Math.sin(chi),up:Math.cos(chi-q)};
+    return {right:-Math.sin(chi-q),up:Math.cos(chi-q)};
   }
   // 앱 SkyPalette.palette 포팅: 고도(도)+새벽여부 → top/horizon/별알파/글로우.
   function skyPalette(alt,isDawn){
@@ -3367,7 +3369,7 @@
     //   덮어써도 중심 정렬·iOS 잔상 수정(레이어 승격)이 유지된다.
     var lv=moonLimbVector(mdt,obsLat(),obsLng());
     moon.style.transform='translate(-50%,-50%) translateZ(0) rotate('
-      +Math.atan2(-lv.up,lv.west).toFixed(4)+'rad)';
+      +Math.atan2(-lv.up,lv.right).toFixed(4)+'rad)';
     // 위상은 실제 이각 k 기준, 0.5% 바뀔 때만 SVG 재생성 — 어제·내일 밴드로
     // 스크롤하면 그 시각의 위상이 그려진다(옛 '오늘 고정' 절충 폐기).
     var ill=moonIllum(mdt), phKey=''+Math.round(ill.k*200);
