@@ -269,7 +269,9 @@
   /* 태양 (요청 2026-07-23): 유저가 준 파스텔 실사 PNG(sun-hazy, 알파 falloff).
      디스크를 **보름달(34px)과 같은 크기**로 맞춘다 — 크롭 이미지 디스크 비율 0.438이라
      요소 78px면 디스크 ≈34px. 헤일로는 이미지 알파로 투명해져 잔상 없다(제 레이어에 올림). */
-  #tlSun{position:absolute;width:78px;height:78px;pointer-events:none;z-index:0;
+  /* 크기 축소 (요청 2026-07-26): 좁은 타임라인 폭에서 뜨고 지는 포물선이
+     보이도록 78→60px (디스크 ≈26px = 달과 동일 유지). */
+  #tlSun{position:absolute;width:60px;height:60px;pointer-events:none;z-index:0;
     transform:translate(-50%,-50%) translateZ(0);will-change:transform,left,top;
     opacity:0;transition:opacity .4s linear;
     background:url('assets/sun-hazy.png') center/contain no-repeat}
@@ -280,10 +282,10 @@
      → **글로우를 통째로 없앤다**(유저 요청 2026-07-23): 달은 빛나는 원반이 아니라
        하늘에 뜬 옅은 조각이라, 어두운 면은 아예 투명하게 두고(보름 제외) 밝은 면만 남긴다.
        앱 화면과도 맞다. `translateZ(0)+will-change`는 안쪽 blur가 잔상 안 남게 레이어만 유지. */
-  #tlMoon{position:absolute;width:34px;height:34px;pointer-events:none;z-index:0;
+  #tlMoon{position:absolute;width:26px;height:26px;pointer-events:none;z-index:0;
     transform:translate(-50%,-50%) translateZ(0);will-change:transform,left,top;
     opacity:0;transition:opacity .4s linear}
-  #tlMoon svg{width:34px;height:34px;display:block}
+  #tlMoon svg{width:26px;height:26px;display:block}
   /* (죽은 코드였던 .tl-sun/.tl-moon 규칙 제거 — addCelestial 폐기와 함께.
      실제 해·달은 #tlSun/#tlMoon(id)이다.) */
   .tl-scroll{position:absolute;inset:0;overflow-y:auto;padding:0 0 190px}
@@ -3289,6 +3291,15 @@
     var s=sunAltAt(dt,obsLat(),obsLng());
     var pal=skyPalette(s.alt,s.H<0);pal.H=s.H;return pal;
   }
+  /* 시간각→가로 위치(%) (요청 2026-07-26: 뜨고 질 때 수직 낙하 금지) —
+     옛 하드 클램프(4~96%)는 |H|>98°에서 x가 가장자리에 박혀 해·달이
+     수직으로 뜨고 졌다. 중앙은 기존 선형(0.42) 그대로, |t|>0.9부터
+     소프트니로 눌러 x가 계속 전진하며 **포물선**을 그린다(점근 96%). */
+  function tlXFrac(H){
+    var t=H/(Math.PI/2), a=Math.abs(t), k=0.9, m=0.195;
+    var f=a<=k?a:k+m*(1-Math.exp(-(a-k)/m));
+    return 50+42*(t<0?-f:f);
+  }
   function updateTlSky(){
     var sc=document.getElementById('tlScroll');if(!sc)return;
     /* 화면 중앙이 어느 밴드의 몇 시인지 → **연속 시각(dt)**으로 하늘·해·달을 정한다.
@@ -3312,7 +3323,7 @@
     r.setProperty('--tl-mid',lerpHex(parseInt(p.top.slice(1),16),parseInt(p.horizon.slice(1),16),0.55));
     r.setProperty('--tl-bot',p.horizon);
     // 해의 가로 위치(시간각) — 글로우가 **해가 있는 쪽**에서 피게 미리 구한다 (요청 리얼리즘).
-    var sunX=Math.max(4,Math.min(96,50+42*((p.H||0)/(Math.PI/2))));
+    var sunX=Math.max(4,Math.min(96,tlXFrac(p.H||0)));   // 소프트니 — 포물선 뜨고 지기
     // 새벽·노을의 따뜻한 지평선 글로우 (앱 glowStrength). 해 근처 땅·하늘이 물든다.
     var glow=document.getElementById('tlGlow');
     if(!glow){glow=document.createElement('div');glow.id='tlGlow';vb.insertBefore(glow,vb.firstChild);}
@@ -3374,7 +3385,7 @@
     if(!moon){moon=document.createElement('div');moon.id='tlMoon';vb.insertBefore(moon,glow.nextSibling);}
     var mdt=dt;
     var mp=moonAltAt(mdt,obsLat(),obsLng());
-    var mtan=mp.H/(Math.PI/2), moonX=Math.max(4,Math.min(96,50+42*mtan));
+    var moonX=Math.max(4,Math.min(96,tlXFrac(mp.H)));    // 해와 같은 소프트니
     var moonY=0.82*skH-(mp.alt/90)*0.775*skH;
     moon.style.left=moonX.toFixed(2)+'%'; moon.style.top=moonY.toFixed(1)+'px';
     moon.style.opacity=Math.max(0,Math.min(1,(mp.alt+1.5)/3)).toFixed(2);
@@ -3388,27 +3399,35 @@
     // 스크롤하면 그 시각의 위상이 그려진다(옛 '오늘 고정' 절충 폐기).
     var ill=moonIllum(mdt), phKey=''+Math.round(ill.k*200);
     if(moon.dataset.ph!==phKey){moon.innerHTML=moonSVG(ill.k);moon.dataset.ph=phKey;}
-    /* 좌측 상단 floating 날짜 + 밀어내기 (요청 2026-07-26):
-       지금 보는 날의 날짜를 40% 투명으로 상단에 고정. 스크롤업으로 다음
-       밴드의 고정 날짜(자정선 왼쪽 큰 날짜)가 이 자리에 접근하면 그만큼
-       위로 밀려나고, 지나가면 새 날로 바뀐다. 자기 밴드의 고정 날짜가
-       아직 이 자리에 보이면 숨긴다(글자 겹침 방지). */
+    /* 좌측 상단 floating 날짜 — **도킹** 방식 (요청 2026-07-26 개정):
+       다음 날 고정 날짜(자정선 라벨)가 올라와 이전 날짜를 밀어내면, 밀린
+       날짜는 그대로 사라지고 **밀어낸 날짜가 상단 자리에 도킹해 계속
+       머문다** — 막 도킹한 순간엔 불투명(고정 날짜에서 이어지는 착시),
+       지나면서 40%로 잦아든다. 반대로 스크롤을 되돌리면 도킹이 풀려
+       불투명한 고정 날짜로 제자리에 내려간다. 도킹된 밴드의 고정 라벨은
+       숨겨 이중 표시를 막는다. */
     var fd=document.getElementById('tlDateFloat');
     if(!fd){fd=document.createElement('div');fd.id='tlDateFloat';vb.appendChild(fd);}
-    var fTop=8, fH=26, topY=sc.scrollTop;
-    var curLane=lanes[0], nxtLane=null;
+    var fTop=8, fH=26, fBlend=40, topY=sc.scrollTop;
+    var docked=null, incoming=null;
     for(var _fi=0;_fi<lanes.length;_fi++){
-      if(lanes[_fi].offsetTop<=topY+fTop)curLane=lanes[_fi];
-      else{nxtLane=lanes[_fi];break;}
+      var _aY=lanes[_fi].offsetTop+2-topY;               // 고정 날짜의 화면 y
+      var _dl=lanes[_fi].querySelector('.lbl.datebig');
+      if(_aY<=fTop){docked=lanes[_fi];if(_dl)_dl.style.visibility='hidden';}
+      else{if(_dl)_dl.style.visibility='';if(!incoming)incoming=lanes[_fi];}
     }
-    fd.textContent=(curLane&&curLane.dataset.dbig)||'';
-    var fPush=0;
-    if(nxtLane){var fGap=nxtLane.offsetTop-topY-fTop;
-      if(fGap<fH+8)fPush=(fH+8)-fGap;}
-    fd.style.transform='translateY('+(-Math.min(fPush,fH+16))+'px)';
-    // 자기 고정 날짜(밴드 머리)가 float 자리 아래에 아직 보이면 중복 — 숨김.
-    var fOwn=curLane&&(curLane.offsetTop+14+8)>topY;
-    fd.style.opacity=fOwn?'0':'.4';
+    if(docked){
+      var fOver=fTop-(docked.offsetTop+2-topY);          // 도킹 후 지나온 거리
+      var fPush=0;
+      if(incoming){var fGap=(incoming.offsetTop+2-topY)-fTop;
+        if(fGap<fH+8)fPush=(fH+8)-fGap;}
+      fd.textContent=docked.dataset.dbig||'';
+      fd.style.transform='translateY('+(-fPush)+'px)';
+      // 도킹 직후 1.0 → 40px 지나며 0.4로. 밀려나는 중엔 같이 잦아들어 사라진다.
+      var fOp=Math.max(0.4,1-0.6*Math.min(1,fOver/fBlend));
+      if(fPush>0)fOp=Math.max(0,fOp*(1-fPush/(fH+8)));
+      fd.style.opacity=fOp.toFixed(2);
+    }else{fd.style.opacity='0';}
     // 고정 2단계 액센트·잉크 (앱 SkyTheme.timelineFixed): 밤 = 태양고도 −3° 밑.
     var night=p.alt<-3;
     vb.classList.toggle('tl-night',night);
@@ -4073,7 +4092,8 @@
       tlBandTS=bandTS;                     // yFor 기준 (이 밴드를 그리는 동안)
       lane.dataset.ts=bandTS;              // updateTlSky의 밴드 시각 환산용
       // 날짜 경계 큰 날짜 (요청): 자정(밴드 첫 줄) 왼쪽에 큼직하게·불투명.
-      var dbig=(isToday?'오늘 ':'')+_dd.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',weekday:'short'});
+      // '오늘'은 요일 뒤에 (요청 2026-07-26): "7. 27. (월) 오늘".
+      var dbig=_dd.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',weekday:'short'})+(isToday?' 오늘':'');
       lane.dataset.dbig=dbig;
       /* 시간줄 0~23시 (요청: 24시간) — 자정선은 밴드 이음선이 대신한다.
          첫 줄 라벨은 시각 대신 **큰 날짜**(날짜 경계 표시), 기상·취침은 마커로. */

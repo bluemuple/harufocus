@@ -35,6 +35,7 @@ const CODE = [
   grab('moonAltAt'),
   grab('moonLimbVector'),
   grab('moonSVG'),
+  grab('tlXFrac'),
 ].join('\n');
 eval(CODE);
 
@@ -155,6 +156,26 @@ const TIMES = [Date.UTC(2026, 3, 21, 11, 30), Date.UTC(2026, 3, 21, 19, 45),
   // k∈(0.94,0.97]은 아직 보름이 아니다 — isFull 문턱이 noBlur와 어긋나
   // 보름 원반+죽은 blur path를 겹치던 결함(적대 리뷰) 회귀 방지.
   ok(!fullDisc(moonSVG(0.95)), 'k=0.95는 아직 보름 원반이 아니다');
+}
+
+// ── 8. 시간각→가로 소프트니 (요청: 뜨고 질 때 수직 낙하 금지) ──
+//      중앙은 옛 선형과 동일, |t|>0.9부턴 단조 전진하되 96%에 점근 — x가
+//      가장자리에 박히지 않아 해·달이 포물선으로 뜨고 진다.
+{
+  const rad90 = Math.PI / 2;
+  near(tlXFrac(0), 50, 1e-9, '남중 = 중앙 50%');
+  near(tlXFrac(0.5 * rad90), 71, 1e-6, '중앙부는 옛 선형 그대로 (t=0.5 → 71%)');
+  let mono = true, bounded = true, prev = -1;
+  for (let t = -2.4; t <= 2.4; t += 0.02) {
+    const x = tlXFrac(t * rad90);
+    if (x <= prev) mono = false;
+    if (x < 3.9 || x > 96.1) bounded = false;
+    prev = x;
+  }
+  ok(mono, '가로 위치는 시간각에 단조 증가 (가장자리에 안 박힌다)');
+  ok(bounded, '가로 위치는 4~96% 안에 머문다');
+  ok(tlXFrac(1.3 * rad90) < 96 && tlXFrac(1.3 * rad90) > tlXFrac(1.1 * rad90),
+     '옛 클램프 구간(|t|>1.095)에서도 계속 전진');
 }
 
 if (failed) { console.error('moon-astro-parity: ' + failed + ' FAILED'); process.exit(1); }
