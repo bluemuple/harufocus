@@ -7800,7 +7800,9 @@
       });
     });
   }
-  function isNightNow(){var h=new Date().getHours();return h>=19||h<6;}
+  // 밤 판정의 진실은 applySky의 body.night(태양고도) 하나 — 시계 판정과
+  // 갈라지면 하늘은 밤인데 일기 모달만 낮인 채가 된다.
+  function isNightNow(){return document.body.classList.contains('night');}
   function openDiaryEntry(entry,editMode){
     diaryCur=entry;
     var m=dKindMeta(entry),d=new Date(entry.date);
