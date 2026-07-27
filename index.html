@@ -8833,7 +8833,15 @@
       else if(server===null)html+='<div class="sh-row"><b>서버</b><span><i>읽기 실패 (로그인·네트워크 확인)</i></span></div>';
       else{
         var sg=server.snapshot&&server.snapshot.goals;
+        var st=(server.snapshot&&server.snapshot.tasks)||[];
+        var sgt=st.filter(function(t){return t&&t.goalID;});
+        /* 고아 수(목표 할 일은 있는데 그 목표가 서버에 없음)는 **어느 쪽이
+           목표 배열을 덮었는지** 알려주는 지표다 (요청 2026-07-28 진단). */
+        var known={};(sg||[]).forEach(function(g){if(g&&g.id)known[g.id]=1;});
+        var orphan=sgt.filter(function(t){return !known[t.goalID];}).length;
         html+='<div class="sh-row"><b>서버 목표 '+((sg&&sg.length)||0)+'개</b><span>'+names(sg)+'</span></div>'+
+          '<div class="sh-row"><b>서버 할 일</b><span>'+st.length+'개 · 목표 할 일 '+sgt.length+
+            '개 <i>(고아 '+orphan+'개)</i></span></div>'+
           '<div class="sh-row"><b>서버 갱신</b><span>'+esc(String(server.updated_at||'').replace('T',' ').slice(0,19))+
             ' · '+esc(String(server.device_id||'?').slice(0,10))+'…</span></div>'+
           '<div class="sh-row"><b>goalsManaged</b><span>'+String(server.snapshot&&server.snapshot.goalsManaged)+
