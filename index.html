@@ -692,15 +692,20 @@
      제목 + '장기 목표 · n%' + 게이지. 그날 분량 할 일이 카드 아래 붙는다. */
   .goal-card{display:flex;gap:12px;align-items:center;background:rgba(255,255,255,.94);
     border-radius:16px;box-shadow:0 4px 14px rgba(20,40,80,.10);padding:12px 14px;margin-bottom:8px}
-  /* 카드 + 그날 작업 한 덩어리 (요청 2026-07-28, 앱 goalSection 모습):
-     카드는 아래 모서리를, 작업은 위 모서리를 버리고 얇은 선으로 잇는다. */
-  .goal-group{break-inside:avoid}
-  .goal-group .goal-card{margin-bottom:0}
-  .goal-group .goal-card:not(:only-child){border-radius:16px 16px 0 0}
+  /* 카드 + 그날 작업 = **한 장의 흰 카드** (요청 2026-07-28, 앱 goalSection과
+     같은 모습): 배경은 반투명이 아니라 순백, 카드 아래·작업 위 모서리는 직각,
+     둘 사이는 앱처럼 얇은 가로선 하나. 그림자도 그룹이 한 번만 준다.
+     ⚠ .task-inner 배경은 **흰색 그대로** 둔다 — 투명하게 하면 스와이프 액션
+     (뒤에 깔린 파랑·보라 판)이 드러난 채로 보인다. */
+  .goal-group{break-inside:avoid;border-radius:16px;
+    box-shadow:0 4px 14px rgba(20,40,80,.10);overflow:hidden}
+  .goal-group .goal-card{margin-bottom:0;box-shadow:none;background:#fff;border-radius:0}
   .goal-group .task{margin-bottom:0}
-  .goal-group .task .task-inner{border-radius:0;border-top:1px solid rgba(20,24,39,.07)}
-  .goal-group .task:last-child .task-inner{border-radius:0 0 16px 16px}
-  body.night .goal-group .task .task-inner{border-top-color:rgba(255,255,255,.09)}
+  .goal-group .task .task-inner{background:#fff;border-radius:0;
+    border-top:1px solid rgba(20,24,39,.08)}
+  body.night .goal-group .goal-card{background:rgba(28,32,48,.96)}
+  body.night .goal-group .task .task-inner{background:rgba(28,32,48,.96);
+    border-top-color:rgba(255,255,255,.10)}
   .goal-card .gc-img{width:44px;height:58px;object-fit:cover;border-radius:8px;flex:0 0 auto}
   .goal-card .gc-body{flex:1;min-width:0}
   .goal-card .gc-title{font-weight:700;font-size:15px;color:#141827;
@@ -6499,7 +6504,9 @@
       return t.goalID===g.id&&t.isDone?a+((t.goalActualAmount!=null?t.goalActualAmount:t.goalAmount)||0):a;},0);}
     var calSel0=new Date(calSel);calSel0.setHours(0,0,0,0);
     var goalPick=(todoPick.kind==='goal');
-    var activeGoals=(todoPick.kind!=='inbox'&&todoPick.kind!=='all'&&!goalPick)?[]:(DATA.goals||[]).filter(function(g){
+    /* 담아둔 일에는 목표를 두지 않는다 (요청 2026-07-28) — 담아둔 일은
+       '아직 자리 못 잡은 할 일' 칸이고, 목표는 모든 할 일·장기 목표에서. */
+    var activeGoals=(todoPick.kind!=='all'&&!goalPick)?[]:(DATA.goals||[]).filter(function(g){
       if(!(g.totalAmount>0))return false;
       if(goalDoneAmt(g)>=g.totalAmount-1e-9)return false;
       // 장기 목표 목록에선 기간과 무관하게 진행 중 목표를 모두 보여준다
