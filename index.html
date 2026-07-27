@@ -2903,7 +2903,28 @@
      푸시할 때마다 이 문자열을 갱신한다. */
   var WEB_BUILD='2026-07-28 12:00';
   /* 동기화 진단용 시각 (요청 2026-07-28 HUD) */
-  var lastPullAt=0,lastPushAt=0,lastPushErr='';
+  var lastPullAt=0,lastPushAt=0,lastPushErr='',lastPushStatus=0,lastVerify='',pushRetried=false;
+  /* 올린 게 **정말 서버에 남았는지** 확인 (요청 2026-07-28): updated_at이
+     방금 시각으로 갱신됐는지 본다. 안 바뀌면 권한(RLS)·제약·용량 쪽이다. */
+  function verifyPush(){
+    if(!session)return;
+    var t0=Date.now();
+    setTimeout(function(){
+      freshToken().then(function(tok){if(!tok)throw 0;
+        return fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=updated_at,device_id',
+          {headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok}});})
+        .then(function(r){return r.json();})
+        .then(function(rows){
+          var u=rows&&rows.length?rows[0].updated_at:null;
+          var dev=rows&&rows.length?rows[0].device_id:null;
+          if(!u){lastVerify='서버에 행이 없음';return;}
+          var age=Date.now()-new Date(u).getTime();
+          if(age<60000&&dev===webDeviceId())lastVerify='서버 반영 확인 ✓ ('+Math.round(age/1000)+'초 전)';
+          else lastVerify='⚠ 서버가 안 바뀜 (서버 시각 '+String(u).replace('T',' ').slice(0,19)+
+            ', 기기 '+String(dev||'?').slice(0,10)+') — 쓰기 권한(RLS)·용량 의심';
+        }).catch(function(){lastVerify='확인 실패(네트워크)';});
+    },1200);
+  }
   var AUTH_KEY='harufocusWebAuth';
 
   // 한국어 조사 자동 선택 (요청): 받침 유무로 갈린다 — 엘리'야' vs 영식'아'.
@@ -8814,7 +8835,8 @@
     wrap.querySelector('.sh-dim').addEventListener('click',close);
     document.getElementById('shClose').addEventListener('click',close);
     document.getElementById('shPull').addEventListener('click',function(){fetchSnapshot();setTimeout(paint,900);});
-    document.getElementById('shPush').addEventListener('click',function(){doPushNow();setTimeout(paint,900);});
+    document.getElementById('shPush').addEventListener('click',function(){
+      doPushNow();setTimeout(function(){openSyncHud();},2200);});   // 검증 결과까지 보고 다시 그린다
     function names(arr){
       if(!arr||!arr.length)return '<i>없음</i>';
       return arr.map(function(g){return esc(g.title||'(제목 없음)')+(g.imageThumbB64?' 📷':'');}).join(', ');
@@ -8826,7 +8848,10 @@
         '<div class="sh-row"><b>로그인</b><span>'+(session?esc(session.user&&session.user.email||'로그인됨'):'<i>안 됨 — 이 상태에선 아무것도 동기화되지 않아요</i>')+'</span></div>'+
         '<div class="sh-row"><b>이 브라우저 id</b><span>'+esc(String(webDeviceId()).slice(0,14))+'…</span></div>'+
         '<div class="sh-row"><b>마지막 받기</b><span>'+hudAgo(lastPullAt)+'</span></div>'+
-        '<div class="sh-row"><b>마지막 올리기</b><span>'+hudAgo(lastPushAt)+(lastPushErr?(' <i>('+esc(lastPushErr)+')</i>'):'')+'</span></div>'+
+        '<div class="sh-row"><b>마지막 올리기</b><span>'+hudAgo(lastPushAt)+
+          (lastPushStatus?(' · HTTP '+lastPushStatus):'')+
+          (lastPushErr?(' <i>('+esc(lastPushErr)+')</i>'):'')+'</span></div>'+
+        '<div class="sh-row"><b>올린 뒤 확인</b><span>'+(lastVerify?esc(lastVerify):'<i>아직 없음 — [지금 올리기]를 눌러 보세요</i>')+'</span></div>'+
         '<div class="sh-row"><b>웹 목표 '+localG.length+'개</b><span>'+names(localG)+'</span></div>'+
         '<div class="sh-row"><b>목표 할 일</b><span>'+gTasks+'개</span></div>';
       if(server===undefined)html+='<div class="sh-row"><b>서버</b><span>읽는 중…</span></div>';
@@ -9064,14 +9089,19 @@
         .then(function(r){return r.json();}).catch(function(){return null;});})
     .then(function(rows){
       var r0=rows&&rows.length?rows[0]:null;
-      if(r0&&r0.device_id!==webDeviceId()&&r0.updated_at!==lastSeenUpdated){
+      if(r0&&r0.device_id!==webDeviceId()&&r0.updated_at!==lastSeenUpdated&&!pushRetried){
         // 남이 더 최신이다 → 내 낡은 스냅샷으로 덮지 않고 먼저 받는다.
         // fetchSnapshot은 fTask를 새 배열에서 다시 찾아 붙이므로 집중 중에도
         // 안전하다 (앱 reattachActiveTask와 같은 역할).
+        /* ⚠ 재시도는 **한 번만** (요청 2026-07-28): fetch가 끝나기 전에 다시
+           이 게이트를 만나면 fetch→push→fetch…가 서로를 예약해 영영 안 올라간다.
+           한 바퀴 뒤에는 무조건 올려서 '올라가지 않는 웹'을 만들지 않는다. */
+        pushRetried=true;
         fetchSnapshot();
         pushSnapshot();          // 병합된 상태로 다시 올린다
         return;
       }
+      pushRetried=false;
       doPushNow();
     });
   }
@@ -9081,10 +9111,15 @@
     freshToken().then(function(tok){if(!tok)throw new Error('auth');
       return fetch(SUPA_URL+'/rest/v1/sundial_state',{method:'POST',headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});})
     .then(function(r){
+      lastPushStatus=r.status;
       if(r.status===401){signOut();lastPushErr='401 로그아웃됨';}
       else if(!r.ok){r.text().then(function(t){console.warn('[harufocus] 저장 실패',r.status,t);
-        lastPushErr=r.status+' '+String(t).slice(0,80);});}
-      else{lastPushAt=Date.now();lastPushErr='';saveSnapCache(currentSnapLike());}})
+        lastPushErr=r.status+' '+String(t).slice(0,120);});}
+      else{lastPushAt=Date.now();lastPushErr='';saveSnapCache(currentSnapLike());
+        /* ⚠ 2xx가 곧 저장은 아니다 (요청 2026-07-28 진단): upsert가 RLS·제약에
+           걸려 **0행**만 건드려도 PostgREST는 성공을 돌려줄 수 있다. 그래서
+           올린 직후 메타를 다시 읽어 updated_at이 정말 바뀌었는지 확인한다. */
+        verifyPush();}})
     .catch(function(e){console.warn('[harufocus] 저장 네트워크 오류',e);lastPushErr='네트워크: '+e;})
     .then(function(){pushing=false;pushDomains();});   // 성공·실패 무관하게 반드시 푼다
   }
