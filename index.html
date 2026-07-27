@@ -52,14 +52,19 @@
   body[data-m="timeline"] .tl-fabs{display:flex}
   /* '지금' 캡슐 (요청 2026-07-23): 지금 선이 화면 밖일 때만. 밤=파란 캡슐, 낮=밝은 캡슐. */
   /* '지금' 캡슐 — 왼쪽 아래 고정 (요청 2026-07-26, FAB 줄과 분리). */
-  .tl-nowcap{position:fixed;left:16px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:15;
+  .tl-nowcap{position:fixed;left:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:15;
     display:none;align-items:center;gap:4px;height:44px;padding:0 16px 0 13px;border:0;cursor:pointer;
     border-radius:999px;font-weight:800;font-size:14.5px;font-family:inherit;
-    background:var(--accent,#5B7CE0);color:#fff;box-shadow:0 6px 16px rgba(20,40,80,.28);
+    /* 오른쪽 편집(연필) 버튼과 **같은 판** (요청 2026-07-28): 같은 배경·글자색,
+       같은 높이(44), 세로 중심도 같은 줄. 낮/밤 변형(.day)도 두지 않는다 —
+       연필 버튼이 하루 종일 한 가지 색이라 둘만 어긋나 보였다. */
+    background:rgba(40,50,80,.72);color:#fff;backdrop-filter:blur(4px);
+    box-shadow:0 6px 16px rgba(10,20,50,.3);
     transition:background .3s,color .3s}
   .tl-nowcap.show{display:inline-flex}
   .tl-nowcap svg{width:17px;height:17px;flex:0 0 auto}
-  .tl-nowcap.day{background:rgba(255,255,255,.94);color:var(--accent,#5B7CE0);box-shadow:0 6px 16px rgba(20,40,80,.2)}
+  /* (.day 변형은 폐지 — 편집 버튼과 같은 판으로 통일. 클래스는 JS가 계속
+     붙이지만 모양은 바꾸지 않는다.) */
   .tl-batchbtn{width:48px;height:48px;border-radius:50%;border:0;background:rgba(40,50,80,.72);color:#fff;
     display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 16px rgba(10,20,50,.3);backdrop-filter:blur(4px)}
   .tl-batchbtn svg{width:22px;height:22px}
@@ -318,10 +323,16 @@
     font-variant-numeric:normal;letter-spacing:0}
   /* 좌측 상단 floating 날짜 (요청): 같은 크기, 40% 투명(값은 JS가 --fop로).
      다음 날짜가 올라오면 밀려난다(transform은 JS가 계산). 뷰포트 고정. */
-  #tlDateFloat{position:absolute;left:14px;top:calc(8px + env(safe-area-inset-top));z-index:23;
+  #tlDateFloat,#tlDateNext{position:absolute;left:14px;top:calc(8px + env(safe-area-inset-top));z-index:23;
     font-size:19px;font-weight:800;color:var(--onSky,#141827);opacity:var(--fop,0);
     transition:opacity .35s ease;pointer-events:none;
     white-space:nowrap;will-change:transform;font-variant-numeric:normal;letter-spacing:0}
+  /* 다가오는 날짜 (요청 2026-07-28): 도킹 자리 근처에 들어오면 **고정 라벨 대신**
+     이 요소가 그린다 — 고정 라벨은 스크롤 콘텐츠라 프레임 사이에 도킹 지점 위로
+     지나쳐 버리고, JS가 한 박자 늦게 float로 넘기면서 날짜가 위로 튀었다가
+     아래로 되돌아오는 것처럼 보였다. 여기서 도킹 y로 **클램프**해 멈춘다.
+     ⚠ 고정 라벨을 대신하는 요소라 페이드(모바일 정지 시 사라짐)는 걸지 않는다. */
+  #tlDateNext{opacity:0;transition:none}
   /* 모바일 (유저 확정 2026-07-27 B안): 도킹 날짜는 **스크롤 중에만** 반투명으로
      보이고, 멈추면 사라진다 — 정지 화면의 하늘을 가리지 않는다. 상단바('지금
      좀 어때' 캡슐)는 스크롤과 무관하게 항상 불투명. PC·아이패드(861px+)는
@@ -329,7 +340,7 @@
   @media(max-width:860px){body:not(.tl-uifade) #tlDateFloat{opacity:0}}
   /* PC: 타임라인 좌상단 날짜를 **우측 페이지 제목 줄과 같은 눈높이**로 내린다
      (요청 2026-07-27). 제목 줄은 top:14 + height:44 → 세로 중심 36. */
-  @media(min-width:1100px){#tlDateFloat{top:25px}}
+  @media(min-width:1100px){#tlDateFloat,#tlDateNext{top:25px}}
   .hour .rule{position:absolute;left:46px;right:14px;top:0;height:1px;background:var(--onSky,#141827);opacity:.14}
   /* 취침(마감) 시각 줄 (요청) */
   .hour.bed .rule{opacity:.34}
@@ -625,8 +636,9 @@
   /* 하루 모자이크 (앱 파리티) — 한 줄 1시간 × 6칸(10분).
      ⚠ 칸을 정사각으로 두면 24줄이 화면을 넘는다. 세로만 눕혀서 좁은
      2단 왼쪽 칸(최소 340px)에서도 46×32px가 나온다(실측). */
-  :root{--mo-empty:rgba(120,140,175,.16);--mo-plan:#9CC0E8;
-        --mo-done:#3B7FD4;--mo-past:rgba(120,140,175,.42)}
+  /* 낮은 어둡게 (요청 2026-07-28): .16은 밝은 하늘 위에서 거의 안 보였다. */
+  :root{--mo-empty:rgba(40,60,95,.20);--mo-plan:#9CC0E8;
+        --mo-done:#3B7FD4;--mo-past:rgba(40,60,95,.45)}
   /* ⚠ 24줄 + '지난 7일'을 합치면 한 화면을 넘는다. #view-mosaic이 이미
      overflow-y:auto라 스크롤되지만, 아래 여백이 없으면 마지막 줄이 잘려
      보인다. */
@@ -654,7 +666,7 @@
   .mo-day{width:52px;font-size:12px;color:var(--ink-soft);flex:0 0 auto}
   .mo-day.today{color:var(--ink);font-weight:700}
   .mo-track{flex:1;display:grid;grid-template-columns:repeat(18,1fr);gap:3px}
-  .mo-cell{height:16px;border-radius:4px;background:#e7ecf4}
+  .mo-cell{height:16px;border-radius:4px;background:rgba(40,60,95,.22)}
   .mo-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;font-size:12px;color:var(--ink-soft)}
   .mo-legend span{display:inline-flex;align-items:center;gap:5px}
   .mo-legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
@@ -1579,7 +1591,14 @@
   body.night .qhint-big{color:rgba(235,238,246,.34)}
   body.night .mtask-inner{background:rgba(28,32,48,.92);color:#ECEEF6}
   body.night .goal-fab{background:rgba(30,34,50,.85);color:#B9AAF0}
-  body.night .mo-cell{filter:brightness(.85)}
+  /* 모자이카 칸 대비 (요청 2026-07-28): 밤 = 흰빛으로 또렷하게,
+     낮 = 어둡게. 예전 밤 규칙은 오히려 어둡게(brightness .85) 만들어
+     어두운 배경에 칸이 묻혔다. */
+  body.night{--mo-empty:rgba(235,240,255,.20);--mo-past:rgba(235,240,255,.42);
+             --mo-plan:#BBD6F5;--mo-done:#7FB4F2}
+  body.night .mo-cell{background:rgba(235,240,255,.28)}
+  body.night .mday-c{box-shadow:inset 0 0 0 1px rgba(235,240,255,.14)}
+  body.night .mday-h,body.night .mday-legend{color:rgba(235,238,246,.75)}
   body.night .mo-legend{color:rgba(235,238,246,.75)}
   body.night .bucket-nav span{color:#ECEEF6}
   body.night .bucket-nav button{color:rgba(235,238,246,.6)}
@@ -1639,7 +1658,8 @@
     .topcap{left:auto;top:20px;transform:none;right:180px;height:32px;padding:0 13px;
       max-width:34vw}
     /* '지금' 캡슐·FAB — 타임라인 페인(왼쪽 400px) 안 좌하단. */
-    .tl-nowcap{left:18px;bottom:18px}
+    /* FAB 줄 중심(bottom 18 + 56/2 = 46)과 같은 줄: 44짜리는 bottom 24. */
+    .tl-nowcap{left:18px;bottom:24px}
     /* 데스크톱 .tabbody 좌패딩이 26이므로 h2도 26 — 캡슐 왼쪽 끝이 카드와
        같은 x가 되는 건 .dow-toggle의 margin-left:8을 걷어낸 덕이다 (요청 2026-07-27). */
     .view.on>h2{position:fixed;top:14px;left:calc(var(--pane-w) + 26px);z-index:46;margin:0;height:44px;
@@ -3587,29 +3607,55 @@
        숨겨 이중 표시를 막는다. */
     var fd=document.getElementById('tlDateFloat');
     if(!fd){fd=document.createElement('div');fd.id='tlDateFloat';vb.appendChild(fd);}
-    var fTop=8, fH=26, fBlend=40, topY=sc.scrollTop;
-    var docked=null, incoming=null;
+    var fn=document.getElementById('tlDateNext');
+    if(!fn){fn=document.createElement('div');fn.id='tlDateNext';vb.appendChild(fn);}
+    /* ⚠ 도킹 y는 **CSS가 정한다** (모바일 8+safe / PC 25) — 여기 상수 8과
+       어긋나 있어서 PC에선 고정 라벨이 8까지 올라간 뒤 float가 25에 나타나,
+       17px 아래로 되돌아오는 것처럼 보였다 (요청 2026-07-28). */
+    var fTop=parseFloat(getComputedStyle(fd).top)||8;
+    var fH=26, fBlend=40, topY=sc.scrollTop, fZone=fH+8;
+    /* ⚠ 좌표는 **라벨의 실제 화면 y**로 잰다 (요청 2026-07-28): 예전엔
+       `lane.offsetTop+2-scrollTop`으로 어림했는데 라벨의 자체 오프셋(밴드
+       padding·lbl top:-12)만큼 어긋나, 고정 라벨이 도킹 지점을 한참 지나
+       올라간 뒤에야 float로 넘어갔다 — 그게 '너무 위까지 갔다가 내려오는'
+       튐의 정체였다. rect는 스크롤 프레임마다 정확하다. */
+    var vbY=vb.getBoundingClientRect().top;
+    var docked=null, incoming=null, inY=Infinity, inLbl=null;
     for(var _fi=0;_fi<lanes.length;_fi++){
-      var _aY=lanes[_fi].offsetTop+2-topY;               // 고정 날짜의 화면 y
       var _dl=lanes[_fi].querySelector('.lbl.datebig');
+      var _aY=_dl?(_dl.getBoundingClientRect().top-vbY):(lanes[_fi].offsetTop+2-topY);
       if(_aY<=fTop){docked=lanes[_fi];if(_dl)_dl.style.visibility='hidden';}
-      else{if(_dl)_dl.style.visibility='';if(!incoming)incoming=lanes[_fi];}
+      else{
+        if(_dl)_dl.style.visibility='';
+        if(!incoming){incoming=lanes[_fi];inY=_aY;inLbl=_dl;}
+      }
     }
+    /* 다가오는 날짜가 도킹 구역(밀기 시작 지점)에 들어오면 고정 라벨을 숨기고
+       float가 이어받아 **도킹 y에서 정확히 멈춘다** — 넘어갔다 돌아오는 튐이
+       원천적으로 없어지고, 되돌려 스크롤하면 같은 자리에서 다시 내려간다. */
+    var inGap=inY-fTop;
+    if(incoming&&inGap<=fZone){
+      if(inLbl)inLbl.style.visibility='hidden';
+      fn.textContent=incoming.dataset.dbig||'';
+      fn.style.transform='translateY('+Math.max(0,inGap).toFixed(1)+'px)';
+      fn.style.opacity='1';
+    }else{fn.style.opacity='0';}
     if(docked){
-      var fOver=fTop-(docked.offsetTop+2-topY);          // 도킹 후 지나온 거리
+      var _dkl=docked.querySelector('.lbl.datebig');
+      var dkY=_dkl?(_dkl.getBoundingClientRect().top-vbY):(docked.offsetTop+2-topY);
+      var fOver=fTop-dkY;                               // 도킹 후 지나온 거리
       var fPush=0;
-      if(incoming){var fGap=(incoming.offsetTop+2-topY)-fTop;
-        if(fGap<fH+8)fPush=(fH+8)-fGap;}
+      if(incoming&&inGap<fZone)fPush=fZone-Math.max(0,inGap);
       fd.textContent=docked.dataset.dbig||'';
       fd.style.transform='translateY('+(-fPush)+'px)';
       // 도킹 직후 1.0 → 40px 지나며 0.4로. 밀려나는 중엔 같이 잦아들어 사라진다.
       var fOp=Math.max(0.4,1-0.6*Math.min(1,fOver/fBlend));
-      if(fPush>0)fOp=Math.max(0,fOp*(1-fPush/(fH+8)));
+      if(fPush>0)fOp=Math.max(0,fOp*(1-fPush/fZone));
       /* inline opacity가 아니라 --fop 변수로: 모바일 정지 시 CSS가
          opacity:0으로 덮어 스스로 사라진다 (유저 확정 B안 — tl-uifade
          제거 타이머(420ms)가 곧 '스크롤 멈춤' 신호라 JS 추가 호출이 없다). */
       fd.style.setProperty('--fop',fOp.toFixed(2));
-    }else{fd.style.setProperty('--fop','0');}
+    }else{fd.style.setProperty('--fop','0');fd.style.transform='';}
     // 고정 2단계 액센트·잉크 (앱 SkyTheme.timelineFixed): 밤 = 태양고도 −3° 밑.
     var night=p.alt<-3;
     vb.classList.toggle('tl-night',night);
@@ -8473,11 +8519,11 @@
       navigator.geolocation.getCurrentPosition(function(pos){
         var o={lat:pos.coords.latitude,lng:pos.coords.longitude};
         try{localStorage.setItem(GEO_KEY,JSON.stringify(o));}catch(_){}
-        renderAll();                            // 하늘·상단바 즉시 갱신
+        applySky();renderAll();                 // 하늘·페이지 배경·낮밤 즉시 갱신
       },function(){
         // 거부·실패 → 서울 (요청). 다시 묻지 않도록 표식만 남긴다.
         try{localStorage.setItem(GEO_KEY,JSON.stringify(SEOUL));}catch(_){}
-        renderAll();
+        applySky();renderAll();
       },{timeout:8000,maximumAge:6*3600*1000});
     }catch(_){}
   }
@@ -8567,6 +8613,11 @@
       // 이후 편집이 버려진 객체에 쓰인다 (집중 중 pull의 잠복 버그).
       if(fTask){var again=taskByID(fTask.id);if(again)fTask=again;}
       syncAnimPending=true;      // ⑤ 원격 반영 — 마감선은 미끄러져 이동한다
+      /* ⚠ 스냅샷의 **관측 좌표**가 이제야 도착했다 (요청 2026-07-28 버그):
+         부팅 시 applySky()는 서울 폴백으로 낮/밤을 판정하기 때문에, 뉴질랜드
+         아침에 새로고침하면 오른쪽이 잠깐 다크로 떴다가 60초 타이머가 돌 때
+         라이트로 바뀌었다. 좌표가 바뀌었을 수 있으니 여기서 곧장 다시 칠한다. */
+      applySky();
       renderAll();
       paintPomoChip();   // 원격에서 포모도로 설정이 바뀌었을 수 있다 (요청)
       // 되살아난 게 있었으면 지운 상태를 다시 올린다 — 그래야 앱도 따라 지운다.
