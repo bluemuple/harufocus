@@ -324,6 +324,9 @@
      좀 어때' 캡슐)는 스크롤과 무관하게 항상 불투명. PC·아이패드(861px+)는
      우측 섹션에 상단바가 있어 겹치지 않으므로 기존(항상 표시) 유지. */
   @media(max-width:860px){body:not(.tl-uifade) #tlDateFloat{opacity:0}}
+  /* PC: 타임라인 좌상단 날짜를 **우측 페이지 제목 줄과 같은 눈높이**로 내린다
+     (요청 2026-07-27). 제목 줄은 top:14 + height:44 → 세로 중심 36. */
+  @media(min-width:1100px){#tlDateFloat{top:25px}}
   .hour .rule{position:absolute;left:46px;right:14px;top:0;height:1px;background:var(--onSky,#141827);opacity:.14}
   /* 취침(마감) 시각 줄 (요청) */
   .hour.bed .rule{opacity:.34}
@@ -575,9 +578,13 @@
      애초에 + 가 하나뿐이라 헷갈릴 일도 없다. */
   @media (hover:hover) and (min-width:1101px){
     .pane-tl .tl-fabs,
-    .pane-tabs .page-fab{transition:opacity .18s ease}
+    .pane-tabs .page-fab,
+    .pane-tabs .goal-fab{transition:opacity .18s ease}
     .layout:has(.pane-tabs:hover) .pane-tl .tl-fabs{opacity:.3}
-    .layout:has(.pane-tl:hover) .pane-tabs .page-fab{opacity:.3}
+    /* 장기 목표 버튼도 함께 물러난다 (요청 2026-07-27) — 예전엔 +만 흐려져
+       두 버튼의 밝기가 어긋났다. */
+    .layout:has(.pane-tl:hover) .pane-tabs .page-fab,
+    .layout:has(.pane-tl:hover) .pane-tabs .goal-fab{opacity:.3}
   }
   /* 모자이카 전환 FAB (요청 2026-07-26: 편집 연필 왼쪽) — 연필과 같은 톤. */
   .tl-mofab.on{background:var(--card);color:var(--ink)}
@@ -1119,12 +1126,20 @@
     display:inline-flex;align-items:center;gap:5px}
   .list-btn .lb-ic{font-size:12px}
   .list-btn .lb-ch{opacity:.6;font-size:11px}
+  /* 섹션 헤더 자리에 놓인 목록 캡슐 (요청) — 헤더 여백을 그대로 쓴다. */
+  .sec-h-btn{padding:0!important;background:none!important;display:flex}
+  .sec-h-btn .list-btn{font-size:13px;padding:4px 10px}
   /* 요일 캡슐 옆에 붙는 달력 툴팁 (요청). 폭·위치는 placeCal()이 캡슐과
      우상단 버튼 사이 빈 공간을 재서 그 절반쯤으로 잡는다. */
   .calstrip{position:fixed;z-index:48;display:none;color:#fff;
     background:rgba(28,36,58,.94);border-radius:14px;padding:9px 11px 11px;
     box-shadow:0 14px 36px rgba(10,16,34,.4)}
   .calstrip.open{display:block}
+  /* 상시 표시(inline) 스트립 (요청): 팝오버 좌표계를 벗어나 자리를 차지한다. */
+  .calstrip.inline{position:static;width:auto!important;max-width:none;margin:0 0 10px;
+    background:rgba(255,255,255,.16);border-radius:16px;padding:8px 10px 10px;
+    backdrop-filter:blur(8px);box-shadow:none}
+  .calstrip.inline::before{display:none}
   .calstrip::before{content:"";position:absolute;left:18px;top:-6px;width:12px;height:12px;
     background:inherit;transform:rotate(45deg);border-radius:2px}
   .cal-head{display:flex;align-items:center;gap:6px;margin-bottom:7px}
@@ -1601,7 +1616,8 @@
     .desk-menu button:hover{background:var(--card-2)}
     /* 타임라인 FAB: 좌측 칼럼 하단 */
     /* 요청: 편집·추가 버튼은 타임라인 컬럼의 '우측'에 */
-    .tl-fabs{display:flex!important;left:auto;right:calc(100vw - 400px + 18px);bottom:18px}
+    /* 경계선(400px)까지 숨 쉴 틈을 둔다 (요청 2026-07-27): 18 → 34. */
+    .tl-fabs{display:flex!important;left:auto;right:calc(100vw - 400px + 34px);bottom:18px}
     .page-fab{bottom:26px;right:26px}
     .fab-del{right:94px}
     .friends-fab{right:96px}
@@ -2224,8 +2240,11 @@
       </div>
       <div class="tabbody">
         <section class="view on" id="view-todo">
-          <h2><span class="pg-title">할 일</span> <button class="list-btn" id="todoListBtn" title="목록 고르기"></button> <button class="dow-toggle" id="todoDow" data-cal="todo"></button></h2>
-          <div class="calstrip" data-cal="todo"></div>
+          <h2><span class="pg-title">할 일</span></h2>
+          <!-- 상시 주간 스트립 (요청 2026-07-27): 요일 캡슐을 없애고 라운드
+               반투명 판에 이번 주 날짜(위에 요일 작게) + 좌우 이동 + 월간 버튼.
+               팝오버가 아니라 항상 열려 있다 (inline). -->
+          <div class="calstrip inline open" data-cal="todo"></div>
           <div class="todo" id="todoList"></div>
           <!-- 요청: 타임라인 위쪽 bar를 걷어내 타임라인을 세로로 길게 쓰고,
                앱 이름·부제는 할일 페이지 맨 아래 가운데로 작게 내린다. -->
@@ -2880,7 +2899,8 @@
     // 앱 taskRow 메타 부속 (요청): 횟수·넛지 종·미룸 화살표·하위작업 단계.
     if(t.countTarget>0)out+='<span class="t-dur">· '+(t.countDone||0)+'/'+t.countTarget+'</span>';
     if(t.nudgeEnabled)out+='<span class="t-dur" style="display:inline-flex;align-items:center;gap:3px">'+IC.bell+'알림</span>';
-    if(t.deferredUntil)out+='<span class="t-dur" style="display:inline-flex;align-items:center;gap:3px;color:#AF52DE"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 17H10a4 4 0 0 1 0-8h9"/><path d="M16 5l4 4-4 4"/></svg>미룸'+((t.deferCount||0)>1?' '+t.deferCount:'')+'</span>';
+    // 장기 목표 할 일은 deferredUntil을 '그날 표시'로 쓸 뿐 미룬 게 아니다 (앱 파리티).
+    if(t.deferredUntil&&!t.goalID)out+='<span class="t-dur" style="display:inline-flex;align-items:center;gap:3px;color:#AF52DE"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 17H10a4 4 0 0 1 0-8h9"/><path d="M16 5l4 4-4 4"/></svg>미룸'+((t.deferCount||0)>1?' '+t.deferCount:'')+'</span>';
     // ('· 단계 0/1'은 뺐다 — 요청: 하위 작업이 부모 아래에 그대로 보이고
     //  펼침 화살표 색도 이미 바뀌어 중복이다.)
     return out;
@@ -3018,7 +3038,7 @@
   }
   /* 툴팁을 요일 캡슐 옆에 놓는다 (요청): 캡슐 오른쪽 빈 공간의 절반쯤 폭. */
   function placeCal(){
-    document.querySelectorAll('.calstrip.open').forEach(function(el){
+    document.querySelectorAll('.calstrip.open:not(.inline)').forEach(function(el){
       var page=el.dataset.cal;
       var btn=document.querySelector('.dow-toggle[data-cal="'+page+'"]');
       if(!btn)return;
@@ -3041,7 +3061,7 @@
     var page=t.dataset.cal,strip=document.querySelector('.calstrip[data-cal="'+page+'"]');
     if(!strip)return;
     // 한 번에 하나만 열린다.
-    document.querySelectorAll('.calstrip.open').forEach(function(o){
+    document.querySelectorAll('.calstrip.open:not(.inline)').forEach(function(o){
       if(o!==strip){o.classList.remove('open');
         var ob=document.querySelector('.dow-toggle[data-cal="'+o.dataset.cal+'"]');
         if(ob)ob.classList.remove('open');}});
@@ -3052,7 +3072,7 @@
   document.addEventListener('pointerdown',function(e){
     if(e.target.closest('.calstrip,.dow-toggle,.cal-today'))return;
     var any=false;
-    document.querySelectorAll('.calstrip.open').forEach(function(o){any=true;o.classList.remove('open');
+    document.querySelectorAll('.calstrip.open:not(.inline)').forEach(function(o){any=true;o.classList.remove('open');
       var ob=document.querySelector('.dow-toggle[data-cal="'+o.dataset.cal+'"]');
       if(ob)ob.classList.remove('open');});
     if(any)paintCalToday();
@@ -6268,14 +6288,9 @@
   function renderTodo(){
     if(typeof paintSel==='function')setTimeout(paintSel,0);
     var dow=document.getElementById('todoDow');
-    // 앱 TodoView 헤더 파리티: 주간=요일 전체('토요일'), 월간=월 이름('7월').
+    // (요일 캡슐은 없앴다 — 상시 주간 스트립이 그 역할을 한다. 요청 2026-07-27)
     if(dow)dow.textContent=calMonthly?calSel.toLocaleDateString('ko-KR',{month:'long'}):calSel.toLocaleDateString('ko-KR',{weekday:'long'});
-    /* 좌측 상단 목록 버튼 (요청 2026-07-27): 지금 보는 목록 이름 — 누르면
-       앱과 같은 목록 시트. 요일 버튼은 달력 토글이라 그대로 둔다. */
-    var lb=document.getElementById('todoListBtn');
-    if(lb)lb.innerHTML='<span class="lb-ic">'+
-      ({inbox:'📥',all:'🗂',goal:'🌱',folder:'📁'}[todoPick.kind]||'📥')+
-      '</span>'+esc(todoPickTitle())+'<span class="lb-ch">▾</span>';
+
     var list=document.getElementById('todoList');
     // FLIP: 재정렬 전 각 행의 위치를 기억해 이동을 애니메이션한다 (요청:
     // 완료 → 아래로, 별표 → 위로 움직이는 게 보이도록).
@@ -6367,7 +6382,17 @@
     var bkList=backlog.filter(function(t){return t.scheduledStart||!t.isDone;});
     var bkOpen=bkList.filter(function(t){return !t.isDone;}).length;
     if(bkList.length){
-      list.insertAdjacentHTML('beforeend','<div class="sec-h">'+esc(todoPickTitle())+' '+bkOpen+'</div>');
+      /* 섹션 헤더 대신 **목록 캡슐** (요청 2026-07-27): 이 자리가 곧 목록
+         이름이고, 누르면 목록 시트가 열린다. 개수는 캡슐 안에 함께. */
+      list.insertAdjacentHTML('beforeend','<div class="sec-h sec-h-btn">'+
+        '<button class="list-btn" id="todoListBtn" title="목록 고르기"></button></div>');
+      var lb2=document.getElementById('todoListBtn');
+      if(lb2){
+        lb2.innerHTML='<span class="lb-ic">'+
+          ({inbox:'📥',all:'🗂',goal:'🌱',folder:'📁'}[todoPick.kind]||'📥')+'</span>'+
+          esc(todoPickTitle())+' '+bkOpen+'<span class="lb-ch">▾</span>';
+        lb2.addEventListener('click',function(){openListSheet();});
+      }
       bkList.forEach(function(t){list.appendChild(buildTodoRow(t));});
     }
     if(bkDone.length){
