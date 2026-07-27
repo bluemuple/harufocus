@@ -4834,7 +4834,13 @@
       if(!g){el.textContent='';return;}
       var days=goalSessionDays(g.startDate,g.endDate,g.weekdaysMask,g.everyN);
       if(!days.length){el.textContent='기간 안에 하는 날이 없어요';return;}
-      el.textContent='하는 날 '+days.length+'회 · 하루 '+goalAmountText(g.totalAmount/days.length)+g.unitLabel;}
+      var daily=g.totalAmount/days.length;
+      // 소수점 금지 (요청): 하루 분량이 1 미만이면 숫자 대신 **첫날 범위 라벨**로
+      // 보여준다 — '하루 0.67챕터'보다 '첫날 1장 0~67%'가 실제로 할 일이다.
+      var head='하는 날 '+days.length+'회 · ';
+      el.textContent=daily>=1
+        ? head+'하루 '+Math.round(daily)+g.unitLabel
+        : head+'첫날 '+goalRangeLabel(0,daily,g.totalAmount,g.unitLabel,g.unitOffset||0);}
     wrap.addEventListener('input',preview);
     wrap.querySelectorAll('#gmWd .gm-chip').forEach(function(c){
       c.addEventListener('click',function(){c.classList.toggle('on');
@@ -6332,7 +6338,8 @@
       var img=g.imageThumbB64?'<img class="gc-img" alt="" src="data:image/jpeg;base64,'+g.imageThumbB64+'">':'';
       list.insertAdjacentHTML('beforeend','<div class="goal-card" data-gid="'+g.id+'">'+img+
         '<div class="gc-body"><div class="gc-title">'+esc(g.title)+'</div>'+
-        '<div class="gc-sub">장기 목표 · '+pct+'%</div>'+
+        '<div class="gc-sub">장기 목표 · '+pct+'% · '+
+          Math.max(0,Math.ceil(g.totalAmount-goalDoneAmt(g)))+g.unitLabel+' 남음</div>'+
         '<div class="gc-bar"><i style="width:'+pct+'%"></i></div></div>'+
         '<button class="gc-edit" title="고치기">✎</button></div>');
       var ge=list.querySelector('.goal-card[data-gid="'+g.id+'"] .gc-edit');
