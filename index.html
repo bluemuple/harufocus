@@ -647,8 +647,6 @@
   /* ---------- RIGHT: tabs pane ---------- */
   .pane-tabs{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;
     background:linear-gradient(180deg,var(--sky-top,#2E86D8),var(--sky-bot,#AFDBF2));position:relative}
-  .pane-tabs::after{content:"";position:absolute;left:0;right:0;bottom:0;height:120px;pointer-events:none;z-index:0;
-    background:url(assets/hills.png) bottom/cover no-repeat;opacity:.5}
   .tabrow{display:flex;gap:4px;padding:10px 14px 0;background:var(--card);border-bottom:1px solid var(--line)}
   .tabrow button{font-family:inherit;font-size:14px;font-weight:600;border:none;background:transparent;color:var(--ink-soft);
     padding:11px 15px 13px;border-radius:10px 10px 0 0;cursor:pointer;position:relative}
@@ -985,9 +983,11 @@
   .r-month{margin-top:12px}
   .r-mhead{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px}
   .r-mhead span{text-align:center;font-size:9px;font-weight:500;color:var(--ink-soft)}
-  .r-mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+  /* 행 높이를 못박는다 (요청 2026-07-27): 빈 칸이 aspect-ratio:1이라 열 너비
+     (넓은 카드에선 100px+)만큼 정사각형이 되며 아래로 빈 공간을 벌렸다. */
+  .r-mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;grid-auto-rows:22px;justify-items:center}
   .r-mgrid .rday{max-width:22px;font-size:11px}
-  .r-mgrid .r-mblank{aspect-ratio:1}
+  .r-mgrid .r-mblank{aspect-ratio:auto}
   .r-del{border:0;background:transparent;color:var(--ink-soft);font-size:18px;line-height:1;cursor:pointer;opacity:.5}
   .r-del:hover{opacity:1;color:#e0564e}
   .routine:hover .r-del{opacity:.8}
@@ -1020,21 +1020,16 @@
   /* 우상단 회전 캡슐 (요청). */
   .topcap{position:fixed;top:calc(10px + env(safe-area-inset-top));right:12px;z-index:40;display:flex;align-items:center;gap:7px;
     max-width:62vw;border:0;background:rgba(255,255,255,.82);backdrop-filter:blur(5px);box-shadow:0 2px 10px rgba(20,40,80,.16);
-    border-radius:999px;padding:8px 14px;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--ink);cursor:pointer;overflow:hidden}
-  /* ⚠ 말풍선 **꼬리**가 이 앱의 단 하나의 규칙을 시각적으로 성립시킨다:
-     "엘리는 말하지 않는다. 말은 언제나 내가 한다." 꼬리가 엘리가 아니라
-     **화면 밖의 나**(폰을 쥔 오른손)를 가리켜야 '내가 나에게 말한다'가 된다.
-     꼬리가 없으면 같은 문장이 **앱의 훈수**로 읽힌다.
-     ⚠ 위로 향하게 하지 말 것 — 상태바·노치와 겹친다. 오른쪽 아래 45°. */
-  /* 코끼리가 오른쪽 끝 앵커가 됐으므로 꼬리는 코끼리 **왼쪽**(글 알약 아래)에서 뻗는다. */
-  .topcap::after{content:"";position:absolute;right:60px;bottom:-5px;width:12px;height:12px;
-    background:rgba(255,255,255,.82);transform:rotate(45deg);border-radius:2px;
-    box-shadow:2px 2px 6px rgba(20,40,80,.10)}
-  body.night .topcap::after{background:rgba(30,34,50,.72)}
-  /* 꼬리가 캡슐 밖으로 나가야 하므로 overflow는 안쪽 글자에만 건다. */
+    border-radius:999px;padding:0 13px;height:32px;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--ink);cursor:pointer;overflow:hidden}
+  /* 말풍선 꼬리는 **삭제** (요청 2026-07-27) — 웹에선 캡슐이 상단 유틸 줄의
+     한 요소로 읽히면 되고, 꼬리가 아래 카드와 부딪혔다. */
   .topcap{overflow:visible}
+  /* 바탕·글자를 요일 캡슐과 같게 (요청 2026-07-27 웹 공통): 하늘 위에 뜬
+     같은 유리 알약 — 낮·밤 어느 하늘에서도 같은 모습이라 밤 오버라이드가 없다. */
+  .topcap{background:rgba(255,255,255,.18);backdrop-filter:blur(5px);box-shadow:none;
+    color:rgba(255,255,255,.95);text-shadow:0 1px 2px rgba(20,40,80,.3)}
   .topcap .tc-body{overflow:hidden}
-  .topcap .tc-ic{flex:0 0 auto;display:grid;place-items:center;color:var(--ink-soft)}
+  .topcap .tc-ic{flex:0 0 auto;display:grid;place-items:center;color:rgba(255,255,255,.8)}
   .topcap .tc-ic svg{width:15px;height:15px}
   .topcap .tc-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .topcap .tc-txt.slidedown{animation:tcDown .5s cubic-bezier(.25,.8,.3,1)}
@@ -1120,7 +1115,7 @@
     box-shadow:0 10px 28px rgba(0,0,0,.28);color:var(--sky-blue)}
   .nav-dragsrc{opacity:.25}
   .dow-toggle{font-family:inherit;font-size:14px;font-weight:700;color:rgba(255,255,255,.95);
-    background:rgba(255,255,255,.18);border:0;border-radius:999px;padding:5px 13px;margin-left:8px;cursor:pointer;
+    background:rgba(255,255,255,.18);border:0;border-radius:999px;padding:5px 13px;cursor:pointer;
     vertical-align:3px;text-shadow:0 1px 2px rgba(20,40,80,.3);line-height:1}
   /* 열림/닫힘 화살표 — 마감 캡슐과 같은 이유로 글리프(⌄/⌃)를 버렸다.
      서체마다 두 글자의 크기·광학 중심이 달라 위아래가 다른 크기로 보인다
@@ -1508,7 +1503,7 @@
   body.night .mbar{background:rgba(26,30,44,.92);border-top-color:rgba(255,255,255,.08)}
   body.night .mbtn{color:rgba(235,235,245,.5)}
   body.night .mbtn.on{color:#fff}body.night .mbtn.on svg{stroke:#fff}
-  body.night .topcap{background:rgba(30,34,50,.72);color:#f2f4f8}body.night .topcap .tc-ic{color:rgba(235,235,245,.62)}
+  /* .topcap은 낮·밤 같은 유리 (위 요청) — 밤 오버라이드 없음. */
   body.night .util .acct{background:rgba(30,34,50,.72);color:#f2f4f8}
 
   /* ---------- responsive ---------- */
@@ -1563,7 +1558,6 @@
   body.night .quad h3{color:rgba(235,238,246,.72)}
   body.night .qhint-big{color:rgba(235,238,246,.34)}
   body.night .mtask-inner{background:rgba(28,32,48,.92);color:#ECEEF6}
-  body.night .list-btn,body.night .dow-toggle{background:rgba(30,34,50,.72);color:#f2f4f8}
   body.night .goal-fab{background:rgba(30,34,50,.85);color:#B9AAF0}
   body.night .mo-cell{filter:brightness(.85)}
   body.night .mo-legend{color:rgba(235,238,246,.75)}
@@ -1613,10 +1607,13 @@
        두되 세로 중심(36)은 셋 다 같게 맞춘다: 32px 짜리는 top 20. */
     /* '지금 좀 어때' 캡슐 — 우측 상단, desk-nav(동그라미 4개) 왼쪽 (요청
        2026-07-26). desk-nav = right:16 + 32×4 + 9×3 ≈ 155px 폭. */
-    .topcap{left:auto;top:20px;transform:none;right:195px;height:32px;padding:0 13px;
+    /* desk-nav = right:16 + 32×4 + 9×3 = 171px → 같은 9px 간격이면 right 180. */
+    .topcap{left:auto;top:20px;transform:none;right:180px;height:32px;padding:0 13px;
       max-width:34vw}
     /* '지금' 캡슐·FAB — 타임라인 페인(왼쪽 400px) 안 좌하단. */
     .tl-nowcap{left:18px;bottom:18px}
+    /* 데스크톱 .tabbody 좌패딩이 26이므로 h2도 26 — 캡슐 왼쪽 끝이 카드와
+       같은 x가 되는 건 .dow-toggle의 margin-left:8을 걷어낸 덕이다 (요청 2026-07-27). */
     .view.on>h2{position:fixed;top:14px;left:calc(400px + 26px);z-index:46;margin:0;height:44px;
       display:flex;align-items:center;gap:10px;font-size:27px;letter-spacing:-.03em}
     /* 매트릭스 (요청 2026-07-27): 요일 캡슐이 아래 매트릭스 좌측 세로선과
@@ -1959,8 +1956,9 @@
   @media(max-width:1099px){
     /* 개편(요청 2026-07-23): 전폭·2줄을 버리고 **우측 고정 앵커 + 왼쪽으로 흐르는
        콘텐츠폭 알약**으로. 코끼리(40px)는 늘 같은 자리, 글은 한 줄로 왼쪽에 흐른다. */
-    .topcap{left:auto;right:12px;max-width:82vw;min-height:44px;padding:5px 8px 5px 15px;font-size:13.5px;gap:9px}
-    .topcap .tc-ava{width:40px;height:40px}
+    /* 두께는 요일 캡슐과 같은 32px (요청 2026-07-27) — 코끼리도 그 안에 맞게 24px. */
+    .topcap{left:auto;right:12px;max-width:82vw;height:32px;min-height:0;padding:0 7px 0 13px;font-size:13.5px;gap:8px}
+    .topcap .tc-ava{width:24px;height:24px}
     .topcap .tc-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     /* 제목 줄이 비었으므로 그만큼 아래 콘텐츠를 위로. */
     .view>h2{margin-top:0;margin-bottom:6px;min-height:0}
@@ -3088,7 +3086,9 @@
       var w=Math.max(268,Math.min(460,free>0?free/2:320));
       if(window.innerWidth<1100)w=Math.min(340,window.innerWidth-32);
       el.style.width=w+'px';
-      var left=Math.min(Math.max(12,r.right+12),window.innerWidth-w-12);
+      // 캡슐 **왼쪽 끝**에 맞춘다 (요청 2026-07-27) — 오른쪽에 붙이면 캡슐과
+      // 팝오버의 왼쪽 변이 어긋나 두 요소가 다른 것처럼 보였다.
+      var left=Math.min(Math.max(12,r.left),window.innerWidth-w-12);
       el.style.left=left+'px';
       el.style.top=(r.bottom+10)+'px';
     });
@@ -7076,7 +7076,8 @@
       var y=mAnchor.getFullYear(),mo=mAnchor.getMonth(),lead=mAnchor.getDay(),dim=new Date(y,mo+1,0).getDate();
       monthCells=[];for(var b=0;b<lead;b++)monthCells.push(null);
       for(var dn=1;dn<=dim;dn++)monthCells.push(new Date(y,mo,dn));
-      while(monthCells.length<42)monthCells.push(null);
+      // 마지막 주까지만 (6행 고정은 남는 주가 통째로 빈 행이 됐다 — 요청).
+      while(monthCells.length%7)monthCells.push(null);
     }
     DATA.habits.forEach(function(h){
       var log=habitLog(h),streak=habitStreak(h),col=catColor(h.categoryID);
