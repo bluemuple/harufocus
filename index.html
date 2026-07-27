@@ -4705,12 +4705,23 @@
   }
 
   /* ---------- to-do (with send-to-timeline) ---------- */
-  function nextSlotToday(){
+  /* 다음 빈 슬롯 (시각, 소수 시간).
+     `exact`가 참이면 **지금 시각 그대로**에서 시작한다 (요청 2026-07-27):
+     타임라인에서 마감선을 추가할 때 30분 슬라이더가 30분 뒤가 아니라 다음
+     반시간(예: 22:08 → 22:30)에 붙어 첫 마감선이 '한 시간 뒤'로 밀려 보였다.
+     마감선의 길이 규칙은 '지금 선(또는 직전 마감선)부터 이 마감선까지'라
+     첫 칸의 기준도 지금이어야 라벨과 자리가 같은 말을 한다.
+     담아둔 일을 타임라인으로 보낼 때 등 다른 호출부는 반올림을 유지한다 —
+     사람이 시작 시각을 고르는 자리에선 22:30 같은 값이 읽기 좋다. */
+  function nextSlotToday(exact){
     var used=[];(DATA.tasks||[]).forEach(function(t){if(t.scheduledStart&&t.durationMin&&dateKey(t.scheduledStart)===todayKey()){var s=new Date(t.scheduledStart);used.push([s.getHours()+s.getMinutes()/60,t.durationMin/60]);}});
     used.sort(function(a,b){return a[0]-b[0];});
-    var now=new Date();var t=Math.max(TS,Math.ceil((now.getHours()+now.getMinutes()/60)*2)/2);
+    var now=new Date(),raw=now.getHours()+now.getMinutes()/60;
+    var t=Math.max(TS,exact?raw:Math.ceil(raw*2)/2);
     for(var i=0;i<used.length;i++){if(t+0.75<=used[i][0])break;if(t<used[i][0]+used[i][1])t=used[i][0]+used[i][1];}
-    return Math.min(t,23);
+    // exact 모드는 23시 상한을 두지 않는다 — 23:04에 상한이 걸려 앵커가 23:00으로
+    // 되돌아가면 '지금부터 30분'이 다시 어긋난다 (요청 2026-07-27).
+    return Math.min(t,exact?23.99:23);
   }
   /* ---------- 작업 추가/삭제 (요청: 웹에서도 앱 기능) ---------- */
   function uuid(){
@@ -10078,7 +10089,7 @@
          **지금 이후 슬롯부터 순차로 이어지는 마감선들**로 — 고스트가 보여준
          그 자리 그대로 확정된다 (첨부4: 수학 08:38까지 → 과학 09:08까지). */
       if(cap.origin==='timeline'){
-        var curH=nextSlotToday(),base0=selDate();
+        var curH=nextSlotToday(true),base0=selDate();   // 지금 기준 (요청 2026-07-27)
         lines.forEach(function(line){
           var p2=parseDurTitle(line);
           var dur2=(p2&&!cap.draft.durationLocked)?p2.dur:(cap.draft.durationMin||setCaptureDefaultMin());
@@ -10110,7 +10121,7 @@
     if(cap.draft.matrixQuadrant)o.matrixQuadrant=cap.draft.matrixQuadrant;
     if(cap.draft.subtasks.length)o.subtasksJSON=JSON.stringify(cap.draft.subtasks);
     if(cap.origin==='timeline'&&!o.scheduledStart){
-      var slot=nextSlotToday(),base=selDate();base.setHours(Math.floor(slot),Math.round((slot%1)*60),0,0);
+      var slot=nextSlotToday(true),base=selDate();base.setHours(Math.floor(slot),Math.round((slot%1)*60),0,0);
       o.scheduledStart=base.toISOString();if(!o.durationMin)o.durationMin=50;
     }
     if(cap.draft.rewardIsMoney){o.rewardMoney=parseInt((cap.draft.rewardText||'').replace(/[^0-9]/g,''),10)||0;}
@@ -10160,7 +10171,7 @@
     var raw=(document.getElementById('capText')||{}).value||'';
     var lines=raw.split('\n').map(function(l){return l.trim();}).filter(Boolean);
     if(!lines.length)lines=[''];                       // 빈 입력 = '작업명' 견본 1개
-    var curH=nextSlotToday();
+    var curH=nextSlotToday(true);                      // 확정과 같은 앵커 = 고스트가 결과
     lines.forEach(function(line,i){
       var p=parseDurTitle(line);
       var dur=(p&&!cap.draft.durationLocked)?p.dur:(cap.draft.durationMin||setCaptureDefaultMin());
@@ -10172,8 +10183,17 @@
       var dl=document.createElement('div');
       dl.className='dueline cap-ghost';
       dl.style.top=yFor(curH)+'px';
+      /* 확정된 마감선과 **같은 요소·같은 자리·같은 크기** (요청 2026-07-27):
+         체크 동그라미 · ▶ · 기호 · 이름 · 길이 · hh:mm까지. 고스트에만 없던
+         것들이 확정 순간 끼어들며 이름이 옆으로 튀었다. 색·아이콘은 초안에서
+         가져오고, 점선 선과 반투명만 '아직 아니다'를 말한다. */
+      var gIcon=cap.draft.iconName?findIconSvg(cap.draft.iconName):'';
+      var gColor=capColorHex(cap.draft.colorKey)||catColor(cap.draft.categoryID);
       dl.innerHTML='<div class="dl-wire"></div>'+
-        '<div class="dl-text"><span class="dl-title">'+esc(title)+'</span>'+
+        '<button class="dl-radio" tabindex="-1" style="--dc:'+gColor+'"></button>'+
+        '<button class="dl-play" tabindex="-1">'+IC.play+'</button>'+
+        '<div class="dl-text"><span class="dl-ic">'+gIcon+'</span>'+
+        '<span class="dl-title">'+esc(title)+'</span>'+
         '<span class="dl-dur">'+hmText(dur)+'</span></div>'+
         '<div class="dl-right"><b>'+hh+'까지</b></div>'+
         (i===0?'<div class="cap-ghost-hint">이때까지 끝낼 수 있어요</div>':'');
