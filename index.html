@@ -152,7 +152,16 @@
   .page-fab{position:fixed;right:22px;bottom:calc(22px + env(safe-area-inset-bottom));width:56px;height:56px;
     border-radius:50%;border:0;background:var(--sky-blue);color:#fff;box-shadow:0 8px 20px rgba(20,60,120,.28);
     cursor:pointer;display:grid;place-items:center;z-index:15}
-  @media(max-width:860px){.page-fab{bottom:calc(78px + env(safe-area-inset-bottom))}}
+  /* 장기 목표 버튼 (요청 2026-07-27): + FAB **왼쪽** — 앱 배치 파리티. */
+  .goal-fab{position:fixed;right:88px;bottom:calc(27px + env(safe-area-inset-bottom));
+    width:46px;height:46px;border:0;border-radius:50%;background:rgba(255,255,255,.92);
+    color:#6B5FA8;display:none;place-items:center;cursor:pointer;z-index:41;
+    box-shadow:0 4px 14px rgba(20,40,80,.18)}
+  .goal-fab svg{width:24px;height:24px}
+  /* #view-todo 안에 있어 뷰가 켜질 때만 보인다 (page-fab과 같은 규칙). */
+  .view.on .goal-fab{display:grid}
+  @media(max-width:860px){.page-fab{bottom:calc(78px + env(safe-area-inset-bottom))}
+    .goal-fab{bottom:calc(83px + env(safe-area-inset-bottom))}}
   /* 드래그 다중선택 (요청, PC) */
   .fab-del{right:90px;background:#FF3B30}
   .fab-del .fab-n{position:absolute;top:-2px;right:-2px;min-width:20px;height:20px;border-radius:999px;
@@ -649,6 +658,8 @@
   .goal-card .gc-sub{font-size:12px;font-weight:700;color:#4BA3D3;margin:2px 0 6px}
   .goal-card .gc-bar{height:5px;border-radius:3px;background:rgba(20,24,39,.08);overflow:hidden}
   .goal-card .gc-bar i{display:block;height:100%;background:#4BA3D3;border-radius:3px}
+  .goal-card .gc-edit{flex:0 0 auto;width:32px;height:32px;border:0;border-radius:50%;
+    background:rgba(20,24,39,.06);color:#555;font-size:15px;cursor:pointer}
   /* 장기 목표 만들기 모달 (요청: 웹에서도 생성) */
   #goalModal .gm-dim{position:fixed;inset:0;background:rgba(10,14,30,.45);z-index:80}
   #goalModal .gm-card{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:81;
@@ -657,6 +668,9 @@
   #goalModal .gm-title{font-weight:800;font-size:17px}
   #goalModal .gm-in{border:1px solid rgba(20,24,39,.18);border-radius:9px;padding:7px 9px;font:inherit}
   #goalModal .gm-num{width:64px}
+  #goalModal .gm-photo{width:44px;height:58px;border-radius:9px;flex:0 0 auto;cursor:pointer;
+    background:rgba(20,24,39,.06) center/cover no-repeat;display:grid;place-items:center;
+    font-size:11px;color:#888}
   #goalModal .gm-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:14px}
   #goalModal .gm-chip{width:30px;height:30px;border-radius:50%;display:inline-flex;
     align-items:center;justify-content:center;font-size:12px;font-weight:700;
@@ -2193,6 +2207,15 @@
                앱 이름·부제는 할일 페이지 맨 아래 가운데로 작게 내린다. -->
           <div class="app-foot" id="tlBrand"><b id="brandName">엘리의 하루</b><span id="brandTag">마음을 돌보는 하루 플래너</span></div>
           <button class="page-fab fab-del" id="todoDelFab" title="선택한 할 일 삭제" style="display:none"><svg viewBox="0 0 24 24" style="width:26px;height:26px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7"/><path d="M6.5 7l.9 12.4A1.7 1.7 0 0 0 9.1 21h5.8a1.7 1.7 0 0 0 1.7-1.6L17.5 7"/><path d="M10 11v6M14 11v6"/></svg><b class="fab-n"></b></button>
+          <button class="goal-fab" id="goalFab" title="장기 목표 나누기" aria-label="장기 목표 나누기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="8" y="1.8" width="8" height="7.4" rx="2.4"/>
+              <path d="M12 9.2V12M12 15V12M4 15c0-2.4 2.2-2.8 5.4-2.8h5.2C17.8 12.2 20 12.6 20 15"/>
+              <rect x="1.2" y="15.2" width="5.6" height="5.6" rx="1.5"/><path d="M2.7 17.9l1 1.1 1.8-2"/>
+              <rect x="9.2" y="15.2" width="5.6" height="5.6" rx="1.5"/><path d="M10.7 17.9l1 1.1 1.8-2"/>
+              <rect x="17.2" y="15.2" width="5.6" height="5.6" rx="1.5"/><path d="M18.7 17.9l1 1.1 1.8-2"/>
+            </svg>
+          </button>
           <button class="page-fab" id="todoFab" title="할 일 추가"><svg viewBox="0 0 24 24" style="width:30px;height:30px" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         </section>
         <section class="view" id="view-matrix">
@@ -4720,14 +4743,19 @@
   }
   /* 만들기 모달 (컴팩트): 제목·기간·요일/매n일·단위·분량·놓친 날. */
   var GOAL_UNITS=['쪽','챕터','강','문제','단어','회','분 (당일)','시간 (전체)'];
-  function openGoalModal(){
+  /* editing = 기존 목표 객체면 **고치기** 모드: 값이 채워져 열리고, 저장하면
+     완료한 날은 남긴 채 오늘 이후를 새 계획으로 다시 나눈다 (앱 rematerialize
+     파리티). */
+  function openGoalModal(editing){
     var old=document.getElementById('goalModal');if(old)old.remove();
     var today=new Date(),endD=new Date(today.getTime()+13*86400000);
     function d2v(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
     var wd=['일','월','화','수','목','금','토'];
     var html='<div class="gm-dim"></div><div class="gm-card">'+
-      '<div class="gm-title">장기 목표 나누기</div>'+
-      '<input id="gmName" class="gm-in" placeholder="예: 해리포터와 마법사의 돌">'+
+      '<div class="gm-title">'+(editing?'장기 목표 고치기':'장기 목표 나누기')+'</div>'+
+      '<div class="gm-row"><label class="gm-photo" id="gmPhotoBox">'+
+      '<input type="file" id="gmPhoto" accept="image/*" hidden><span id="gmPhotoHint">사진</span></label>'+
+      '<input id="gmName" class="gm-in" style="flex:1" placeholder="예: 해리포터와 마법사의 돌"></div>'+
       '<div class="gm-row"><input type="date" id="gmStart" class="gm-in" value="'+d2v(today)+'">'+
       '<span>부터</span><input type="date" id="gmEnd" class="gm-in" value="'+d2v(endD)+'"><span>까지</span></div>'+
       '<div class="gm-row" id="gmWd">'+wd.map(function(w,i){
@@ -4739,7 +4767,9 @@
       '<div class="gm-row">놓친 날: <select id="gmMiss" class="gm-in">'+
       '<option value="0" selected>남은 분량 재계산</option><option value="1">기간 늘리기</option></select></div>'+
       '<div class="gm-prev" id="gmPrev"></div>'+
-      '<div class="gm-row gm-btns"><button id="gmCancel">닫기</button><button id="gmGo" class="primary">만들기</button></div></div>';
+      '<div class="gm-row gm-btns">'+(editing?'<button id="gmDel">삭제</button>':'')+
+      '<button id="gmCancel">닫기</button><button id="gmGo" class="primary">'+
+      (editing?'저장 — 남은 날 다시 나누기':'만들기')+'</button></div></div>';
     var wrap=document.createElement('div');wrap.id='goalModal';wrap.innerHTML=html;
     document.body.appendChild(wrap);
     function unitKind(){var u=document.getElementById('gmUnit').value;
@@ -4781,17 +4811,120 @@
       c.addEventListener('click',function(){c.classList.toggle('on');
         document.getElementById('gmEveryOn').checked=false;preview();});});
     document.getElementById('gmUnit').addEventListener('change',renderAmt);
+    /* 표지 사진 (요청 2026-07-27): 앱과 같은 규격 — **긴 변 128px JPEG 0.5**
+       base64만 저장·동기화한다 (supabase 용량). 원본은 올리지 않는다. */
+    var photoB64=editing?(editing.imageThumbB64||null):null;
+    function paintPhoto(){
+      var box=document.getElementById('gmPhotoBox');
+      box.style.backgroundImage=photoB64?('url(data:image/jpeg;base64,'+photoB64+')'):'';
+      document.getElementById('gmPhotoHint').style.display=photoB64?'none':'block';
+    }
+    document.getElementById('gmPhoto').addEventListener('change',function(e){
+      var f=e.target.files&&e.target.files[0];if(!f)return;
+      var r=new FileReader();
+      r.onload=function(){
+        var im=new Image();
+        im.onload=function(){
+          var sc=Math.min(1,128/Math.max(im.width,im.height));
+          var c=document.createElement('canvas');
+          c.width=Math.max(1,Math.round(im.width*sc));c.height=Math.max(1,Math.round(im.height*sc));
+          c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+          photoB64=c.toDataURL('image/jpeg',0.5).split(',')[1];
+          paintPhoto();
+        };
+        im.src=r.result;
+      };
+      r.readAsDataURL(f);
+    });
+    paintPhoto();
     document.getElementById('gmCancel').addEventListener('click',function(){wrap.remove();});
     wrap.querySelector('.gm-dim').addEventListener('click',function(){wrap.remove();});
     document.getElementById('gmGo').addEventListener('click',function(){
       var g=readGoal();if(!g)return;
       if(!DATA.goals)DATA.goals=[];
-      DATA.goals.push(g);
-      var n=goalMaterialize(g);
+      if(editing){
+        // 고치기: 필드를 갱신하고 오늘 이후를 다시 나눈다 (완료는 보존).
+        g.id=editing.id;g.imageThumbB64=photoB64||null;
+        for(var k in g)editing[k]=g[k];
+        goalRematerialize(editing);
+      }else{
+        g.imageThumbB64=photoB64||null;
+        DATA.goals.push(g);
+        goalMaterialize(g);
+      }
       wrap.remove();renderAll();pushSnapshot();
-      if(typeof showToast==='function')showToast(n+'개의 할 일을 만들었어요');
     });
+    var delBtn=document.getElementById('gmDel');
+    if(delBtn)delBtn.addEventListener('click',function(){
+      if(!confirm('『'+editing.title+'』 목표와 남은 할 일을 지울까요? 이미 완료한 기록은 남아요.'))return;
+      goalDelete(editing);
+      wrap.remove();renderAll();pushSnapshot();
+    });
+    // 고치기 모드 프리필 (단위·범위 역산).
+    if(editing){
+      document.getElementById('gmName').value=editing.title||'';
+      var ds=new Date(editing.startDate),de=new Date(editing.endDate);
+      document.getElementById('gmStart').value=d2v(ds);
+      document.getElementById('gmEnd').value=d2v(de);
+      var um=({'쪽':'쪽','챕터':'챕터','장':'챕터','강':'강','문제':'문제','단어':'단어',
+        '회':'회','분':'분 (당일)','시간':'시간 (전체)'})[editing.unitLabel]||'쪽';
+      document.getElementById('gmUnit').value=um;
+      document.getElementById('gmMiss').value=editing.extendOnMiss?'1':'0';
+      if(editing.weekdaysMask){
+        wrap.querySelectorAll('#gmWd .gm-chip').forEach(function(c){
+          c.classList.toggle('on',!!(editing.weekdaysMask&(1<<(+c.dataset.i))));});
+      }else if((editing.everyN||1)>1){
+        document.getElementById('gmEveryOn').checked=true;
+        document.getElementById('gmEveryN').value=editing.everyN;
+      }
+    }
     renderAmt();
+    if(editing){
+      // 분량 칸은 renderAmt가 만든 뒤에 채운다.
+      var k=unitKind();
+      if(k==='range'){
+        document.getElementById('gmFrom').value=goalAmountText((editing.unitOffset||0)+1);
+        document.getElementById('gmTo').value=goalAmountText((editing.unitOffset||0)+editing.totalAmount);
+      }else if(k==='perDay'){
+        var dn=Math.max(1,goalSessionDays(editing.startDate,editing.endDate,
+          editing.weekdaysMask,editing.everyN).length);
+        document.getElementById('gmPer').value=goalAmountText(editing.totalAmount/dn);
+      }else if(k==='hours')document.getElementById('gmHours').value=goalAmountText(editing.totalAmount);
+      else document.getElementById('gmCount').value=goalAmountText(editing.totalAmount);
+      preview();
+    }
+  }
+  /* 목표 고치기 저장 (앱 GoalService.rematerialize 파리티): 완료한 날은 남기고
+     미완료를 지운 뒤, 오늘 이후 스케줄에 남은 분량을 다시 나눈다. */
+  function goalRematerialize(g){
+    var mine=(DATA.tasks||[]).filter(function(t){return t.goalID===g.id;});
+    var done=mine.filter(function(t){return t.isDone;});
+    DATA.tasks=(DATA.tasks||[]).filter(function(t){return t.goalID!==g.id||t.isDone;});
+    var doneAmt=done.reduce(function(a,t){
+      return a+((t.goalActualAmount!=null?t.goalActualAmount:t.goalAmount)||0);},0);
+    var t0=new Date();t0.setHours(0,0,0,0);
+    var days=goalSessionDays(g.startDate,g.endDate,g.weekdaysMask,g.everyN)
+      .filter(function(d){return d>=t0;});
+    var remaining=Math.max(0,g.totalAmount-doneAmt);
+    if(!days.length||!(remaining>0))return;
+    var daily=remaining/days.length,cursor=doneAmt;
+    days.forEach(function(day,i){
+      var to=i===days.length-1?g.totalAmount:cursor+daily;
+      var label=goalRangeLabel(cursor,to,g.totalAmount,g.unitLabel,g.unitOffset||0);
+      var t=addTask({title:g.title+' · '+label,
+        durationMin:g.unitLabel==='분'?Math.max(5,Math.round(to-cursor))
+          :(g.unitLabel==='시간'?Math.max(5,Math.round((to-cursor)*60)):30)},true);
+      t.goalID=g.id;t.goalAmount=to-cursor;
+      var iso=new Date(day.getFullYear(),day.getMonth(),day.getDate(),12).toISOString();
+      t.dueDate=iso;t.deferredUntil=iso;
+      cursor=to;
+    });
+  }
+  /* 목표 삭제 (앱 GoalService.deleteGoal 파리티): 목표 + 미완료 할 일만.
+     완료 기록은 남긴다(통계 보존). */
+  function goalDelete(g){
+    DATA.tasks=(DATA.tasks||[]).filter(function(t){return t.goalID!==g.id||t.isDone;});
+    DATA.goals=(DATA.goals||[]).filter(function(x){return x.id!==g.id;});
   }
   // D2-4: 유사 문구 = 완전 동일 색 — "수학"과 "수학 풀기"는 같은 색(카테고리·colorKey 승계).
   function inheritSimilarColor(t){
@@ -6096,20 +6229,16 @@
       var gs=new Date(g.startDate);gs.setHours(0,0,0,0);
       var ge=new Date(g.endDate);ge.setHours(0,0,0,0);
       return gs<=calSel0&&calSel0<=ge;});
-    // 만들기 진입 (요청: 웹에서도 장기 목표) — 카드 유무와 무관하게 노출.
-    list.insertAdjacentHTML('beforeend','<div style="text-align:right;margin:0 2px 6px">'+
-      '<button id="goalAddBtn" style="border:0;background:rgba(255,255,255,.75);border-radius:12px;'+
-      'padding:6px 12px;font:inherit;font-size:12px;font-weight:700;color:#3E7FA6;cursor:pointer;'+
-      'box-shadow:0 2px 8px rgba(20,40,80,.12)">+ 장기 목표</button></div>');
-    var gab=document.getElementById('goalAddBtn');
-    if(gab)gab.addEventListener('click',openGoalModal);
     activeGoals.forEach(function(g){
       var pct=Math.round(Math.min(1,goalDoneAmt(g)/g.totalAmount)*100);
       var img=g.imageThumbB64?'<img class="gc-img" alt="" src="data:image/jpeg;base64,'+g.imageThumbB64+'">':'';
-      list.insertAdjacentHTML('beforeend','<div class="goal-card">'+img+
+      list.insertAdjacentHTML('beforeend','<div class="goal-card" data-gid="'+g.id+'">'+img+
         '<div class="gc-body"><div class="gc-title">'+esc(g.title)+'</div>'+
         '<div class="gc-sub">장기 목표 · '+pct+'%</div>'+
-        '<div class="gc-bar"><i style="width:'+pct+'%"></i></div></div></div>');
+        '<div class="gc-bar"><i style="width:'+pct+'%"></i></div></div>'+
+        '<button class="gc-edit" title="고치기">✎</button></div>');
+      var ge=list.querySelector('.goal-card[data-gid="'+g.id+'"] .gc-edit');
+      if(ge)ge.addEventListener('click',function(){openGoalModal(g);});
       (DATA.tasks||[]).filter(function(t){
         return t.goalID===g.id&&t.dueDate&&calSameDay(new Date(t.dueDate),calSel);})
         .forEach(function(t){list.appendChild(buildTodoRow(t));});
@@ -8632,6 +8761,9 @@
 
   /* ---------- 작업 추가 입력 배선 (요청) ---------- */
   document.getElementById('todoFab').addEventListener('click',function(){openCapture('todo');});
+  // 장기 목표 버튼 (요청: + 왼쪽 — 앱 배치 파리티).
+  (function(){var gf=document.getElementById('goalFab');
+    if(gf)gf.addEventListener('click',function(){openGoalModal();});})();
   /* ── 꾹 눌러 타임라인에 떨어뜨리기 (요청) ─────────────────────────────────
      할 일 bar를 마우스/손가락으로 꾹 누르면 고스트가 따라오고, 타임라인 위로
      가져가면 5분 단위로 스냅된 '고스트 마감선'이 보인다. 라벨엔 그 마감이
