@@ -164,7 +164,7 @@
   /* #view-todo 안에 있어 뷰가 켜질 때만 보인다 (page-fab과 같은 규칙). */
   .view.on .goal-fab{display:grid}
   @media(max-width:860px){.page-fab{bottom:calc(78px + env(safe-area-inset-bottom))}
-    .goal-fab{bottom:calc(83px + env(safe-area-inset-bottom))}}
+    .goal-fab,.friends-fab{bottom:calc(83px + env(safe-area-inset-bottom))}}
   /* 드래그 다중선택 (요청, PC) */
   .fab-del{right:90px;background:#FF3B30}
   .fab-del .fab-n{position:absolute;top:-2px;right:-2px;min-width:20px;height:20px;border-radius:999px;
@@ -417,9 +417,11 @@
     color:var(--onSky,#141827);opacity:.75;white-space:nowrap}
   /* '당겨요' 손잡이 (요청 2026-07-28, 앱 파리티): 마지막 고스트 마감선 아랫변에
      붙는 주황 판 — 위 코너 직각, 아래 코너만 둥글다. */
-  .dueline.cap-pull{pointer-events:none}
-  .dueline.cap-pull .cap-pull-grip{position:absolute;left:56px;right:0;margin:0 auto;
-    width:50%;height:20px;line-height:20px;top:1px;
+  /* 폭은 마감집게와 같은 경계(▶ 오른쪽 ~ hh:mm 캡슐 왼쪽) 안에서만 (요청
+     2026-07-28) — 50%였을 때 좁은 페인에서 오른쪽 캡슐 위로 올라탔다. */
+  .dueline.cap-pull{left:96px;right:106px;pointer-events:none}
+  .dueline.cap-pull .cap-pull-grip{position:absolute;left:0;right:0;margin:0 auto;
+    width:min(62%,150px);height:20px;line-height:20px;top:1px;
     background:rgba(255,123,74,.92);border-radius:0 0 9px 9px;
     color:#fff;font-size:11px;font-weight:700;text-align:center;letter-spacing:-.02em;
     cursor:ns-resize;touch-action:none;pointer-events:auto;user-select:none}
@@ -594,14 +596,16 @@
      터치(hover:none)엔 호버가 없으니 적용하지 않는다 — 폰은 단일 컬럼이라
      애초에 + 가 하나뿐이라 헷갈릴 일도 없다. */
   @media (hover:hover) and (min-width:1101px){
-    .pane-tl .tl-fabs,
+    /* ⚠ .tl-fabs는 .pane-tl **밖**에 있다 (body 직계) — `.pane-tl .tl-fabs`로
+       쓰면 영영 안 걸려 타임라인 버튼만 흐려지지 않았다 (요청 2026-07-28). */
+    .tl-fabs,
     .pane-tabs .page-fab,
     .pane-tabs .goal-fab{transition:opacity .18s ease}
-    .layout:has(.pane-tabs:hover) .pane-tl .tl-fabs{opacity:.3}
+    body:has(.pane-tabs:hover) .tl-fabs{opacity:.3}
     /* 장기 목표 버튼도 함께 물러난다 (요청 2026-07-27) — 예전엔 +만 흐려져
        두 버튼의 밝기가 어긋났다. */
-    .layout:has(.pane-tl:hover) .pane-tabs .page-fab,
-    .layout:has(.pane-tl:hover) .pane-tabs .goal-fab{opacity:.3}
+    body:has(.pane-tl:hover) .pane-tabs .page-fab,
+    body:has(.pane-tl:hover) .pane-tabs .goal-fab{opacity:.3}
   }
   /* 모자이카 전환 FAB (요청 2026-07-26: 편집 연필 왼쪽) — 연필과 같은 톤. */
   .tl-mofab.on{background:var(--card);color:var(--ink)}
@@ -1216,7 +1220,12 @@
   .until-line::before{content:"🏁";position:absolute;right:0;top:-11px;font-size:15px}
   .until-line::after{content:"";position:absolute;left:0;right:0;top:-9px;bottom:-9px}
   /* ── 친구(루틴 공유) ── */
-  .friends-fab{right:88px;background:rgba(255,255,255,.92);color:var(--ink-soft);box-shadow:0 6px 16px rgba(20,40,80,.2)}
+  /* '함께' 버튼 = **장기 목표 버튼과 같은 크기·자리** (요청 2026-07-28):
+     56px에 30px 아이콘이라 옆의 + 만큼 커 보였다. 46px·24px 아이콘으로. */
+  .friends-fab{right:88px;bottom:calc(27px + env(safe-area-inset-bottom));
+    width:46px;height:46px;background:rgba(255,255,255,.92);color:var(--ink-soft);
+    box-shadow:0 4px 14px rgba(20,40,80,.18)}
+  .friends-fab svg{width:24px!important;height:24px!important}
   .fr-mycode{background:var(--card-2);border-radius:13px;padding:10px 13px;margin-bottom:4px}
   .fr-coderow{display:flex;align-items:center;gap:8px}
   .fr-coderow b{font-size:19px;letter-spacing:.06em;flex:1;font-variant-numeric:tabular-nums}
@@ -1589,7 +1598,10 @@
        h2·FAB에 박아 둔 400px이 어긋나 있었다. 1400px에서 페인은 420인데
        제목(요일 캡슐)은 400+26에 고정돼 카드보다 20px 왼쪽, 1200px에선
        페인 360이라 40px 오른쪽 — 창 폭에 따라 좌우로 흔들렸다. */
-    .layout{--pane-w:clamp(340px, 30vw, 520px)}
+    /* ⚠ 변수는 **:root**에 둔다: .tl-fabs는 .layout 밖(body 직계)이라
+       .layout에 두면 var()가 안 닿아 right:calc(...)가 통째로 무효가 되고,
+       버튼 3개가 페인 왼쪽 아래(정적 위치)로 떨어진다 — 실제로 그랬다. */
+    :root{--pane-w:clamp(340px, 30vw, 520px)}
     .pane-tl{display:flex!important;position:relative;inset:auto;
       flex:0 0 var(--pane-w);max-width:none;
       border-right:1px solid rgba(255,255,255,.25);flex-direction:column}
@@ -1674,7 +1686,9 @@
     .tl-fabs{display:flex!important;left:auto;right:calc(100vw - var(--pane-w) + 34px);bottom:18px}
     .page-fab{bottom:26px;right:26px}
     .fab-del{right:94px}
-    .friends-fab{right:96px}
+    /* 장기 목표 버튼과 같은 x·y (요청 2026-07-28) — PC .page-fab{bottom:26}이
+       friends-fab의 27을 덮어 1px 어긋나 있었다. */
+    .friends-fab{right:88px;bottom:27px}
     .cap-wrap{left:auto;right:26px;bottom:26px;width:440px;border-radius:16px;border:1px solid var(--line)}
     /* 긴 세로 나열 → 2컬럼 (요청) */
     .todo{display:block;columns:2;column-gap:14px}
@@ -2328,7 +2342,7 @@
           </div>
           <div id="msgBanner"></div>
           <div class="routines" id="routineList"></div>
-          <button class="page-fab friends-fab" id="friendsFab" title="친구"><svg class="ic" viewBox="0 0 24 24" style="width:30px;height:30px" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.6 20c.6-3.3 2.6-4.9 5.4-4.9s4.8 1.6 5.4 4.9"/><circle cx="17" cy="9" r="2.4"/><path d="M15.6 14.7c2.6.3 4.2 1.7 4.8 4.2"/></svg></button>
+          <button class="page-fab friends-fab" id="friendsFab" title="친구"><svg class="ic" viewBox="0 0 24 24" style="width:24px;height:24px" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.6 20c.6-3.3 2.6-4.9 5.4-4.9s4.8 1.6 5.4 4.9"/><circle cx="17" cy="9" r="2.4"/><path d="M15.6 14.7c2.6.3 4.2 1.7 4.8 4.2"/></svg></button>
           <button class="page-fab" id="habitFab" title="루틴 추가"><svg class="ic" viewBox="0 0 24 24" style="width:32px;height:32px" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         </section>
         <section class="view" id="view-diary">
