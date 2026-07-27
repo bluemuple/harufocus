@@ -649,6 +649,26 @@
   .goal-card .gc-sub{font-size:12px;font-weight:700;color:#4BA3D3;margin:2px 0 6px}
   .goal-card .gc-bar{height:5px;border-radius:3px;background:rgba(20,24,39,.08);overflow:hidden}
   .goal-card .gc-bar i{display:block;height:100%;background:#4BA3D3;border-radius:3px}
+  /* 장기 목표 만들기 모달 (요청: 웹에서도 생성) */
+  #goalModal .gm-dim{position:fixed;inset:0;background:rgba(10,14,30,.45);z-index:80}
+  #goalModal .gm-card{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:81;
+    width:min(92vw,420px);background:#fff;border-radius:18px;padding:18px;
+    box-shadow:0 18px 50px rgba(10,20,50,.35);display:flex;flex-direction:column;gap:10px}
+  #goalModal .gm-title{font-weight:800;font-size:17px}
+  #goalModal .gm-in{border:1px solid rgba(20,24,39,.18);border-radius:9px;padding:7px 9px;font:inherit}
+  #goalModal .gm-num{width:64px}
+  #goalModal .gm-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:14px}
+  #goalModal .gm-chip{width:30px;height:30px;border-radius:50%;display:inline-flex;
+    align-items:center;justify-content:center;font-size:12px;font-weight:700;
+    background:rgba(20,24,39,.06);cursor:pointer;user-select:none}
+  #goalModal .gm-chip.on{background:#4BA3D3;color:#fff}
+  #goalModal .gm-every{font-size:12px;color:#666;display:inline-flex;align-items:center;gap:4px}
+  #goalModal .gm-every input[type=number]{width:44px}
+  #goalModal .gm-prev{font-size:13px;font-weight:700;color:#4BA3D3;min-height:18px}
+  #goalModal .gm-btns{justify-content:flex-end}
+  #goalModal button{border:0;border-radius:10px;padding:9px 16px;font:inherit;font-weight:700;
+    background:rgba(20,24,39,.07);cursor:pointer}
+  #goalModal button.primary{background:#4BA3D3;color:#fff}
   .task{position:relative;display:flex;align-items:stretch;background:transparent;border:0;border-radius:16px;box-shadow:0 4px 14px rgba(20,40,80,.10);overflow:hidden}
   .check{width:22px;height:22px;border-radius:50%;border:2px solid var(--ink-soft);flex:0 0 auto;cursor:pointer;display:grid;place-items:center}
   /* 완료 채움색은 작업 색으로 buildTodoRow에서 인라인 지정 (앱 displayColor 파리티). */
@@ -4628,11 +4648,151 @@
     if(t.scheduledStart&&(t.durationMin||0)>0)
       t.planDueAt=new Date(new Date(t.scheduledStart).getTime()+t.durationMin*60000).toISOString();
   }
-  function addTask(o){if(!DATA.tasks)DATA.tasks=[];var t=newTask(o);
+  function addTask(o,quiet){if(!DATA.tasks)DATA.tasks=[];var t=newTask(o);
     if(t.scheduledStart&&(t.durationMin||0)>0&&!t.planDueAt)setPlanFromSchedule(t);
     if((t.durationMin||0)>0&&t.createdDurationMin==null)t.createdDurationMin=t.durationMin;   // D2-1
     inheritSimilarColor(t);                                                                   // D2-4
-    DATA.tasks.push(t);renderAll();pushSnapshot();return t;}
+    DATA.tasks.push(t);
+    // quiet = 여러 개를 한 번에 만들 때 (장기 목표) — 렌더·푸시는 호출부가 1회.
+    if(!quiet){renderAll();pushSnapshot();}
+    return t;}
+  /* ───────── 장기 목표 (요청 2026-07-27: 웹에서도 만들기) ─────────
+     앱 GoalEngine 파리티 — 같은 케이스를 tests/goal-engine-parity.js가 잡는다. */
+  function goalAmountText(v){
+    var r=Math.round(v*100)/100;
+    if(Math.abs(r-Math.round(r))<1e-9)return String(Math.round(r));
+    return String(r).replace(/0+$/,'');
+  }
+  function goalSessionDays(startISO,endISO,weekdaysMask,everyN){
+    var out=[],d=new Date(startISO);d.setHours(0,0,0,0);
+    var e=new Date(endISO);e.setHours(0,0,0,0);
+    var i=0,n=Math.max(1,everyN||1);
+    while(d<=e){
+      if(weekdaysMask){ if(weekdaysMask&(1<<d.getDay()))out.push(new Date(d)); }
+      else if(n===1||i%n===0)out.push(new Date(d));
+      i++;d=new Date(d.getTime()+86400000);
+      d.setHours(0,0,0,0);   // DST 방어
+    }
+    return out;
+  }
+  function goalRangeLabel(from,to,total,unit,offset){
+    var eps=1e-6;offset=offset||0;
+    if(unit==='분')return Math.round(to-from)+'분';
+    if(unit==='시간'){var v=to-from;
+      return v<1-eps?Math.max(1,Math.round(v*60))+'분':goalAmountText(v)+'시간';}
+    var o=Math.round(offset);
+    if(unit==='챕터'||unit==='장'||unit==='강'){
+      var u=unit==='강'?'강':'장';
+      var pct=function(f){return Math.round(f*100);};
+      var fInt=Math.abs(from-Math.round(from))<eps,tInt=Math.abs(to-Math.round(to))<eps;
+      if(fInt&&tInt){var a=Math.round(from)+1+o,b=Math.round(to)+o;
+        return a===b?a+u:a+'~'+b+u;}
+      var sCh=fInt?Math.round(from)+1:Math.floor(from+eps)+1;
+      var sPct=fInt?0:pct(from-(sCh-1));
+      if(tInt){ if(Math.round(to)===sCh)return (sCh+o)+u+' '+sPct+'%~끝';
+        return (sCh+o)+u+' '+sPct+'%~'+(Math.round(to)+o)+u+' 끝';}
+      var eCh=Math.floor(to-eps)+1,ePct=pct(to-(eCh-1));
+      if(sCh===eCh)return (sCh+o)+u+' '+sPct+'~'+ePct+'%';
+      return (sCh+o)+u+' '+sPct+'%~'+(eCh+o)+u+' '+ePct+'%';
+    }
+    var sp=Math.floor(from+eps)+1+o;
+    var ep=(to>=total-eps?Math.ceil(total-eps):Math.max(Math.floor(from+eps)+1,Math.round(to)))+o;
+    return sp===ep?sp+unit:sp+'~'+ep+unit;
+  }
+  /* 목표 확정 → 하는 날마다 할 일 생성 (앱 GoalService.materialize 파리티).
+     addTask 공장을 쓰되 renderAll/push는 마지막에 한 번만. */
+  function goalMaterialize(g){
+    var days=goalSessionDays(g.startDate,g.endDate,g.weekdaysMask,g.everyN);
+    if(!days.length||!(g.totalAmount>0))return 0;
+    var daily=g.totalAmount/days.length,cursor=0;
+    days.forEach(function(day,i){
+      var to=i===days.length-1?g.totalAmount:cursor+daily;
+      var label=goalRangeLabel(cursor,to,g.totalAmount,g.unitLabel,g.unitOffset||0);
+      var t=addTask({title:g.title+' · '+label,
+        durationMin:g.unitLabel==='분'?Math.max(5,Math.round(to-cursor))
+          :(g.unitLabel==='시간'?Math.max(5,Math.round((to-cursor)*60)):30)},true);
+      t.goalID=g.id;t.goalAmount=to-cursor;
+      var iso=new Date(day.getFullYear(),day.getMonth(),day.getDate(),12).toISOString();
+      t.dueDate=iso;t.deferredUntil=iso;
+      cursor=to;
+    });
+    return days.length;
+  }
+  /* 만들기 모달 (컴팩트): 제목·기간·요일/매n일·단위·분량·놓친 날. */
+  var GOAL_UNITS=['쪽','챕터','강','문제','단어','회','분 (당일)','시간 (전체)'];
+  function openGoalModal(){
+    var old=document.getElementById('goalModal');if(old)old.remove();
+    var today=new Date(),endD=new Date(today.getTime()+13*86400000);
+    function d2v(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+    var wd=['일','월','화','수','목','금','토'];
+    var html='<div class="gm-dim"></div><div class="gm-card">'+
+      '<div class="gm-title">장기 목표 나누기</div>'+
+      '<input id="gmName" class="gm-in" placeholder="예: 해리포터와 마법사의 돌">'+
+      '<div class="gm-row"><input type="date" id="gmStart" class="gm-in" value="'+d2v(today)+'">'+
+      '<span>부터</span><input type="date" id="gmEnd" class="gm-in" value="'+d2v(endD)+'"><span>까지</span></div>'+
+      '<div class="gm-row" id="gmWd">'+wd.map(function(w,i){
+        return '<span class="gm-chip'+(i>=1&&i<=5?' on':'')+'" data-i="'+i+'">'+w+'</span>';}).join('')+
+      '<label class="gm-every"><input type="checkbox" id="gmEveryOn"> 매 <input type="number" id="gmEveryN" value="2" min="1" max="14">일에 1번</label></div>'+
+      '<div class="gm-row"><select id="gmUnit" class="gm-in">'+GOAL_UNITS.map(function(u){
+        return '<option>'+u+'</option>';}).join('')+'</select>'+
+      '<span id="gmAmt"></span></div>'+
+      '<div class="gm-row">놓친 날: <select id="gmMiss" class="gm-in">'+
+      '<option value="0" selected>남은 분량 재계산</option><option value="1">기간 늘리기</option></select></div>'+
+      '<div class="gm-prev" id="gmPrev"></div>'+
+      '<div class="gm-row gm-btns"><button id="gmCancel">닫기</button><button id="gmGo" class="primary">만들기</button></div></div>';
+    var wrap=document.createElement('div');wrap.id='goalModal';wrap.innerHTML=html;
+    document.body.appendChild(wrap);
+    function unitKind(){var u=document.getElementById('gmUnit').value;
+      if(u==='쪽'||u==='챕터'||u==='강')return 'range';
+      if(u==='분 (당일)')return 'perDay';if(u==='시간 (전체)')return 'hours';return 'count';}
+    function shortUnit(){var u=document.getElementById('gmUnit').value;
+      return u==='분 (당일)'?'분':(u==='시간 (전체)'?'시간':u);}
+    function renderAmt(){var k=unitKind(),el=document.getElementById('gmAmt');
+      if(k==='range')el.innerHTML='<input type="number" id="gmFrom" class="gm-in gm-num" value="1"> ~ <input type="number" id="gmTo" class="gm-in gm-num" value="10"> '+shortUnit();
+      else if(k==='perDay')el.innerHTML='하루 <input type="number" id="gmPer" class="gm-in gm-num" value="30"> 분씩';
+      else if(k==='hours')el.innerHTML='모두 <input type="number" id="gmHours" class="gm-in gm-num" value="6"> 시간';
+      else el.innerHTML='<input type="number" id="gmCount" class="gm-in gm-num" value="10"> '+shortUnit();
+      preview();}
+    function readGoal(){
+      var everyOn=document.getElementById('gmEveryOn').checked;
+      var mask=0;if(!everyOn)wrap.querySelectorAll('#gmWd .gm-chip.on').forEach(function(c){mask|=1<<(+c.dataset.i);});
+      var k=unitKind(),total=0,offset=0;
+      if(k==='range'){var f=+document.getElementById('gmFrom').value,t=+document.getElementById('gmTo').value;
+        if(!(t>=f&&f>=1))return null;total=t-f+1;offset=f-1;}
+      else if(k==='perDay'){var per=+document.getElementById('gmPer').value;if(!(per>0))return null;
+        var dn=goalSessionDays(document.getElementById('gmStart').value,document.getElementById('gmEnd').value,mask,everyOn?+document.getElementById('gmEveryN').value:1).length;
+        total=per*Math.max(1,dn);}
+      else if(k==='hours'){total=+document.getElementById('gmHours').value;if(!(total>0))return null;}
+      else{total=+document.getElementById('gmCount').value;if(!(total>0))return null;}
+      var name=(document.getElementById('gmName').value||'').trim();if(!name)return null;
+      return {id:uuid(),title:name,unitLabel:shortUnit(),totalAmount:total,unitOffset:offset,
+        startDate:new Date(document.getElementById('gmStart').value+'T12:00').toISOString(),
+        endDate:new Date(document.getElementById('gmEnd').value+'T12:00').toISOString(),
+        weekdaysMask:mask,everyN:everyOn?Math.max(1,+document.getElementById('gmEveryN').value):1,
+        extendOnMiss:document.getElementById('gmMiss').value==='1',imageThumbB64:null};
+    }
+    function preview(){var g=readGoal(),el=document.getElementById('gmPrev');
+      if(!g){el.textContent='';return;}
+      var days=goalSessionDays(g.startDate,g.endDate,g.weekdaysMask,g.everyN);
+      if(!days.length){el.textContent='기간 안에 하는 날이 없어요';return;}
+      el.textContent='하는 날 '+days.length+'회 · 하루 '+goalAmountText(g.totalAmount/days.length)+g.unitLabel;}
+    wrap.addEventListener('input',preview);
+    wrap.querySelectorAll('#gmWd .gm-chip').forEach(function(c){
+      c.addEventListener('click',function(){c.classList.toggle('on');
+        document.getElementById('gmEveryOn').checked=false;preview();});});
+    document.getElementById('gmUnit').addEventListener('change',renderAmt);
+    document.getElementById('gmCancel').addEventListener('click',function(){wrap.remove();});
+    wrap.querySelector('.gm-dim').addEventListener('click',function(){wrap.remove();});
+    document.getElementById('gmGo').addEventListener('click',function(){
+      var g=readGoal();if(!g)return;
+      if(!DATA.goals)DATA.goals=[];
+      DATA.goals.push(g);
+      var n=goalMaterialize(g);
+      wrap.remove();renderAll();pushSnapshot();
+      if(typeof showToast==='function')showToast(n+'개의 할 일을 만들었어요');
+    });
+    renderAmt();
+  }
   // D2-4: 유사 문구 = 완전 동일 색 — "수학"과 "수학 풀기"는 같은 색(카테고리·colorKey 승계).
   function inheritSimilarColor(t){
     var norm=function(x){return String(x||'').replace(/\s+/g,'').toLowerCase();};
@@ -5936,6 +6096,13 @@
       var gs=new Date(g.startDate);gs.setHours(0,0,0,0);
       var ge=new Date(g.endDate);ge.setHours(0,0,0,0);
       return gs<=calSel0&&calSel0<=ge;});
+    // 만들기 진입 (요청: 웹에서도 장기 목표) — 카드 유무와 무관하게 노출.
+    list.insertAdjacentHTML('beforeend','<div style="text-align:right;margin:0 2px 6px">'+
+      '<button id="goalAddBtn" style="border:0;background:rgba(255,255,255,.75);border-radius:12px;'+
+      'padding:6px 12px;font:inherit;font-size:12px;font-weight:700;color:#3E7FA6;cursor:pointer;'+
+      'box-shadow:0 2px 8px rgba(20,40,80,.12)">+ 장기 목표</button></div>');
+    var gab=document.getElementById('goalAddBtn');
+    if(gab)gab.addEventListener('click',openGoalModal);
     activeGoals.forEach(function(g){
       var pct=Math.round(Math.min(1,goalDoneAmt(g)/g.totalAmount)*100);
       var img=g.imageThumbB64?'<img class="gc-img" alt="" src="data:image/jpeg;base64,'+g.imageThumbB64+'">':'';
