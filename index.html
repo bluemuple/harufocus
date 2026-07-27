@@ -107,10 +107,13 @@
   .tl-night .dueline.selfill .dl-play{color:#141827}
   .tl-night .dueline.selfill .dl-right b{color:#141827}
   /* 마감집게 (D2-3) */
-  .due-clamp{position:absolute;left:15%;width:70%;z-index:5;text-align:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
+  /* 폭은 **▶(52~82px)와 오른쪽 hh:mm 캡슐(≈96px) 사이**로 못 박는다
+     (요청 2026-07-28): 15%~85%였을 땐 좁은 페인에서 양쪽을 다 덮어
+     재생 버튼도 마감 시각도 집게 뒤로 숨었다. */
+  .due-clamp{position:absolute;left:96px;right:106px;z-index:5;text-align:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
   .due-clamp .dc-n{color:#F5BFCE;font-weight:800}
-  .due-clamp .dc-label{background:rgba(107,107,107,.92);border-radius:11px;height:40px;line-height:40px;padding:0 10px;font-size:11px;font-weight:600;color:#fff;overflow:hidden;white-space:nowrap;margin-bottom:0}
-  .due-clamp .dc-grip{width:46px;height:24px;margin:0 auto;background:rgba(107,107,107,.92);border-radius:0 0 17px 17px;cursor:ns-resize;touch-action:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3.5px;padding-bottom:1px}
+  .due-clamp .dc-label{background:rgba(107,107,107,.92);border-radius:10px;height:32px;line-height:32px;padding:0 10px;font-size:11px;font-weight:600;color:#fff;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-bottom:0}
+  .due-clamp .dc-grip{width:44px;height:20px;margin:0 auto;background:rgba(107,107,107,.92);border-radius:0 0 15px 15px;cursor:ns-resize;touch-action:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3.5px;padding-bottom:1px}
   .due-clamp .dc-grip i{display:block;width:22px;height:2.5px;border-radius:2px;background:rgba(255,255,255,.8)}
   /* 한 번에 계획하기 패널 (첨부1) */
   .batch-head{display:flex;align-items:center;padding:10px 6px 18px}
@@ -412,6 +415,14 @@
   .dueline.cap-ghost .dl-wire{border-top:2px dashed var(--tl-accent,#80CDE9);background:none;height:0}
   .cap-ghost-hint{position:absolute;left:115px;top:6px;font-size:12px;font-weight:600;
     color:var(--onSky,#141827);opacity:.75;white-space:nowrap}
+  /* '당겨요' 손잡이 (요청 2026-07-28, 앱 파리티): 마지막 고스트 마감선 아랫변에
+     붙는 주황 판 — 위 코너 직각, 아래 코너만 둥글다. */
+  .dueline.cap-pull{pointer-events:none}
+  .dueline.cap-pull .cap-pull-grip{position:absolute;left:56px;right:0;margin:0 auto;
+    width:50%;height:20px;line-height:20px;top:1px;
+    background:rgba(255,123,74,.92);border-radius:0 0 9px 9px;
+    color:#fff;font-size:11px;font-weight:700;text-align:center;letter-spacing:-.02em;
+    cursor:ns-resize;touch-action:none;pointer-events:auto;user-select:none}
   /* (옛 .dl-cap은 삭제 — 이제 .dl-right 자체가 그 캡슐이다.) */
   /* (옛 .dl-chev 위·아래 화살표는 삭제됐다 — 요청 ④: 위 화살표는 없애고
      아래 화살표만 캡슐에 바짝 붙인다. 웹은 애초에 그리지 않고 있었다.) */
@@ -1574,8 +1585,13 @@
        좁은 대역에 들어온다. 황금비 38.2%는 안 쓴다: 1920에서 734px짜리 텅 빈
        타임라인이 되고, 834에서는 319px로 작업명이 3자에서 잘린다.
        ⚠ max-width:400px를 반드시 걷어내야 clamp가 산다. */
+    /* ⚠ 페인 폭은 **변수 하나**로만 산다 (요청 2026-07-28): 여기 clamp와
+       h2·FAB에 박아 둔 400px이 어긋나 있었다. 1400px에서 페인은 420인데
+       제목(요일 캡슐)은 400+26에 고정돼 카드보다 20px 왼쪽, 1200px에선
+       페인 360이라 40px 오른쪽 — 창 폭에 따라 좌우로 흔들렸다. */
+    .layout{--pane-w:clamp(340px, 30vw, 520px)}
     .pane-tl{display:flex!important;position:relative;inset:auto;
-      flex:0 0 clamp(340px, 30%, 520px);max-width:none;
+      flex:0 0 var(--pane-w);max-width:none;
       border-right:1px solid rgba(255,255,255,.25);flex-direction:column}
     .pane-tabs{display:flex!important;position:relative;inset:auto;flex:1;min-width:0}
     .mbar{display:none!important}
@@ -1614,7 +1630,7 @@
     .tl-nowcap{left:18px;bottom:18px}
     /* 데스크톱 .tabbody 좌패딩이 26이므로 h2도 26 — 캡슐 왼쪽 끝이 카드와
        같은 x가 되는 건 .dow-toggle의 margin-left:8을 걷어낸 덕이다 (요청 2026-07-27). */
-    .view.on>h2{position:fixed;top:14px;left:calc(400px + 26px);z-index:46;margin:0;height:44px;
+    .view.on>h2{position:fixed;top:14px;left:calc(var(--pane-w) + 26px);z-index:46;margin:0;height:44px;
       display:flex;align-items:center;gap:10px;font-size:27px;letter-spacing:-.03em}
     /* 매트릭스 (요청 2026-07-27): 요일 캡슐이 아래 매트릭스 좌측 세로선과
        같은 x에서 시작 — 숨은 제목 뒤 gap 10px가 밀던 것을 되돌린다. */
@@ -1655,7 +1671,7 @@
     /* 타임라인 FAB: 좌측 칼럼 하단 */
     /* 요청: 편집·추가 버튼은 타임라인 컬럼의 '우측'에 */
     /* 경계선(400px)까지 숨 쉴 틈을 둔다 (요청 2026-07-27): 18 → 34. */
-    .tl-fabs{display:flex!important;left:auto;right:calc(100vw - 400px + 34px);bottom:18px}
+    .tl-fabs{display:flex!important;left:auto;right:calc(100vw - var(--pane-w) + 34px);bottom:18px}
     .page-fab{bottom:26px;right:26px}
     .fab-del{right:94px}
     .friends-fab{right:96px}
@@ -10018,7 +10034,7 @@
     setTimeout(positionCap,60);
   }
   function closeCapture(){
-    document.querySelectorAll('.dueline.cap-ghost').forEach(function(el){el.remove();});
+    document.querySelectorAll('.dueline.cap-ghost,.dueline.cap-pull').forEach(function(el){el.remove();});
     cap.editing=null;cap.editingSub=null;
     document.getElementById('capWrap').classList.remove('sub-mode');
     cap.open=false;
@@ -10041,7 +10057,10 @@
   document.addEventListener('pointerdown',function(e){
     if(!cap.open)return;
     if(e.target.closest('#capWrap'))return;                 // 패널 내부는 유지
-    if(e.target.closest('#todoFab,#habitFab,.qadd-top,#tlAdd'))return;  // 여는 버튼은 제외
+    /* '당겨요' 손잡이는 캡처 중에 쓰는 조작이다 (요청 2026-07-28) — 이 리스너가
+       **캡처 단계**라 손잡이 쪽 stopPropagation으로는 못 막는다. 잡는 순간
+       캡처바가 닫혀 고스트가 통째로 사라졌다. */
+    if(e.target.closest('#todoFab,#habitFab,.qadd-top,#tlAdd,.cap-pull'))return;  // 여는 버튼·손잡이 제외
     closeCapture();
   },true);
   // 스와이프 열림 상태에서 다른 곳을 누르면 원위치로 (요청).
@@ -10094,8 +10113,15 @@
           var p2=parseDurTitle(line);
           var dur2=(p2&&!cap.draft.durationLocked)?p2.dur:(cap.draft.durationMin||setCaptureDefaultMin());
           var st=new Date(base0);st.setHours(Math.floor(curH),Math.round((curH%1)*60),0,0);
-          var o2={title:p2?p2.title:line,categoryID:cap.draft.categoryID,colorKey:cap.draft.colorKey,
-            iconName:cap.draft.iconName,durationMin:dur2,scheduledStart:st.toISOString(),
+          /* 줄마다 자체 기호·범주 (요청 2026-07-28) — 색을 손으로 고르지
+             않았다면 colorKey를 비워 **범주색**이 나오게 한다(앱과 같은 결과).
+             ⚠ undefined 금지, 빈 문자열이어야 한다 — 앱 TaskDTO가 필수 필드로
+             읽고, undefined면 JSON에서 키가 통째로 빠져 동기화가 멈춘다. */
+          var ic2=lineIconCat(p2?p2.title:line);
+          var o2={title:p2?p2.title:line,
+            categoryID:(ic2.cat&&!cap.draft.colorLocked)?ic2.cat:cap.draft.categoryID,
+            colorKey:cap.draft.colorLocked?cap.draft.colorKey:'',
+            iconName:ic2.icon,durationMin:dur2,scheduledStart:st.toISOString(),
             reminderOffsets:cap.draft.reminderOffsets,nudgeEnabled:cap.draft.nudgeEnabled,
             dueDate:cap.draft.dueDate,repeatDaysMask:cap.draft.repeatDaysMask};
           if(batchID){o2.rewardBatchID=batchID;
@@ -10164,7 +10190,7 @@
      오늘 레인에 '이렇게 확정될 자리'를 그대로 그린다 — 확정 로직과 같은
      앵커(nextSlotToday)·같은 좌표(yFor)를 쓰므로 고스트=결과. */
   function updateCapGhost(){
-    document.querySelectorAll('.dueline.cap-ghost').forEach(function(el){el.remove();});
+    document.querySelectorAll('.dueline.cap-ghost,.dueline.cap-pull').forEach(function(el){el.remove();});
     if(!cap.open||cap.origin!=='timeline'||cap.editing||cap.editingSub)return;
     var lane=tlLaneToday||tlLanePrimary;
     if(!lane)return;
@@ -10172,6 +10198,7 @@
     var lines=raw.split('\n').map(function(l){return l.trim();}).filter(Boolean);
     if(!lines.length)lines=[''];                       // 빈 입력 = '작업명' 견본 1개
     var curH=nextSlotToday(true);                      // 확정과 같은 앵커 = 고스트가 결과
+    var lastH=null;
     lines.forEach(function(line,i){
       var p=parseDurTitle(line);
       var dur=(p&&!cap.draft.durationLocked)?p.dur:(cap.draft.durationMin||setCaptureDefaultMin());
@@ -10187,8 +10214,11 @@
          체크 동그라미 · ▶ · 기호 · 이름 · 길이 · hh:mm까지. 고스트에만 없던
          것들이 확정 순간 끼어들며 이름이 옆으로 튀었다. 색·아이콘은 초안에서
          가져오고, 점선 선과 반투명만 '아직 아니다'를 말한다. */
-      var gIcon=cap.draft.iconName?findIconSvg(cap.draft.iconName):'';
-      var gColor=capColorHex(cap.draft.colorKey)||catColor(cap.draft.categoryID);
+      var gic=lineIconCat(title);
+      var gIconName=(lines.length>1)?gic.icon:(cap.draft.iconName||gic.icon);
+      var gIcon=gIconName?findIconSvg(gIconName):'';
+      var gCat=(lines.length>1&&gic.cat&&!cap.draft.colorLocked)?gic.cat:cap.draft.categoryID;
+      var gColor=(cap.draft.colorLocked?capColorHex(cap.draft.colorKey):null)||catColor(gCat);
       dl.innerHTML='<div class="dl-wire"></div>'+
         '<button class="dl-radio" tabindex="-1" style="--dc:'+gColor+'"></button>'+
         '<button class="dl-play" tabindex="-1">'+IC.play+'</button>'+
@@ -10198,6 +10228,47 @@
         '<div class="dl-right"><b>'+hh+'까지</b></div>'+
         (i===0?'<div class="cap-ghost-hint">이때까지 끝낼 수 있어요</div>':'');
       lane.appendChild(dl);
+      lastH=curH;
+    });
+    /* '당겨요' 손잡이 (요청 2026-07-28, 앱 capturePullHandle 파리티):
+       여러 줄을 담는 중이면 **마지막 마감선 아래**에 붙는 주황 손잡이 —
+       아래로 끌면 추가 중인 마감선이 통째로 내려가고 각 줄의 길이도 실시간으로
+       늘어난다. 위 코너는 직각(선에 붙고), 아래 코너만 둥글다. */
+    if(lines.length>1&&lastH!=null&&lastH<=24)tlAddPullHandle(lane,lastH,lines.length);
+  }
+  function tlAddPullHandle(lane,lastH,n){
+    var wrap=document.createElement('div');
+    wrap.className='dueline cap-pull';
+    wrap.style.top=yFor(lastH)+'px';
+    wrap.innerHTML='<div class="cap-pull-grip">당겨요</div>';
+    lane.appendChild(wrap);
+    wrap.querySelector('.cap-pull-grip').addEventListener('pointerdown',function(e){
+      e.preventDefault();e.stopPropagation();
+      var y0=e.clientY,base=Math.max(5,cap.draft.durationMin||setCaptureDefaultMin());
+      var total0=base*n;
+      tlDragging=true;
+      function move(ev){
+        // 1분 스냅. 전체 길이를 늘렸다 줄이고, 줄 수로 나눠 **각 줄에 균등**
+        // 배분한다 — 슬라이더(각 n분)와 같은 값을 건드리므로 둘이 늘 일치한다.
+        var dm=Math.round((ev.clientY-y0)*(60/PPH));
+        var per=Math.max(5,Math.min(120,Math.round((total0+dm)/n)));
+        if(per!==cap.draft.durationMin){
+          cap.draft.durationMin=per;cap.draft.durationLocked=true;cap.draft.durEdited=true;
+          updateCapGhost();                       // 손잡이도 여기서 다시 그려진다
+          if(cap.detail==='duration')paintDurLive();
+          capLiveDurLabel();
+        }
+        ev.preventDefault();
+      }
+      function up(){
+        document.removeEventListener('pointermove',move);
+        document.removeEventListener('pointerup',up);
+        tlDragging=false;
+      }
+      // ⚠ 리스너는 **document**에 건다: updateCapGhost가 손잡이 DOM을 매번
+      //   새로 만들기 때문에 요소에 걸면 첫 이동에서 드래그가 끊긴다.
+      document.addEventListener('pointermove',move);
+      document.addEventListener('pointerup',up);
     });
   }
   function capDurLabel(m){return m<=0?'실시간':(m<60?m+'분':(m%60===0?(m/60)+'시간':(Math.floor(m/60)+'시간 '+(m%60)+'분')));}
@@ -10225,6 +10296,16 @@
       this.style.height='auto';this.style.height=Math.min(this.scrollHeight,52)+'px';   // 2줄까지 (§4)
       clearTimeout(cap._sugT);cap._sugT=setTimeout(capAutoSuggest,120);                  // D2-7 라이브 파싱·제안
       updateCapGhost();                              // 고스트 마감선 실시간 (요청)
+      /* 줄 수가 1↔여럿을 넘나들면 길이 패널의 ±스텝(20분↔10분)이 달라진다
+         (요청 2026-07-28) — 열려 있으면 그 자리에서 다시 그린다. */
+      var dp=document.querySelector('#capDetail .cap-durrow');
+      if(dp&&cap.detail==='duration'){
+        var want=capLineCount()>1?10:20;
+        if(dp.dataset.step!==String(want)){
+          document.getElementById('capDetail').innerHTML=renderDurationPanel();
+          wireDurationPanel();
+        }
+      }
     };
     document.getElementById('capSubmit').disabled=!(document.getElementById('capText').value||'').trim();
     updateCapGhost();                                 // 길이 조절 반영 (요청)
@@ -10355,7 +10436,7 @@
   }
   function renderDurationPanel(){
     var step=capLineCount()>1?10:20;
-    return '<div class="cap-panel"><div class="cap-row cap-durrow">'+
+    return '<div class="cap-panel"><div class="cap-row cap-durrow" data-step="'+step+'">'+
       '<button class="cap-chip" data-dd="'+(-step)+'">-'+step+'분</button>'+
       '<div class="cap-dslider" id="capDurSlider">'+
         '<div class="cap-dhint">&#8249; &#183;&#183;&#183; &#8250;</div>'+
@@ -10398,6 +10479,15 @@
   function capLiveDurLabel(){
     var b=document.querySelector('#capDetail .cap-opt.dur b');if(b)b.textContent=capDurCompact(cap.draft.durationMin);
     if(cap.detail==='duration')paintDurLive();
+  }
+  /* 줄 하나의 자체 기호·범주 (앱 RootView 다중 캡처 파리티, 요청 2026-07-28):
+     여러 줄을 한꺼번에 담을 때 **모든 줄이 초안(=마지막으로 인식된) 기호**를
+     물려받아 국어·수학·사회가 전부 같은 그림이었다. 매칭이 없으면 기호 없음 —
+     앱도 draft 기호를 물려주지 않는다. */
+  function lineIconCat(title){
+    var eff=title,p=title?parseDurTitle(title):null;if(p)eff=p.title;   // "30분 수학" → "수학"
+    var m=eff?matchCapKeyword(eff):null;
+    return {icon:m?m.icon:null, cat:(m&&m.cat)?m.cat:null};
   }
   function capAutoSuggest(){
     if(!cap.open)return;
