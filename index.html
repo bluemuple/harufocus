@@ -692,6 +692,15 @@
      제목 + '장기 목표 · n%' + 게이지. 그날 분량 할 일이 카드 아래 붙는다. */
   .goal-card{display:flex;gap:12px;align-items:center;background:rgba(255,255,255,.94);
     border-radius:16px;box-shadow:0 4px 14px rgba(20,40,80,.10);padding:12px 14px;margin-bottom:8px}
+  /* 카드 + 그날 작업 한 덩어리 (요청 2026-07-28, 앱 goalSection 모습):
+     카드는 아래 모서리를, 작업은 위 모서리를 버리고 얇은 선으로 잇는다. */
+  .goal-group{break-inside:avoid}
+  .goal-group .goal-card{margin-bottom:0}
+  .goal-group .goal-card:not(:only-child){border-radius:16px 16px 0 0}
+  .goal-group .task{margin-bottom:0}
+  .goal-group .task .task-inner{border-radius:0;border-top:1px solid rgba(20,24,39,.07)}
+  .goal-group .task:last-child .task-inner{border-radius:0 0 16px 16px}
+  body.night .goal-group .task .task-inner{border-top-color:rgba(255,255,255,.09)}
   .goal-card .gc-img{width:44px;height:58px;object-fit:cover;border-radius:8px;flex:0 0 auto}
   .goal-card .gc-body{flex:1;min-width:0}
   .goal-card .gc-title{font-weight:700;font-size:15px;color:#141827;
@@ -1066,7 +1075,7 @@
   @keyframes tcOut{0%{transform:translateY(0);opacity:1}100%{transform:translateY(115%);opacity:0}}
   .topcap{transition:width .45s cubic-bezier(.3,.7,.3,1),opacity .2s}
   /* 스크롤해서 밑으로 콘텐츠가 지나갈 땐 반투명하게 (요청) — 덜 거슬리게. */
-  .topcap.faded{opacity:.42}
+  /* (.topcap.faded 폐지 — 상단 캡슐은 항상 불투명, 요청 2026-07-28) */
   .util{position:fixed;top:calc(8px + env(safe-area-inset-top));right:10px;z-index:40;display:flex;gap:6px}
   .util .acct{background:rgba(255,255,255,.82);backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(20,40,80,.18)}
   body[data-m="timeline"] .topcap{display:none}
@@ -1718,6 +1727,8 @@
     /* 긴 세로 나열 → 2컬럼 (요청) */
     .todo{display:block;columns:2;column-gap:14px}
     .todo .task{break-inside:avoid;margin-bottom:9px}
+    .todo .goal-group{break-inside:avoid;margin-bottom:9px}
+    .todo .goal-group .task{margin-bottom:0}
     .todo .subpanel{break-inside:avoid;break-before:avoid}
     .todo .sec-h{column-span:all}
     .todo .welcome{break-inside:avoid}
@@ -6366,7 +6377,8 @@
   /* 목록(폴더) 고르기 (요청 2026-07-27, 앱 TodoView 파리티): 좌측 상단 제목이
      지금 보는 목록 이름이고, 누르면 시트가 열린다. 붙박이 셋(담아둔 일·모든
      할 일·장기 목표)은 모델이 아니라 이 필터다. */
-  var todoPick={kind:'inbox',id:null};
+  // 기본 목록 = **모든 할 일** (요청 2026-07-28 개정).
+  var todoPick={kind:'all',id:null};
   /* 장기 목표 목록에서 '(전체)' 캡슐 상태 (요청 2026-07-28): 끄면 **그날 분량만**,
      켜면 그 목표의 모든 날 할 일이 두꺼운 bar 아래 쭉 붙는다. */
   var goalShowAll=false;
@@ -6394,7 +6406,7 @@
       '<rect x="9.2" y="15.2" width="5.6" height="5.6" rx="1.5"/><path d="M10.7 17.9l1 1.1 1.8-2"/>'+
       '<rect x="17.2" y="15.2" width="5.6" height="5.6" rx="1.5"/><path d="M18.7 17.9l1 1.1 1.8-2"/></svg>';
     var html='<div class="ls-dim"></div><div class="ls-card"><div class="ls-title">목록</div>'+
-      row('담아둔 일','📥','inbox')+row('모든 할 일','🗂','all')+row('장기 목표',goalIcon,'goal')+
+      row('모든 할 일','🗂','all')+row('담아둔 일','📥','inbox')+row('장기 목표',goalIcon,'goal')+
       '<div class="ls-sec">내 목록</div>'+
       (DATA.folders||[]).map(function(f){return row(f.name,'📁','folder',f.id,f.id);}).join('')+
       '<button class="ls-row ls-new"><span class="ls-ic">＋</span><span class="ls-name">새 목록</span></button></div>';
@@ -6409,7 +6421,7 @@
           // 담긴 할 일은 지우지 않는다 — 담아둔 일로 돌아간다 (앱 파리티).
           (DATA.tasks||[]).forEach(function(t){if(t.folderID===id)t.folderID=null;});
           DATA.folders=(DATA.folders||[]).filter(function(f){return f.id!==id;});
-          if(todoPick.kind==='folder'&&todoPick.id===id)todoPick={kind:'inbox',id:null};
+          if(todoPick.kind==='folder'&&todoPick.id===id)todoPick={kind:'all',id:null};
           close();renderAll();pushSnapshot();return;
         }
         todoPick={kind:b.dataset.kind,id:b.dataset.id||null};
@@ -6447,8 +6459,10 @@
       if(todoPick.kind==='goal')return false;
       if(todoPick.kind==='folder'&&t.folderID!==todoPick.id)return false;
       if(todoPick.kind==='inbox'&&t.folderID)return false;
-      // 장기 목표 할 일은 목표 카드 섹션이 맡는다 (요청 2026-07-27).
-      if(t.goalID&&todoPick.kind!=='all')return false;
+      // 장기 목표 할 일은 목표 카드 섹션이 그날 것만 붙인다 (요청
+      // 2026-07-28 개정: 모든 할 일에서도 전 날짜가 쏟아지지 않게 —
+      // 모든 날은 장기 목표 목록의 '전체' 캡슐에서만).
+      if(t.goalID)return false;
       if(t.deferredUntil&&new Date(t.deferredUntil)>todayMid)return false;
       // 요청: 완료한 작업은 '완료한 그 날'에만 보인다 (다른 날짜엔 숨김).
       if(t.isDone&&t.completedAt&&!calSameDay(new Date(t.completedAt),calSel))return false;
@@ -6485,7 +6499,7 @@
       return t.goalID===g.id&&t.isDone?a+((t.goalActualAmount!=null?t.goalActualAmount:t.goalAmount)||0):a;},0);}
     var calSel0=new Date(calSel);calSel0.setHours(0,0,0,0);
     var goalPick=(todoPick.kind==='goal');
-    var activeGoals=(todoPick.kind!=='inbox'&&!goalPick)?[]:(DATA.goals||[]).filter(function(g){
+    var activeGoals=(todoPick.kind!=='inbox'&&todoPick.kind!=='all'&&!goalPick)?[]:(DATA.goals||[]).filter(function(g){
       if(!(g.totalAmount>0))return false;
       if(goalDoneAmt(g)>=g.totalAmount-1e-9)return false;
       // 장기 목표 목록에선 기간과 무관하게 진행 중 목표를 모두 보여준다
@@ -6510,14 +6524,18 @@
     activeGoals.forEach(function(g){
       var pct=Math.round(Math.min(1,goalDoneAmt(g)/g.totalAmount)*100);
       var img=g.imageThumbB64?'<img class="gc-img" alt="" src="data:image/jpeg;base64,'+g.imageThumbB64+'">':'';
-      list.insertAdjacentHTML('beforeend','<div class="goal-card" data-gid="'+g.id+'">'+img+
+      /* 카드와 그날 할 일을 **한 덩어리**로 (요청 2026-07-28, 앱 모습):
+         떨어져 있던 카드·작업을 .goal-group 래퍼로 묶어 모서리를 잇는다.
+         PC 2컬럼(columns)에서 카드와 작업이 다른 컬럼으로 갈라지는 것도
+         래퍼의 break-inside:avoid가 막는다. */
+      var grp=document.createElement('div');grp.className='goal-group';
+      grp.innerHTML='<div class="goal-card" data-gid="'+g.id+'">'+img+
         '<div class="gc-body"><div class="gc-title">'+esc(g.title)+'</div>'+
         '<div class="gc-sub">장기 목표 · '+pct+'% · '+
           Math.max(0,Math.ceil(g.totalAmount-goalDoneAmt(g)))+g.unitLabel+' 남음</div>'+
         '<div class="gc-bar"><i style="width:'+pct+'%"></i></div></div>'+
-        '<button class="gc-edit" title="고치기">✎</button></div>');
-      var ge=list.querySelector('.goal-card[data-gid="'+g.id+'"] .gc-edit');
-      if(ge)ge.addEventListener('click',function(){openGoalModal(g);});
+        '<button class="gc-edit" title="고치기">✎</button></div>';
+      grp.querySelector('.gc-edit').addEventListener('click',function(){openGoalModal(g);});
       /* 카드 아래 붙는 할 일: 기본은 **그날 분량만**, '(전체)'를 켜면 그 목표의
          모든 날을 날짜 순으로 (요청 2026-07-28). */
       (DATA.tasks||[]).filter(function(t){
@@ -6525,7 +6543,8 @@
         if(goalPick&&goalShowAll)return true;
         return t.dueDate&&calSameDay(new Date(t.dueDate),calSel);})
         .sort(function(a,b){return (a.dueDate?new Date(a.dueDate).getTime():0)-(b.dueDate?new Date(b.dueDate).getTime():0);})
-        .forEach(function(t){list.appendChild(buildTodoRow(t));});
+        .forEach(function(t){grp.appendChild(buildTodoRow(t));});
+      list.appendChild(grp);
     });
     /* 고아 목표 작업 (요청 2026-07-28 첨부2: '장기 목표 56'인데 화면이 텅 빔):
        상호 삭제 사고로 목표(카드)는 지워지고 goalID를 든 할 일만 남으면,
@@ -8589,16 +8608,18 @@
     DOMAINS.forEach(function(d){
       if(dm[d.k]&&!(o[d.k]&&o[d.k].length)&&prev&&prev[d.k]&&prev[d.k].length)o[d.k]=prev[d.k];
     });
-    /* 장기 목표 (요청 2026-07-27 → 2026-07-28 개정): 서버 배열이 **비어
-       있으면 로컬을 지킨다**. ⚠ 예전 `s.goals||prev`는 빈 배열이 truthy라
-       서버의 `goals:[]`(과거 상호 삭제 사고의 잔재)가 폴마다 로컬 목표를
-       도로 지웠다 — "웹에서 만들면 목록 바꿨다 오면 사라짐"의 두 번째 뿌리.
-       진짜 삭제는 이제 배열이 아니라 **묘비(goalsDeleted)**가 전파한다. */
-    o.goals=(s.goals&&s.goals.length)?s.goals:((prev&&prev.goals)||[]);
+    /* 장기 목표 (3차 개정 2026-07-28 — **id별 병합**): 스냅샷은 마지막
+       저장자가 통째로 이기는 한 칸이라, 서버 배열 채택(전체 교체)은 로컬만
+       아는 목표를 지웠다 — 웹 '모바일웹' ↔ 앱 '위젯 테스트'가 서로를
+       밀어내던 실제 사고이자 "새로고침하면 없어져"의 뿌리. 이제 로컬 ∪
+       서버(같은 id는 서버 우선)로 합치고, 삭제는 오직 묘비로 전파한다.
+       양쪽이 합집합을 되밀어 올리므로 한 왕복 뒤 수렴한다. */
+    var gm={},go=[];
+    ((prev&&prev.goals)||[]).forEach(function(g){if(g&&g.id){gm[g.id]=g;go.push(g.id);}});
+    (s.goals||[]).forEach(function(g){if(g&&g.id){if(!gm[g.id])go.push(g.id);gm[g.id]=g;}});
     var deadG={};gtombIDs().forEach(function(id){deadG[id]=1;});
     (s.goalsDeleted||[]).forEach(function(id){deadG[id]=1;});
-    if(Object.keys(deadG).length)
-      o.goals=o.goals.filter(function(g){return !deadG[g.id];});
+    o.goals=go.filter(function(id){return !deadG[id];}).map(function(id){return gm[id];});
     // 목록(폴더) — 같은 규칙.
     o.folders=s.folders||(prev&&prev.folders)||[];
     ensureIds(o);
@@ -8691,7 +8712,11 @@
       renderAll();
       paintPomoChip();   // 원격에서 포모도로 설정이 바뀌었을 수 있다 (요청)
       // 되살아난 게 있었으면 지운 상태를 다시 올린다 — 그래야 앱도 따라 지운다.
-      if(revived)pushSnapshot();
+      /* 서버가 모르는 로컬 목표(방금 만들었는데 앱 push가 덮은 경우 등)가
+         있으면 병합 결과를 되밀어 올린다 (요청 2026-07-28 동기화 수렴). */
+      var srvG={};((serverSnap&&serverSnap.goals)||[]).forEach(function(g){if(g&&g.id)srvG[g.id]=1;});
+      var localOnly=(DATA.goals||[]).some(function(g){return g&&g.id&&!srvG[g.id];});
+      if(revived||localOnly)pushSnapshot();
       adoptRemoteFocus(serverSnap.activeFocus,serverSnap.focusEnd);
       /* 세션·일기는 이제 별도 표에 산다 — 스냅샷을 받은 김에 델타도 받는다.
          ⚠ 표가 없는 계정에선 첫 호출에서 domainsOK=false가 되고 이후 조용하다. */
@@ -9697,19 +9722,9 @@
 
   // 탭이 다시 보이면 서버에서 새로 받아 앱 변경을 반영 (요청: 동기화). 단,
   // 아직 안 올린 웹 편집(디바운스 대기)이 있으면 덮어쓰지 않고 건너뛴다.
-  /* 상단 캡슐 (요청): 스크롤하는 '동안'만 반투명하고, 손을 떼서 멈추면
-     다시 또렷해진다. 어느 칸이 굴러가든(타임라인·페이지) 똑같이 반응한다. */
-  var capFadeTimer=null;
-  function capFade(){
-    var cap=document.getElementById('topCap');if(!cap)return;
-    cap.classList.add('faded');
-    clearTimeout(capFadeTimer);
-    capFadeTimer=setTimeout(function(){cap.classList.remove('faded');},420);
-  }
-  ['tlScroll'].forEach(function(id){var e=document.getElementById(id);
-    if(e)e.addEventListener('scroll',capFade,{passive:true});});
-  (function(){var e=document.querySelector('.tabbody');
-    if(e)e.addEventListener('scroll',capFade,{passive:true});})();
+  /* 상단 캡슐 (요청 2026-07-28 개정): 스크롤 중 반투명해지던 것 **폐지** —
+     '지금, 좀 어때'는 스크롤·정지와 무관하게 늘 또렷하다(유저 확정 B안의
+     연장). 예전 capFade/.faded는 남은 흔적이었다. */
   /* ── 단축키 (요청, PC) ────────────────────────────────────────────
      ⌘/Ctrl+Z = 실행 취소. 편집 모드(연필)에서는 ↑↓로 마감선을 고르고,
      ⌘/Ctrl+↑↓로 5분씩 옮기고, Delete로 지우고, Esc로 나간다.
