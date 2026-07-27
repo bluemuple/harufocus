@@ -5112,6 +5112,9 @@
   /* 목표 삭제 (앱 GoalService.deleteGoal 파리티): 목표 + 미완료 할 일만.
      완료 기록은 남긴다(통계 보존). */
   function goalDelete(g){
+    var gone=(DATA.tasks||[]).filter(function(t){return t.goalID===g.id&&!t.isDone;});
+    tombAdd(gone.map(function(t){return t.id;}));   // 작업도 되살아나지 않게
+    gtombAdd(g.id);                                  // 목표 묘비 (앱까지 전파)
     DATA.tasks=(DATA.tasks||[]).filter(function(t){return t.goalID!==g.id||t.isDone;});
     DATA.goals=(DATA.goals||[]).filter(function(x){return x.id!==g.id;});
   }
@@ -6524,6 +6527,22 @@
         .sort(function(a,b){return (a.dueDate?new Date(a.dueDate).getTime():0)-(b.dueDate?new Date(b.dueDate).getTime():0);})
         .forEach(function(t){list.appendChild(buildTodoRow(t));});
     });
+    /* 고아 목표 작업 (요청 2026-07-28 첨부2: '장기 목표 56'인데 화면이 텅 빔):
+       상호 삭제 사고로 목표(카드)는 지워지고 goalID를 든 할 일만 남으면,
+       카드가 붙일 곳이 없어 **아무것도 안 보였다**. 데이터가 보이지 않는 것
+       보다는 평평한 목록이 낫다 — 카드 없는 목표의 할 일을 아래에 그대로
+       나열한다 (동기화가 복구되면 자연히 카드 밑으로 들어간다). */
+    if(goalPick){
+      var known={};(DATA.goals||[]).forEach(function(g){known[g.id]=1;});
+      var orphans=(DATA.tasks||[]).filter(function(t){
+        return t.goalID&&!known[t.goalID]&&!t.isDone&&
+          (goalShowAll||(t.dueDate&&calSameDay(new Date(t.dueDate),calSel)));})
+        .sort(function(a,b){return (a.dueDate?new Date(a.dueDate).getTime():0)-(b.dueDate?new Date(b.dueDate).getTime():0);});
+      if(orphans.length){
+        if(activeGoals.length)list.insertAdjacentHTML('beforeend','<div class="sec-h">목표를 잃은 할 일</div>');
+        orphans.forEach(function(t){list.appendChild(buildTodoRow(t));});
+      }
+    }
     /* 할 일이 하나도 없을 때 (요청 set_d): 글자 한 줄 대신 **빈 노트 앞에 앉아
        기다리는 엘리**. ⚠ 엘리는 말하지 않는다 — 한 줄은 내 말투로 남긴다. */
     if(!scheduled.length&&!backlog.length&&!activeGoals.length&&!goalPick){
@@ -8570,8 +8589,16 @@
     DOMAINS.forEach(function(d){
       if(dm[d.k]&&!(o[d.k]&&o[d.k].length)&&prev&&prev[d.k]&&prev[d.k].length)o[d.k]=prev[d.k];
     });
-    // 장기 목표 (요청 2026-07-27): 앱이 실어 보낸다 — 없으면 가진 것 유지.
-    o.goals=s.goals||(prev&&prev.goals)||[];
+    /* 장기 목표 (요청 2026-07-27 → 2026-07-28 개정): 서버 배열이 **비어
+       있으면 로컬을 지킨다**. ⚠ 예전 `s.goals||prev`는 빈 배열이 truthy라
+       서버의 `goals:[]`(과거 상호 삭제 사고의 잔재)가 폴마다 로컬 목표를
+       도로 지웠다 — "웹에서 만들면 목록 바꿨다 오면 사라짐"의 두 번째 뿌리.
+       진짜 삭제는 이제 배열이 아니라 **묘비(goalsDeleted)**가 전파한다. */
+    o.goals=(s.goals&&s.goals.length)?s.goals:((prev&&prev.goals)||[]);
+    var deadG={};gtombIDs().forEach(function(id){deadG[id]=1;});
+    (s.goalsDeleted||[]).forEach(function(id){deadG[id]=1;});
+    if(Object.keys(deadG).length)
+      o.goals=o.goals.filter(function(g){return !deadG[g.id];});
     // 목록(폴더) — 같은 규칙.
     o.folders=s.folders||(prev&&prev.folders)||[];
     ensureIds(o);
@@ -8605,6 +8632,17 @@
      ① 내려받은 스냅샷에서 걸러내고 ② 걸러냈으면 그 상태를 다시 올려
      서버와 앱까지 삭제가 따라오게 한다. id는 UUID라 오인 삭제는 없다. */
   var TOMB_KEY='harufocusTombs',TOMB_TTL=7*24*3600*1000;
+  /* 목표 묘비 (요청 2026-07-28 동기화 사고 재발 방지): 스냅샷은 '배열 전체 =
+     진실'이라 두 기기가 서로 쓰면 **삭제가 경합에서 진다** — 지운 쪽이 밀어
+     올리기 전에 반대쪽 옛 배열이 도착하면 목표가 되살아난다. 그래서 삭제는
+     배열과 별개로 id 묘비로도 전파한다 (앱 GoalService.tombstoneIDs와 한 쌍). */
+  var GTOMB_KEY='harufocusGoalTombs',GTOMB_TTL=60*24*3600*1000;
+  function gtombLoad(){try{return JSON.parse(localStorage.getItem(GTOMB_KEY)||'{}')||{};}catch(_){return {};}}
+  function gtombSave(m){try{localStorage.setItem(GTOMB_KEY,JSON.stringify(m));}catch(_){}}
+  function gtombAdd(id){if(!id)return;var m=gtombLoad();m[id]=Date.now();gtombSave(m);}
+  function gtombIDs(){var m=gtombLoad(),now=Date.now(),out=[];
+    Object.keys(m).forEach(function(k){if(now-m[k]<GTOMB_TTL)out.push(k);else delete m[k];});
+    gtombSave(m);return out;}
   function tombLoad(){try{return JSON.parse(localStorage.getItem(TOMB_KEY)||'{}')||{};}catch(_){return {};}}
   function tombPrune(m){var now=Date.now();
     Object.keys(m).forEach(function(k){if(!(now-m[k]<TOMB_TTL))delete m[k];});return m;}
@@ -8690,8 +8728,15 @@
        그래서 **가진 게 있을 때**나 **서버에 이미 목표 칸이 있을 때**만 실어
        보낸다 (폴더와 같은 규칙). 마지막 목표를 지운 진짜 삭제는 서버에 칸이
        있으므로 그대로 전파된다. */
-    if(DATA.goals&&(DATA.goals.length||serverSnap.goals!==undefined)){
+    if(DATA.goals&&DATA.goals.length){
       serverSnap.goals=DATA.goals;serverSnap.goalsManaged=true;}
+    /* ⚠ 빈 배열은 **어떤 경우에도** 소유 선언과 함께 올리지 않는다 (2026-07-28
+       2차 수정): '서버에 칸이 있으면'이라는 예외조차 위험했다 — 서버의
+       goals:[] 잔재를 normalize가 채택하던 시절의 웹은 '정당하게 빈' 상태가
+       될 수 있었고, 그 빈 배열 + goalsManaged가 앱의 목표를 지웠다. 마지막
+       목표 삭제는 이제 묘비(goalsDeleted)가 전파하므로 배열은 필요 없다. */
+    var gdead=gtombIDs();
+    if(gdead.length)serverSnap.goalsDeleted=gdead;
     if(DATA.folders&&(DATA.folders.length||serverSnap.folders!==undefined))serverSnap.folders=DATA.folders;
     // 진행 중 세션 (요청). ⚠ 예전엔 `fTask && !fRemote`라 **따라 보는 세션**
     // 에서는 아무것도 안 올렸다 — 그래서 원격 세션을 보며 시간 조절을 하면
