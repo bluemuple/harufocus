@@ -10345,15 +10345,23 @@
     if(cb){cap.draft.colorKey=cb.dataset.c;cap.draft.colorLocked=true;cap.colorOpen=false;paintCap();return;}
   });
 
-  // 앱 파리티: 프리셋 삭제, [-20분][캡슐 드래그 슬라이더][+20분][완료]. 조작 전엔 회색 힌트, 조작 후 흰 값 라벨.
+  /* 앱 파리티: 프리셋 삭제, [-n분][캡슐 드래그 슬라이더][+n분][완료].
+     조작 전엔 회색 힌트, 조작 후 흰 값 라벨.
+     스텝은 한 줄 20분 / **여러 줄 10분** (요청 2026-07-27, 앱과 같은 규칙):
+     여러 줄일 땐 한 번 눌러도 마감선 개수만큼 총량이 늘어 20분은 거칠다. */
+  function capLineCount(){
+    var raw=(document.getElementById('capText')||{}).value||'';
+    return Math.max(1, raw.split('\n').filter(function(l){return l.trim();}).length);
+  }
   function renderDurationPanel(){
+    var step=capLineCount()>1?10:20;
     return '<div class="cap-panel"><div class="cap-row cap-durrow">'+
-      '<button class="cap-chip" data-dd="-20">-20분</button>'+
+      '<button class="cap-chip" data-dd="'+(-step)+'">-'+step+'분</button>'+
       '<div class="cap-dslider" id="capDurSlider">'+
         '<div class="cap-dhint">&#8249; &#183;&#183;&#183; &#8250;</div>'+
         '<div class="cap-dfill" id="capDurFill"></div>'+
         '<div class="cap-dval" id="capDurVal"></div></div>'+
-      '<button class="cap-chip" data-dd="20">+20분</button>'+
+      '<button class="cap-chip" data-dd="'+step+'">+'+step+'분</button>'+
       '<button class="cap-done" id="capDurDone">완료</button></div></div>';
   }
   function wireDurationPanel(){
