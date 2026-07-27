@@ -630,7 +630,10 @@
   .mday-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
 
   /* mosaic */
-  #view-mosaic{position:absolute;inset:0;overflow-y:auto;background:var(--card-2);padding:14px 14px 90px;display:none}
+  /* 모자이카도 같은 하늘 아래 (요청 2026-07-27) — 셀은 카드가 지킨다. */
+  #view-mosaic{position:absolute;inset:0;overflow-y:auto;
+    background:linear-gradient(180deg,var(--sky-top,#2E86D8),var(--sky-bot,#AFDBF2));
+    padding:14px 14px 90px;display:none}
   .mo-sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:12px}
   .mo-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
   .mo-day{width:52px;font-size:12px;color:var(--ink-soft);flex:0 0 auto}
@@ -1542,6 +1545,30 @@
   .app-foot b{font-size:12.5px;font-weight:700;letter-spacing:-.01em}
   .app-foot span{font-size:11px;font-weight:500;opacity:.9}
   body.night .app-foot{color:rgba(236,236,240,.42)}
+  /* ── 밤 = 다크 카드 (요청 2026-07-27: 밤하늘이면 섹션은 어둡게, 내용은
+     밝게 — 낮 흰 카드가 밤하늘 위에서 눈을 찔렀다). 핵심 표면만 골라
+     뒤집는다: 할 일 행·목표 카드·루틴 카드·매트릭스 셀·물통 통계 카드. ── */
+  body.night .task-inner{background:rgba(28,32,48,.92);color:#ECEEF6}
+  body.night .task.sel .task-inner{background:#232A4E}
+  body.night .task-inner .check{border-color:rgba(235,238,246,.5)}
+  body.night .goal-card{background:rgba(28,32,48,.92)}
+  body.night .goal-card .gc-title{color:#ECEEF6}
+  body.night .goal-card .gc-bar{background:rgba(255,255,255,.14)}
+  body.night .routine{background:rgba(28,32,48,.88);border-color:rgba(255,255,255,.10);color:#ECEEF6}
+  body.night .routine .rday{border-color:rgba(235,238,246,.42)}
+  body.night .r-name{color:#ECEEF6}
+  body.night .r-sched,body.night .r-msg{color:rgba(235,238,246,.62)}
+  body.night .r-daycol .wl,body.night .r-mhead span{color:rgba(235,238,246,.55)}
+  body.night .quad{background:rgba(28,32,48,.55)!important;border-color:rgba(255,255,255,.12)}
+  body.night .quad h3{color:rgba(235,238,246,.72)}
+  body.night .qhint-big{color:rgba(235,238,246,.34)}
+  body.night .mtask-inner{background:rgba(28,32,48,.92);color:#ECEEF6}
+  body.night .list-btn,body.night .dow-toggle{background:rgba(30,34,50,.72);color:#f2f4f8}
+  body.night .goal-fab{background:rgba(30,34,50,.85);color:#B9AAF0}
+  body.night .mo-cell{filter:brightness(.85)}
+  body.night .mo-legend{color:rgba(235,238,246,.75)}
+  body.night .bucket-nav span{color:#ECEEF6}
+  body.night .bucket-nav button{color:rgba(235,238,246,.6)}
   .desk-nav{display:none}
   @media(min-width:1100px){
     .layout{display:flex;height:100%;padding-bottom:0}
@@ -7412,19 +7439,23 @@
   function lerpHex(a,b,t){var ar=a>>16,ag=(a>>8)&255,ab=a&255,br=b>>16,bg=(b>>8)&255,bb=b&255;
     return hx(((ar+(br-ar)*t)|0)<<16|((ag+(bg-ag)*t)|0)<<8|((ab+(bb-ab)*t)|0));}
   function applySky(){
-    var h=new Date().getHours()+new Date().getMinutes()/60;
-    // [시각, top, bottom]
-    var K=[[0,0x1E2A57,0x45406E],[5,0x2F3E77,0xB4657F],[6.5,0x7FA8D2,0xFFD79A],
-           [9,0x2E86D8,0xAFDBF2],[16,0x2E86D8,0xAFDBF2],[18,0x5E7FB4,0xFF9E8C],
-           [19.5,0x2F3E77,0xB4657F],[21,0x1E2A57,0x45406E],[24,0x1E2A57,0x45406E]];
-    var i=0;while(i<K.length-1&&h>K[i+1][0])i++;
-    var a=K[i],b=K[Math.min(i+1,K.length-1)],t=(h-a[0])/Math.max(0.001,b[0]-a[0]);
-    var top=lerpHex(a[1],b[1],t),bot=lerpHex(a[2],b[2],t);
-    var r=document.documentElement.style;r.setProperty('--sky-top',top);r.setProperty('--sky-bot',bot);
-    // 밤엔 하늘이 남색 → 매트릭스 회색 요소(‘+ 추가’)를 앱 colorScheme 강제처럼 밝게 (앱 파리티).
-    var nt=isNightNow();r.setProperty('--sec',nt?'rgba(235,235,245,.6)':'rgba(60,60,67,.6)');r.setProperty('--sec-bd',nt?'rgba(235,235,245,.3)':'rgba(60,60,67,.3)');document.body.classList.toggle('night',nt);
+    /* 시각 키프레임 → **태양고도 팔레트** (요청 2026-07-27: 페이지 배경이
+       타임라인 하늘과 같은 소스로 — 일출·일몰·밤이 실제 위치 기준으로 맞고,
+       모든 페이지가 같은 하늘 아래 있게 된다). */
+    var sun=sunAltAt(new Date(),obsLat(),obsLng());
+    var pal=skyPalette(sun.alt,sun.H<0);
+    var r=document.documentElement.style;
+    r.setProperty('--sky-top',pal.top);r.setProperty('--sky-bot',pal.horizon);
+    // 밤 판정도 고도 기준 (타임라인 tl-night와 같은 −3°) — 시계 기반이면
+    // 위치·계절에 따라 하늘은 밤인데 카드가 낮인 채로 갈라졌다.
+    var nt=sun.alt<-3;
+    r.setProperty('--sec',nt?'rgba(235,235,245,.6)':'rgba(60,60,67,.6)');
+    r.setProperty('--sec-bd',nt?'rgba(235,235,245,.3)':'rgba(60,60,67,.3)');
+    document.body.classList.toggle('night',nt);
   }
-  applySky();setInterval(applySky,60000);
+  // 첫 호출은 부팅 말미에 (아래) — obsLat의 SEOUL 폴백(var)이 여기선 아직
+  // 초기화 전이라 즉시 호출하면 TypeError로 하늘이 안 칠해졌다.
+  setInterval(applySky,60000);
 
   /* ── 엘리 인터랙션 (앱 §2 축약: 코끝→등장→감정→일기) ── */
   // 앱 EleView 원문: statements=공감 말풍선(랜덤), prompts=연필 누르면 일기 질문(랜덤).
@@ -11712,7 +11743,7 @@
     var m=document.getElementById('deskMenu');
     if(m.style.display!=='none'&&!e.target.closest('#deskNav'))m.style.display='none';
   });
-  renderNav();updateAcct();setTab('todo');renderAll();startBarRotation();if(session)fetchSnapshot();
+  applySky();renderNav();updateAcct();setTab('todo');renderAll();startBarRotation();if(session)fetchSnapshot();
   navFlashReady=true;   // 부팅 setTab은 신호가 아니다 — 여기서부터 반짝인다
   // 초대 랜딩 (핵심): ?invite=<코드>
   try{
