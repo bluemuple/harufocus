@@ -1166,6 +1166,11 @@
   /* 섹션 헤더 자리에 놓인 목록 캡슐 (요청) — 헤더 여백을 그대로 쓴다. */
   .sec-h-btn{padding:0!important;background:none!important;display:flex}
   .sec-h-btn .list-btn{font-size:13px;padding:4px 10px}
+  .sec-h-btn{gap:6px;align-items:center}
+  /* '(전체)' 토글 (요청 2026-07-28) — 목록 캡슐 오른쪽, 켜면 채워진다. */
+  .list-btn.goal-all{background:rgba(255,255,255,.14)}
+  .list-btn.goal-all.on{background:rgba(255,255,255,.34);color:#fff}
+  body.night .list-btn.goal-all.on{background:rgba(120,150,220,.55)}
   /* 요일 캡슐 옆에 붙는 달력 툴팁 (요청). 폭·위치는 placeCal()이 캡슐과
      우상단 버튼 사이 빈 공간을 재서 그 절반쯤으로 잡는다. */
   .calstrip{position:fixed;z-index:48;display:none;color:#fff;
@@ -6359,6 +6364,9 @@
      지금 보는 목록 이름이고, 누르면 시트가 열린다. 붙박이 셋(담아둔 일·모든
      할 일·장기 목표)은 모델이 아니라 이 필터다. */
   var todoPick={kind:'inbox',id:null};
+  /* 장기 목표 목록에서 '(전체)' 캡슐 상태 (요청 2026-07-28): 끄면 **그날 분량만**,
+     켜면 그 목표의 모든 날 할 일이 두꺼운 bar 아래 쭉 붙는다. */
+  var goalShowAll=false;
   function todoPickTitle(){
     if(todoPick.kind==='all')return '모든 할 일';
     if(todoPick.kind==='goal')return '장기 목표';
@@ -6431,7 +6439,9 @@
     // 내일로 미룬 일은 그날이 되기 전엔 숨긴다 (앱 파리티, 요청).
     var visible=(DATA.tasks||[]).filter(function(t){
       // 목록 필터 (요청 2026-07-27, 앱 파리티).
-      if(todoPick.kind==='goal')return !!t.goalID;
+      // 장기 목표 목록에선 할 일을 **목표 카드가 직접** 붙인다 (요청 2026-07-28)
+      // — 예전엔 카드도 bar도 없이 모든 날의 할 일만 36줄로 쏟아졌다.
+      if(todoPick.kind==='goal')return false;
       if(todoPick.kind==='folder'&&t.folderID!==todoPick.id)return false;
       if(todoPick.kind==='inbox'&&t.folderID)return false;
       // 장기 목표 할 일은 목표 카드 섹션이 맡는다 (요청 2026-07-27).
@@ -6471,12 +6481,29 @@
     function goalDoneAmt(g){return (DATA.tasks||[]).reduce(function(a,t){
       return t.goalID===g.id&&t.isDone?a+((t.goalActualAmount!=null?t.goalActualAmount:t.goalAmount)||0):a;},0);}
     var calSel0=new Date(calSel);calSel0.setHours(0,0,0,0);
-    var activeGoals=(todoPick.kind!=='inbox')?[]:(DATA.goals||[]).filter(function(g){
+    var goalPick=(todoPick.kind==='goal');
+    var activeGoals=(todoPick.kind!=='inbox'&&!goalPick)?[]:(DATA.goals||[]).filter(function(g){
       if(!(g.totalAmount>0))return false;
       if(goalDoneAmt(g)>=g.totalAmount-1e-9)return false;
+      // 장기 목표 목록에선 기간과 무관하게 진행 중 목표를 모두 보여준다
+      // (목록의 목적이 '목표를 보는 것'이므로). 담아둔 일은 그날 것만.
+      if(goalPick)return true;
       var gs=new Date(g.startDate);gs.setHours(0,0,0,0);
       var ge=new Date(g.endDate);ge.setHours(0,0,0,0);
       return gs<=calSel0&&calSel0<=ge;});
+    /* 장기 목표 목록의 머리줄 (요청 2026-07-28): [🌱 장기 목표 n] [(전체)].
+       담아둔 일에선 아래 백로그 섹션이 캡슐을 그리지만, 이 목록은 할 일이
+       전부 카드 아래로 들어가 백로그가 비어 캡슐이 사라지기 때문이다. */
+    if(goalPick){
+      var gcount=(DATA.tasks||[]).filter(function(t){return t.goalID&&!t.isDone;}).length;
+      list.insertAdjacentHTML('beforeend','<div class="sec-h sec-h-btn">'+
+        '<button class="list-btn" id="todoListBtn"><span class="lb-ic">🌱</span>'+
+        esc(todoPickTitle())+' '+gcount+'<span class="lb-ch">▾</span></button>'+
+        '<button class="list-btn goal-all'+(goalShowAll?' on':'')+'" id="goalAllBtn">전체</button></div>');
+      document.getElementById('todoListBtn').addEventListener('click',function(){openListSheet();});
+      document.getElementById('goalAllBtn').addEventListener('click',function(){
+        goalShowAll=!goalShowAll;renderTodo();});
+    }
     activeGoals.forEach(function(g){
       var pct=Math.round(Math.min(1,goalDoneAmt(g)/g.totalAmount)*100);
       var img=g.imageThumbB64?'<img class="gc-img" alt="" src="data:image/jpeg;base64,'+g.imageThumbB64+'">':'';
@@ -6488,13 +6515,18 @@
         '<button class="gc-edit" title="고치기">✎</button></div>');
       var ge=list.querySelector('.goal-card[data-gid="'+g.id+'"] .gc-edit');
       if(ge)ge.addEventListener('click',function(){openGoalModal(g);});
+      /* 카드 아래 붙는 할 일: 기본은 **그날 분량만**, '(전체)'를 켜면 그 목표의
+         모든 날을 날짜 순으로 (요청 2026-07-28). */
       (DATA.tasks||[]).filter(function(t){
-        return t.goalID===g.id&&t.dueDate&&calSameDay(new Date(t.dueDate),calSel);})
+        if(t.goalID!==g.id)return false;
+        if(goalPick&&goalShowAll)return true;
+        return t.dueDate&&calSameDay(new Date(t.dueDate),calSel);})
+        .sort(function(a,b){return (a.dueDate?new Date(a.dueDate).getTime():0)-(b.dueDate?new Date(b.dueDate).getTime():0);})
         .forEach(function(t){list.appendChild(buildTodoRow(t));});
     });
     /* 할 일이 하나도 없을 때 (요청 set_d): 글자 한 줄 대신 **빈 노트 앞에 앉아
        기다리는 엘리**. ⚠ 엘리는 말하지 않는다 — 한 줄은 내 말투로 남긴다. */
-    if(!scheduled.length&&!backlog.length&&!activeGoals.length){
+    if(!scheduled.length&&!backlog.length&&!activeGoals.length&&!goalPick){
       list.innerHTML='<div class="scene-empty"><img id="seImg" src="assets/scene_empty.png" alt="">'+
         '<div class="se-line">오늘은 아직 비어 있어. 하나만 적어 볼까.</div></div>';
       eleWordImg('scene_empty',eleTint(),function(u){
@@ -8649,7 +8681,17 @@
     /* 장기 목표·목록 왕복 (요청 2026-07-27). 웹도 이제 목표를 **관리**하므로
        goalsManaged 표식을 실어 보낸다 — 빈 배열이 '전부 지웠다'인지 '나는
        목표를 모른다'인지 앱이 가릴 수 있게 (앱 apply의 가드와 한 쌍). */
-    if(DATA.goals){serverSnap.goals=DATA.goals;serverSnap.goalsManaged=true;}
+    /* ⚠⚠ **빈 목표 배열로 goalsManaged를 선언하면 앱의 목표를 지운다**
+       (2026-07-28 실제 사고): 웹이 아직 스냅샷을 못 받아 DATA.goals가 []인
+       상태에서 뭐든 저장하면 `goals:[], goalsManaged:true`가 올라가고, 앱
+       apply는 그걸 '전부 삭제'로 읽어 GoalPlan을 다 지웠다 — 할 일만 goalID를
+       든 채 남아 사진·막대그래프가 사라졌다(유저 신고: 웹에서 만든 목표가
+       목록 바꾸면 없어짐 + 앱-웹 동기화 안 됨).
+       그래서 **가진 게 있을 때**나 **서버에 이미 목표 칸이 있을 때**만 실어
+       보낸다 (폴더와 같은 규칙). 마지막 목표를 지운 진짜 삭제는 서버에 칸이
+       있으므로 그대로 전파된다. */
+    if(DATA.goals&&(DATA.goals.length||serverSnap.goals!==undefined)){
+      serverSnap.goals=DATA.goals;serverSnap.goalsManaged=true;}
     if(DATA.folders&&(DATA.folders.length||serverSnap.folders!==undefined))serverSnap.folders=DATA.folders;
     // 진행 중 세션 (요청). ⚠ 예전엔 `fTask && !fRemote`라 **따라 보는 세션**
     // 에서는 아무것도 안 올렸다 — 그래서 원격 세션을 보며 시간 조절을 하면
