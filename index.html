@@ -638,6 +638,17 @@
 
   /* to-do */
   .todo{display:flex;flex-direction:column;gap:9px}
+  /* 장기 목표 카드 (요청 2026-07-27, 앱 goalSection 파리티): 표지 썸네일 +
+     제목 + '장기 목표 · n%' + 게이지. 그날 분량 할 일이 카드 아래 붙는다. */
+  .goal-card{display:flex;gap:12px;align-items:center;background:rgba(255,255,255,.94);
+    border-radius:16px;box-shadow:0 4px 14px rgba(20,40,80,.10);padding:12px 14px;margin-bottom:8px}
+  .goal-card .gc-img{width:44px;height:58px;object-fit:cover;border-radius:8px;flex:0 0 auto}
+  .goal-card .gc-body{flex:1;min-width:0}
+  .goal-card .gc-title{font-weight:700;font-size:15px;color:#141827;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .goal-card .gc-sub{font-size:12px;font-weight:700;color:#4BA3D3;margin:2px 0 6px}
+  .goal-card .gc-bar{height:5px;border-radius:3px;background:rgba(20,24,39,.08);overflow:hidden}
+  .goal-card .gc-bar i{display:block;height:100%;background:#4BA3D3;border-radius:3px}
   .task{position:relative;display:flex;align-items:stretch;background:transparent;border:0;border-radius:16px;box-shadow:0 4px 14px rgba(20,40,80,.10);overflow:hidden}
   .check{width:22px;height:22px;border-radius:50%;border:2px solid var(--ink-soft);flex:0 0 auto;cursor:pointer;display:grid;place-items:center}
   /* 완료 채움색은 작업 색으로 buildTodoRow에서 인라인 지정 (앱 displayColor 파리티). */
@@ -5882,6 +5893,8 @@
     var todayMid=new Date();todayMid.setHours(0,0,0,0);
     // 내일로 미룬 일은 그날이 되기 전엔 숨긴다 (앱 파리티, 요청).
     var visible=(DATA.tasks||[]).filter(function(t){
+      // 장기 목표 할 일은 목표 카드 섹션이 맡는다 (요청 2026-07-27).
+      if(t.goalID)return false;
       if(t.deferredUntil&&new Date(t.deferredUntil)>todayMid)return false;
       // 요청: 완료한 작업은 '완료한 그 날'에만 보인다 (다른 날짜엔 숨김).
       if(t.isDone&&t.completedAt&&!calSameDay(new Date(t.completedAt),calSel))return false;
@@ -5912,9 +5925,31 @@
       doneThat.forEach(function(t){list.appendChild(buildTodoRow(t));});
       return;
     }
+    /* 장기 목표 카드 (요청 2026-07-27, 앱 파리티): 진행 중 + 선택일이 기간
+       안일 때 — 표지·제목·진행률·게이지, 그날 분량 할 일이 아래 붙는다. */
+    function goalDoneAmt(g){return (DATA.tasks||[]).reduce(function(a,t){
+      return t.goalID===g.id&&t.isDone?a+((t.goalActualAmount!=null?t.goalActualAmount:t.goalAmount)||0):a;},0);}
+    var calSel0=new Date(calSel);calSel0.setHours(0,0,0,0);
+    var activeGoals=(DATA.goals||[]).filter(function(g){
+      if(!(g.totalAmount>0))return false;
+      if(goalDoneAmt(g)>=g.totalAmount-1e-9)return false;
+      var gs=new Date(g.startDate);gs.setHours(0,0,0,0);
+      var ge=new Date(g.endDate);ge.setHours(0,0,0,0);
+      return gs<=calSel0&&calSel0<=ge;});
+    activeGoals.forEach(function(g){
+      var pct=Math.round(Math.min(1,goalDoneAmt(g)/g.totalAmount)*100);
+      var img=g.imageThumbB64?'<img class="gc-img" alt="" src="data:image/jpeg;base64,'+g.imageThumbB64+'">':'';
+      list.insertAdjacentHTML('beforeend','<div class="goal-card">'+img+
+        '<div class="gc-body"><div class="gc-title">'+esc(g.title)+'</div>'+
+        '<div class="gc-sub">장기 목표 · '+pct+'%</div>'+
+        '<div class="gc-bar"><i style="width:'+pct+'%"></i></div></div></div>');
+      (DATA.tasks||[]).filter(function(t){
+        return t.goalID===g.id&&t.dueDate&&calSameDay(new Date(t.dueDate),calSel);})
+        .forEach(function(t){list.appendChild(buildTodoRow(t));});
+    });
     /* 할 일이 하나도 없을 때 (요청 set_d): 글자 한 줄 대신 **빈 노트 앞에 앉아
        기다리는 엘리**. ⚠ 엘리는 말하지 않는다 — 한 줄은 내 말투로 남긴다. */
-    if(!scheduled.length&&!backlog.length){
+    if(!scheduled.length&&!backlog.length&&!activeGoals.length){
       list.innerHTML='<div class="scene-empty"><img id="seImg" src="assets/scene_empty.png" alt="">'+
         '<div class="se-line">오늘은 아직 비어 있어. 하나만 적어 볼까.</div></div>';
       eleWordImg('scene_empty',eleTint(),function(u){
@@ -7941,6 +7976,8 @@
     DOMAINS.forEach(function(d){
       if(dm[d.k]&&!(o[d.k]&&o[d.k].length)&&prev&&prev[d.k]&&prev[d.k].length)o[d.k]=prev[d.k];
     });
+    // 장기 목표 (요청 2026-07-27): 앱이 실어 보낸다 — 없으면 가진 것 유지.
+    o.goals=s.goals||(prev&&prev.goals)||[];
     ensureIds(o);
     // 서버에 이미 망가진 작업이 있으면 여기서 고쳐 받는다 (자가 회복).
     o.tasks=healTasks(o.tasks);
@@ -8040,6 +8077,8 @@
     if(DATA.settings)serverSnap.settings=DATA.settings;
     // diary 왕복 보존 (앱 핸드오프 §8): 서버에 있었거나 웹이 항목을 만든 경우에만 실어 보낸다.
     if(DATA.diary&&(DATA.diary.length||serverSnap.diary!==undefined))serverSnap.diary=DATA.diary;
+    // 장기 목표 왕복 보존 (요청 2026-07-27) — 같은 규칙.
+    if(DATA.goals&&(DATA.goals.length||serverSnap.goals!==undefined))serverSnap.goals=DATA.goals;
     // 진행 중 세션 (요청). ⚠ 예전엔 `fTask && !fRemote`라 **따라 보는 세션**
     // 에서는 아무것도 안 올렸다 — 그래서 원격 세션을 보며 시간 조절을 하면
     // 서버에 안 나가고 6초 뒤 폴이 옛 planMin을 도로 씌워 되돌아갔다.
