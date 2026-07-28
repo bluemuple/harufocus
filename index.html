@@ -1679,7 +1679,12 @@
   /* ── 밤 = 다크 카드 (요청 2026-07-27: 밤하늘이면 섹션은 어둡게, 내용은
      밝게 — 낮 흰 카드가 밤하늘 위에서 눈을 찔렀다). 핵심 표면만 골라
      뒤집는다: 할 일 행·목표 카드·루틴 카드·매트릭스 셀·물통 통계 카드. ── */
-  body.night .task-inner{background:rgba(28,32,48,.92);color:#ECEEF6}
+  /* ⚠ 밤 카드 배경은 **항상 불투명** (요청 2026-07-28 사파리 스와이프 버그).
+     .92 알파는 밀 때 뒤의 파랑·빨강 버튼을 그대로 비쳤다. 게다가 '밀 때만
+     불투명'으로 고치면 **transform이 살아 있는 레이어에 스타일 무효화**를
+     던지는 꼴이라 사파리가 카드를 반쪽만 다시 칠한다(체크·제목이 지워지고
+     오른쪽 아이콘만 남던 증상). 하늘이 살짝 비치는 맛은 포기한다. */
+  body.night .task-inner{background:#1C2030;color:#ECEEF6}
   body.night .task.sel .task-inner{background:#232A4E}
   body.night .task-inner .check{border-color:rgba(235,238,246,.5)}
   body.night .goal-card{background:rgba(28,32,48,.92)}
@@ -1816,7 +1821,14 @@
     .cap-wrap{left:auto;right:26px;bottom:26px;width:440px;border-radius:16px;border:1px solid var(--line)}
     /* 긴 세로 나열 → 2컬럼 (요청) */
     .todo{display:block;columns:2;column-gap:14px}
-    .todo .task{break-inside:avoid;margin-bottom:9px}
+    /* ⚠ 다단 안에서는 카드의 **둥근 클리핑을 풀어야 한다** (요청 2026-07-28,
+       사파리 재현 확인): .task{overflow:hidden}가 걸린 채로 다단이
+       column-span:all 스패너에 잘리면, WebKit이 **그 조각의 첫 카드를
+       페인트에서 통째로 빠뜨린다** — 자리·클릭은 살아 있어 빈 곳을 누르면
+       그 작업 편집이 열렸다(사파리에서만). 라운드는 .task-inner가 같은
+       16px로 이미 갖고 있어 모양은 그대로고, PC엔 스와이프가 없어
+       (마우스 pointerdown은 무시) 클리핑을 풀어도 삐져나올 게 없다. */
+    .todo .task{break-inside:avoid;margin-bottom:9px;overflow:visible}
     .todo .goal-group{break-inside:avoid;margin-bottom:9px}
     .todo .goal-group .task{margin-bottom:0}
     .todo .subpanel{break-inside:avoid;break-before:avoid}
@@ -10707,9 +10719,14 @@
     ib.onclick=function(){cap.iconOpen=!cap.iconOpen;paintCap();};
     document.getElementById('capSubmit').onclick=submitCapture;
     document.getElementById('capText').onkeydown=function(e){
+      /* ⌘/Ctrl+Enter = 담기 (요청 2026-07-28: 맥 ⌘·윈도 Ctrl).
+         ⚠ **조합 가드보다 먼저** 본다: 한글은 마지막 글자가 조합 중
+         (isComposing)으로 남는 일이 흔해서, 가드를 먼저 두면 '국어'까지
+         치고 눌렀을 때 조용히 무시된다 — 단축키가 안 먹는다는 신고의 원인.
+         조합 중 문자는 이미 value에 들어 있어 그대로 제출해도 안전하다. */
+      if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();submitCapture();return;}
       if(e.isComposing||e.keyCode===229)return;               // 한글 조합 중엔 무시
       if(e.key==='Escape'){e.preventDefault();closeCapture();return;}
-      if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();submitCapture();}
     };
     document.getElementById('capText').oninput=function(){
       document.getElementById('capSubmit').disabled=!this.value.trim();
