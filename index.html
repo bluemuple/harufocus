@@ -257,6 +257,39 @@
     border-radius:999px;background:var(--chip,#EEF1F5);cursor:pointer;font-weight:800;font-size:13px}
   .pledge-now .pn-cap svg,.pledge-now .pn-cap img{width:20px;height:20px}
   .pledge-dust{position:fixed;inset:0;pointer-events:none;z-index:300}
+  /* 주간 변화 카드 (요청 2026-07-29, 앱 WeeklyCardView.swift 웹 파리티):
+     일기 맨 위 배너 → 별하늘(집중 세션=별 하나·다시 시작=밝은 별) + 지표 타일 +
+     엘리의 한 줄 + 공유. ⚠ 스트릭 없음 원칙 — '연속'은 어디에도 없다.
+     ⚠ 공유 이미지엔 작업 이름이 한 글자도 없다 — 별·숫자·엘리만. */
+  .wk-banner{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;
+    font-family:inherit;background:var(--card-2);border:0;border-radius:14px;
+    padding:11px 14px;margin:0 0 10px;cursor:pointer;text-align:left}
+  .wk-banner .wk-spark{font-size:13px;flex:0 0 auto}
+  .wk-banner .wk-txt{flex:1;min-width:0;font-size:13px;font-weight:700;color:var(--ink);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .wk-banner .wk-chev{color:var(--ink-soft);font-size:12px;font-weight:800;flex:0 0 auto}
+  body.night .wk-banner{background:rgba(28,32,48,.92)}
+  body.night .wk-banner .wk-txt{color:#ECEEF6}
+  body.night .wk-banner .wk-chev{color:rgba(235,238,246,.62)}
+  .wk-modal h3{margin-bottom:12px}
+  .wk-sky{position:relative;height:250px;border-radius:22px;overflow:hidden;
+    background:linear-gradient(180deg,#0D1430 0%,#1A2447 100%);margin-bottom:14px}
+  .wk-sky canvas{position:absolute;inset:0;width:100%;height:100%}
+  .wk-sky img{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);height:108px;pointer-events:none}
+  .wk-empty{position:absolute;left:0;right:0;top:70px;text-align:center;font-size:12.5px;
+    line-height:1.6;color:rgba(255,255,255,.7);padding:0 22px}
+  .wk-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .wk-metric{background:var(--card-2);border-radius:14px;padding:10px 6px;text-align:center}
+  .wk-metric b{display:block;font-size:17px;font-weight:800;color:var(--ink)}
+  .wk-metric span{display:block;font-size:11px;color:var(--ink-soft);margin-top:2px}
+  .wk-line{font-size:13.5px;font-weight:700;text-align:center;color:var(--ink);padding:0 6px;margin-bottom:14px}
+  .wk-share{width:100%;border:0;border-radius:12px;background:var(--ink);color:#fff;
+    font-family:inherit;font-size:14.5px;font-weight:700;padding:12px;cursor:pointer}
+  .modal.dark .wk-metric{background:#2c3552}
+  .modal.dark .wk-metric b{color:#e8ecf6}
+  .modal.dark .wk-metric span{color:#93a0c0}
+  .modal.dark .wk-line{color:#e8ecf6}
+  .modal.dark .wk-share{background:#e8ecf6;color:#1b2436}
   /* 물통: 물 주는 엘리 (앱 파리티 — 세그먼트 bar에 앉아 코로 붓는다).
      z-index 150 = 뒷벽(~120) 위·앞벽(~300) 아래. */
   .rain-ele{position:absolute;left:50%;top:-128px;transform:translateX(-22%);width:168px;
@@ -2566,6 +2599,11 @@
         </section>
         <section class="view" id="view-diary">
           <h2><span class="pg-title">일기</span></h2>
+          <!-- 주간 변화 카드 배너 (P0-4 웹 파리티): 일기 맨 위 한 줄 — 기록이
+               사는 곳에 '이번 주'가 산다. 숫자는 다시 시작 횟수만 미리 보여준다. -->
+          <button class="wk-banner" id="weeklyBanner" type="button">
+            <span class="wk-spark">✨</span><span class="wk-txt" id="weeklyBannerTxt">이번 주의 하늘 보기</span><span class="wk-chev">›</span>
+          </button>
           <div class="d-chips" id="diaryChips"></div>
           <div class="d-list" id="diaryList"></div>
           <button class="page-fab" id="diaryFab" title="새 일기"><svg viewBox="0 0 24 24" style="width:30px;height:30px" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -3012,6 +3050,22 @@
       <b>지금 나는</b>
       <button class="pn-cap" id="pledgeNowCap" type="button"></button>
     </div>
+  </div>
+</div>
+<!-- 주간 변화 카드 (요청 2026-07-29, 앱 WeeklyCardView.swift 웹 파리티): 일기
+     배너로 열리는 이번 주의 하늘 — 집중 세션=별 하나, 다시 시작=밝은 별.
+     ⚠ 공유 이미지엔 작업 이름이 한 글자도 없다 — 별·숫자·엘리만. -->
+<div class="scrim" id="weeklyScrim">
+  <div class="modal me-modal wk-modal" id="weeklyModal">
+    <button class="me-x" id="weeklyX" aria-label="닫기">✕</button>
+    <h3 id="weeklyHeadLabel">이번 주</h3>
+    <div class="wk-sky" id="weeklySky">
+      <canvas id="weeklyStarsCv"></canvas>
+      <div class="wk-empty" id="weeklyEmpty" style="display:none">아직 이번 주의 별이 없어요.<br>집중 한 번이 별 하나가 돼요.</div>
+      <img src="assets/ele_stargaze.png" alt="">
+    </div>
+    <div id="weeklyBody"></div>
+    <button class="wk-share" id="weeklyShare" type="button">📤 공유하기</button>
   </div>
 </div>
 <div class="scrim setpage" id="aboutScrim">
@@ -8204,6 +8258,7 @@
     return parts.length?'<div class="d-foot">'+parts.join(' · ')+'</div>':'';
   }
   function renderDiary(){
+    paintWeeklyBanner();          // 주간 변화 카드 배너 (일기가 다시 그려질 때마다 최신화)
     var wrap=document.getElementById('diaryList');if(!wrap)return;
     // 필터 칩
     var chips=[['all','전체'],['free','일기'],['emotion','마음'],['word','한마디'],['focus','집중'],['bucket','물통']];
@@ -11822,6 +11877,232 @@
       }
     }
   }
+  /* ── 주간 변화 카드 (P0-4, 2026-07-29) — 앱 WeeklyCardView.swift/WeekStats.swift의
+     웹 미러. "루틴이 아니라 결과에 돈을 낸다"의 그 결과를 보여준다: 이번 주의
+     별하늘(집중 1회=별 1개, 다시 시작=밝은 별) + 지표 타일 + 엘리의 한 줄 + 공유.
+     ⚠ 순수 계산 함수(weeklyStatsCompute·weeklyEllyLine 등)는 DOM 없이 테스트
+       가능해야 한다 — 뷰가 재료를 모아 넘기고 여기는 셈만 한다.
+     ⚠ 스트릭 없음 원칙: '이번 주 N번'만 말하고 '연속'은 어디에도 없다.
+     ⚠ 공유 이미지에는 작업 이름이 한 글자도 없다 — 별·숫자·엘리만. */
+  // 이번 주의 시작 (월요일 0시) — 앱 WeekStats.weekStart와 같은 경계.
+  function weeklyWeekStart(d){
+    var s=new Date(d||new Date());
+    var day=s.getDay();                          // 0=일 ~ 6=토
+    s.setDate(s.getDate()-(day===0?6:day-1));     // 월요일로
+    s.setHours(0,0,0,0);
+    return s;
+  }
+  function weeklyWeekLabel(ws){
+    var end=new Date(ws);end.setDate(end.getDate()+6);
+    function md(d){return (d.getMonth()+1)+'.'+d.getDate();}
+    return '이번 주 · '+md(ws)+'~'+md(end);
+  }
+  // 지표 4종 순수 계산 — 앱 WeekStats.compute와 한 쌍.
+  // checks:{ts,startedAt} 배열(hfMeChecks 원본 그대로) · sessions:{start,sec} 배열.
+  function weeklyStatsCompute(checks,sessions,planned,started,weekStart,now){
+    var ws=(weekStart&&weekStart.getTime)?weekStart.getTime():weekStart;
+    now=now||Date.now();
+    var inWeek=(checks||[]).filter(function(c){return c.ts>=ws&&c.ts<=now;});
+    var restarts=inWeek.filter(function(c){return c.startedAt!=null;}).length;
+    var focusSec=(sessions||[]).filter(function(s){
+      var st=(s.start&&s.start.getTime)?s.start.getTime():new Date(s.start).getTime();
+      return st>=ws&&st<=now;
+    }).reduce(function(a,s){return a+Math.max(0,s.sec||0);},0);
+    var gaps=inWeek.map(function(c){return c.startedAt!=null?(c.startedAt-c.ts):null;})
+      .filter(function(v){return v!=null;});
+    var avg=gaps.length?Math.round(gaps.reduce(function(a,b){return a+b;},0)/gaps.length/60000):null;
+    var doneRatio=planned>0?Math.round(started/planned*100):null;
+    return {restarts:restarts,focusSec:focusSec,planned:planned,started:started,
+            avgReturnMin:avg,doneRatio:doneRatio};
+  }
+  // 엘리의 주간 한 줄 — 앱 WeekStats.ellyLine과 같은 분기·문구 (빈 주를 꾸짖지 않는다).
+  function weeklyEllyLine(stats){
+    var h=Math.floor(stats.focusSec/3600),m=Math.floor((stats.focusSec%3600)/60);
+    if(stats.restarts>=2)return '막힌 날에도 '+stats.restarts+'번이나 다시 움직였어요.';
+    if(stats.restarts===1)return '멈췄다가 한 번, 다시 돌아왔어요. 그게 제일 어려운 거예요.';
+    if(stats.focusSec>=1800){
+      var t=h>0?(h+'시간 '+m+'분'):(m+'분');
+      return '조용히 '+t+'을 쌓았어요.';
+    }
+    return '이번 주는 쉬어 가는 주였나 봐요. 그런 주도 있어요.';
+  }
+  function weeklyFocusText(sec){
+    var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);
+    return h>0?(h+'시간 '+m+'분'):(m+'분');
+  }
+  function weeklyFrac(v){return Math.abs(Math.sin(v))%1;}
+  // 별 시드 — 세션 시작 ms로 결정적 산포(열 때마다 같은 하늘). 밝은 별=체크인
+  // startedAt(분 단위)과 일치하는 세션 — 앱 StarSeed와 같은 공식.
+  function weeklyBuildStars(sessions,checks){
+    var restartMin={};
+    (checks||[]).forEach(function(c){
+      if(c.startedAt!=null)restartMin[Math.floor(c.startedAt/60000)]=1;
+    });
+    return (sessions||[]).slice(0,80).map(function(s){
+      var st=(s.start&&s.start.getTime)?s.start.getTime():new Date(s.start).getTime();
+      var bright=!!restartMin[Math.floor(st/60000)];
+      return {
+        x:weeklyFrac(st*12.9898),
+        y:weeklyFrac(st*78.233)*0.72,
+        r:bright?3.2:(1.2+weeklyFrac(st*3.7)*1.2),
+        bright:bright
+      };
+    });
+  }
+  // 지표 타일 — 있는 것만 보여준다(0%·빈 값으로 꾸짖지 않는다).
+  function weeklyMetricHTML(stats){
+    var html='<div class="wk-metric"><b>'+stats.restarts+'번</b><span>다시 시작</span></div>'
+      +'<div class="wk-metric"><b>'+esc(weeklyFocusText(stats.focusSec))+'</b><span>집중</span></div>';
+    if(stats.doneRatio!=null&&stats.doneRatio>0)
+      html+='<div class="wk-metric"><b>'+stats.doneRatio+'%</b><span>계획 대비 실행</span></div>';
+    if(stats.avgReturnMin!=null)
+      html+='<div class="wk-metric"><b>'+stats.avgReturnMin+'분</b><span>평균 복귀</span></div>';
+    return html;
+  }
+  function weeklyCardBodyHTML(stats){
+    return '<div class="wk-grid">'+weeklyMetricHTML(stats)+'</div>'
+      +'<div class="wk-line">'+esc(weeklyEllyLine(stats))+'</div>';
+  }
+  // 배너 문구 — 다시 시작이 있으면 그 수를, 없으면 초대만 (앱 weeklyTeaser 파리티).
+  function weeklyTeaserText(n){
+    return n>0?('이번 주 '+n+'번 다시 시작 — 이번 주의 하늘 보기'):'이번 주의 하늘 보기';
+  }
+  function paintWeeklyBanner(){
+    var txt=document.getElementById('weeklyBannerTxt');if(!txt)return;
+    var ws=weeklyWeekStart().getTime();
+    var n=meChecksLoad().filter(function(c){return c.ts>=ws&&c.startedAt!=null;}).length;
+    txt.textContent=weeklyTeaserText(n);
+  }
+  var weeklyCurrentStats=null,weeklyStarSeeds=[];
+  function openWeeklyCard(){
+    var sc=document.getElementById('weeklyScrim');if(!sc)return;
+    sc.classList.add('open');
+    var modal=document.getElementById('weeklyModal');
+    if(modal)modal.classList.toggle('dark',isNightNow());
+    var ws=weeklyWeekStart(),wsMs=ws.getTime(),now=Date.now();
+    var checks=meChecksLoad();
+    // 이번 주 집중 세션 — DATA.sessions 없거나 비면 스냅샷으로 (allSessions 폴백).
+    var sessions=(allSessions()||[]).filter(function(s){
+      var st=new Date(s.start).getTime();return st>=wsMs&&st<=now;
+    }).map(function(s){return {start:s.start,sec:s.focusedSec||0};});
+    // 이번 주에 계획했던 작업(보상 아이템 제외) / 그중 손댄 작업.
+    var tasks=(DATA.tasks||[]).filter(function(t){
+      return t.scheduledStart&&!t.isRewardItem&&new Date(t.scheduledStart).getTime()>=wsMs;
+    });
+    var started=tasks.filter(function(t){return (t.actualFocusedSec||0)>0||t.isDone;});
+    var stats=weeklyStatsCompute(checks,sessions,tasks.length,started.length,ws,now);
+    var stars=weeklyBuildStars(sessions,checks);
+    weeklyCurrentStats=stats;weeklyStarSeeds=stars;
+    var label=document.getElementById('weeklyHeadLabel');if(label)label.textContent=weeklyWeekLabel(ws);
+    var body=document.getElementById('weeklyBody');if(body)body.innerHTML=weeklyCardBodyHTML(stats);
+    requestAnimationFrame(function(){weeklyPaintSky(stars);});
+  }
+  function weeklyPaintSky(stars){
+    var wrap=document.getElementById('weeklySky'),cv=document.getElementById('weeklyStarsCv');
+    var empty=document.getElementById('weeklyEmpty');
+    if(!wrap||!cv)return;
+    var r=wrap.getBoundingClientRect();
+    var w=Math.max(10,Math.round(r.width)),h=Math.max(10,Math.round(r.height));
+    if(cv.width!==w)cv.width=w;
+    if(cv.height!==h)cv.height=h;
+    var g=cv.getContext('2d');g.clearRect(0,0,w,h);
+    (stars||[]).forEach(function(s){
+      var cx=s.x*w,cy=s.y*h;
+      g.beginPath();g.arc(cx,cy,s.r,0,Math.PI*2);
+      g.fillStyle=s.bright?'#FFD9A8':'rgba(255,255,255,.75)';g.fill();
+      if(s.bright){                                   // 밝은 별은 살짝 빛무리
+        g.beginPath();g.arc(cx,cy,s.r+2.5,0,Math.PI*2);
+        g.fillStyle='rgba(255,217,168,.25)';g.fill();
+      }
+    });
+    if(empty)empty.style.display=(stars&&stars.length)?'none':'';
+  }
+  // ── 공유 이미지 합성 (정사각 1080×1080, 다크 고정) — 작업 이름 없이 별·숫자·엘리만.
+  function weeklyRoundRectPath(g,x,y,w,h,r){
+    g.beginPath();g.moveTo(x+r,y);
+    g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);
+    g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();
+  }
+  function weeklyWrapText(g,text,cx,y,maxW,lh){
+    var words=String(text).split(' '),line='',lines=[];
+    words.forEach(function(w){
+      var test=line?line+' '+w:w;
+      if(line&&g.measureText(test).width>maxW){lines.push(line);line=w;}
+      else line=test;
+    });
+    if(line)lines.push(line);
+    var startY=y-(lines.length-1)*lh/2;
+    lines.forEach(function(l,i){g.fillText(l,cx,startY+i*lh);});
+  }
+  function weeklyDrawShareMetrics(g,stats,y0,SIZE,pad){
+    var metrics=[[stats.restarts+'번','다시 시작'],[weeklyFocusText(stats.focusSec),'집중']];
+    if(stats.doneRatio!=null&&stats.doneRatio>0)metrics.push([stats.doneRatio+'%','계획 대비 실행']);
+    if(stats.avgReturnMin!=null)metrics.push([stats.avgReturnMin+'분','평균 복귀']);
+    var cols=2,gap=24,tileW=(SIZE-pad*2-gap)/cols,tileH=118;
+    metrics.forEach(function(m,i){
+      var cx=pad+(i%cols)*(tileW+gap),cy=y0+Math.floor(i/cols)*(tileH+gap);
+      g.fillStyle='#F6F8FC';weeklyRoundRectPath(g,cx,cy,tileW,tileH,20);g.fill();
+      g.fillStyle='#1b2436';g.font='800 40px -apple-system,sans-serif';g.textAlign='center';
+      g.fillText(m[0],cx+tileW/2,cy+tileH/2-4);
+      g.fillStyle='#5a6478';g.font='600 22px -apple-system,sans-serif';
+      g.fillText(m[1],cx+tileW/2,cy+tileH/2+36);
+    });
+    var rows=Math.ceil(metrics.length/cols);
+    var lineY=y0+rows*(tileH+gap)+38;
+    g.fillStyle='#1b2436';g.font='700 34px -apple-system,sans-serif';g.textAlign='center';
+    weeklyWrapText(g,weeklyEllyLine(stats),SIZE/2,lineY,SIZE-pad*2-40,44);
+    g.fillStyle='rgba(27,36,54,.45)';g.font='800 24px -apple-system,sans-serif';g.textAlign='center';
+    g.fillText('Elly Day',SIZE/2,SIZE-46);
+  }
+  function weeklyComposeShareImage(stats,stars,cb){
+    var SIZE=1080,cv=document.createElement('canvas');cv.width=SIZE;cv.height=SIZE;
+    var g=cv.getContext('2d');
+    g.fillStyle='#FAF7F2';g.fillRect(0,0,SIZE,SIZE);
+    var pad=64,skyX=pad,skyY=pad,skyW=SIZE-pad*2,skyH=620;
+    g.save();
+    weeklyRoundRectPath(g,skyX,skyY,skyW,skyH,44);g.clip();
+    var grd=g.createLinearGradient(0,skyY,0,skyY+skyH);
+    grd.addColorStop(0,'#0D1430');grd.addColorStop(1,'#1A2447');
+    g.fillStyle=grd;g.fillRect(skyX,skyY,skyW,skyH);
+    (stars||[]).forEach(function(s){
+      var cx=skyX+s.x*skyW,cy=skyY+s.y*skyH,r=s.r*2.6;
+      g.beginPath();g.arc(cx,cy,r,0,Math.PI*2);
+      g.fillStyle=s.bright?'#FFD9A8':'rgba(255,255,255,.75)';g.fill();
+      if(s.bright){g.beginPath();g.arc(cx,cy,r+6,0,Math.PI*2);g.fillStyle='rgba(255,217,168,.25)';g.fill();}
+    });
+    if(!stars||!stars.length){
+      g.fillStyle='rgba(255,255,255,.7)';g.font='600 27px -apple-system,sans-serif';g.textAlign='center';
+      g.fillText('아직 이번 주의 별이 없어요.',skyX+skyW/2,skyY+skyH/2-16);
+      g.fillText('집중 한 번이 별 하나가 돼요.',skyX+skyW/2,skyY+skyH/2+22);
+    }
+    function finish(){
+      weeklyDrawShareMetrics(g,stats,skyY+skyH+40,SIZE,pad);
+      cv.toBlob(function(b){cb(b);},'image/png');
+    }
+    var img=new Image();
+    img.onload=function(){
+      var ih=250,iw=ih*((img.naturalWidth||1)/(img.naturalHeight||1));
+      g.drawImage(img,skyX+skyW/2-iw/2,skyY+skyH-ih-6,iw,ih);
+      g.restore();finish();
+    };
+    img.onerror=function(){g.restore();finish();};
+    img.src='assets/ele_stargaze.png';
+  }
+  function weeklyShareNow(){
+    if(!weeklyCurrentStats)return;
+    weeklyComposeShareImage(weeklyCurrentStats,weeklyStarSeeds,function(blob){
+      if(!blob)return;
+      var file=null;
+      try{file=new File([blob],'elly-week.png',{type:'image/png'});}catch(_){}
+      if(file&&navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+        navigator.share({files:[file]}).catch(function(){});return;
+      }
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement('a');a.href=url;a.download='elly-week.png';
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(function(){URL.revokeObjectURL(url);},4000);
+    });
+  }
   function avatarState(){
     var mine=manualState();if(mine)return mine;   // 내가 고른 게 언제나 이긴다
     // 1. 집중 중인데 자리를 비웠다 돌아왔다 — 폰 보는 얼굴 (잠깐만).
@@ -12731,6 +13012,14 @@
       try{cv.setPointerCapture(e.pointerId);}catch(_){}scratch(e);});
     cv.addEventListener('pointermove',function(e){if(down)scratch(e);});
     window.addEventListener('pointerup',function(){down=false;});
+  })();
+  // 주간 변화 카드 — 배너 탭으로 열기 · ✕/바깥 탭으로 닫기 · 공유 버튼.
+  (function(){
+    var sc=document.getElementById('weeklyScrim');if(!sc)return;
+    sc.addEventListener('click',function(e){if(e.target===sc)sc.classList.remove('open');});
+    var x=document.getElementById('weeklyX');if(x)x.addEventListener('click',function(){sc.classList.remove('open');});
+    var banner=document.getElementById('weeklyBanner');if(banner)banner.addEventListener('click',openWeeklyCard);
+    var shareBtn=document.getElementById('weeklyShare');if(shareBtn)shareBtn.addEventListener('click',weeklyShareNow);
   })();
   function meAnswer(k,choice){
     if(choice==='rest'){meBranch('쉬고 싶었구나. 그래도 돼.','10분 쉼 놔두기',
