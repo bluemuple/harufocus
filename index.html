@@ -2902,7 +2902,7 @@
   var SUPA_URL='https://sbatsnivlrlywpfytlio.supabase.co';
   var SUPA_KEY='sb_publishable_vwZUKHhhtBEjAgXrZQTNFQ_bQeM8Ypc';
   /* 지금 브라우저가 실행 중인 웹 버전 — 캐시 판별용, 푸시할 때마다 갱신. */
-  var WEB_BUILD='2026-07-28 14:50';
+  var WEB_BUILD='2026-07-28 15:10';
   var AUTH_KEY='harufocusWebAuth';
 
   // 한국어 조사 자동 선택 (요청): 받침 유무로 갈린다 — 엘리'야' vs 영식'아'.
@@ -11517,6 +11517,7 @@
           if(!meSelSet.length){meSay('남길 것을 골라 줘. 여러 개도 돼.');return;}
           var move=meTodayTasks().filter(function(t){return meSelSet.indexOf(t.id)<0;});
           if(!move.length){meDone('다 남겼네. 그럼 그대로 가 보자.');return;}
+          meScene('me_overload_after_pickone');   // 하나만 골라 든 엘리 (앱 파리티)
           meConfirmDefer(move,'오늘은 '+meSelSet.length+'개만. 나머지 '+move.length
             +'개는 내일의 내가 볼게.');
         };
@@ -11528,6 +11529,7 @@
         var tm=document.createElement('button');tm.className='tail-l';tm.textContent='내일로';
         tm.onclick=function(){
           var sel=meSelTasks();if(!sel.length){meSay('미룰 것을 골라 줘. 여러 개도 돼.');return;}
+          meScene('me_overload_after_dump');      // 머릿속을 덜어낸 장면
           meConfirmDefer(sel,'내일로 미뤘어. 오늘은 여기까지.');
         };
         var del=document.createElement('button');del.className='warn tail-r';
@@ -11792,30 +11794,72 @@
     box.appendChild(a);box.appendChild(w);
   }
   /* 2지선다에 답했을 때 — 갈래 화면(작업 + 글쓰기). work/life는 곧장 글쓰기. */
+  /* 행동 → 결과 장면 (앱 TopBar.stateActions의 afterKey 매핑과 같은 뜻):
+     '무엇을 했는가'로 고른다 — 첫 10분을 놔뒀으면 상태별 '시작' 장면,
+     쉬기·걷기는 몸 장면, 글쓰기는 write 장면. 없는 조합은 그대로 둔다. */
+  function meAfterFor(k,kind){
+    if(kind==='start')return {phone:'me_phone_after_putdown',distract:'me_distract_after_return',
+      refuse:'me_refuse_after_twomin',messy:'me_messy_after_onestep',
+      overload:'me_overload_after_pickone'}[k]||null;
+    if(kind==='rest')return 'me_tired_after_rest';
+    if(kind==='walk')return 'me_tired_after_walk';
+    if(kind==='write')return {messy:'me_messy_after_write',refuse:'me_refuse_after_write',
+      overload:'me_overload_after_dump'}[k]||null;
+    return null;
+  }
   function meAnswer(k,choice){
     if(choice==='rest'){meBranch('쉬고 싶었구나. 그래도 돼.','10분 쉼 놔두기',
-      function(){mePlaceBlock('쉬기','rest',10);meDone('10분 쉼을 놔뒀어. 진짜 쉬는 거야.');},'rest');return;}
+      function(){mePlaceBlock('쉬기','rest',10);meScene(meAfterFor(k,'rest'));
+        meDone('10분 쉼을 놔뒀어. 진짜 쉬는 거야.');},'rest');return;}
     if(choice==='lie'){meBranch('몸이 먼저 눕고 싶구나.','5분 눕기 놔두기',
-      function(){mePlaceBlock('눕기','rest',5);meDone('5분 눕기. 그다음은 그때 생각하자.');},'lie');return;}
+      function(){mePlaceBlock('눕기','rest',5);meScene(meAfterFor(k,'rest'));
+        meDone('5분 눕기. 그다음은 그때 생각하자.');},'lie');return;}
     if(choice==='walk'){meBranch('좀 걷고 싶구나.','5분 걷기 놔두기',
-      function(){mePlaceBlock('걷기','health',5);meDone('5분 걷기. 몸부터 풀자.');},'walk');return;}
+      function(){mePlaceBlock('걷기','health',5);meScene(meAfterFor(k,'walk'));
+        meDone('5분 걷기. 몸부터 풀자.');},'walk');return;}
     if(choice==='hard'||choice==='big'||choice==='fun'){
       var t=meHeaviest(),name=t?(t.title||'그 일'):null;
       var say=choice==='hard'?'시작이 무겁지.':(choice==='big'?'할 게 많아서 그래.':'재밌는 게 당기지.');
       meBranch(say,name?('‘'+name+'’ 첫 10분만'):'첫 10분만',function(){
         mePlaceBlock(name?('첫 10분 · '+name):'첫 10분','focus',10);
+        meScene(meAfterFor(k,'start'));
         meDone(name?('‘'+name+'’ 딱 10분만 해볼까? 시작하면 그다음은 쉬워.'):'딱 10분만 해볼까? 시작하면 그다음은 쉬워.');
       },choice);return;
     }
     if(choice==='work'||choice==='life'){
+      meScene(meAfterFor(k,'write'));
       meStartWriting(choice);   // 엉킨 것 꺼내기 = 곧장 글쓰기(프롬프트 피커 포함)
       return;
     }
   }
   /* 무대에 전신 엘리를 세우고, care면 돌봄 손이 들어온다. */
+  /* 장면 그림 (요청 2026-07-28, 앱 파리티): 앱의 '지금 나는' 무대는 상태마다
+     **책상 장면 한 장**(me_<상태>.png)이고, 행동을 고르면 그 결과 장면
+     (me_<상태>_after_<행동>.png)으로 바뀐다. 웹도 같은 그림을 쓴다.
+     ⚠ 이 그림들은 **틴트를 굽지 않는다**: 앱과 같은 원본 색(회색 엘리 + 책·
+       램프 등 소품)이라 eleWordImg 파이프라인(몸통 multiply + -fix 소품)을
+       태우면 장면 전체가 물든다. 손(hand_*)도 넣지 않는다 — 앱이 A안에서
+       돌봄 손을 뺐고, 책상 장면 위에 손이 겹치면 장면이 무너진다. */
+  var ME_SCENES={phone:1,distract:1,overload:1,messy:1,tired:1,refuse:1,focus:1};
+  var meSceneKey=null;                       // 지금 무대에 걸린 장면(after 포함)
+  function meScene(name){                    // 결과 장면으로 바꾸기 (없으면 무시)
+    var full=document.getElementById('meFull');if(!full||!name)return;
+    meSceneKey=name;full.dataset.k=name;full.src='assets/'+name+'.png';
+    var hand=document.getElementById('meHand');if(hand)hand.style.display='none';
+  }
   function paintMeStage(k,care){
     var st=document.getElementById('meStage');if(!st)return;
     var full=document.getElementById('meFull'),hand=document.getElementById('meHand');
+    if(ME_SCENES[k]){
+      meSceneKey='me_'+k;
+      full.dataset.k=meSceneKey;
+      full.src='assets/me_'+k+'.png';
+      hand.style.display='none';
+      document.getElementById('meLine').textContent=care?(ME_LINE[k]||''):'';
+      document.getElementById('meBubble').classList.toggle('hide',!care);
+      st.classList.remove('care','withdraw','praise','present','tired');
+      return;
+    }
     /* ⚠ dataset.k를 **먼저** 박는다: eleWordImg는 캐시가 있으면 콜백을
        **동기로** 부르는데, 그때 dataset.k가 아직 옛 상태면 가드에 걸려
        소품(-fix)이 없는 몸통만 남는다(실제로 그렇게 났다 — 책이 사라졌다). */
