@@ -217,12 +217,17 @@
   .pledge-input textarea{width:100%;border:0;background:none;resize:none;font:inherit;font-size:14px;min-height:96px;outline:none;color:var(--ink)}
   .pledge-write img{width:104px;flex:0 0 auto;align-self:flex-end}
   /* 토글 2줄 + [완료] (요청): 1줄은 좁은 화면에서 글자가 세로로 쪼개진다. */
-  .pledge-toggles{display:flex;flex-direction:column;gap:8px;margin-top:10px;font-size:13px;font-weight:700}
-  .pledge-toggles label{display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
-  .pledge-toggles .pt-row2{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .pledge-toggles .pw-ok{flex:0 0 auto;padding:8px 20px;border:0;border-radius:12px;
-    background:var(--sky-blue,#FF7B4A);color:#fff;font:inherit;font-weight:800;font-size:13.5px;cursor:pointer}
-  .pledge-toggles .pw-ok.off{opacity:.35}
+  /* 저장 위치 토글 (요청 2026-07-28 재조정): **2칼럼 카드 + 아래 전폭 [완료]**.
+     세로 2줄 시안은 좁은 화면에서 라벨이 밀려 잘렸다. 대신 카드 높이를
+     줄인다 — 체크박스 16px, 패딩 7px, 글자 12.5px. */
+  .pledge-toggles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+  .pledge-toggles label{display:flex;align-items:center;justify-content:center;gap:6px;
+    padding:7px 6px;border:1px solid var(--line);border-radius:12px;background:var(--card);
+    font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;min-width:0}
+  .pledge-toggles input[type=checkbox]{width:16px;height:16px;margin:0;flex:0 0 auto}
+  .pledge-ok{display:block;width:100%;margin-top:9px;padding:11px;border:0;border-radius:13px;
+    background:var(--sky-blue,#FF7B4A);color:#fff;font:inherit;font-weight:800;font-size:14px;cursor:pointer}
+  .pledge-ok.off{opacity:.35}
   .pledge-hist-t{display:block;margin:10px auto 0;border:0;background:none;color:var(--ink-soft,#667);
     font-weight:700;font-size:12.5px;cursor:pointer}
   .pledge-now{display:flex;align-items:center;gap:8px;margin-top:14px}
@@ -1819,34 +1824,32 @@
        friends-fab의 27을 덮어 1px 어긋나 있었다. */
     .friends-fab{right:88px;bottom:27px}
     .cap-wrap{left:auto;right:26px;bottom:26px;width:440px;border-radius:16px;border:1px solid var(--line)}
-    /* 긴 세로 나열 → 2컬럼 (요청) */
-    .todo{display:block;columns:2;column-gap:14px}
-    /* ⚠ 다단 안에서는 래퍼의 **라운드를 0으로** (요청 2026-07-28, WKWebView로
-       재현·검증): border-radius + overflow:hidden을 **함께** 가진 상자가
-       column-span:all 스패너 뒤 컬럼셋의 첫 조각이 되면, WebKit이 그 둥근
-       클립 사각형을 컬럼이 아니라 흐름(flow-thread) 좌표로 계산해 클립이
-       조각 밖으로 떨어진다 → 자손이 통째로 잘려 **아무것도 안 그려진다**.
-       레이아웃·히트테스트는 살아 있어 빈 자리를 누르면 그 작업 편집이
-       열렸고(사파리에서만), 래퍼의 box-shadow는 클립 밖이라 그림자만 남았다.
-       ⚠ overflow를 푸는 쪽(overflow:visible)도 버그는 고치지만, 터치로
-         스와이프하면 밀린 .task-inner가 카드 밖으로 삐져나온다 — 클립은
-         남기고 **라운드만** 걷는다. 보이는 모양은 .task-inner가 같은 16px을
-         이미 갖고 있어 그대로다. */
-    .todo .task{break-inside:avoid;margin-bottom:9px;border-radius:0}
-    .todo .goal-group{break-inside:avoid;margin-bottom:9px}
-    .todo .goal-group .task{margin-bottom:0}
-    .todo .subpanel{break-inside:avoid;break-before:avoid}
-    .todo .sec-h{column-span:all}
-    /* ⚠ Safari는 멀티컬럼에서 블록의 break-inside:avoid를 무시하고 카드를
-       쪼갠다 ('하루를 이렇게' 카드가 둘째 컬럼 위에 투명 띠로 얹혔다).
-       column-span:all은 쪼개짐이 정의상 불가능 — welcome과 목표 섹션
-       컨테이너(.goal-sec)가 가로지르고, 목표 배치는 .goal-sec 내부 grid가
-       소유한다 (요청 2026-07-28: PC·아이패드에서 목표 2컬럼). */
-    .todo .welcome,.todo .goal-sec{column-span:all;-webkit-column-span:all;
-      break-inside:avoid;-webkit-column-break-inside:avoid}
-    .todo .subpanel{break-inside:avoid;-webkit-column-break-inside:avoid}
+    /* 긴 세로 나열 → 2컬럼 (요청).
+       ⚠⚠ CSS **다단(columns)을 버리고 grid**로 (요청 2026-07-28, WKWebView
+       재현으로 확정): 사파리의 다단은 이 목록에서 버그를 두 개 냈다.
+       ① `border-radius + overflow:hidden` 카드가 column-span:all 스패너 뒤
+          첫 조각이면 **페인트에서 통째로 빠진다** — 자리·클릭은 살아 있어
+          빈 곳을 누르면 그 작업 편집이 열렸다('국어' 실종).
+       ② 카드가 홀수(3개)면 오른쪽 칼럼이 몇 px 내려앉는다.
+       게다가 다단 안에서는 getBoundingClientRect가 **흐름(flow-thread)
+       좌표**를 돌려준다(세 카드가 모두 top=70, left=26) — 드래그 선택
+       마퀴처럼 좌표를 쓰는 기능까지 조용히 어긋난다.
+       grid는 셋 다 없다: 좌표가 정직하고, 행이 정확히 정렬되며, 카드의
+       라운드·클리핑을 원래대로 둘 수 있다.
+       ⚠ 배치가 **행 우선**이 된다(왼→오, 다음 줄) — 다단의 '왼쪽 칼럼을 먼저
+         채우는' 흐름과 다르지만, 목록은 순서대로 읽는 것이라 오히려 자연스럽다.
+       ⚠ .subpanel은 .task의 **형제**다(같은 부모에 나란히 붙는다) — 그냥 두면
+         짝인 카드와 다른 칸으로 떨어지므로 전폭으로 깐다. */
+    .todo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:9px 14px;align-items:start}
+    /* 예전 column-span:all 자리 = 두 칸을 가로지르는 것들 */
+    .todo>.welcome,.todo>.sec-h,.todo>.goal-sec,.todo>.scene-empty,
+    .todo>.empty,.todo>.subpanel{grid-column:1/-1}
+    /* 세로 간격은 이제 row-gap이 준다 — 카드의 margin은 걷는다 */
+    .todo .task,.todo .goal-group{margin-bottom:0}
+    .todo>.sec-h{margin:6px 2px 0}
     .todo .goal-sec{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;
-      align-items:start;margin-bottom:9px}
+      align-items:start;margin-bottom:0}
     /* 2컬럼에선 목표 사이 구분을 컬럼이 하므로 loose의 가로선은 걷는다. */
     .todo .goal-sec .goal-group.loose{border-bottom:0;padding-bottom:0;margin-bottom:0}
     .routines{display:block;columns:2;column-gap:14px}
@@ -2190,8 +2193,11 @@
      ⚠ 시트 높이를 **고정**한다: 얼굴을 바꿀 때마다 선택지 높이가 달라지는데,
      늘어난 만큼 아래 얼굴 칸이 오르내리면 누르려던 자리가 도망간다(요청 버그).
      높이를 못 박고 위 장면만 스크롤하면 얼굴 칸은 언제나 같은 자리다. */
+  /* ⚠ 높이를 **내용에 맞춘다** (요청 2026-07-28): 예전엔 86vh를 못 박아
+     내용이 짧아도 아래가 텅 비고, 그 탓에 그림·버튼이 위로 몰려 보였다.
+     이제 필요한 만큼만 자라고 길어지면 그때 스크롤한다. */
   .me-modal{max-width:340px;position:relative;overflow:hidden;
-    display:flex;flex-direction:column;height:min(86vh,660px);max-height:86vh}
+    display:flex;flex-direction:column;max-height:86vh}
   /* 닫기는 **위**에 있어야 한다 — 아래 버튼은 내용이 길어지면 화면 밖으로 밀린다. */
   .me-x{position:absolute;top:10px;right:12px;width:30px;height:30px;border:0;border-radius:50%;
     background:var(--card-2);color:var(--ink-soft);font-size:13px;font-weight:800;cursor:pointer;
@@ -2217,7 +2223,9 @@
      오른쪽 아래에서 들어와 그 상태에 맞는 몸짓을 한 번 한다.
      ⚠ 전신과 손은 **같은 캔버스에서 같은 상자로 잘랐다** — 그래서 겹치기만
      하면 정렬이 맞는다. 따로 자르면 손이 허공을 짚는다. */
-  .me-stage{position:relative;width:100%;height:clamp(112px,17vh,150px);margin:0 0 2px}
+  /* 장면 그림 (요청 2026-07-28): 첨부3처럼 조금 더 크게·아래 여백은 줄여
+     그림→탭→버튼이 한 호흡으로 읽히게. */
+  .me-stage{position:relative;width:100%;height:clamp(128px,20vh,168px);margin:0 0 6px}
   .me-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
   /* ⚠ 새 손 그림은 **팔이 길어져** 예전 거리(14%)로는 들어오는 느낌이 안 나고
      제자리에서 나타나는 것처럼 보인다 — 화면 밖에서 들어오도록 더 멀리서. */
@@ -2257,10 +2265,12 @@
      아니라 화면 밖을 가리키게 한다(요청). */
   /* ⚠ sticky (요청 Stage2) — 한마디 탭에서 입력에 포커스하면 .me-top이 스크롤돼
      칭찬 질문(말풍선)이 위로 사라졌다. 위에 붙여 **쓰는 내내 질문이 보이게** 한다. */
-  .me-bubble{position:sticky;top:0;z-index:2;align-self:stretch;margin:2px 6px 16px;padding:11px 14px;
+  /* 말풍선은 유지하되 **얇게** (요청 2026-07-28): min-height 62 → 한 줄이면
+     한 줄 높이만. 이게 아래 그림·버튼을 통째로 밀어내던 주범이었다. */
+  .me-bubble{position:sticky;top:0;z-index:2;align-self:stretch;margin:2px 6px 10px;padding:9px 14px;
     background:var(--card-2);border:1.5px solid var(--bub-line,#6b7280);border-radius:16px;
-    font-size:14px;font-weight:600;color:var(--ink);text-align:center;line-height:1.35;
-    min-height:62px;display:flex;align-items:center;justify-content:center}
+    font-size:13.5px;font-weight:600;color:var(--ink);text-align:center;line-height:1.35;
+    display:flex;align-items:center;justify-content:center}
   /* 꼬리 삭제 (요청 2026-07-28 웹 모바일): 완전한 둥근 네모 — 좁은 화면에서
      꼬리가 아래 탭·버튼과 부딪혔다. */
   /* ⚠ 숨길 때 display:none이면 아래가 통째로 올라온다 — 자리는 남긴다. */
@@ -2271,7 +2281,11 @@
   .scene-empty{display:flex;flex-direction:column;align-items:center;gap:10px;
     padding:18px 0 8px;opacity:.92;column-span:all;break-inside:avoid}
   .scene-empty img{width:150px;height:auto}
-  .se-line{font-size:13.5px;font-weight:600;color:var(--onSky,#141827);opacity:.75}
+  /* 두 줄 가운데 정렬 (요청 2026-07-28) — 밤하늘 위에서도 읽히게 그림자. */
+  .se-line{font-size:13.5px;font-weight:600;color:var(--onSky,#141827);opacity:.75;
+    text-align:center;line-height:1.5}
+  body.night .se-line{color:#ECEEF6;opacity:.82;text-shadow:0 1px 3px rgba(10,20,50,.5)}
+  .scene-empty img{filter:drop-shadow(0 6px 14px rgba(20,40,80,.18))}
   .me-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
   .me-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 3px 6px;
     border:1px solid var(--line);border-radius:14px;background:var(--card-2);cursor:pointer;
@@ -2321,7 +2335,7 @@
     background:var(--card);font-family:inherit;font-size:14px;color:var(--ink);outline:none}
   /* [한 걸음 | 한마디] 세그먼트 탭 (요청 Stage2 2026-07-24) — meAct 안 가로 전체. */
   .me-act .me-tabs{flex:1 1 100%;display:flex;gap:4px;background:var(--card-2);
-    border-radius:12px;padding:3px;margin:0 2px 8px}
+    border-radius:12px;padding:3px;margin:0 2px 10px}
   .me-act .me-tabs button{flex:1 1 0;padding:8px 6px;border:0;border-radius:9px;background:transparent;
     font-family:inherit;font-size:13px;font-weight:700;color:var(--ink-soft);cursor:pointer}
   .me-act .me-tabs button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.09)}
@@ -2350,10 +2364,13 @@
   .me-side::after{content:"";position:absolute;right:-4px;top:50%;margin-top:-6px;width:12px;height:12px;
     background:inherit;transform:rotate(45deg);border-radius:0 3px 0 0}
   /* 입력 한 줄 + 저장(✓)/취소(✕) 기호 버튼. */
-  .me-write{display:flex;align-items:center;gap:8px;flex:1 1 100%;margin-top:2px}
-  .me-write input{flex:1 1 auto;min-width:0;padding:11px 13px;border:1.5px solid var(--line);
+  /* ⚠ 입력란과 확인 버튼은 **같은 높이·같은 줄** (요청 2026-07-28): 버튼이
+     42px 고정이라 입력란(패딩으로 결정)과 어긋나 보였다. 둘 다 44px로 못 박고
+     stretch로 맞춘다. */
+  .me-write{display:flex;align-items:stretch;gap:8px;flex:1 1 100%;margin-top:2px}
+  .me-write input{flex:1 1 auto;min-width:0;height:44px;padding:0 13px;border:1.5px solid var(--line);
     border-radius:13px;background:var(--card);font-family:inherit;font-size:14px;color:var(--ink);outline:none}
-  .me-write button{flex:0 0 auto;width:42px;height:42px;border-radius:12px;border:0;
+  .me-write button{flex:0 0 auto;width:44px;height:44px;border-radius:13px;border:0;
     display:grid;place-items:center;cursor:pointer;padding:0}
   .me-write .mw-ok{background:var(--sky-blue,#5B7CE0);color:#fff}
   .me-write .mw-no{background:var(--card-2);color:var(--ink-soft)}
@@ -2944,13 +2961,12 @@
     </div>
     <!-- 토글은 **2줄**, [완료]는 '일기에 추가' 오른쪽 (요청 2026-07-28 모바일):
          한 줄에 몰면 좁은 화면에서 글자가 세로로 쪼개진다. -->
+    <!-- 토글 2칼럼 + 아래 전폭 [완료] (요청 2026-07-28 재조정) -->
     <div class="pledge-toggles">
       <label><input type="checkbox" id="pledgeToBar" checked><span>상단 말풍선</span></label>
-      <div class="pt-row2">
-        <label><input type="checkbox" id="pledgeToDiary" checked><span>일기에 추가</span></label>
-        <button class="pw-ok" id="pledgeSave" type="button">완료</button>
-      </div>
+      <label><input type="checkbox" id="pledgeToDiary" checked><span>일기에 추가</span></label>
     </div>
+    <button class="pledge-ok" id="pledgeSave" type="button">완료</button>
     <button class="pledge-hist-t" id="pledgeHistT" type="button">예전 다짐 ▾</button>
     <div class="me-words" id="pledgeHist" style="display:none"></div>
     <div class="pledge-now">
@@ -6791,13 +6807,15 @@
     });
     // ('목표를 잃은 할 일' 고아 섹션은 폐지 — 요청 2026-07-28: 동기화가
     //  id별 병합으로 고쳐져 고아는 과도기 상태일 뿐이고, 목록에 안 보이는 게 맞다.)
-    /* 할 일이 하나도 없을 때 (요청 set_d): 글자 한 줄 대신 **빈 노트 앞에 앉아
-       기다리는 엘리**. ⚠ 엘리는 말하지 않는다 — 한 줄은 내 말투로 남긴다. */
+    /* 할 일이 하나도 없을 때 (요청 2026-07-28 교체): **쉬고 있는 엘리** + 두 줄.
+       빈 하루를 재촉하지 않고, 적어 두면 대신 기억해 준다고만 말한다.
+       ⚠ 이름 뒤 조사는 받침에 맞춘다(엘리가 / 문섭이가) — josa 헬퍼.
+       ⚠ 이 그림은 틴트를 굽지 않는다(eleWordImg 미사용): 나비·바람선이
+         함께 있는 장면이라 몸통 multiply를 태우면 소품까지 물든다. */
     if(!scheduled.length&&!backlog.length&&!activeGoals.length&&!goalPick){
-      list.innerHTML='<div class="scene-empty"><img id="seImg" src="assets/scene_empty.png" alt="">'+
-        '<div class="se-line">오늘은 아직 비어 있어. 하나만 적어 볼까.</div></div>';
-      eleWordImg('scene_empty',eleTint(),function(u){
-        var el=document.getElementById('seImg');if(el&&u)el.src=u;});
+      list.innerHTML='<div class="scene-empty"><img src="assets/scene_rest.png" alt="">'+
+        '<div class="se-line">아주 작은 일도 좋아요.<br>'+
+        esc(eleName())+josa(eleName(),'이','')+'가 기억해 둘게요.</div></div>';
       return;}
     if(scheduled.length){
       var mon=(calSel.getMonth()+1),day=calSel.getDate();
@@ -8947,6 +8965,8 @@
          아침에 새로고침하면 오른쪽이 잠깐 다크로 떴다가 60초 타이머가 돌 때
          라이트로 바뀌었다. 좌표가 바뀌었을 수 있으니 여기서 곧장 다시 칠한다. */
       applySky();
+      // 상대가 고른 '지금 나' 얼굴 채택 (요청 2026-07-28 앱↔웹 동기화).
+      adoptRemoteMeState();
       saveSnapCache(currentSnapLike());   // 새로고침 즉시 이 상태로 뜨게 (요청)
       renderAll();
       paintPomoChip();   // 원격에서 포모도로 설정이 바뀌었을 수 있다 (요청)
@@ -11559,6 +11579,27 @@
       if(k)localStorage.setItem(ME_KEY,JSON.stringify({k:k,at:Date.now()}));
       else localStorage.removeItem(ME_KEY);
     }catch(_){}
+    /* 앱↔웹 동기화 (요청 2026-07-28): 고른 얼굴을 스냅샷 설정에 실어 바로
+       올린다 — 폰에서 고르면 웹도, 웹에서 고르면 폰도 같은 얼굴이 된다.
+       ⚠ 시각(at)을 함께 싣는다: 2시간 만료 판정과 '더 최근이 이긴다'는
+         충돌 규칙이 양쪽 모두 이 값으로 돌아간다. */
+    if(!DATA.settings)DATA.settings={};
+    DATA.settings.meState=k||null;
+    DATA.settings.meStateAt=k?Math.floor(Date.now()/1000):null;
+    pushSnapshot();
+    paintAvatar();
+  }
+  /* 받은 스냅샷의 얼굴 채택 (앱 ManualAvatar.adopt와 같은 규칙):
+     만료(2h)는 버리고, **더 최근에 고른 쪽**이 이긴다. */
+  function adoptRemoteMeState(){
+    var S=DATA.settings||{};
+    var raw=S.meState,at=(S.meStateAt||0)*1000;
+    if(!raw||AVATAR_STATES.indexOf(raw)<0)return;
+    if(!at||Date.now()-at>ME_MS)return;
+    var mineAt=0;
+    try{var v=JSON.parse(localStorage.getItem(ME_KEY)||'null');if(v&&v.at)mineAt=v.at;}catch(_){}
+    if(at<=mineAt)return;
+    try{localStorage.setItem(ME_KEY,JSON.stringify({k:raw,at:at}));}catch(_){}
     paintAvatar();
   }
   function avatarState(){
