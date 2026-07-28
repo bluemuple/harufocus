@@ -3323,6 +3323,7 @@
   /* ---------- big timeline (today only) ---------- */
   var TS=6,TE=24,PPH=120,dayOffset=0;
   var tlEditTop=0,tlDayH=0;   // 3일 밴드: 오늘 밴드 오프셋(히트테스트 보정)·밴드 높이
+  var tlHomePending=false;    // 화면 밖에서 렌더돼 '지금'으로 못 갔다 → 탭 열 때 간다
   var tlLaneToday=null,tlLanePrimary=null;   // 캡처 고스트가 렌더 밖에서 쓰는 레인 핸들
   /* yFor는 **현재 그리는 밴드의 시작 시각(tlBandTS)** 기준 — 어제 밴드는 12시부터
      시작하므로(요청) 밴드마다 다르다. 렌더 후엔 tlBandTS=TS(오늘)로 되돌려 두어
@@ -3947,6 +3948,44 @@
       return now>=t.sunrise.getTime()&&now<=t.sunset.getTime();
     }catch(e){return true;}
   }
+  /* 오늘(기준) 밴드의 세로 오프셋 — ⚠⚠ **쓸 때 다시 잰다** (요청 2026-07-29 버그:
+     '지금'을 누르면 엉뚱한 데로 갔다). 모바일은 '할 일' 탭으로 뜨는데, 그때
+     renderBig이 **화면 밖에서** 돌면 밴드 offsetTop이 전부 0이라 렌더 때 굳힌
+     tlEditTop이 거짓 0으로 남는다. 그 뒤로는
+       · scrollToNowLine이 어제 밴드 한복판(≈1454px 위)으로 스크롤하고,
+       · updateNowCap은 같은 거짓 좌표로 '지금이 화면 안'이라 착각해 캡슐을 숨기고
+         (그래서 눌러도 되돌아갈 캡슐이 없다),
+       · 드래그 히트테스트도 한 밴드만큼 어긋난다.
+     레이아웃이 아직 없으면(clientHeight 0) 재지 않고 옛 값을 지킨다 — 0으로
+     덮어써 봐야 같은 거짓말이다. */
+  function tlTodayTop(){
+    var sc=document.getElementById('tlScroll');
+    if(!sc||!sc.clientHeight)return tlEditTop;
+    /* 기준은 **편집 대상 밴드(rel 0 = 보고 있는 날)**다. 옛 코드는 '오늘' 밴드를
+       먼저 골랐는데, 어제·내일을 보고 있으면(dayOffset≠0) 편집 밴드는 rel 0인데
+       오늘 밴드를 기준으로 잡아 드래그 히트테스트가 한 밴드씩 어긋났다.
+       dayOffset이 0이면 둘은 같은 밴드라 평상시 동작은 그대로다. */
+    var lane=sc.querySelector('.tl-day[data-rel="0"]')||sc.querySelector('.tl-day.today');
+    if(lane){tlEditTop=lane.offsetTop;tlDayH=lane.offsetHeight||tlDayH;}
+    return tlEditTop;
+  }
+  /* 타임라인이 화면에 붙은 뒤 한 번 바로잡기 (요청 2026-07-29):
+     밴드 오프셋을 다시 재고, 화면 밖 렌더 때문에 못 갔던 '지금'으로 데려간다.
+     레이아웃이 아직 없으면 false를 돌려 호출부가 다시 부르게 한다. */
+  function tlEnsureHome(){
+    var sc=document.getElementById('tlScroll');
+    if(!sc||!sc.clientHeight||!sc.scrollHeight)return false;
+    tlTodayTop();
+    if(tlHomePending){
+      var nf=nowHourFrac();
+      var wm=(DATA.settings||{}).wakeMinutes;
+      var hf=(nf!=null)?nf:(Math.max(0,Math.floor((wm!=null?wm:420)/60))+1.5);
+      sc.scrollTop=Math.max(0,Math.min(sc.scrollHeight-sc.clientHeight,tlEditTop+yFor(hf)-60));
+      tlHomePending=false;
+    }
+    updateTlSky();updateNowCap();
+    return true;
+  }
   function updateNowCap(){
     var cap=document.getElementById('tlNowCap');if(!cap)return;
     /* ⚠ 타임라인 페이지에서만 (요청 2026-07-28 버그): 모바일에서 할 일·루틴
@@ -3958,7 +3997,7 @@
     var sc=document.getElementById('tlScroll');if(!sc)return;
     var nf=nowHourFrac();
     if(nf==null){cap.classList.remove('show');return;}   // 오늘이 아니면 '지금'이 없다
-    var nowY=tlEditTop+yFor(nf),top=sc.scrollTop,bot=top+sc.clientHeight,pad=28;
+    var nowY=tlTodayTop()+yFor(nf),top=sc.scrollTop,bot=top+sc.clientHeight,pad=28;
     if(nowY>=top+pad&&nowY<=bot-pad){cap.classList.remove('show');return;}
     var up=nowY<top;
     cap.querySelector('.nc-ar').innerHTML=up
@@ -3970,8 +4009,16 @@
   function scrollToNowLine(){
     var sc=document.getElementById('tlScroll');if(!sc)return;
     var nf=nowHourFrac();if(nf==null)return;
-    var target=Math.max(0,Math.min(sc.scrollHeight-sc.clientHeight,tlEditTop+yFor(nf)-PPH));
+    var target=Math.max(0,Math.min(sc.scrollHeight-sc.clientHeight,tlTodayTop()+yFor(nf)-PPH));
+    var from=sc.scrollTop;
     try{sc.scrollTo({top:target,behavior:'smooth'});}catch(_){sc.scrollTop=target;}
+    /* 부드러운 스크롤이 아예 안 도는 환경(모션 최소화·백그라운드 탭)에서도
+       **자리는 맞춘다** — 0.6초 뒤에도 한 픽셀도 안 움직였으면 그냥 데려간다.
+       ⚠ 사용자가 그 사이 손으로 스크롤했으면(from과 달라졌으면) 건드리지
+         않는다 — 손을 이기려 들면 안 된다. */
+    setTimeout(function(){
+      if(sc.scrollTop===from&&Math.abs(target-from)>2)sc.scrollTop=target;
+    },600);
   }
 
   // ── 한 번에 계획하기 (요청: 첨부1~3) ──
@@ -4584,6 +4631,7 @@
       var TS=bandTS;                       // 콜백 안 시간줄·클립 판정 기준 (섀도잉)
       tlBandTS=bandTS;                     // yFor 기준 (이 밴드를 그리는 동안)
       lane.dataset.ts=bandTS;              // updateTlSky의 밴드 시각 환산용
+      lane.dataset.rel=rel;                // tlTodayTop이 기준 밴드를 DOM에서 찾는 표식
       // 날짜 경계 큰 날짜 (요청): 자정(밴드 첫 줄) 왼쪽에 큼직하게·불투명.
       // '오늘'은 요일 뒤에 (요청 2026-07-26): "7. 27. (월) 오늘".
       var dbig=_dd.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',weekday:'short'})+(isToday?' 오늘':'');
@@ -4897,9 +4945,17 @@
     // (요청) 태양·달 제거 — 동적 하늘색만 유지.
     updateTlSky();
     var scrollNf=(tlTodayNf!=null)?tlTodayNf:(wakeH+1.5);   // 지금이 없으면 기상 무렵으로
-    var scrollY=Math.max(0,tlEditTop+yFor(scrollNf)-60);   // 오늘 밴드의 '지금'으로
     if(prevScroll!=null){sc.scrollTop=prevScroll;}
-    else setTimeout(function(){sc.scrollTop=scrollY;updateTlSky();updateNowCap();},30);
+    else setTimeout(function(){
+      /* ⚠ 화면 밖에서 렌더되면(모바일은 '할 일'로 뜬다) 스크롤 컨테이너의
+         높이가 0이라 여기서 아무 데도 못 간다 — scrollTop 대입이 통째로
+         무시된다. 그러면 나중에 타임라인을 열었을 때 **어제 정오**가 떠
+         있었다. 못 갔으면 '아직 못 갔다'고 적어 두고, 탭이 열릴 때
+         setTab이 대신 데려간다 (요청 2026-07-29). */
+      if(!sc.clientHeight){tlHomePending=true;return;}
+      sc.scrollTop=Math.max(0,tlTodayTop()+yFor(scrollNf)-60);   // 오늘 밴드의 '지금'으로
+      tlHomePending=false;updateTlSky();updateNowCap();
+    },30);
     updateNowCap();
     syncAnimPending=false;      // 한 번의 원격 반영에 한 번만 (⑤)
     var lbl=dayOffset===0?'오늘':dayOffset===-1?'어제':dayOffset===1?'내일':'';
@@ -7085,7 +7141,7 @@
         if(overTl){
           dropQuad=null;line.style.display='none';
           var sb2=sc.getBoundingClientRect();
-          var y=ev.clientY-sb2.top+sc.scrollTop,hh=TS+(y-tlEditTop-14)/PPH;   // 오늘 밴드 기준
+          var y=ev.clientY-sb2.top+sc.scrollTop,hh=TS+(y-tlTodayTop()-14)/PPH;   // 오늘 밴드 기준
           var base=selDate();base.setHours(0,0,0,0);
           var T=snap5(base.getTime()+hh*3600000);
           T=Math.max(base.getTime()+TS*3600000,Math.min(base.getTime()+TE*3600000,T));
@@ -8743,6 +8799,19 @@
     // 클래스 토글은 이미 DOM에 반영됐으므로 지금 재면 새 여백이 잡힌다.
     // rAF만 믿으면 탭이 백그라운드일 때 안 돌아 옛 높이가 그대로 남는다.
     if(typeof fitMatrixHeight==='function'){fitMatrixHeight();requestAnimationFrame(fitMatrixHeight);}
+    /* 타임라인을 열면 **그때 다시 잰다** (요청 2026-07-29 버그): 렌더가 화면
+       밖에서 돌았으면 밴드 오프셋이 0이고 '지금'으로도 못 갔다. 여기서
+       한 번 바로잡아야 첫 화면이 '지금'이고, 캡슐도 제 자리를 안다.
+       ⚠ 레이아웃이 붙은 뒤라야 재진다 — rAF 한 번 미룬다. */
+    if(name==='timeline'){
+      /* ⚠ 레이아웃이 언제 붙는지는 프레임마다 다르다 — rAF 한 번으로는 아직
+         높이가 0일 때가 있다(실측). 붙을 때까지 몇 번만 다시 본다. */
+      var tries=0;
+      (function home(){
+        if(tlEnsureHome()||++tries>8)return;
+        setTimeout(function(){requestAnimationFrame(home);},40);
+      })();
+    }
     if(name==='bucket')bucketIntro();   // 처음 열면 살짝 돌려 보여줌 (요청)
     if(name==='routine'&&session){uploadRoutineSnapshot();renderMsgBanner();}   // 소셜 (iOS 파리티)
   }
@@ -9599,7 +9668,7 @@
       // y → 시각 (yFor의 역함수) → 5분 스냅. 오늘 밴드 오프셋 보정 (3일 스크롤).
       var b=sc.getBoundingClientRect();
       var y=ev.clientY-b.top+sc.scrollTop;
-      var h=TS+(y-tlEditTop-14)/PPH;
+      var h=TS+(y-tlTodayTop()-14)/PPH;
       var base=selDate();base.setHours(0,0,0,0);
       var T=snap5(base.getTime()+h*3600000);
       var minT=base.getTime()+TS*3600000,maxT=base.getTime()+TE*3600000;
