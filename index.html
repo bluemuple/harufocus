@@ -692,6 +692,8 @@
      제목 + '장기 목표 · n%' + 게이지. 그날 분량 할 일이 카드 아래 붙는다. */
   .goal-card{display:flex;gap:12px;align-items:center;background:rgba(255,255,255,.94);
     border-radius:16px;box-shadow:0 4px 14px rgba(20,40,80,.10);padding:12px 14px;margin-bottom:8px}
+  /* 목표 섹션 컨테이너 — 모바일은 세로 스택 (todo flex gap과 같은 9px). */
+  .goal-sec{display:flex;flex-direction:column;gap:9px}
   /* 카드 + 그날 작업 = **한 장의 흰 카드** (요청 2026-07-28, 앱 goalSection과
      같은 모습): 배경은 반투명이 아니라 순백, 카드 아래·작업 위 모서리는 직각,
      둘 사이는 앱처럼 얇은 가로선 하나. 그림자도 그룹이 한 번만 준다.
@@ -1630,22 +1632,6 @@
   body.night .mo-legend{color:rgba(235,238,246,.75)}
   body.night .bucket-nav span{color:#ECEEF6}
   body.night .bucket-nav button{color:rgba(235,238,246,.6)}
-  /* 동기화 진단 HUD (요청 2026-07-28) */
-  #syncHud{position:fixed;inset:0;z-index:120;display:grid;place-items:center}
-  #syncHud .sh-dim{position:absolute;inset:0;background:rgba(10,16,32,.45)}
-  #syncHud .sh-card{position:relative;width:min(92vw,520px);max-height:82vh;overflow:auto;
-    background:var(--card,#fff);border-radius:18px;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
-  #syncHud .sh-title{font-weight:800;font-size:17px;margin-bottom:10px;color:var(--ink)}
-  #syncHud .sh-row{display:flex;gap:10px;font-size:12.5px;padding:6px 0;
-    border-bottom:1px solid rgba(20,24,39,.07);color:var(--ink)}
-  #syncHud .sh-row b{flex:0 0 116px;font-weight:700;color:var(--ink-soft)}
-  #syncHud .sh-row span{flex:1;min-width:0;word-break:break-all}
-  #syncHud .sh-btns{display:flex;gap:8px;margin-top:14px}
-  #syncHud .sh-b{flex:1;font-family:inherit;font-size:13px;font-weight:700;padding:10px 0;border:0;
-    border-radius:12px;background:var(--sky-blue,#5B7CE0);color:#fff;cursor:pointer}
-  #syncHud .sh-b.sh-close{background:rgba(20,24,39,.08);color:var(--ink)}
-  body.night #syncHud .sh-card{background:rgba(28,32,48,.98)}
-  body.night #syncHud .sh-row{border-bottom-color:rgba(255,255,255,.10)}
   .desk-nav{display:none}
   @media(min-width:1100px){
     .layout{display:flex;height:100%;padding-bottom:0}
@@ -1762,14 +1748,17 @@
     .todo .subpanel{break-inside:avoid;break-before:avoid}
     .todo .sec-h{column-span:all}
     /* ⚠ Safari는 멀티컬럼에서 블록의 break-inside:avoid를 무시하고 카드를
-       쪼갠다 ('하루를 이렇게' 카드 아랫부분이 잘려 둘째 컬럼 위에 투명 띠로
-       얹혔다). 2차 시도였던 inline-block은 **다른 겹침**을 만들었다(요청
-       2026-07-28 첨부1: 투명 bar가 첫 작업과 겹침) → 컬럼을 아예 가로지르게
-       한다: column-span:all은 쪼개짐이 정의상 불가능하고, 이미 .sec-h가
-       같은 방식으로 검증돼 있다. 목표 카드도 전폭이라 게이지가 시원하다. */
-    .todo .welcome,.todo .goal-group{column-span:all;-webkit-column-span:all;
+       쪼갠다 ('하루를 이렇게' 카드가 둘째 컬럼 위에 투명 띠로 얹혔다).
+       column-span:all은 쪼개짐이 정의상 불가능 — welcome과 목표 섹션
+       컨테이너(.goal-sec)가 가로지르고, 목표 배치는 .goal-sec 내부 grid가
+       소유한다 (요청 2026-07-28: PC·아이패드에서 목표 2컬럼). */
+    .todo .welcome,.todo .goal-sec{column-span:all;-webkit-column-span:all;
       break-inside:avoid;-webkit-column-break-inside:avoid}
     .todo .subpanel{break-inside:avoid;-webkit-column-break-inside:avoid}
+    .todo .goal-sec{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;
+      align-items:start;margin-bottom:9px}
+    /* 2컬럼에선 목표 사이 구분을 컬럼이 하므로 loose의 가로선은 걷는다. */
+    .todo .goal-sec .goal-group.loose{border-bottom:0;padding-bottom:0;margin-bottom:0}
     .routines{display:block;columns:2;column-gap:14px}
     .routines .routine{break-inside:avoid}
     .routines .routine{margin-bottom:14px}
@@ -2286,7 +2275,6 @@
       <button data-act="promise">🤝 약속</button>
       <button data-act="about">📱 아이폰 앱</button>
       <button data-act="settings">⚙️ 설정</button>
-      <button data-act="synchud">🩺 동기화 상태</button>
     </div>
   </div>
   <!-- 우상단 회전 캡슐 (요청: 다짐·집중합계·해질녘·해돋이·D-day 번갈아, 아래로 전환). -->
@@ -2898,33 +2886,8 @@
   "use strict";
   var SUPA_URL='https://sbatsnivlrlywpfytlio.supabase.co';
   var SUPA_KEY='sb_publishable_vwZUKHhhtBEjAgXrZQTNFQ_bQeM8Ypc';
-  /* 지금 브라우저가 실행 중인 웹 버전 (요청 2026-07-28 HUD): 캐시된 옛
-     페이지를 보고 있는지 한눈에 가리려면 화면에 버전이 있어야 한다.
-     푸시할 때마다 이 문자열을 갱신한다. */
-  var WEB_BUILD='2026-07-28 13:30';
-  /* 동기화 진단용 시각 (요청 2026-07-28 HUD) */
-  var lastPullAt=0,lastPushAt=0,lastPushErr='',lastPushStatus=0,lastVerify='';
-  /* 올린 게 **정말 서버에 남았는지** 확인 (요청 2026-07-28): updated_at이
-     방금 시각으로 갱신됐는지 본다. 안 바뀌면 권한(RLS)·제약·용량 쪽이다. */
-  function verifyPush(){
-    if(!session)return;
-    var t0=Date.now();
-    setTimeout(function(){
-      freshToken().then(function(tok){if(!tok)throw 0;
-        return fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=updated_at,device_id',
-          {headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok}});})
-        .then(function(r){return r.json();})
-        .then(function(rows){
-          var u=rows&&rows.length?rows[0].updated_at:null;
-          var dev=rows&&rows.length?rows[0].device_id:null;
-          if(!u){lastVerify='서버에 행이 없음';return;}
-          var age=Date.now()-new Date(u).getTime();
-          if(age<60000&&dev===webDeviceId())lastVerify='서버 반영 확인 ✓ ('+Math.round(age/1000)+'초 전)';
-          else lastVerify='⚠ 서버가 안 바뀜 (서버 시각 '+new Date(u).toLocaleString()+
-            ', 기기 '+String(dev||'?').slice(0,10)+') — 쓰기 권한(RLS)·용량 의심';
-        }).catch(function(){lastVerify='확인 실패(네트워크)';});
-    },1200);
-  }
+  /* 지금 브라우저가 실행 중인 웹 버전 — 캐시 판별용, 푸시할 때마다 갱신. */
+  var WEB_BUILD='2026-07-28 14:00';
   var AUTH_KEY='harufocusWebAuth';
 
   // 한국어 조사 자동 선택 (요청): 받침 유무로 갈린다 — 엘리'야' vs 영식'아'.
@@ -6613,6 +6576,16 @@
     document.getElementById('todoListBtn').addEventListener('click',function(){openListSheet();});
     if(goalPick)document.getElementById('goalAllBtn').addEventListener('click',function(){
       goalShowAll=!goalShowAll;renderTodo();});
+    /* 목표들은 **한 컨테이너(.goal-sec)** 에 담는다 (요청 2026-07-28):
+       PC·아이패드에선 이 컨테이너가 컬럼을 가로지른 뒤 **내부 grid 2컬럼**으로
+       카드 폭을 반으로 — 그날 보기·'전체' 모두. 멀티컬럼의 쪼개짐·순서 문제와
+       무관해진다(grid가 배치를 소유). */
+    var gsec=null;
+    if(activeGoals.length){
+      gsec=document.createElement('div');
+      gsec.className='goal-sec'+((goalPick&&goalShowAll)?' all':'');
+      list.appendChild(gsec);
+    }
     activeGoals.forEach(function(g){
       var pct=Math.round(Math.min(1,goalDoneAmt(g)/g.totalAmount)*100);
       var img=g.imageThumbB64?'<img class="gc-img" alt="" src="data:image/jpeg;base64,'+g.imageThumbB64+'">':'';
@@ -6640,7 +6613,7 @@
         return t.dueDate&&calSameDay(new Date(t.dueDate),calSel);})
         .sort(function(a,b){return (a.dueDate?new Date(a.dueDate).getTime():0)-(b.dueDate?new Date(b.dueDate).getTime():0);})
         .forEach(function(t){grp.appendChild(buildTodoRow(t));});
-      list.appendChild(grp);
+      gsec.appendChild(grp);
     });
     // ('목표를 잃은 할 일' 고아 섹션은 폐지 — 요청 2026-07-28: 동기화가
     //  id별 병합으로 고쳐져 고아는 과도기 상태일 뿐이고, 목록에 안 보이는 게 맞다.)
@@ -8769,7 +8742,6 @@
       // 내용이 영영 안 내려오고, 그 상태로 웹에서 뭘 고치면 앱 변경이 지워졌다.
       if(rows&&rows.length&&rows[0].updated_at)lastSeenUpdated=rows[0].updated_at;
       serverSnap=(rows&&rows.length&&rows[0].snapshot)||{schemaVersion:1,tasks:[],habits:[],sessions:[],settings:null};
-      lastPullAt=Date.now();
       var revived=tombApply(serverSnap);   // 반대쪽이 되살린 삭제분 제거 (요청)
       DATA=normalize(serverSnap,DATA);   // prev = 도메인 표가 정본일 때 지킬 것들
       // ⚠여기서 DATA가 통째로 바뀐다 — 대기 중이던 실행 취소 사본은 이제 '옛
@@ -8810,88 +8782,6 @@
   function webDeviceId(){var d=localStorage.getItem(WEB_DEV_KEY);
     if(!d){d='web-'+((window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(16).slice(2)));localStorage.setItem(WEB_DEV_KEY,d);}
     return d;}
-  /* 동기화 진단 HUD (요청 2026-07-28): "왜 두꺼운 bar가 안 오지?"를 코드
-     추측이 아니라 **눈으로** 가리려고 만들었다. 서버 스냅샷을 직접 읽어
-     목표 목록을 보여주고, 강제로 올리기·받기까지 한 자리에서 한다.
-     ⚠ 서버 조회는 목표 이름만 뽑아 쓰되 스냅샷 전체를 받으므로(egress)
-     유저가 이 패널을 열 때만 1회. */
-  function hudAgo(ms){
-    if(!ms)return '없음';
-    var s=Math.round((Date.now()-ms)/1000);
-    return s<60?(s+'초 전'):(Math.round(s/60)+'분 전');
-  }
-  function openSyncHud(){
-    var old=document.getElementById('syncHud');if(old)old.remove();
-    var wrap=document.createElement('div');wrap.id='syncHud';
-    wrap.innerHTML='<div class="sh-dim"></div><div class="sh-card">'+
-      '<div class="sh-title">동기화 상태</div><div class="sh-body" id="shBody">읽는 중…</div>'+
-      '<div class="sh-btns">'+
-        '<button class="sh-b" id="shPull">서버에서 받기</button>'+
-        '<button class="sh-b" id="shPush">지금 올리기</button>'+
-        '<button class="sh-b sh-close" id="shClose">닫기</button>'+
-      '</div></div>';
-    document.body.appendChild(wrap);
-    function close(){wrap.remove();}
-    wrap.querySelector('.sh-dim').addEventListener('click',close);
-    document.getElementById('shClose').addEventListener('click',close);
-    document.getElementById('shPull').addEventListener('click',function(){fetchSnapshot();setTimeout(paint,900);});
-    document.getElementById('shPush').addEventListener('click',function(){
-      doPushNow();setTimeout(function(){openSyncHud();},2200);});   // 검증 결과까지 보고 다시 그린다
-    function names(arr){
-      if(!arr||!arr.length)return '<i>없음</i>';
-      return arr.map(function(g){return esc(g.title||'(제목 없음)')+(g.imageThumbB64?' 📷':'');}).join(', ');
-    }
-    function paint(server){
-      var localG=DATA.goals||[];
-      var gTasks=(DATA.tasks||[]).filter(function(t){return t.goalID;}).length;
-      var html='<div class="sh-row"><b>웹 버전</b><span>'+WEB_BUILD+'</span></div>'+
-        '<div class="sh-row"><b>로그인</b><span>'+(session?esc(session.user&&session.user.email||'로그인됨'):'<i>안 됨 — 이 상태에선 아무것도 동기화되지 않아요</i>')+'</span></div>'+
-        '<div class="sh-row"><b>이 브라우저 id</b><span>'+esc(String(webDeviceId()).slice(0,14))+'…</span></div>'+
-        '<div class="sh-row"><b>마지막 받기</b><span>'+hudAgo(lastPullAt)+'</span></div>'+
-        '<div class="sh-row"><b>마지막 올리기</b><span>'+hudAgo(lastPushAt)+
-          (lastPushStatus?(' · HTTP '+lastPushStatus):'')+
-          (lastPushErr?(' <i>('+esc(lastPushErr)+')</i>'):'')+'</span></div>'+
-        '<div class="sh-row"><b>올린 뒤 확인</b><span>'+(lastVerify?esc(lastVerify):'<i>아직 없음 — [지금 올리기]를 눌러 보세요</i>')+'</span></div>'+
-        '<div class="sh-row"><b>웹 목표 '+localG.length+'개</b><span>'+names(localG)+'</span></div>'+
-        '<div class="sh-row"><b>목표 할 일</b><span>'+gTasks+'개</span></div>';
-      if(server===undefined)html+='<div class="sh-row"><b>서버</b><span>읽는 중…</span></div>';
-      else if(server===null)html+='<div class="sh-row"><b>서버</b><span><i>읽기 실패 (로그인·네트워크 확인)</i></span></div>';
-      else{
-        var sg=server.snapshot&&server.snapshot.goals;
-        var st=(server.snapshot&&server.snapshot.tasks)||[];
-        var sgt=st.filter(function(t){return t&&t.goalID;});
-        /* 고아 수(목표 할 일은 있는데 그 목표가 서버에 없음)는 **어느 쪽이
-           목표 배열을 덮었는지** 알려주는 지표다 (요청 2026-07-28 진단). */
-        var known={};(sg||[]).forEach(function(g){if(g&&g.id)known[g.id]=1;});
-        var orphan=sgt.filter(function(t){return !known[t.goalID];}).length;
-        /* ⚠ 서버 updated_at은 **UTC**다 (2026-07-28 실제 오독): 뉴질랜드
-           (UTC+12)에서 방금 저장한 것이 '어제 23:59'로 보여, 사람도 나도
-           "서버가 어제 멈췄다"고 잘못 읽었다. 로컬 시각 + 경과로 보여준다. */
-        var upd=server.updated_at?new Date(server.updated_at):null;
-        var updTxt=upd&&!isNaN(upd)
-          ? (upd.toLocaleString()+' <i>('+hudAgo(upd.getTime())+')</i>')
-          : esc(String(server.updated_at||'?'));
-        var mine=String(server.device_id||'')===String(webDeviceId());
-        html+='<div class="sh-row"><b>서버 목표 '+((sg&&sg.length)||0)+'개</b><span>'+names(sg)+'</span></div>'+
-          '<div class="sh-row"><b>서버 할 일</b><span>'+st.length+'개 · 목표 할 일 '+sgt.length+
-            '개 <i>(고아 '+orphan+'개)</i></span></div>'+
-          '<div class="sh-row"><b>서버 갱신</b><span>'+updTxt+'</span></div>'+
-          '<div class="sh-row"><b>마지막 저장자</b><span>'+(mine?'이 브라우저':(String(server.device_id||'').indexOf('web-')===0?'다른 브라우저':'📱 앱'))+
-            ' <i>('+esc(String(server.device_id||'?').slice(0,12))+'…)</i></span></div>'+
-          '<div class="sh-row"><b>goalsManaged</b><span>'+String(server.snapshot&&server.snapshot.goalsManaged)+
-            ' / 묘비 '+(((server.snapshot&&server.snapshot.goalsDeleted)||[]).length)+'개</span></div>';
-      }
-      document.getElementById('shBody').innerHTML=html;
-    }
-    paint(undefined);
-    if(!session){paint(null);return;}
-    freshToken().then(function(tok){if(!tok)throw 0;
-      return fetch(SUPA_URL+'/rest/v1/sundial_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&select=snapshot,updated_at,device_id',
-        {headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok}});})
-      .then(function(r){return r.json();})
-      .then(function(rows){paint(rows&&rows.length?rows[0]:{snapshot:{},updated_at:'(행 없음)'});})
-      .catch(function(){paint(null);});
-  }
   /* 캐시에 담을 스냅샷 (현재 로컬 상태) — currentSnap은 활성 세션·도메인
      표식까지 손대므로 캐시용으로는 순수한 사본만 만든다. */
   function currentSnapLike(){
@@ -9132,16 +9022,11 @@
     freshToken().then(function(tok){if(!tok)throw new Error('auth');
       return fetch(SUPA_URL+'/rest/v1/sundial_state',{method:'POST',headers:{apikey:SUPA_KEY,Authorization:'Bearer '+tok,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});})
     .then(function(r){
-      lastPushStatus=r.status;
-      if(r.status===401){signOut();lastPushErr='401 로그아웃됨';}
-      else if(!r.ok){r.text().then(function(t){console.warn('[harufocus] 저장 실패',r.status,t);
-        lastPushErr=r.status+' '+String(t).slice(0,120);});}
-      else{lastPushAt=Date.now();lastPushErr='';saveSnapCache(currentSnapLike());
-        /* ⚠ 2xx가 곧 저장은 아니다 (요청 2026-07-28 진단): upsert가 RLS·제약에
-           걸려 **0행**만 건드려도 PostgREST는 성공을 돌려줄 수 있다. 그래서
-           올린 직후 메타를 다시 읽어 updated_at이 정말 바뀌었는지 확인한다. */
-        verifyPush();}})
-    .catch(function(e){console.warn('[harufocus] 저장 네트워크 오류',e);lastPushErr='네트워크: '+e;})
+      if(r.status===401)signOut();
+      else if(!r.ok)r.text().then(function(t){console.warn('[harufocus] 저장 실패',r.status,t);});
+      else saveSnapCache(currentSnapLike());   // 새로고침 즉시 이 상태로 뜨게
+    })
+    .catch(function(e){console.warn('[harufocus] 저장 네트워크 오류',e);})
     .then(function(){pushing=false;pushDomains();});   // 성공·실패 무관하게 반드시 푼다
   }
 
@@ -11118,10 +11003,9 @@
     diary:{label:'일기',svg:'<path d="M5 4h13a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5z"/><path d="M5 4v16M9 2.5v3M9 11h6M9 15h4"/>',type:'tab'},
     lock:{label:'약속',svg:'<rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/>',type:'action'},
     about:{label:'아이폰 앱',svg:'<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10.5 5h3M11 18.5h2"/>',type:'action'},
-    synchud:{label:'동기화 상태',svg:'<path d="M4 12a8 8 0 0 1 8-8 8 8 0 0 1 6.9 4M20 12a8 8 0 0 1-8 8 8 8 0 0 1-6.9-4"/><path d="M18.9 3.5v4.5h-4.5M5.1 20.5V16h4.5"/>',type:'action'},
     settings:{label:'설정',svg:'<path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58z"/><circle cx="12" cy="12" r="3.2"/>',type:'action'}
   };
-  var NAV_ALL=['timeline','todo','matrix','routine','bucket','diary','lock','settings','about','synchud'];
+  var NAV_ALL=['timeline','todo','matrix','routine','bucket','diary','lock','settings','about'];
   // 앱 TabID에 실제로 있는 것만 — about은 웹 전용이라 barTabsRaw에 실으면
   // 앱의 compactMap이 조용히 떨어뜨려 폰 탭바가 줄어든다 (§1).
   var APP_TAB_IDS=['timeline','todo','matrix','routine','bucket','diary','lock','settings'];
@@ -11152,8 +11036,7 @@
     if(d.type==='tab')setTab(key);
     else if(key==='settings'){closeMore();openSettings();}
     else if(key==='lock'){closeMore();appNudge();}
-    else if(key==='about'){closeMore();document.getElementById('aboutScrim').classList.add('open');}
-    else if(key==='synchud'){closeMore();openSyncHud();}}
+    else if(key==='about'){closeMore();document.getElementById('aboutScrim').classList.add('open');}}
   function renderNav(){
     var bar=navBarKeys(),cur=document.body.getAttribute('data-m'),mbar=document.getElementById('mbar');
     if(!mbar)return;
@@ -12222,7 +12105,6 @@
       else if(b.dataset.act==='settings')openSettings();
       else if(b.dataset.act==='promise')appNudge();          // 약속(집중 잠금)은 iOS 전용
       else if(b.dataset.act==='about')document.getElementById('aboutScrim').classList.add('open');
-      else if(b.dataset.act==='synchud')openSyncHud();
     });
   });
   document.addEventListener('click',function(e){
