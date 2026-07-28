@@ -702,7 +702,10 @@
   .goal-group{break-inside:avoid;border-radius:16px;
     box-shadow:0 4px 14px rgba(20,40,80,.10);overflow:hidden}
   .goal-group .goal-card{margin-bottom:0;box-shadow:none;background:#fff;border-radius:0}
-  .goal-group .task{margin-bottom:0}
+  /* ⚠ 이음새 홈의 진범은 .task **래퍼**였다 (요청 2026-07-28 첨부2):
+     .task{border-radius:16px;overflow:hidden}이 내용물을 둥글게 **클리핑**해서
+     .task-inner를 0으로 만들어도 위 모서리가 파였다. 래퍼도 함께 편다. */
+  .goal-group .task{margin-bottom:0;border-radius:0;box-shadow:none}
   .goal-group .task .task-inner{background:#fff;border-radius:0;
     border-top:1px solid rgba(20,24,39,.08)}
   body.night .goal-group .goal-card{background:rgba(28,32,48,.96)}
@@ -715,6 +718,7 @@
     border-bottom:1px solid rgba(255,255,255,.45);padding-bottom:14px;margin-bottom:5px}
   .goal-group.loose:last-of-type{border-bottom:0;padding-bottom:0;margin-bottom:0}
   .goal-group.loose .goal-card{border-radius:16px;box-shadow:0 4px 14px rgba(20,40,80,.10)}
+  .goal-group.loose .task{border-radius:16px;box-shadow:0 4px 14px rgba(20,40,80,.10)}
   .goal-group.loose .task .task-inner{border-radius:14px;border-top:0}
   body.night .goal-group.loose{border-bottom-color:rgba(255,255,255,.14)}
   .goal-card .gc-img{width:44px;height:58px;object-fit:cover;border-radius:8px;flex:0 0 auto}
@@ -2887,7 +2891,7 @@
   var SUPA_URL='https://sbatsnivlrlywpfytlio.supabase.co';
   var SUPA_KEY='sb_publishable_vwZUKHhhtBEjAgXrZQTNFQ_bQeM8Ypc';
   /* 지금 브라우저가 실행 중인 웹 버전 — 캐시 판별용, 푸시할 때마다 갱신. */
-  var WEB_BUILD='2026-07-28 14:00';
+  var WEB_BUILD='2026-07-28 14:30';
   var AUTH_KEY='harufocusWebAuth';
 
   // 한국어 조사 자동 선택 (요청): 받침 유무로 갈린다 — 엘리'야' vs 영식'아'.
