@@ -204,6 +204,9 @@
   .name-modal input{width:100%;box-sizing:border-box;text-align:center;font:inherit;font-size:16px;font-weight:700;
     padding:10px;border:1.5px solid var(--line);border-radius:12px;background:var(--card-2);color:var(--ink);outline:none}
   .name-modal .go{width:100%;margin-top:10px}
+  /* 엘리의 기억 한 줄 (P1-3) — 버튼 위 조용한 캡슐. */
+  .me-memory{flex:1 1 100%;text-align:center;font-size:12px;font-weight:700;color:var(--ink-soft,#667);
+    background:var(--card-2);border-radius:999px;padding:7px 12px;margin:0 2px 2px}
   .me-saybubs{display:flex;flex-direction:column;gap:8px;align-items:flex-start;width:100%;margin:2px 0 0}
   .me-saybub{display:inline-flex;align-items:center;gap:6px;padding:10px 15px;border:0;cursor:pointer;
     border-radius:16px 16px 16px 4px;background:var(--sky-blue,#5B7CE0);color:#fff;
@@ -11964,9 +11967,36 @@
   /* '한 걸음' 탭 (2026-07-28 앱 stateActions 파리티): 상태별 버튼 —
      피커(10/2분)·스누즈·덜어내기·걷기·쉬기. 자세 인식(카메라)·앱 잠금
      (스크린타임)·지속 진동은 iOS 전용이라 웹에는 없다. */
+  /* 엘리의 기억 한 줄 (P1-3, 2026-07-29 — 앱 memoryLine과 한 쌍): 이 상태에서
+     실제로 집중으로 이어졌던 행동을 체크인 로그에서 찾아 버튼 위에 알려준다.
+     표본 3번·성공 절반부터만 말한다 — 섣부른 단정은 신뢰를 깎는다. */
+  var ME_ACTION_LABEL={picker_start:'작업 하나 골라 10분',snooze5:'5분 뒤에 돌아와',
+    phonecant:'폰 잠그기',posture:'자세 인식 집중',pickone:'한 가지만 골라 10분',trim:'덜어내기'};
+  function meActionLabel(key){
+    if(ME_ACTION_LABEL[key])return ME_ACTION_LABEL[key];
+    var m=/^block(\d+)$/.exec(key||'');return m?(m[1]+'분 시작'):null;
+  }
+  function meMemoryLine(k){
+    var rows=meChecksLoad().filter(function(r){return r.state===k&&r.action;});
+    var tally={};
+    rows.forEach(function(r){var t=tally[r.action]||(tally[r.action]={tried:0,worked:0});
+      t.tried++;if(r.startedAt)t.worked++;});
+    var best=null;
+    Object.keys(tally).forEach(function(a){var t=tally[a];
+      if(t.tried<3)return;
+      if(!best||t.worked/t.tried>best.worked/best.tried)best={action:a,tried:t.tried,worked:t.worked};});
+    if(!best||best.worked*2<best.tried)return null;
+    var label=meActionLabel(best.action);if(!label)return null;
+    // (으)로 — 받침 따라 (덜어내기→로, 2분 시작→으로).
+    return '이 기분일 때 '+best.tried+'번 중 '+best.worked+'번, ‘'+label+'’'
+      +josa(label,'으로','로')+' 다시 움직였어.';
+  }
   function meRenderStep(k){
     var box=document.getElementById('meTabPane');if(!box)return;
     box.innerHTML='';meSelSet=[];
+    var memory=meMemoryLine(k);
+    if(memory){var mm=document.createElement('div');mm.className='me-memory';
+      mm.textContent='✨ '+memory;box.appendChild(mm);}
     function btn(label,go,fn){var b=document.createElement('button');
       b.className='wide'+(go?' go':'');b.textContent=label;b.onclick=fn;
       if(go)b.classList.add(go===true?'go':go);box.appendChild(b);return b;}
