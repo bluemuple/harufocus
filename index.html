@@ -2901,9 +2901,9 @@
   /* 지금 브라우저가 실행 중인 웹 버전 (요청 2026-07-28 HUD): 캐시된 옛
      페이지를 보고 있는지 한눈에 가리려면 화면에 버전이 있어야 한다.
      푸시할 때마다 이 문자열을 갱신한다. */
-  var WEB_BUILD='2026-07-28 13:05';
+  var WEB_BUILD='2026-07-28 13:30';
   /* 동기화 진단용 시각 (요청 2026-07-28 HUD) */
-  var lastPullAt=0,lastPushAt=0,lastPushErr='',lastPushStatus=0,lastVerify='',pushRetried=false;
+  var lastPullAt=0,lastPushAt=0,lastPushErr='',lastPushStatus=0,lastVerify='';
   /* 올린 게 **정말 서버에 남았는지** 확인 (요청 2026-07-28): updated_at이
      방금 시각으로 갱신됐는지 본다. 안 바뀌면 권한(RLS)·제약·용량 쪽이다. */
   function verifyPush(){
@@ -8920,8 +8920,20 @@
        그래서 **가진 게 있을 때**나 **서버에 이미 목표 칸이 있을 때**만 실어
        보낸다 (폴더와 같은 규칙). 마지막 목표를 지운 진짜 삭제는 서버에 칸이
        있으므로 그대로 전파된다. */
-    if(DATA.goals&&DATA.goals.length){
-      serverSnap.goals=DATA.goals;serverSnap.goalsManaged=true;}
+    /* ⭐**올릴 때도 병합한다** (2026-07-28 사고의 최종 수정): 받을 때만
+       병합하고 올릴 때는 로컬 배열을 그대로 썼더니, 앱이 방금 올린 목표를
+       웹의 낡은 배열이 덮어 지웠다. 서버 사본(serverSnap.goals — 마지막으로
+       받아 둔 것)과 로컬을 id별 합집합으로 올리면, 누가 먼저 올렸든 남의
+       목표가 사라지지 않는다. 삭제는 묘비(goalsDeleted)만이 한다. */
+    var mergeG={},mergeOrder=[];
+    ((serverSnap&&serverSnap.goals)||[]).forEach(function(g){
+      if(g&&g.id){mergeG[g.id]=g;mergeOrder.push(g.id);}});
+    (DATA.goals||[]).forEach(function(g){
+      if(g&&g.id){if(!mergeG[g.id])mergeOrder.push(g.id);mergeG[g.id]=g;}});   // 로컬이 더 최신
+    var deadNow={};gtombIDs().forEach(function(id){deadNow[id]=1;});
+    var mergedGoals=mergeOrder.filter(function(id){return !deadNow[id];})
+      .map(function(id){return mergeG[id];});
+    if(mergedGoals.length){serverSnap.goals=mergedGoals;serverSnap.goalsManaged=true;}
     /* ⚠ 빈 배열은 **어떤 경우에도** 소유 선언과 함께 올리지 않는다 (2026-07-28
        2차 수정): '서버에 칸이 있으면'이라는 예외조차 위험했다 — 서버의
        goals:[] 잔재를 normalize가 채택하던 시절의 웹은 '정당하게 빈' 상태가
@@ -9098,19 +9110,19 @@
         .then(function(r){return r.json();}).catch(function(){return null;});})
     .then(function(rows){
       var r0=rows&&rows.length?rows[0]:null;
-      if(r0&&r0.device_id!==webDeviceId()&&r0.updated_at!==lastSeenUpdated&&!pushRetried){
+      if(r0&&r0.device_id!==webDeviceId()&&r0.updated_at!==lastSeenUpdated){
         // 남이 더 최신이다 → 내 낡은 스냅샷으로 덮지 않고 먼저 받는다.
         // fetchSnapshot은 fTask를 새 배열에서 다시 찾아 붙이므로 집중 중에도
         // 안전하다 (앱 reattachActiveTask와 같은 역할).
-        /* ⚠ 재시도는 **한 번만** (요청 2026-07-28): fetch가 끝나기 전에 다시
-           이 게이트를 만나면 fetch→push→fetch…가 서로를 예약해 영영 안 올라간다.
-           한 바퀴 뒤에는 무조건 올려서 '올라가지 않는 웹'을 만들지 않는다. */
-        pushRetried=true;
+        /* ⚠ 어제 넣은 `!pushRetried` 가드는 **삭제했다** (2026-07-28 실제 사고):
+           '한 바퀴 뒤엔 무조건 올린다'는 뜻이 되어, 앱이 방금 올린 목표를 웹의
+           낡은 배열이 덮어 지웠다(앱 올림 12:15 → 서버 12:15:29 웹, 서버 목표
+           3개→1개). 루프 걱정은 아래 goals 병합이 대신 없앤다 — 덮어써도
+           남의 목표가 사라지지 않으므로 이 게이트는 순수한 최적화가 된다. */
         fetchSnapshot();
         pushSnapshot();          // 병합된 상태로 다시 올린다
         return;
       }
-      pushRetried=false;
       doPushNow();
     });
   }
