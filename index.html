@@ -615,8 +615,19 @@
     body:has(.pane-tabs:hover) .tl-fabs{opacity:.3}
     /* 장기 목표 버튼도 함께 물러난다 (요청 2026-07-27) — 예전엔 +만 흐려져
        두 버튼의 밝기가 어긋났다. */
+    /* ⚠ 타임라인의 추가·편집(.tl-fabs)·'지금'(.tl-nowcap)·편집 bar는 전부
+       .pane-tl **밖**(body 직계 fixed)이다 — 그 위에 호버하면 .pane-tl:hover가
+       풀려 오른쪽 버튼이 도로 선명해졌다 (요청 2026-07-28: 타임라인에 호버인
+       이상 유지). 트리거를 그 요소들까지 넓힌다. 오른쪽 페이지 버튼(.page-fab
+       — 루틴의 +·친구 포함)은 .pane-tabs 안이라 반대 방향은 이미 맞다. */
     body:has(.pane-tl:hover) .pane-tabs .page-fab,
-    body:has(.pane-tl:hover) .pane-tabs .goal-fab{opacity:.3}
+    body:has(.pane-tl:hover) .pane-tabs .goal-fab,
+    body:has(.tl-fabs:hover) .pane-tabs .page-fab,
+    body:has(.tl-fabs:hover) .pane-tabs .goal-fab,
+    body:has(.tl-nowcap:hover) .pane-tabs .page-fab,
+    body:has(.tl-nowcap:hover) .pane-tabs .goal-fab,
+    body:has(.edit-bar:hover) .pane-tabs .page-fab,
+    body:has(.edit-bar:hover) .pane-tabs .goal-fab{opacity:.3}
   }
   /* 모자이카 전환 FAB (요청 2026-07-26: 편집 연필 왼쪽) — 연필과 같은 톤. */
   .tl-mofab.on{background:var(--card);color:var(--ink)}
@@ -2891,7 +2902,7 @@
   var SUPA_URL='https://sbatsnivlrlywpfytlio.supabase.co';
   var SUPA_KEY='sb_publishable_vwZUKHhhtBEjAgXrZQTNFQ_bQeM8Ypc';
   /* 지금 브라우저가 실행 중인 웹 버전 — 캐시 판별용, 푸시할 때마다 갱신. */
-  var WEB_BUILD='2026-07-28 14:30';
+  var WEB_BUILD='2026-07-28 14:50';
   var AUTH_KEY='harufocusWebAuth';
 
   // 한국어 조사 자동 선택 (요청): 받침 유무로 갈린다 — 엘리'야' vs 영식'아'.
