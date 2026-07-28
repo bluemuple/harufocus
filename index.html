@@ -2395,7 +2395,8 @@
           <div class="app-foot" id="tlBrand"><b id="brandName">엘리의 하루</b><span id="brandTag">마음을 돌보는 하루 플래너</span></div>
           <button class="page-fab fab-del" id="todoDelFab" title="선택한 할 일 삭제" style="display:none"><svg viewBox="0 0 24 24" style="width:26px;height:26px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7"/><path d="M6.5 7l.9 12.4A1.7 1.7 0 0 0 9.1 21h5.8a1.7 1.7 0 0 0 1.7-1.6L17.5 7"/><path d="M10 11v6M14 11v6"/></svg><b class="fab-n"></b></button>
           <button class="goal-fab" id="goalFab" title="장기 목표 나누기" aria-label="장기 목표 나누기">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <!-- 선 두께 0.85 = 예전 1.7의 절반 (요청 2026-07-28) -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <rect x="8" y="1.8" width="8" height="7.4" rx="2.4"/>
               <path d="M12 9.2V12M12 15V12M4 15c0-2.4 2.2-2.8 5.4-2.8h5.2C17.8 12.2 20 12.6 20 15"/>
               <rect x="1.2" y="15.2" width="5.6" height="5.6" rx="1.5"/><path d="M2.7 17.9l1 1.1 1.8-2"/>
@@ -7485,9 +7486,13 @@
     if(wp)wp.style.transition=on?'none':'transform .8s cubic-bezier(.4,0,.2,1)';}
   function setupBucketDrag(){
     var scene=document.querySelector('.bucket-scene');if(!scene||scene._dragSet)return;scene._dragSet=true;
-    var sx=0,sy=0,down=false,moved=false,wallEl=null,startView=0,startLv=0;
+    /* 탭 판정 (요청 2026-07-28 "한참 후에 반응"): 예전엔 3px만 흔들려도
+       moved=true로 굳어 클릭이 조용히 무시됐다 — 트랙패드 클릭은 흔히 3px쯤
+       미끄러져서 몇 번을 눌러야 선택되는 것처럼 느껴졌다. 이제 **최대 이탈
+       거리**를 재고 7px 미만이면 탭으로 본다. */
+    var sx=0,sy=0,down=false,maxD=0,wallEl=null,startView=0,startLv=0;
     scene.addEventListener('pointerdown',function(e){
-      down=true;moved=false;sx=e.clientX;sy=e.clientY;startView=bView;
+      down=true;maxD=0;sx=e.clientX;sy=e.clientY;startView=bView;
       wallEl=e.target.closest('.wall');
       if(wallEl)startLv=sideLevel(SIDES[+wallEl.dataset.i].id);
       try{scene.setPointerCapture(e.pointerId);}catch(_){}
@@ -7496,18 +7501,18 @@
     scene.addEventListener('touchmove',function(e){if(down&&e.cancelable)e.preventDefault();},{passive:false});
     scene.addEventListener('pointermove',function(e){
       if(!down)return;if(e.cancelable)e.preventDefault();var dx=e.clientX-sx,dy=e.clientY-sy;
-      if(Math.abs(dx)>3||Math.abs(dy)>3)moved=true;
+      maxD=Math.max(maxD,Math.abs(dx),Math.abs(dy));
       if(wallEl && +wallEl.dataset.i===bSel && Math.abs(dy)>Math.abs(dx)){
         // 물 높이만 바뀐다 — 회전(applyTub) 없이 물높이·뱃지만 갱신해 매끄럽게 (요청).
         var id=SIDES[bSel].id;bManual[id]=Math.max(0,Math.min(10,Math.round((startLv - dy/TUB.waterMax*10)*10)/10));
         tubNoTransition(true);updateWater();
         var bb=document.getElementById('bBadge');if(bb)bb.textContent=Math.round(sideLevel(id))+' / 10';
       }else{
-        if(bSel>=0 && Math.abs(dx)>6){bSel=-1;renderBInfo();}
+        if(bSel>=0 && Math.abs(dx)>=7){bSel=-1;renderBInfo();}   // 탭 허용치(7px) 밖에서만 (요청 2026-07-28)
         bView=startView+dx*0.45;tubNoTransition(true);applyTub();
       }
     });
-    function end(){down=false;tubNoTransition(false);if(!moved&&wallEl)selectSide(+wallEl.dataset.i);}
+    function end(){down=false;tubNoTransition(false);if(maxD<7&&wallEl)selectSide(+wallEl.dataset.i);}
     scene.addEventListener('pointerup',end);
     scene.addEventListener('pointercancel',function(){down=false;tubNoTransition(false);});
   }
@@ -7940,6 +7945,9 @@
         else{diaryFilter=b.dataset.f;diaryTagFilter=null;}
         renderDiary();});});
     var all=diaryEntries().filter(function(e){
+      // wordbar = 앱에서 '일기에 추가'를 끈 한마디 (2026-07-28) — 상단바
+      // 회전에만 살고 일기 피드에는 안 나온다 (앱 DiaryView와 같은 규칙).
+      if(e.kind==='wordbar')return false;
       if(diaryTagFilter)return getTags(e).indexOf(diaryTagFilter)>=0;
       return diaryFilter==='all'||(e.kind||'free')===diaryFilter;});
     if(!all.length){var fullEmpty=diaryTagFilter||diaryFilter==='all';   // 앱: 태그칩 탭=kindFilter nil(DiaryView.swift:256)이라 태그 필터 중에도 전체 문구
@@ -9435,11 +9443,14 @@
   }
   (function(){
     var box=null,sx=0,sy=0,active=false;
-    var list=document.getElementById('todoList');
+    /* 시작 영역 = 할일 **페이지 전체** (요청 2026-07-28): 예전엔 #todoList에만
+       걸려 있어 bar 아래 빈 하늘에서 위로 끌어올리면 네모가 안 생겼다.
+       선택 대상은 여전히 #todoList .task뿐 — 시작점만 넓힌다. */
+    var list=document.getElementById('view-todo');
     if(!list)return;
     list.addEventListener('pointerdown',function(e){
       if(e.pointerType!=='mouse'||e.button!==0)return;            // 마우스 좌클릭만
-      if(e.target.closest('.task,.subpanel,.welcome,button,input,textarea'))return;   // 빈 곳에서만
+      if(e.target.closest('.task,.subpanel,.welcome,button,input,textarea,.goal-card,.cap,.folder-cap,.week,select,a,label'))return;   // 빈 곳에서만
       active=true;sx=e.clientX;sy=e.clientY;
       box=document.createElement('div');box.className='marquee';
       box.style.left=sx+'px';box.style.top=sy+'px';box.style.width='0px';box.style.height='0px';
@@ -11987,7 +11998,8 @@
     }
     if(k==='vow'){
       // 한마디 (앱 §2): shownInBar=true인 diary word들 중 회전 슬롯마다 하나.
-      var words=(DATA.diary||[]).filter(function(e){return e.kind==='word'&&e.shownInBar&&(e.text||'').trim();});
+      // wordbar = '일기에 추가'를 끈 한마디(2026-07-28) — 회전에는 똑같이 돈다.
+      var words=(DATA.diary||[]).filter(function(e){return (e.kind==='word'||e.kind==='wordbar')&&e.shownInBar&&(e.text||'').trim();});
       if(words.length){var w=words[Math.abs(barWordTick)%words.length];
         return {ic:IC.note,txt:'“'+w.text.split('\n')[0]+'”'};}
       var motto=(S.motto||S.todayVow||'').trim();
