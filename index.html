@@ -2901,7 +2901,7 @@
   /* 지금 브라우저가 실행 중인 웹 버전 (요청 2026-07-28 HUD): 캐시된 옛
      페이지를 보고 있는지 한눈에 가리려면 화면에 버전이 있어야 한다.
      푸시할 때마다 이 문자열을 갱신한다. */
-  var WEB_BUILD='2026-07-28 12:45';
+  var WEB_BUILD='2026-07-28 13:05';
   /* 동기화 진단용 시각 (요청 2026-07-28 HUD) */
   var lastPullAt=0,lastPushAt=0,lastPushErr='',lastPushStatus=0,lastVerify='',pushRetried=false;
   /* 올린 게 **정말 서버에 남았는지** 확인 (요청 2026-07-28): updated_at이
@@ -2920,7 +2920,7 @@
           if(!u){lastVerify='서버에 행이 없음';return;}
           var age=Date.now()-new Date(u).getTime();
           if(age<60000&&dev===webDeviceId())lastVerify='서버 반영 확인 ✓ ('+Math.round(age/1000)+'초 전)';
-          else lastVerify='⚠ 서버가 안 바뀜 (서버 시각 '+String(u).replace('T',' ').slice(0,19)+
+          else lastVerify='⚠ 서버가 안 바뀜 (서버 시각 '+new Date(u).toLocaleString()+
             ', 기기 '+String(dev||'?').slice(0,10)+') — 쓰기 권한(RLS)·용량 의심';
         }).catch(function(){lastVerify='확인 실패(네트워크)';});
     },1200);
@@ -8864,11 +8864,20 @@
            목표 배열을 덮었는지** 알려주는 지표다 (요청 2026-07-28 진단). */
         var known={};(sg||[]).forEach(function(g){if(g&&g.id)known[g.id]=1;});
         var orphan=sgt.filter(function(t){return !known[t.goalID];}).length;
+        /* ⚠ 서버 updated_at은 **UTC**다 (2026-07-28 실제 오독): 뉴질랜드
+           (UTC+12)에서 방금 저장한 것이 '어제 23:59'로 보여, 사람도 나도
+           "서버가 어제 멈췄다"고 잘못 읽었다. 로컬 시각 + 경과로 보여준다. */
+        var upd=server.updated_at?new Date(server.updated_at):null;
+        var updTxt=upd&&!isNaN(upd)
+          ? (upd.toLocaleString()+' <i>('+hudAgo(upd.getTime())+')</i>')
+          : esc(String(server.updated_at||'?'));
+        var mine=String(server.device_id||'')===String(webDeviceId());
         html+='<div class="sh-row"><b>서버 목표 '+((sg&&sg.length)||0)+'개</b><span>'+names(sg)+'</span></div>'+
           '<div class="sh-row"><b>서버 할 일</b><span>'+st.length+'개 · 목표 할 일 '+sgt.length+
             '개 <i>(고아 '+orphan+'개)</i></span></div>'+
-          '<div class="sh-row"><b>서버 갱신</b><span>'+esc(String(server.updated_at||'').replace('T',' ').slice(0,19))+
-            ' · '+esc(String(server.device_id||'?').slice(0,10))+'…</span></div>'+
+          '<div class="sh-row"><b>서버 갱신</b><span>'+updTxt+'</span></div>'+
+          '<div class="sh-row"><b>마지막 저장자</b><span>'+(mine?'이 브라우저':(String(server.device_id||'').indexOf('web-')===0?'다른 브라우저':'📱 앱'))+
+            ' <i>('+esc(String(server.device_id||'?').slice(0,12))+'…)</i></span></div>'+
           '<div class="sh-row"><b>goalsManaged</b><span>'+String(server.snapshot&&server.snapshot.goalsManaged)+
             ' / 묘비 '+(((server.snapshot&&server.snapshot.goalsDeleted)||[]).length)+'개</span></div>';
       }
