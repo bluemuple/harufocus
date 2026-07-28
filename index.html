@@ -2119,6 +2119,9 @@
   /* 집중 후 기분 체크인 카드 (앱 PostFocusMoodCard 파리티). */
   .mood-card{position:fixed;left:0;right:0;bottom:0;z-index:6050;display:flex;justify-content:center;padding:0 20px calc(90px + env(safe-area-inset-bottom));pointer-events:none}
   .mood-inner{pointer-events:auto;position:relative;width:min(360px,92vw);background:#F2EDFA;border-radius:20px;padding:16px;box-shadow:0 5px 24px rgba(0,0,0,.16);border:1px solid rgba(255,255,255,.6)}
+  /* 물 마시는 엘리 (P0-3) — 카드 머리 장면. */
+  .mood-ele{display:block;height:76px;margin:2px auto 0}
+  .mood-eleline{font-size:12px;font-weight:700;color:#6b6580;text-align:center;margin-bottom:6px}
   .mood-head{font-size:14px;font-weight:700;color:#2a2440;text-align:center}
   .mood-sum{font-size:11px;color:#6b6480;text-align:center;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .mood-row{display:flex;justify-content:center;gap:18px;margin-top:12px}
@@ -6267,6 +6270,11 @@
     var wrap=document.createElement('div');wrap.id='moodCard';wrap.className='mood-card';
     wrap.innerHTML='<div class="mood-inner"><button class="mood-x" id="moodX">✕</button>'
       +'<span class="mood-count" id="moodCount">10</span>'
+      /* 물 = 엘리의 하루 (P0-3, 앱 PostFocusMoodCard와 한 쌍): 집중이 끝난
+         순간, 엘리가 그 물을 받아 마시는 장면 + 한 줄 — 내 집중이 엘리의
+         하루를 살게 한다는 프레임. */
+      +'<img class="mood-ele" src="assets/ele_drink.png" alt="">'
+      +'<div class="mood-eleline">'+minutes+'분을 담았어요 — 엘리가 그 물로 오늘을 살아요.</div>'
       +'<div class="mood-head">방금 집중, 어땠어요?</div>'
       +'<div class="mood-sum">'+esc(title)+' · '+minutes+'분</div>'
       +'<div class="mood-row">'+chips+'</div>'
