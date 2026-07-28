@@ -197,6 +197,13 @@
   .me-title-cap svg,.me-title-cap img{width:19px;height:19px;border-radius:50%}
   /* '한마디' 탭의 두 말풍선 (요청 2026-07-29): 한마디 / 그 아래 칭찬해줘.
      누르면 이 자리가 긁는 bar + 입력으로 바뀐다(말풍선이 커지는 어법). */
+  /* 이름 짓기 패널 (요청 2026-07-29) — 이름만 묻는 작은 카드. */
+  .name-modal{max-width:300px;text-align:center}
+  .name-modal .nm-sub{margin:4px 0 0;font-size:12.5px;color:var(--ink-soft)}
+  .name-modal img{width:170px;height:auto;margin:10px auto 6px;display:block}
+  .name-modal input{width:100%;box-sizing:border-box;text-align:center;font:inherit;font-size:16px;font-weight:700;
+    padding:10px;border:1.5px solid var(--line);border-radius:12px;background:var(--card-2);color:var(--ink);outline:none}
+  .name-modal .go{width:100%;margin-top:10px}
   .me-saybubs{display:flex;flex-direction:column;gap:8px;align-items:flex-start;width:100%;margin:2px 0 0}
   .me-saybub{display:inline-flex;align-items:center;gap:6px;padding:10px 15px;border:0;cursor:pointer;
     border-radius:16px 16px 16px 4px;background:var(--sky-blue,#5B7CE0);color:#fff;
@@ -210,7 +217,10 @@
   .me-word-row .mw-x{flex:0 0 auto;width:24px;height:24px;border-radius:50%;border:0;cursor:pointer;
     background:var(--chip,#eef1f5);color:var(--ink-soft,#667);font-weight:800;line-height:1}
   /* 나의 다짐 모달 */
-  .pledge-scratch{position:relative;height:48px;border-radius:14px;overflow:visible;z-index:5}
+  /* ⚠ 자식이 전부 절대배치라 **본인 폭이 0으로 붕괴**한다 — 다짐 모달은
+     블록 흐름이라 우연히 100%였지만, flex(.me-pane) 안에선 글자가 세로로
+     떨어지고 canvas가 10px가 되는 사고(2026-07-29). 폭을 명시한다. */
+  .pledge-scratch{position:relative;width:100%;flex:1 1 100%;height:48px;border-radius:14px;overflow:visible;z-index:5}
   .pledge-scratch .ps-under{position:absolute;inset:0;border-radius:14px;background:var(--chip,#EEF1F5);
     display:flex;align-items:center;justify-content:center;gap:8px;padding:0 14px;font-size:13px;font-weight:700;text-align:center}
   .pledge-scratch .ps-under .ps-copy{flex:0 0 auto;border:0;border-radius:999px;padding:4px 10px;cursor:pointer;
@@ -1827,7 +1837,11 @@
     /* 경계선(400px)까지 숨 쉴 틈을 둔다 (요청 2026-07-27): 18 → 34. */
     .tl-fabs{display:flex!important;left:auto;right:calc(100vw - var(--pane-w) + 34px);bottom:18px}
     .page-fab{bottom:26px;right:26px}
-    .fab-del{right:94px}
+    /* 삭제 FAB (요청 2026-07-29): 장기 목표 버튼 **왼쪽**, 같은 y·같은 46px.
+       예전 right:94는 goal-fab(88~134)와 겹쳤다. 간격은 +FAB↔goal-fab의
+       6px를 그대로: goal-fab 왼끝 134 + 6 = 140. bottom도 27로 되돌린다 —
+       위 .page-fab{bottom:26}이 덮어 1px 어긋난다(friends-fab과 같은 사고). */
+    .fab-del{right:140px;bottom:27px}
     /* 장기 목표 버튼과 같은 x·y (요청 2026-07-28) — PC .page-fab{bottom:26}이
        friends-fab의 27을 덮어 1px 어긋나 있었다. */
     .friends-fab{right:88px;bottom:27px}
@@ -2792,9 +2806,8 @@
     </div>
 
     <div class="set-sec">엘리</div>
+    <!-- 몸 색 고르기 폐지 (요청 2026-07-29): 엘리는 원래 색 하나로 지낸다 -->
     <div class="elabel">이름</div><input id="setEleName" placeholder="엘리" maxlength="10">
-    <div class="elabel">몸 색</div>
-    <div class="ele-colors" id="setEleColors"></div>
 
     <div class="set-sec">상단 바</div>
     <div class="elabel">한마디</div><input id="setVow" placeholder="예: 지금 이 순간, 하나에만 집중" maxlength="40">
@@ -2955,6 +2968,16 @@
 <!-- 나의 다짐 (2026-07-28 앱 파리티): 상단바 말풍선을 누르면 열린다 —
      '엘리에게 한마디' 창 대체. 긁는 예시 + (복사) + 입력 + 저장 토글 +
      예전 다짐 목록 + '지금 나는 (상태)' 캡슐 → 지금 나는 시트. -->
+<!-- 이름 짓기 (요청 2026-07-29): 첫 '…에게 한마디' 탭에 한 번만 -->
+<div class="scrim" id="nameScrim">
+  <div class="modal name-modal">
+    <h3>이름을 지어 주세요</h3>
+    <p class="nm-sub">하늘 아래에서 함께 지낼 코끼리예요.</p>
+    <img src="assets/ele_name.png" alt="">
+    <input id="nameInput" placeholder="엘리" maxlength="10">
+    <button class="go" id="nameSave">이 이름으로</button>
+  </div>
+</div>
 <div class="scrim" id="pledgeScrim">
   <div class="modal me-modal">
     <button class="me-x" id="pledgeX" aria-label="닫기">✕</button>
@@ -6222,13 +6245,7 @@
     document.getElementById('setPostItQ4').checked=localStorage.getItem('hfPostItToQ4')!=='0';
     var scen=s.sceneryRaw||'plain';
     document.querySelectorAll('#setScenery button').forEach(function(b){b.classList.toggle('on',b.dataset.s===scen);});
-    var ELE_COLORS=['#F2D6C4','#E8C0A4','#D8A87E','#B67F55','#8E5A3A','#5C3A28',
-                    '#D4C1D2','#F3C6D3','#BEE3CF','#BCD8F0','#F5E4B8','#CBCBD6'];
-    var cur=s.eleTintHex||'#D4C1D2';
-    var ecw=document.getElementById('setEleColors');
-    ecw.innerHTML=ELE_COLORS.map(function(c){return '<button data-c="'+c+'" class="'+(c===cur?'on':'')+'" style="background:'+c+'"></button>';}).join('');
-    ecw.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){
-      ecw.querySelectorAll('button').forEach(function(x){x.classList.remove('on');});b.classList.add('on');});});
+    // (엘리 몸 색 스와치 폐지 — 요청 2026-07-29)
     document.getElementById('setDdayLabel').value=setDdayTitle();
     document.getElementById('setDdayDate').value=s.ddayDate?s.ddayDate.slice(0,10):'';
     document.getElementById('setBarPeriod').value=setChipIntervalMin();
@@ -8055,7 +8072,10 @@
     gloom:{k:'마음이 무거워요',c:'#7394BD',e:'🌧'},tired:{k:'지쳤어요',c:'#7A85D9',e:'😴'}};
   var diaryFilter='all',diaryTagFilter=null,diaryCur=null;
   function eleName(){var n=(DATA.settings&&DATA.settings.eleName||'').trim();return n||'엘리';}
-  function eleTint(){return (DATA.settings&&DATA.settings.eleTintHex)||'#D4C1D2';}
+  /* 피부색 기능 폐지 (요청 2026-07-29): 엘리는 원래 색(기본 라벤더) 하나 —
+     설정·스냅샷의 옛 eleTintHex는 무시한다. 그리기 파이프라인(eleWordImg)은
+     그대로 두고 **색만 여기서 고정**한다(맨 원본은 눈이 -fix 레이어라 못 쓴다). */
+  function eleTint(){return '#D4C1D2';}
   /* 색을 흰쪽으로 amt만큼 당긴다 (0.4 = 40% 연하게). */
   function lightenHex(hex,amt){
     var m=/^#?([0-9a-f]{6})$/i.exec(String(hex||''));
@@ -9994,10 +10014,40 @@
   document.getElementById('navEditBtn').addEventListener('click',toggleNavEdit);
   document.getElementById('topCap').addEventListener('click',function(){
     if(capSignal&&capSignal.text){capSignal=null;startBarRotation();return;}   // 신호는 눌러서 해제
+    /* 첫 탭 = 이름 짓기 (요청 2026-07-29, 앱 파리티): 온보딩 대신 '…에게
+       한마디'를 처음 누르는 순간 작은 이름 패널이 뜬다. 한 번 뜨면 끝
+       (설정 > 엘리 이름에서 언제든). 기기 로컬 플래그 — 이름 자체는 동기화. */
+    if(!localStorage.getItem('hfEleNamed')&&!(DATA.settings&&(DATA.settings.eleName||'').trim())){
+      openEleNaming();return;
+    }
     /* 상단바 말풍선 탭 = **나의 다짐** (2026-07-28 앱 파리티 — '엘리에게
        한마디' 창 폐지). 상태 동그라미(tcAva)는 여전히 '지금 나' 시트. */
     openPledge();
   });
+  /* 이름 짓기 패널 (요청 2026-07-29) — 이름만, 작게. */
+  function openEleNaming(){
+    var sc=document.getElementById('nameScrim');if(!sc)return;
+    document.getElementById('nameInput').value=(DATA.settings&&DATA.settings.eleName)||'';
+    sc.classList.add('open');
+    setTimeout(function(){document.getElementById('nameInput').focus();},50);
+  }
+  (function(){
+    var sc=document.getElementById('nameScrim');if(!sc)return;
+    function closeNaming(){
+      localStorage.setItem('hfEleNamed','1');   // 지어도, 넘겨도 다시 안 뜬다
+      sc.classList.remove('open');
+    }
+    document.getElementById('nameSave').addEventListener('click',function(){
+      var v=(document.getElementById('nameInput').value||'').trim().slice(0,10);
+      if(!DATA.settings)DATA.settings={};
+      DATA.settings.eleName=v;                  // 빈 값 = 기본(엘리)
+      pushSnapshot();renderAll();
+      closeNaming();
+    });
+    document.getElementById('nameInput').addEventListener('keydown',function(e){
+      if(e.key==='Enter'){e.preventDefault();document.getElementById('nameSave').click();}});
+    sc.addEventListener('click',function(e){if(e.target===sc)closeNaming();});
+  })();
   function openVow(){
     document.getElementById('vowInput').value='';                 // 새 한마디는 빈 입력 (앱 §2)
     document.querySelector('#vowScrim h3').textContent=eleName()+'에게 한마디';
@@ -10641,7 +10691,16 @@
   }
   function submitCaptureOne(title,batchID){
     var p=parseDurTitle(title);
-    var o={title:p?p.title:title,categoryID:cap.draft.categoryID,colorKey:cap.draft.colorKey,iconName:cap.draft.iconName,
+    /* ⚠ 줄마다 **자체 기호·범주** (요청 2026-07-29 버그): 예전엔
+       cap.draft.iconName을 그대로 실어 — 초안 아이콘은 첫 줄을 칠 때
+       파생된 값이라 — 둘째 줄부터 전부 첫 작업의 기호를 물려받았다
+       ('수학·과학·역사'가 모두 √). 타임라인 여러 줄 경로(lineIconCat)와
+       같은 규칙으로: 손으로 고른 기호(iconLocked)만 전체에 적용된다. */
+    var ic=cap.draft.iconLocked?null:lineIconCat(p?p.title:title);
+    var o={title:p?p.title:title,
+      categoryID:(ic&&ic.cat&&!cap.draft.colorLocked)?ic.cat:cap.draft.categoryID,
+      colorKey:cap.draft.colorLocked?cap.draft.colorKey:(cap.draft.colorKey||''),
+      iconName:ic?ic.icon:cap.draft.iconName,
       durationMin:(p&&!cap.draft.durationLocked)?p.dur:cap.draft.durationMin,reminderOffsets:cap.draft.reminderOffsets,
       nudgeEnabled:cap.draft.nudgeEnabled,dueDate:cap.draft.dueDate,repeatDaysMask:cap.draft.repeatDaysMask};
     if(batchID){o.rewardBatchID=batchID;
@@ -10963,7 +11022,21 @@
   function capAutoSuggest(){
     if(!cap.open)return;
     var raw=(document.getElementById('capText').value||'');
-    if(raw.indexOf('\n')>=0)return;                 // 여러 줄이면 시간·기호 파싱 생략(앱 파리티)
+    /* 여러 줄이면 **마지막 줄**(지금 치는 작업) 기준으로 기호를 미리 본다
+       (요청 2026-07-29 버그: 예전엔 통째로 생략해 첫 줄 기호가 그대로 남아
+       둘째 작업부터 미리보기가 틀렸다). 시간 파싱 생략은 유지(앱 파리티). */
+    if(raw.indexOf('\n')>=0){
+      var lines0=raw.split('\n').map(function(l){return l.trim();}).filter(Boolean);
+      var lastLn=lines0[lines0.length-1]||'';
+      if(!cap.draft.iconLocked&&lastLn){
+        var pl=parseDurTitle(lastLn),effL=pl?pl.title:lastLn;
+        var mmL=matchCapKeyword(effL),nmL=mmL?mmL.icon:null;
+        if(nmL!==cap.draft.iconName){cap.draft.iconName=nmL;
+          var ibL=document.getElementById('capIconBtn');if(ibL)ibL.innerHTML=nmL?findIconSvg(nmL):IC.none;}
+        if(mmL&&mmL.cat&&cap.draft.categoryID!==mmL.cat)cap.draft.categoryID=mmL.cat;
+      }
+      return;
+    }
     raw=raw.trim();
     if(!cap.draft.durationLocked){
       var pp=parseDurTitle(raw);
@@ -11898,7 +11971,11 @@
   function meRenderWord(k,host){
     var pane=host||document.getElementById('meTabPane');if(!pane)return;pane.innerHTML='';
     var wrap=document.createElement('div');wrap.className='me-saybubs';
-    [['word', ME_SAY_LABEL[k]||'한마디'], ['praise','칭찬해줘']].forEach(function(p){
+    /* 집중은 [칭찬해줘] 하나만 (요청 2026-07-29): 집중 중에 꺼낼 말은
+       기록이 아니라 스스로에게 주는 칭찬이 어울린다 — 한마디는 뺐다. */
+    var bubs=k==='focus'?[['praise','칭찬해줘']]
+      :[['word', ME_SAY_LABEL[k]||'한마디'], ['praise','칭찬해줘']];
+    bubs.forEach(function(p){
       var b=document.createElement('button');b.type='button';
       b.className='me-saybub'+(p[0]==='praise'?' praise':'');
       b.innerHTML='<span>'+esc(p[1])+'</span>'+(p[0]==='praise'
