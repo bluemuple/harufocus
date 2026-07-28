@@ -6133,6 +6133,7 @@
        2시간 만료와 별개로, 다음 집중이 곧 새 사실이다. */
     setManualState(null);
     fTask=t;fStart=Date.now();fPausedAcc=0;fPauseAt=0;fPaused=false;ftKey='';fAdvanced=false;fWasRest=false;fRestMsg='';
+    meNoteFocusStart();                // 체크인 로그: 방금 고른 상태에 시작 시각을 심어둔다(10분 창)
     fPlanAdjust=0;                     // 새 세션 = 조절 누적 초기화 (앱 파리티)
     if(fAdjOpen)toggleAdjRow();
     // opt = 원격 채택 (요청): 저쪽 시계·계획·포모도로를 그대로 물려받는다.
@@ -6210,6 +6211,7 @@
   }
   function finishFocus(){if(!fTask)return;
     var el=focusElapsed(),title=fTask.title||'집중';   // fTask=null 되기 전 캡처 (앱 파리티)
+    meNoteFocusEnd(fStart,el);          // 체크인 로그: 시작 시각이 맞는 줄에 집중 초를 더한다
     endFocusSession();
     document.getElementById('focusScrim').classList.remove('open');fTask=null;fPomo=null;fPlanMin=0;fRemote=false;fSessionID=null;fmStop();renderAll();pushSnapshot();
     if(shortSkipPending){showShortSkipToast(shortSkipPending);shortSkipPending=0;}
@@ -11731,6 +11733,7 @@
       if(k)localStorage.setItem(ME_KEY,JSON.stringify({k:k,at:Date.now()}));
       else localStorage.removeItem(ME_KEY);
     }catch(_){}
+    if(k)meLogState(k);   // 체크인 로그: 해제(k=falsy)는 안 남긴다
     /* 앱↔웹 동기화 (요청 2026-07-28): 고른 얼굴을 스냅샷 설정에 실어 바로
        올린다 — 폰에서 고르면 웹도, 웹에서 고르면 폰도 같은 얼굴이 된다.
        ⚠ 시각(at)을 함께 싣는다: 2시간 만료 판정과 '더 최근이 이긴다'는
@@ -11753,6 +11756,60 @@
     if(at<=mineAt)return;
     try{localStorage.setItem(ME_KEY,JSON.stringify({k:raw,at:at}));}catch(_){}
     paintAvatar();
+  }
+  /* '지금 나는' 체크인 이벤트 로그 (요청 2026-07-29, iOS 앱 MeCheckLog의 웹 미러):
+     상태를 고를 때마다 한 줄, 그 줄에 처음 고른 행동과(있으면) 이어진 집중
+     초가 붙는다 — "그때 뭘 골랐다가 뭘 했는지"를 나중에 되짚어 보기 위함이다.
+     ⚠ 행동 키는 앱(MeCheckLog.swift)과 공용 어휘 — picker_start·snooze5·
+       phonecant·pickone·trim·block{N}.
+     ⚠ 기기 로컬 전용 — 스냅샷에 싣지 말 것(동기화는 앨범 P1-2와 함께 결정). */
+  var ME_CHECK_KEY='hfMeChecks',ME_CHECK_MAX=1000,ME_CHECK_DAYS=180;
+  function meChecksLoad(){
+    try{var a=JSON.parse(localStorage.getItem(ME_CHECK_KEY)||'[]');return Array.isArray(a)?a:[];}
+    catch(_){return [];}
+  }
+  /* 저장 시 프루닝: 180일 지난 줄은 버리고, 1000줄 넘으면 앞(오래된 것)부터 자른다. */
+  function meChecksSave(a){
+    var cut=Date.now()-ME_CHECK_DAYS*86400000;
+    a=a.filter(function(r){return r&&r.ts>cut;});
+    if(a.length>ME_CHECK_MAX)a=a.slice(a.length-ME_CHECK_MAX);
+    try{localStorage.setItem(ME_CHECK_KEY,JSON.stringify(a));}catch(_){}
+  }
+  /* 상태를 고르면 새 줄 — 단, 마지막 줄이 같은 상태이고 120초 안이면 중복 탭이라
+     보고 그냥 넘긴다(연타로 줄이 불어나는 걸 막는다). */
+  function meLogState(k){
+    var a=meChecksLoad(),last=a[a.length-1];
+    if(last&&last.state===k&&Date.now()-last.ts<120*1000)return;
+    a.push({id:uuid(),ts:Date.now(),state:k,action:null,startedAt:null,focusSec:null});
+    meChecksSave(a);
+  }
+  /* 마지막 줄에 행동을 붙인다 — 그 줄이 30분 안이고 아직 action이 없을 때만
+     (여러 갈래를 밟아도 **처음** 고른 것만 남는다, 뒤엣것은 진짜 신호가 아니다). */
+  function meLogAction(key){
+    var a=meChecksLoad(),last=a[a.length-1];
+    if(!last||last.action||Date.now()-last.ts>30*60*1000)return;
+    last.action=key;
+    meChecksSave(a);
+  }
+  /* 체크인 직후(10분 안) 집중이 이어지면, 나중에 focusSec을 이어 붙일 수 있게
+     그 줄에 시작 시각만 심어 둔다. */
+  function meNoteFocusStart(){
+    var a=meChecksLoad(),last=a[a.length-1];
+    if(!last||last.startedAt||Date.now()-last.ts>10*60*1000)return;
+    last.startedAt=Date.now();
+    meChecksSave(a);
+  }
+  /* 집중이 끝나면 그 시작 시각(startMs)을 심어 둔 줄을 뒤에서부터 찾아
+     focusSec을 더한다(150초 오차는 같은 세션으로 본다). sec<=0은 버린다. */
+  function meNoteFocusEnd(startMs,sec){
+    if(!sec||sec<=0)return;
+    var a=meChecksLoad();
+    for(var i=a.length-1;i>=0;i--){
+      if(a[i].startedAt&&Math.abs(a[i].startedAt-startMs)<150*1000){
+        a[i].focusSec=(a[i].focusSec||0)+sec;
+        meChecksSave(a);return;
+      }
+    }
   }
   function avatarState(){
     var mine=manualState();if(mine)return mine;   // 내가 고른 게 언제나 이긴다
@@ -11862,6 +11919,7 @@
   /* 지금부터 n분짜리 블록 하나를 놓는다 (쉼·첫 조각 공용).
      ⚠ 죄책감 문구를 붙이지 않는다 — 쉼도 계획의 일부다. */
   function mePlaceBlock(title,cat,min){
+    meLogAction('block'+min);
     var now=new Date(),m=Math.floor(now.getMinutes()/5)*5;
     // ⚠ 공장을 거친다 — 위 subToTimeline의 주석 참조(필수 필드 누락 = 앱 동기화 정지).
     // viaMeState=true → 이 블록은 다음번 덜어내기 목록엔 안 뜬다 (요청 #a).
@@ -11924,7 +11982,7 @@
     }
     if(k==='overload'){
       btn('한 가지만 골라 10분',true,function(){mePickOne();});
-      btn('이것만 남기고 나머지는 내일로',false,function(){meRenderPickList(k,'pick1');});
+      btn('이것만 남기고 나머지는 내일로',false,function(){meLogAction('trim');meRenderPickList(k,'pick1');});
       return;
     }
     if(k==='messy'){
@@ -11946,7 +12004,7 @@
       var trim=document.createElement('button');trim.className='wide';
       trim.style.cssText='border:0;background:none;box-shadow:none;font-size:12.5px;color:var(--ink-soft,#667);padding:4px';
       trim.textContent='오늘 안 해도 될 일 덜어내기 ›';
-      trim.onclick=function(){meRenderPickList(k,'pick2');};
+      trim.onclick=function(){meLogAction('trim');meRenderPickList(k,'pick2');};
       box.appendChild(trim);
       return;
     }
@@ -12378,6 +12436,7 @@
         b.innerHTML='<img src="assets/me_snack.png" alt=""><b'+(name.length>8?' class="small"':'')+'></b>';
         b.querySelector('b').textContent=name;
         b.onclick=function(){
+          meLogAction('picker_start');
           var blk=mePlaceBlockNow(name+' '+minutes+'분',t.categoryID||'focus',minutes);
           mePickerEnd();closeMeSheet();
           if(blk)startFocus(blk);
@@ -12394,6 +12453,7 @@
   }
   /* overload '한 가지만 골라 10분' — 단일 선택 (앱 pickOneArea 파리티). */
   function mePickOne(){
+    meLogAction('pickone');
     var box=document.getElementById('meTabPane');if(!box)return;box.innerHTML='';
     var list=meTodayTasks();
     if(!list.length){meScene('me_overload_after_pickone');
@@ -12419,6 +12479,7 @@
   /* '5분 뒤에 돌아와' (요청): 브라우저 알림 + 화면이 열려 있으면 시트 재오픈.
      (앱의 지속 진동은 iOS 전용 — 웹은 알림 한 번이 최선이다.) */
   function meSnooze(){
+    meLogAction('snooze5');
     try{if(window.Notification&&Notification.permission==='default')Notification.requestPermission();}catch(_){}
     setTimeout(function(){
       var opened=false;
