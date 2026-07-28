@@ -1821,14 +1821,18 @@
     .cap-wrap{left:auto;right:26px;bottom:26px;width:440px;border-radius:16px;border:1px solid var(--line)}
     /* 긴 세로 나열 → 2컬럼 (요청) */
     .todo{display:block;columns:2;column-gap:14px}
-    /* ⚠ 다단 안에서는 카드의 **둥근 클리핑을 풀어야 한다** (요청 2026-07-28,
-       사파리 재현 확인): .task{overflow:hidden}가 걸린 채로 다단이
-       column-span:all 스패너에 잘리면, WebKit이 **그 조각의 첫 카드를
-       페인트에서 통째로 빠뜨린다** — 자리·클릭은 살아 있어 빈 곳을 누르면
-       그 작업 편집이 열렸다(사파리에서만). 라운드는 .task-inner가 같은
-       16px로 이미 갖고 있어 모양은 그대로고, PC엔 스와이프가 없어
-       (마우스 pointerdown은 무시) 클리핑을 풀어도 삐져나올 게 없다. */
-    .todo .task{break-inside:avoid;margin-bottom:9px;overflow:visible}
+    /* ⚠ 다단 안에서는 래퍼의 **라운드를 0으로** (요청 2026-07-28, WKWebView로
+       재현·검증): border-radius + overflow:hidden을 **함께** 가진 상자가
+       column-span:all 스패너 뒤 컬럼셋의 첫 조각이 되면, WebKit이 그 둥근
+       클립 사각형을 컬럼이 아니라 흐름(flow-thread) 좌표로 계산해 클립이
+       조각 밖으로 떨어진다 → 자손이 통째로 잘려 **아무것도 안 그려진다**.
+       레이아웃·히트테스트는 살아 있어 빈 자리를 누르면 그 작업 편집이
+       열렸고(사파리에서만), 래퍼의 box-shadow는 클립 밖이라 그림자만 남았다.
+       ⚠ overflow를 푸는 쪽(overflow:visible)도 버그는 고치지만, 터치로
+         스와이프하면 밀린 .task-inner가 카드 밖으로 삐져나온다 — 클립은
+         남기고 **라운드만** 걷는다. 보이는 모양은 .task-inner가 같은 16px을
+         이미 갖고 있어 그대로다. */
+    .todo .task{break-inside:avoid;margin-bottom:9px;border-radius:0}
     .todo .goal-group{break-inside:avoid;margin-bottom:9px}
     .todo .goal-group .task{margin-bottom:0}
     .todo .subpanel{break-inside:avoid;break-before:avoid}
