@@ -672,6 +672,18 @@
     box-shadow:0 4px 14px rgba(0,0,0,.28);pointer-events:none;
     opacity:0;transition:opacity .3s ease,transform .3s ease;white-space:nowrap;max-width:92vw}
   .skip-toast.in{opacity:1;transform:translate(-50%,0)}
+  /* 타임라인 첫걸음 가이드 말풍선 (요청 2026-07-29, 앱 TimelineCoachBubble
+     파리티): 검정 반투명 + 흰 글씨, 라디오/블록 위 z-index. 밤 하늘색과
+     무관하게 항상 같은 톤이라 밤 모드에서도 그대로 읽힌다. */
+  .tl-guide-pop{position:absolute;z-index:8;max-width:230px;padding:9px 12px;
+    border-radius:12px;background:rgba(0,0,0,.62);border:.8px solid rgba(255,255,255,.25);
+    box-shadow:0 4px 14px rgba(0,0,0,.28);cursor:pointer;pointer-events:auto;
+    opacity:0;transform:scale(.96);transform-origin:top left;
+    transition:opacity .2s ease,transform .2s ease}
+  .tl-guide-pop.in{opacity:1;transform:scale(1)}
+  .tl-guide-pop .tlg-l1{font-size:13px;font-weight:800;color:#fff;line-height:1.35}
+  .tl-guide-pop .tlg-l2{font-size:11.5px;font-weight:600;color:rgba(255,255,255,.85);
+    line-height:1.32;margin-top:2px}
   .block.rec.tiny{padding:0;border-radius:3px}
   /* 블록 밖(윗변 위)으로 뺀 라벨 — 하늘 위에 놓이므로 글자색은 onSky. */
   /* B3 (재설계): 짧은 블록의 라벨은 블록 윗변 **위**에 얹히는데, 바로 위에
@@ -4696,6 +4708,117 @@
     return {due:narrowDue,blk:pushBlk,lab:narrowLab};
   }
 
+  /* ── 타임라인 첫걸음 가이드 (요청 2026-07-29, 앱 Sundial/Views/TimelineGuide.swift
+     + TimelineScrollView.swift(timelineGuideLayer·guideWatchDues·guideBlockLines) +
+     FocusManager.swift(sundialGuideDueDone·lastGuideEnd·sundialEndCount) 파리티) ──
+     이 앱의 철학을 처음 두 걸음에서 그림으로 가르친다: "몇 시까지"를 정하면
+     ▶로 집중을 시작할 수 있고, 그러면 블록이 남는다.
+       ① 마감을 처음 추가하면: ▶ 바로 아래에 "눌러서 시작하세요" 안내.
+       ② 첫 집중이 끝나 블록이 생기면: 블록 옆에 "N분 집중했네요!" 안내.
+     ⚠ 배운 건 다시 안 가르친다 — ①은 집중을 실제로 시작한 순간(startFocus)
+     hfGuideDueDone=1로 영구 종료, ②는 한 번 보여준 순간 hfGuideBlockDone=1로
+     영구 종료(localStorage). 기존 유저(이미 마감·블록 있음)에겐 새로 늘어난
+     것만 대상이라 뜨지 않는다. */
+  var guideDueTaskID=null;      // ① 지금 걸려 있는 마감선의 task id (없으면 null)
+  var guideKnownDueIds=null;    // ① 부팅 시점 오늘 마감선 id 스냅샷 — 그 뒤 증가분만 대상
+  var lastGuideEnd=null;        // ② 방금 끝난 세션 {taskID,end(ms),focusedSec} — endFocusSession이 심는다
+  var guideBlockShowing=false;  // ② 지금 화면에 떠 있는 중(탭·14초로 접힌다)
+  var guideBlockGraduated=!!localStorage.getItem('hfGuideBlockDone');
+  var tlGuideDueTimer=null,tlGuideBlockTimer=null;
+  // 오늘 날짜의 마감선 대상 id들 — renderBig의 `lines` 필터와 같은 기준(§2).
+  function guideDueLineIdsToday(){
+    var k=todayKey(),out=[];
+    (DATA.tasks||[]).forEach(function(t){
+      if(t.isRewardItem||!((t.durationMin||0)>0)||!t.scheduledStart)return;
+      if(dateKey(taskDueAt(t).toISOString())!==k)return;
+      out.push(t.id);
+    });
+    return out;
+  }
+  /* 마감이 **새로 늘어났다** → ①을 건다. 첫 호출(known=null)은 기준만 잡고,
+     집중 중이거나 이미 뜬 가이드가 있으면 걸지 않는다. */
+  function guideWatchDues(){
+    if(localStorage.getItem('hfGuideDueDone'))return;
+    var ids=guideDueLineIdsToday();
+    if(guideKnownDueIds==null){guideKnownDueIds=ids.slice();return;}
+    var known=guideKnownDueIds;
+    var added=ids.filter(function(id){return known.indexOf(id)<0;});
+    guideKnownDueIds=ids.slice();
+    if(fTask||guideDueTaskID||!added.length)return;
+    var t=taskByID(added[0]);
+    if(!t||t.isDone)return;
+    guideDueTaskID=added[0];
+  }
+  // ① 접기 — 탭·14초 자동 둘 다 여기로. 영구 졸업 도장은 안 찍는다(그건 startFocus의 몫).
+  function dismissGuideDue(){
+    clearTimeout(tlGuideDueTimer);tlGuideDueTimer=null;
+    guideDueTaskID=null;
+    var el=document.getElementById('tlGuideDue');if(el)el.remove();
+  }
+  // ② 접기 — 탭·14초. 졸업 도장은 **뜨는 순간** 이미 찍혀 있다(renderTimelineGuides).
+  function closeGuideBlock(){
+    clearTimeout(tlGuideBlockTimer);tlGuideBlockTimer=null;
+    guideBlockShowing=false;
+    var el=document.getElementById('tlGuideBlock');if(el)el.remove();
+  }
+  function guideBubbleHTML(l1,l2){
+    return '<div class="tlg-l1">'+esc(l1)+'</div><div class="tlg-l2">'+esc(l2)+'</div>';
+  }
+  /* renderBig 끝에서 매번 불린다 — sc.innerHTML='' 가 매 렌더 DOM을 통째로
+     새로 만들므로, 가이드 말풍선도 여기서 다시 붙인다(요청: 사라지지 않게
+     재부착). 오늘 밴드 좌표계에 얹는다 — yFor가 그 밴드 기준(tlBandTS=0)으로
+     돌아온 뒤라 dueline·block과 같은 y를 쓸 수 있다.
+     ⚠ tlTodayLane은 renderBig() **로컬** 변수라 여기서 안 보인다 — 같은 밴드를
+     가리키는 전역 핸들 tlLaneToday(캡처 고스트가 쓰는 것과 같은 자리, 3470줄)를
+     써야 한다. */
+  function renderTimelineGuides(){
+    var old=document.getElementById('tlGuideDue');if(old)old.remove();
+    old=document.getElementById('tlGuideBlock');if(old)old.remove();
+    var lane=tlLaneToday;
+    if(!lane)return;
+    // ① 마감 가이드 — ▶ 버튼(left:52 top:-15~15) 바로 아래.
+    if(!localStorage.getItem('hfGuideDueDone')&&!fTask&&guideDueTaskID){
+      var t=taskByID(guideDueTaskID);
+      if(t&&!t.isDone&&t.scheduledStart&&(t.durationMin||0)>0){
+        var d=taskDueAt(t);
+        var y=yFor(hourFrac(d.getTime()));
+        var hhmm=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+        var b=document.createElement('div');
+        b.id='tlGuideDue';b.className='tl-guide-pop';
+        b.style.top=(y+18)+'px';b.style.left='40px';
+        b.innerHTML=guideBubbleHTML('▶ 눌러서 집중을 시작하세요',
+          hhmm+"까지 '"+t.title+"'"+josa(t.title,'을','를')+' 끝낼 수 있어요');
+        b.addEventListener('click',dismissGuideDue);
+        lane.appendChild(b);
+        requestAnimationFrame(function(){b.classList.add('in');});
+        clearTimeout(tlGuideDueTimer);
+        tlGuideDueTimer=setTimeout(dismissGuideDue,14000);
+      } else {
+        guideDueTaskID=null;   // 대상이 완료·삭제됨 — 가이드도 접는다
+      }
+    }
+    // ② 블록 가이드 — 블록 아랫변(=종료 시각의 '지금' 자리) 살짝 아래, 왼쪽으로 들여서.
+    // ⚠ '마감보다 일찍' 줄은 넣지 않는다 — 그건 완료 토스트(showCelebration)의 몫.
+    if(!guideBlockShowing&&!guideBlockGraduated&&!fTask&&lastGuideEnd&&
+       (Date.now()-lastGuideEnd.end)<120000){
+      guideBlockShowing=true;guideBlockGraduated=true;
+      localStorage.setItem('hfGuideBlockDone','1');   // 표시하는 순간 졸업(요청) — 재보임과 무관하게 1회권
+      clearTimeout(tlGuideBlockTimer);
+      tlGuideBlockTimer=setTimeout(closeGuideBlock,14000);
+    }
+    if(guideBlockShowing&&lastGuideEnd){
+      var min=Math.max(1,Math.floor(lastGuideEnd.focusedSec/60));
+      var y2=yFor(hourFrac(lastGuideEnd.end));
+      var b2=document.createElement('div');
+      b2.id='tlGuideBlock';b2.className='tl-guide-pop';
+      b2.style.top=(y2+10)+'px';b2.style.left='60px';
+      b2.innerHTML=guideBubbleHTML(min+'분 집중했네요!','▶를 누를 때마다 이런 블록이 쌓여요');
+      b2.addEventListener('click',closeGuideBlock);
+      lane.appendChild(b2);
+      requestAnimationFrame(function(){b2.classList.add('in');});
+    }
+  }
+
   function renderBig(){
     /* 24시간 풀 렌더 (요청 2026-07-26): 옛 기상~취침 범위는 23시~익일 7시가
        비어 밤에 달·별이 사라졌다. 앱처럼 각 날을 0~24시로 그린다 — 비용은
@@ -5091,6 +5214,9 @@
     syncAnimPending=false;      // 한 번의 원격 반영에 한 번만 (⑤)
     var lbl=dayOffset===0?'오늘':dayOffset===-1?'어제':dayOffset===1?'내일':'';
     try{document.getElementById('tlDate').textContent=selDate().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'})+(lbl?' · '+lbl:'');}catch(e){}
+    // 첫걸음 가이드 — 새 마감 감시 + 말풍선 재부착(요청: sc.innerHTML='' 가
+    // 매 렌더 지운 DOM을 여기서 다시 붙인다).
+    guideWatchDues();renderTimelineGuides();
   }
   document.getElementById('dayPrev').addEventListener('click',function(){dayOffset--;renderBig();});
   document.getElementById('dayNext').addEventListener('click',function(){dayOffset++;renderBig();});
@@ -6265,6 +6391,9 @@
     setManualState(null);
     fTask=t;fStart=Date.now();fPausedAcc=0;fPauseAt=0;fPaused=false;ftKey='';fAdvanced=false;fWasRest=false;fRestMsg='';
     meNoteFocusStart();                // 체크인 로그: 방금 고른 상태에 시작 시각을 심어둔다(10분 창)
+    // 첫걸음 가이드 ① 졸업 (요청 2026-07-29): ▶를 한 번이라도 눌러 본 사람에겐
+    // '▶ 눌러서 시작' 안내가 다시 뜨지 않는다 — 앱 sundialGuideDueDone과 같은 자리.
+    localStorage.setItem('hfGuideDueDone','1');dismissGuideDue();
     fPlanAdjust=0;                     // 새 세션 = 조절 누적 초기화 (앱 파리티)
     if(fAdjOpen)toggleAdjRow();
     // opt = 원격 채택 (요청): 저쪽 시계·계획·포모도로를 그대로 물려받는다.
@@ -6306,6 +6435,10 @@
     // 따라 보던(원격) 세션은 기록하지 않는다 — 시작한 기기가 이미 남긴다.
     if(fRemote){fRemote=false;fRemoteDev='';return;}
     var el=focusElapsed();
+    // 첫걸음 가이드 ② 재료 (요청 2026-07-29) — 앱 FocusManager.lastGuideEnd와 같은 자리.
+    // 렌더가 body에서 직접 읽어(폴링 대신) 블록 옆에 붙인다. 60초 미만은 앱처럼 블록이
+    // 안 남으니 싣지 않는다.
+    if(el>=60)lastGuideEnd={taskID:fTask.id,end:Date.now(),focusedSec:el};
     fTask.actualFocusedSec=(fTask.actualFocusedSec||0)+el;fTask.cumulativeFocusedSec=(fTask.cumulativeFocusedSec||0)+el;fTask.lastFocusedAt=new Date().toISOString();
     if(el>=5){if(!DATA.sessions)DATA.sessions=[];DATA.sessions.push({id:uuid(),taskID:fTask.id,taskTitle:fTask.title||'',categoryID:fTask.categoryID||'focus',start:new Date(fStart).toISOString(),end:new Date().toISOString(),focusedSec:el});}
     /* ⚠⚠ **작업에도 블록 자리를 찍는다** (앱 FocusManager.end 파리티).
