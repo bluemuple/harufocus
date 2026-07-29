@@ -11831,7 +11831,12 @@
         +'<rect x="3.5" y="17" width="17" height="3.4" rx="1.4" fill="'+c[3]+'"/></svg>';
     }
     if(st==='messy')return '<svg viewBox="0 0 24 24" fill="none" stroke="'+sw('#8467D4','#BCA8F7')+'" stroke-width="2.6" stroke-linecap="round"><path d="'+spiralPath(12,12,8.4)+'"/></svg>';
-    if(st==='tired')return '<svg viewBox="0 0 24 24" fill="'+sw('#6163B8','#BFC0FA')+'"><path d="M14.6 3.6a8.4 8.4 0 1 0 6 12.6A8.4 8.4 0 0 1 14.6 3.6z"/><path d="M15.5 4.5h4l-3.4 3.6h3.4v1.3h-5.6l3.4-3.6h-1.8z" transform="translate(3 -1) scale(.85)"/></svg>';
+    /* 지쳤어 = 배터리 한 칸 (요청 2026-07-29, 달+zZZ에서 교체 — 앱 battery.25와 한 쌍):
+       '지쳤다'는 졸림이 아니라 방전. 몸통 외곽선 + 오른쪽 단자 + 왼쪽 한 칸. */
+    if(st==='tired')return '<svg viewBox="0 0 24 24" fill="none" stroke="'+sw('#6163B8','#BFC0FA')+'" stroke-width="1.7">'
+      +'<rect x="2.2" y="7.6" width="16.2" height="8.8" rx="2.6"/>'
+      +'<path d="M20.4 10.4v3.2a1.6 1.6 0 0 0 0-3.2z" fill="'+sw('#6163B8','#BFC0FA')+'" stroke="none"/>'
+      +'<rect x="4.6" y="9.9" width="3" height="4.2" rx="1" fill="'+sw('#6163B8','#BFC0FA')+'" stroke="none"/></svg>';
     return null;   // refuse = 엘리 유지
   }
   function avatarSVG(state){
