@@ -272,20 +272,25 @@
   body.night .wk-banner .wk-txt{color:#ECEEF6}
   body.night .wk-banner .wk-chev{color:rgba(235,238,246,.62)}
   .wk-modal h3{margin-bottom:12px}
-  .wk-sky{position:relative;height:250px;border-radius:22px;overflow:hidden;
+  /* 별자리 하늘 (Phase 1, 2026-07-29 웹 파리티 — 앱 WeekSky.swift/
+     WeeklyCardView.swift 미러): 250→340px로 키워 별자리 5개(남십자·
+     카시오페이아·거문고·북두칠성·오리온)가 계절 땅(canvas로 그림) 위에
+     펼쳐진다. */
+  .wk-sky{position:relative;height:340px;border-radius:22px;overflow:hidden;
     background:linear-gradient(180deg,#0D1430 0%,#1A2447 100%);margin-bottom:14px}
   .wk-sky canvas{position:absolute;inset:0;width:100%;height:100%}
   .wk-sky img{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);height:108px;pointer-events:none}
-  .wk-empty{position:absolute;left:0;right:0;top:70px;text-align:center;font-size:12.5px;
+  .wk-empty{position:absolute;left:0;right:0;top:38%;transform:translateY(-50%);text-align:center;font-size:12.5px;
     line-height:1.6;color:rgba(255,255,255,.7);padding:0 22px}
   .wk-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-  .wk-metric{background:var(--card-2);border-radius:14px;padding:10px 6px;text-align:center}
-  .wk-metric b{display:block;font-size:17px;font-weight:800;color:var(--ink)}
-  .wk-metric span{display:block;font-size:11px;color:var(--ink-soft);margin-top:2px}
+  /* 지표 타일 반투명(요청) — 밤하늘이 살짝 비치는 정도, 모달 구조는 그대로. */
+  .wk-metric{background:var(--card-2);background:color-mix(in srgb,var(--card-2) 60%,transparent);border-radius:14px;padding:10px 6px;text-align:center}
+  .wk-metric b{display:block;font-size:17px;font-weight:800;color:var(--ink);opacity:.8}
+  .wk-metric span{display:block;font-size:11px;color:var(--ink-soft);margin-top:2px;opacity:.8}
   .wk-line{font-size:13.5px;font-weight:700;text-align:center;color:var(--ink);padding:0 6px;margin-bottom:14px}
   .wk-share{width:100%;border:0;border-radius:12px;background:var(--ink);color:#fff;
     font-family:inherit;font-size:14.5px;font-weight:700;padding:12px;cursor:pointer}
-  .modal.dark .wk-metric{background:#2c3552}
+  .modal.dark .wk-metric{background:#2c3552;background:color-mix(in srgb,#2c3552 60%,transparent)}
   .modal.dark .wk-metric b{color:#e8ecf6}
   .modal.dark .wk-metric span{color:#93a0c0}
   .modal.dark .wk-line{color:#e8ecf6}
@@ -11996,24 +12001,130 @@
     var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);
     return h>0?(h+'시간 '+m+'분'):(m+'분');
   }
-  function weeklyFrac(v){return Math.abs(Math.sin(v))%1;}
-  // 별 시드 — 세션 시작 ms로 결정적 산포(열 때마다 같은 하늘). 밝은 별=체크인
-  // startedAt(분 단위)과 일치하는 세션 — 앱 StarSeed와 같은 공식.
-  function weeklyBuildStars(sessions,checks){
+  /* ── 별자리 하늘 (Phase 1, 2026-07-29) — 앱 WeekSky.swift의 웹 미러.
+     집중 1회 = 별 1개. **별자리 별부터** 차례로 불이 들어오고, 한 별자리가
+     다 채워지면 선이 이어지고 이름이 붙는다. 순서 = 작은 것부터
+     (남십자4→카시오페이아5→거문고5→북두칠성7→오리온7 = 28) — 첫 완성이
+     주 중반 안에 오게. 좌표·선분은 WeekSky.swift constellations를 그대로
+     옮겨 적었다 (수정 금지 — 앱과 반드시 일치). */
+  var WEEK_SKY=[
+    {name:'남십자자리',stars:[[0.20,0.22],[0.15,0.44],[0.23,0.58],[0.29,0.38]],
+     lines:[[0,2],[1,3]]},
+    {name:'카시오페이아',stars:[[0.52,0.16],[0.59,0.27],[0.66,0.15],[0.73,0.25],[0.80,0.13]],
+     lines:[[0,1],[1,2],[2,3],[3,4]]},
+    {name:'거문고자리',stars:[[0.38,0.50],[0.43,0.58],[0.49,0.55],[0.51,0.66],[0.44,0.69]],
+     lines:[[0,1],[1,2],[2,3],[3,4],[4,1]]},
+    {name:'북두칠성',stars:[[0.60,0.40],[0.66,0.45],[0.72,0.43],[0.78,0.48],[0.85,0.44],[0.88,0.55],[0.79,0.58]],
+     lines:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,3]]},
+    {name:'오리온자리',stars:[[0.09,0.62],[0.21,0.60],[0.12,0.74],[0.15,0.73],[0.18,0.72],[0.08,0.86],[0.22,0.84]],
+     lines:[[0,1],[0,2],[1,4],[2,3],[3,4],[2,5],[4,6]]}
+  ];
+  // 배정 — 세션 n개가 하늘에 어떻게 놓이는가. 앱 WeekSky.assign과 같은 로직:
+  // 순서대로 채우고, 다 채우면 나머지는 필러. completed/current도 같은 파생.
+  function weekSkyAssign(n){
+    var remain=Math.max(0,n||0),lit=[];
+    WEEK_SKY.forEach(function(c){var take=Math.min(remain,c.stars.length);lit.push(take);remain-=take;});
+    var completed=[];
+    lit.forEach(function(v,i){if(v===WEEK_SKY[i].stars.length)completed.push(i);});
+    var current=null;
+    for(var i=0;i<lit.length;i++){if(lit[i]<WEEK_SKY[i].stars.length){current=i;break;}}
+    return {lit:lit,fillers:remain,completed:completed,current:current};
+  }
+  // 필러 별 위치 — 시드 결정적 산포. 앱 WeekSky.fillerPosition과 같은 식
+  // (x=frac(s*12.9898), y=0.06+frac(s*78.233)*0.7, s=index+1).
+  function weekSkyFillerPos(index){
+    function frac(v){return Math.abs(Math.sin(v))%1;}
+    var s=index+1;
+    return {x:frac(s*12.9898),y:0.06+frac(s*78.233)*0.7};
+  }
+  // 계절 땅 색 — 12~2월 눈밭, 그 외 잔디 (앱 WeeklyCardView.ground와 같은 분기).
+  function weekSkyGroundColors(){
+    var m=new Date().getMonth()+1,snow=(m===12||m<=2);
+    return snow?{top:'rgb(184,196,224)',bot:'rgb(148,163,201)'}
+               :{top:'rgb(33,61,41)',bot:'rgb(20,41,28)'};
+  }
+  // 세션 → 밝기 배열(세션 순서대로, true=다시 시작=밝은 별) — 앱
+  // sessionStars 계산과 같은 공식: 체크인 startedAt(분 단위)과 세션 시작이
+  // 일치하면 밝은 별. sessions는 시작 시각 오름차순으로 본다(앱 fetch 정렬과 동일).
+  function weekSkySessionStars(sessions,checks){
     var restartMin={};
     (checks||[]).forEach(function(c){
       if(c.startedAt!=null)restartMin[Math.floor(c.startedAt/60000)]=1;
     });
-    return (sessions||[]).slice(0,80).map(function(s){
-      var st=(s.start&&s.start.getTime)?s.start.getTime():new Date(s.start).getTime();
-      var bright=!!restartMin[Math.floor(st/60000)];
-      return {
-        x:weeklyFrac(st*12.9898),
-        y:weeklyFrac(st*78.233)*0.72,
-        r:bright?3.2:(1.2+weeklyFrac(st*3.7)*1.2),
-        bright:bright
-      };
+    var sorted=(sessions||[]).slice().sort(function(a,b){
+      var sa=(a.start&&a.start.getTime)?a.start.getTime():new Date(a.start).getTime();
+      var sb=(b.start&&b.start.getTime)?b.start.getTime():new Date(b.start).getTime();
+      return sa-sb;
     });
+    return sorted.map(function(s){
+      var st=(s.start&&s.start.getTime)?s.start.getTime():new Date(s.start).getTime();
+      return !!restartMin[Math.floor(st/60000)];
+    });
+  }
+  // 하늘 장면 그리기 — DOM 캔버스·공유 이미지 공용 (앱 starsCanvas 미러).
+  // ctx 원점(0,0)~(W,H)이 하늘 박스. sessionStars=세션 순서 밝기 배열,
+  // assign=weekSkyAssign(sessionStars.length) 결과. y는 하늘 영역의 72%만
+  // 쓰고(아래는 땅), pt = (x*W, 14+y*H*0.72).
+  function weekSkyPaintScene(ctx,W,H,sessionStars,assign){
+    var skyH=H*0.72;
+    function pt(x,y){return [x*W,14+y*skyH];}
+    // 배경 먼지 별 26개 — earned 아님, 아주 옅게(삭막함 방지, 앱과 동일 원칙).
+    for(var i=0;i<26;i++){
+      var dp=weekSkyFillerPos(i+500);
+      ctx.beginPath();ctx.arc(dp.x*W,14+dp.y*skyH,0.7,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,255,255,.16)';ctx.fill();
+    }
+    var sessionIdx=0;
+    WEEK_SKY.forEach(function(c,ci){
+      var litCount=assign.lit[ci],isComplete=litCount===c.stars.length;
+      if(isComplete){
+        // 완성 = 선을 먼저(별 아래 층) + 이름(무게중심 아래).
+        ctx.beginPath();
+        c.lines.forEach(function(ln){
+          var a=pt(c.stars[ln[0]][0],c.stars[ln[0]][1]),b=pt(c.stars[ln[1]][0],c.stars[ln[1]][1]);
+          ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);
+        });
+        ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1;ctx.lineCap='round';ctx.stroke();
+        var cx=c.stars.reduce(function(a,s){return a+s[0];},0)/c.stars.length;
+        var maxY=c.stars.reduce(function(a,s){return Math.max(a,s[1]);},0);
+        var np=pt(cx,maxY+0.07);
+        ctx.font='600 11px -apple-system,sans-serif';
+        ctx.fillStyle='rgba(255,255,255,.55)';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(c.name,np[0],np[1]);
+      }
+      c.stars.forEach(function(s,si){
+        var p=pt(s[0],s[1]);
+        if(si<litCount){
+          var bright=sessionIdx<sessionStars.length&&sessionStars[sessionIdx];sessionIdx++;
+          var r=bright?3.4:2.6;
+          var fill=bright?'rgb(255,217,168)':'rgba(255,255,255,.92)';
+          var halo=bright?'rgba(255,217,168,.18)':'rgba(255,255,255,.166)';
+          ctx.beginPath();ctx.arc(p[0],p[1],r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();
+          ctx.beginPath();ctx.arc(p[0],p[1],r+2.5,0,Math.PI*2);ctx.fillStyle=halo;ctx.fill();
+        }else if(assign.current===ci){
+          // 지금 채우는 별자리만 자리 힌트 — 다음 별이 여기 생긴다.
+          ctx.beginPath();ctx.arc(p[0],p[1],2,0,Math.PI*2);
+          ctx.strokeStyle='rgba(255,255,255,.14)';ctx.lineWidth=0.8;ctx.stroke();
+        }
+      });
+    });
+    // 필러 별 — 별자리를 다 채운 뒤의 집중.
+    for(var f=0;f<assign.fillers;f++){
+      var bright2=sessionIdx<sessionStars.length&&sessionStars[sessionIdx];sessionIdx++;
+      var fp=weekSkyFillerPos(f);
+      var r2=bright2?3.0:1.8;
+      ctx.beginPath();ctx.arc(fp.x*W,14+fp.y*skyH,r2,0,Math.PI*2);
+      ctx.fillStyle=bright2?'rgb(255,217,168)':'rgba(255,255,255,.7)';
+      ctx.fill();
+    }
+    // 계절 땅 — 별 위에 그려 아래를 덮는다(앱 ZStack 순서: 별→땅→엘리).
+    var gc=weekSkyGroundColors();
+    var gcx=W/2,gcy=H-0.02*H,grx=W*0.85,gry=H*0.12;
+    var grd=ctx.createLinearGradient(0,gcy-gry,0,gcy+gry);
+    grd.addColorStop(0,gc.top);grd.addColorStop(1,gc.bot);
+    ctx.beginPath();ctx.ellipse(gcx,gcy,grx,gry,0,0,Math.PI*2);
+    ctx.fillStyle=grd;ctx.fill();
   }
   // 지표 타일 — 있는 것만 보여준다(0%·빈 값으로 꾸짖지 않는다).
   function weeklyMetricHTML(stats){
@@ -12057,16 +12168,16 @@
     });
     var started=tasks.filter(function(t){return (t.actualFocusedSec||0)>0||t.isDone;});
     var stats=weeklyStatsCompute(checks,sessions,tasks.length,started.length,ws,now);
-    var stars=weeklyBuildStars(sessions,checks);
-    weeklyCurrentStats=stats;weeklyStarSeeds=stars;
+    var sessionStars=weekSkySessionStars(sessions,checks);
+    weeklyCurrentStats=stats;weeklyStarSeeds=sessionStars;
     var label=document.getElementById('weeklyHeadLabel');if(label)label.textContent=weeklyWeekLabel(ws);
     var body=document.getElementById('weeklyBody');if(body)body.innerHTML=weeklyCardBodyHTML(stats);
     var openBtn=document.getElementById('weeklyAlbumOpen');
     if(openBtn)openBtn.textContent='🐘 '+eleName()+'의 일기 보기 ›';
     closeAlbum();                          // 이전에 앨범을 보다 닫았어도 다음엔 주간 카드부터.
-    requestAnimationFrame(function(){weeklyPaintSky(stars);});
+    requestAnimationFrame(function(){weeklyPaintSky(sessionStars);});
   }
-  function weeklyPaintSky(stars){
+  function weeklyPaintSky(sessionStars){
     var wrap=document.getElementById('weeklySky'),cv=document.getElementById('weeklyStarsCv');
     var empty=document.getElementById('weeklyEmpty');
     if(!wrap||!cv)return;
@@ -12075,16 +12186,9 @@
     if(cv.width!==w)cv.width=w;
     if(cv.height!==h)cv.height=h;
     var g=cv.getContext('2d');g.clearRect(0,0,w,h);
-    (stars||[]).forEach(function(s){
-      var cx=s.x*w,cy=s.y*h;
-      g.beginPath();g.arc(cx,cy,s.r,0,Math.PI*2);
-      g.fillStyle=s.bright?'#FFD9A8':'rgba(255,255,255,.75)';g.fill();
-      if(s.bright){                                   // 밝은 별은 살짝 빛무리
-        g.beginPath();g.arc(cx,cy,s.r+2.5,0,Math.PI*2);
-        g.fillStyle='rgba(255,217,168,.25)';g.fill();
-      }
-    });
-    if(empty)empty.style.display=(stars&&stars.length)?'none':'';
+    var assign=weekSkyAssign((sessionStars||[]).length);
+    weekSkyPaintScene(g,w,h,sessionStars||[],assign);
+    if(empty)empty.style.display=(sessionStars&&sessionStars.length)?'none':'';
   }
   /* ── 엘리의 앨범 (P1-2, 2026-07-29) — 앱 AlbumEngine.swift/AlbumView.swift의
      웹 파리티. 유저에게 '한 줄 일기'가 있듯 엘리도 나에 대해 하루 한 줄을 쓴다 —
@@ -12217,7 +12321,9 @@
     g.fillStyle='rgba(27,36,54,.45)';g.font='800 24px -apple-system,sans-serif';g.textAlign='center';
     g.fillText('Elly Day',SIZE/2,SIZE-46);
   }
-  function weeklyComposeShareImage(stats,stars,cb){
+  // 공유 이미지의 하늘 — 화면과 같은 별자리 그리기 함수(weekSkyPaintScene)를
+  // 재사용한다(요청: 그리기 로직 공용화). sessionStars=세션 순서 밝기 배열.
+  function weeklyComposeShareImage(stats,sessionStars,cb){
     var SIZE=1080,cv=document.createElement('canvas');cv.width=SIZE;cv.height=SIZE;
     var g=cv.getContext('2d');
     g.fillStyle='#FAF7F2';g.fillRect(0,0,SIZE,SIZE);
@@ -12227,13 +12333,11 @@
     var grd=g.createLinearGradient(0,skyY,0,skyY+skyH);
     grd.addColorStop(0,'#0D1430');grd.addColorStop(1,'#1A2447');
     g.fillStyle=grd;g.fillRect(skyX,skyY,skyW,skyH);
-    (stars||[]).forEach(function(s){
-      var cx=skyX+s.x*skyW,cy=skyY+s.y*skyH,r=s.r*2.6;
-      g.beginPath();g.arc(cx,cy,r,0,Math.PI*2);
-      g.fillStyle=s.bright?'#FFD9A8':'rgba(255,255,255,.75)';g.fill();
-      if(s.bright){g.beginPath();g.arc(cx,cy,r+6,0,Math.PI*2);g.fillStyle='rgba(255,217,168,.25)';g.fill();}
-    });
-    if(!stars||!stars.length){
+    g.translate(skyX,skyY);
+    var assign=weekSkyAssign((sessionStars||[]).length);
+    weekSkyPaintScene(g,skyW,skyH,sessionStars||[],assign);
+    g.translate(-skyX,-skyY);
+    if(!sessionStars||!sessionStars.length){
       g.fillStyle='rgba(255,255,255,.7)';g.font='600 27px -apple-system,sans-serif';g.textAlign='center';
       g.fillText('아직 이번 주의 별이 없어요.',skyX+skyW/2,skyY+skyH/2-16);
       g.fillText('집중 한 번이 별 하나가 돼요.',skyX+skyW/2,skyY+skyH/2+22);
