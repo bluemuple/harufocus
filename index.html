@@ -2030,6 +2030,22 @@
   .modal .mclose{position:sticky;float:right;top:0;margin:-6px -4px 0 0;width:30px;height:30px;border:none;
     background:var(--card-2);border-radius:50%;font-size:16px;color:var(--ink-soft);cursor:pointer;z-index:5;display:grid;place-items:center}
   .modal.wide{max-width:320px}
+  /* ---------- 첫 방문 인트로 (P1-5, 요청) ----------
+     .scrim/.modal 어법 그대로 재사용 — z-index만 전체 최상으로 올린다.
+     밤엔 다른 오버레이 야간 팔레트(#1C2030/#ECEEF6, task-inner 등과 동일)로. */
+  #introScrim{z-index:9999}
+  #introScrim .modal{max-width:420px;text-align:center;padding:26px 22px 20px}
+  #introScrim h3{font-size:22px;font-weight:800}
+  .intro-img{display:block;height:140px;margin:0 auto 10px}
+  .intro-sub{font-size:13px;color:var(--ink-soft);margin-top:3px}
+  .intro-line{font-size:14.5px;line-height:1.55;margin:16px 0;color:var(--ink)}
+  .intro-list{list-style:none;text-align:left;margin:0 0 18px;padding:14px 16px;background:var(--card-2);border-radius:14px}
+  .intro-list li{font-size:13.5px;line-height:1.85;color:var(--ink)}
+  body.night #introScrim .modal{background:#1C2030;color:#ECEEF6}
+  body.night #introScrim .intro-sub{color:rgba(235,238,246,.62)}
+  body.night #introScrim .intro-line{color:#ECEEF6}
+  body.night #introScrim .intro-list{background:rgba(255,255,255,.08)}
+  body.night #introScrim .intro-list li{color:#ECEEF6}
   .elabel{font-size:11.5px;font-weight:700;color:var(--ink-soft);margin:12px 0 6px}
   .chip{font-family:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:var(--card-2);color:var(--ink-soft);border-radius:999px;padding:7px 12px;cursor:pointer}
   .chip.on{color:#fff;border-color:transparent}
@@ -3101,6 +3117,21 @@
       <button class="wk-share" id="weeklyShare" type="button">📤 공유하기</button>
     </div>
     <div class="album-wrap" id="albumWrap"></div>
+  </div>
+</div>
+<!-- 첫 방문 인트로 (P1-5, 요청): 재방문·기존 유저에겐 절대 다시 안 뜬다. -->
+<div class="scrim" id="introScrim">
+  <div class="modal">
+    <img src="assets/ele_name.png" alt="" class="intro-img">
+    <h3>엘리의 하루</h3>
+    <div class="intro-sub">내 안의 코끼리를 위한 플래너</div>
+    <p class="intro-line">하기 싫은 순간에 나를 비난하지 않고,<br>다시 움직이게 해요.</p>
+    <ul class="intro-list">
+      <li>몇 시까지 — 시간을 정하면 더 빨리 끝나요</li>
+      <li>막힌 순간, 2분짜리 작은 시작</li>
+      <li>일주일 뒤, 다시 시작한 횟수가 별하늘로</li>
+    </ul>
+    <button class="go" id="introGo">바로 시작하기</button>
   </div>
 </div>
 <div class="scrim setpage" id="aboutScrim">
@@ -13501,6 +13532,34 @@
     barTimer=setInterval(barAdvance,per);
   }
 
+  /* ---------- 첫 방문 인트로 (P1-5, 요청) ----------
+     ellyday.com에 처음 온 사람이 작업판에 곧장 떨어지지 않고, 10초 안에
+     '이 앱이 왜 필요한지'를 알게 한다. 재방문·기존 유저에겐 절대 다시
+     안 뜬다 — 로그인 세션·동기화 스냅샷 캐시·집중 세션 기기 ID 중
+     하나라도 남아 있으면 '이미 써본 사람'으로 본다.
+     ⚠ 조건은 순수 함수로 뺀다 — node 테스트가 localStorage만 목킹해 검증
+     (tests/first-visit-intro.js), DOM은 건드리지 않는다. */
+  var INTRO_SEEN_KEY='hfIntroSeen';
+  function shouldShowIntro(){
+    if(localStorage.getItem(INTRO_SEEN_KEY))return false;
+    if(localStorage.getItem(AUTH_KEY))return false;         // 로그인 세션
+    if(localStorage.getItem(SNAP_CACHE_KEY))return false;   // 동기화 스냅샷 캐시
+    if(localStorage.getItem(WEB_DEV_KEY))return false;      // 집중 세션 기기 ID
+    return true;
+  }
+  function openIntro(){
+    var sc=document.getElementById('introScrim');if(sc)sc.classList.add('open');
+  }
+  function closeIntro(){
+    try{localStorage.setItem(INTRO_SEEN_KEY,'1');}catch(_){}
+    var sc=document.getElementById('introScrim');if(sc)sc.classList.remove('open');
+  }
+  (function(){
+    var go=document.getElementById('introGo');if(go)go.addEventListener('click',closeIntro);
+    var sc=document.getElementById('introScrim');
+    if(sc)sc.addEventListener('click',function(e){if(e.target===this)closeIntro();});
+  })();
+
   /* ---------- boot ---------- */
   // 데스크톱 브랜드: 시스템 한글=한글, 그 외=영어 (요청)
   (function(){
@@ -13533,6 +13592,7 @@
     if(m.style.display!=='none'&&!e.target.closest('#deskNav'))m.style.display='none';
   });
   applySky();renderNav();updateAcct();setTab('todo');renderAll();startBarRotation();if(session)fetchSnapshot();
+  if(shouldShowIntro())openIntro();   // 하늘·닉네임까지 다 앉힌 뒤에 덮는다 — 닫으면 바로 평소 화면
   navFlashReady=true;   // 부팅 setTab은 신호가 아니다 — 여기서부터 반짝인다
   // 초대 랜딩 (핵심): ?invite=<코드>
   try{
