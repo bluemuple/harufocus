@@ -13521,15 +13521,15 @@
   function openMeSheet(){
     var g=document.getElementById('meGrid');if(!g)return;
     var cur=manualState();
+    /* 그리드 아이콘 = **확대 원형 컷** (요청 2026-07-29, 앱 iconName과 한 쌍):
+       큰 장면 그림에서 행동·표정을 중심으로 1.6배 당겨 동그랗게 잘랐다.
+       작은 칸에서 '무엇을 하는 중인지'가 바로 읽히고 큰 그림과도 구별된다.
+       ⚠ 틴트를 굽지 않는다 — 피부색 기능이 폐지됐고, 새 그림은 소품이
+         컬러라 곱하기를 태우면 통째로 탁해진다. */
     g.innerHTML=AVATAR_STATES.map(function(k){
       return '<button class="me-item'+(k===cur?' on':'')+'" data-me="'+k+'">'
-        +'<img id="mei-'+k+'" src="assets/avatar_'+k+'.png" alt="">'+ME_LABEL[k]+'</button>';
+        +'<img id="mei-'+k+'" src="assets/me_'+k+'_ico.png" alt="">'+ME_LABEL[k]+'</button>';
     }).join('');
-    // 고른 색은 그리드에도 똑같이 (한 화면에 두 색이면 딴 코끼리로 보인다).
-    AVATAR_STATES.forEach(function(k){
-      eleWordImg('avatar_'+k,eleTint(),function(u){
-        var el=document.getElementById('mei-'+k);if(el&&u)el.src=u;});
-    });
     // 열 때는 지금 상태를 그냥 보여 준다 — 손은 **내가 고른 뒤에만** 들어온다.
     paintMeStage(cur||avatarState(),false);
     document.getElementById('meAct').innerHTML='';
