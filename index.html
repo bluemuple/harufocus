@@ -7344,9 +7344,17 @@
        ⚠ 이 그림은 틴트를 굽지 않는다(eleWordImg 미사용): 나비·바람선이
          함께 있는 장면이라 몸통 multiply를 태우면 소품까지 물든다. */
     if(!scheduled.length&&!backlog.length&&!activeGoals.length&&!goalPick){
-      list.innerHTML='<div class="scene-empty"><img src="assets/scene_rest.png" alt="">'+
+      /* ⚠⚠ 목록 캡슐(#todoListBtn)은 **남긴다** (버그 2026-07-29): 예전엔 여기서
+         innerHTML을 통째로 갈아 위에서 그린 캡슐까지 지웠고, 그래서 **빈 내
+         목록에 들어가면 다른 목록으로 돌아갈 길이 사라졌다** — 목록을 바꾸는
+         유일한 문이 그 캡슐인데, 비었을 때만 그 문이 없어졌다.
+         지울 건 첫 방문 안내 카드뿐이다(빈 화면과 겹쳐 놓을 자리가 없다). */
+      var wcard=list.querySelector('#welcomeCard');
+      if(wcard)wcard.remove();
+      list.insertAdjacentHTML('beforeend',
+        '<div class="scene-empty"><img src="assets/scene_rest.png" alt="">'+
         '<div class="se-line">아주 작은 일도 좋아요.<br>'+
-        esc(eleName())+josa(eleName(),'이','')+'가 기억해 둘게요.</div></div>';
+        esc(eleName())+josa(eleName(),'이','')+'가 기억해 둘게요.</div></div>');
       return;}
     if(scheduled.length){
       var mon=(calSel.getMonth()+1),day=calSel.getDate();
