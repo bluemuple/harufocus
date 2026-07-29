@@ -290,6 +290,36 @@
   .modal.dark .wk-metric span{color:#93a0c0}
   .modal.dark .wk-line{color:#e8ecf6}
   .modal.dark .wk-share{background:#e8ecf6;color:#1b2436}
+  /* 엘리의 앨범 (요청 2026-07-29, 앱 AlbumEngine.swift/AlbumView.swift 웹 파리티):
+     주간 카드 안에서 [🐘 (이름)의 일기 보기 ›]를 누르면 같은 모달의 내용이
+     앨범(표지+최근 14일 한 줄 일기)으로 교체된다 — ‹ 로 주간 카드로 복귀.
+     ⚠ 순수 계산(albumDayLine)은 DOM 없이 테스트 가능해야 한다. */
+  .wk-back{position:absolute;top:10px;left:12px;width:30px;height:30px;border:0;border-radius:50%;
+    background:var(--card-2);color:var(--ink-soft);font-size:17px;font-weight:800;cursor:pointer;
+    line-height:1;font-family:inherit;z-index:2;display:none;align-items:center;justify-content:center}
+  .wk-album-open{width:100%;box-sizing:border-box;border:0;border-radius:12px;background:var(--card-2);
+    color:var(--ink);font-family:inherit;font-size:13.5px;font-weight:700;padding:11px;cursor:pointer;
+    margin:0 0 8px;display:flex;align-items:center;justify-content:center;gap:6px}
+  .modal.dark .wk-album-open{background:#2c3552;color:#e8ecf6}
+  .album-wrap{display:none}
+  .album-cover{text-align:center;margin-bottom:14px}
+  .album-cover img{height:120px;display:block;margin:0 auto 8px}
+  .album-cover h4{font-size:16px;font-weight:800;color:var(--ink);margin:0 0 4px}
+  .album-cover p{font-size:12.5px;color:var(--ink-soft);margin:0;line-height:1.5}
+  .album-list{display:flex;flex-direction:column;gap:8px;max-height:44vh;overflow-y:auto;padding-right:2px}
+  .album-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:14px;
+    background:var(--card-2)}
+  .album-row.empty{opacity:.75}
+  .album-date{width:30px;flex:0 0 auto;text-align:center}
+  .album-date b{display:block;font-size:15px;font-weight:800;color:var(--ink)}
+  .album-date span{display:block;font-size:10.5px;color:var(--ink-soft)}
+  .album-scene{width:44px;height:44px;flex:0 0 auto;object-fit:contain}
+  .album-line{flex:1;min-width:0;font-size:13px;font-weight:700;color:var(--ink)}
+  .album-row.empty .album-line{font-weight:400;color:var(--ink-soft)}
+  .modal.dark .album-cover h4,.modal.dark .album-date b,.modal.dark .album-line{color:#e8ecf6}
+  .modal.dark .album-cover p,.modal.dark .album-date span{color:#93a0c0}
+  .modal.dark .album-row{background:#2c3552}
+  .modal.dark .album-row.empty .album-line{color:#93a0c0}
   /* 물통: 물 주는 엘리 (앱 파리티 — 세그먼트 bar에 앉아 코로 붓는다).
      z-index 150 = 뒷벽(~120) 위·앞벽(~300) 아래. */
   .rain-ele{position:absolute;left:50%;top:-128px;transform:translateX(-22%);width:168px;
@@ -3058,14 +3088,19 @@
 <div class="scrim" id="weeklyScrim">
   <div class="modal me-modal wk-modal" id="weeklyModal">
     <button class="me-x" id="weeklyX" aria-label="닫기">✕</button>
-    <h3 id="weeklyHeadLabel">이번 주</h3>
-    <div class="wk-sky" id="weeklySky">
-      <canvas id="weeklyStarsCv"></canvas>
-      <div class="wk-empty" id="weeklyEmpty" style="display:none">아직 이번 주의 별이 없어요.<br>집중 한 번이 별 하나가 돼요.</div>
-      <img src="assets/ele_stargaze.png" alt="">
+    <button class="wk-back" id="albumBack" type="button" aria-label="뒤로">‹</button>
+    <div id="weeklyView">
+      <h3 id="weeklyHeadLabel">이번 주</h3>
+      <div class="wk-sky" id="weeklySky">
+        <canvas id="weeklyStarsCv"></canvas>
+        <div class="wk-empty" id="weeklyEmpty" style="display:none">아직 이번 주의 별이 없어요.<br>집중 한 번이 별 하나가 돼요.</div>
+        <img src="assets/ele_stargaze.png" alt="">
+      </div>
+      <div id="weeklyBody"></div>
+      <button class="wk-album-open" id="weeklyAlbumOpen" type="button">🐘 엘리의 일기 보기 ›</button>
+      <button class="wk-share" id="weeklyShare" type="button">📤 공유하기</button>
     </div>
-    <div id="weeklyBody"></div>
-    <button class="wk-share" id="weeklyShare" type="button">📤 공유하기</button>
+    <div class="album-wrap" id="albumWrap"></div>
   </div>
 </div>
 <div class="scrim setpage" id="aboutScrim">
@@ -11995,6 +12030,9 @@
     weeklyCurrentStats=stats;weeklyStarSeeds=stars;
     var label=document.getElementById('weeklyHeadLabel');if(label)label.textContent=weeklyWeekLabel(ws);
     var body=document.getElementById('weeklyBody');if(body)body.innerHTML=weeklyCardBodyHTML(stats);
+    var openBtn=document.getElementById('weeklyAlbumOpen');
+    if(openBtn)openBtn.textContent='🐘 '+eleName()+'의 일기 보기 ›';
+    closeAlbum();                          // 이전에 앨범을 보다 닫았어도 다음엔 주간 카드부터.
     requestAnimationFrame(function(){weeklyPaintSky(stars);});
   }
   function weeklyPaintSky(stars){
@@ -12016,6 +12054,100 @@
       }
     });
     if(empty)empty.style.display=(stars&&stars.length)?'none':'';
+  }
+  /* ── 엘리의 앨범 (P1-2, 2026-07-29) — 앱 AlbumEngine.swift/AlbumView.swift의
+     웹 파리티. 유저에게 '한 줄 일기'가 있듯 엘리도 나에 대해 하루 한 줄을 쓴다 —
+     체크인 로그(어떤 기분에서 몇 번 돌아왔나)와 집중 기록(몇 분 쌓았나)이
+     재료의 전부, 아무것도 꾸며내지 않는다.
+     ⚠ 원칙(애착 루프 설계 확정): 빈 날은 벌이 아니다 · 돌아옴 > 축적 > 완료 >
+       빈 날 순서로 크게 쳐 준다 · '연속'이라는 말은 어디에도 쓰지 않는다. */
+  // 상태 → "그런 채로도" 절 (돌아옴 문장의 앞머리) — 앱 AlbumEngine.stateClause와 한 쌍.
+  function albumStateClause(raw){
+    switch(raw){
+      case'phone':return '폰만 보다가도';
+      case'distract':return '딴 데 갔다가도';
+      case'overload':return '산더미 속에서도';
+      case'messy':return '엉킨 채로도';
+      case'tired':return '지친 채로도';
+      case'refuse':return '싫다면서도';
+      default:return '그런 날에도';
+    }
+  }
+  // 엘리의 하루 한 줄 — 앱 AlbumEngine.dayLine과 같은 분기·같은 문장 (순수 계산).
+  // facts:{checks:[{state,startedAt}],focusSec,doneCount}. 돌아옴 > 축적 > 완료 > 빈 날.
+  function albumDayLine(facts){
+    var checks=(facts&&facts.checks)||[];
+    var restarts=checks.filter(function(c){return c.startedAt!=null;});
+    if(restarts.length){
+      var n=restarts.length,clause=albumStateClause(restarts[0].state);
+      return n>=2?(clause+' '+n+'번이나 다시 돌아왔다. 대단한 날.')
+                 :(clause+' 다시 돌아왔다. 그게 제일 어렵다.');
+    }
+    var sec=(facts&&facts.focusSec)||0;
+    if(sec>=1800)return '조용히 '+weeklyFocusText(sec)+'을 쌓은 날.';
+    if(sec>=60)return '잠깐이라도 책상에 앉았던 날.';
+    var done=(facts&&facts.doneCount)||0;
+    if(done>0)return done+'개를 끝낸 날.';
+    return '아무것도 안 한 날. 그런 날도 있다.';
+  }
+  // 그날 페이지의 장면 — 첫 체크인 상태의 그림(me_*), 없으면 null(뷰가 '쓰는 엘리'로 대신).
+  function albumSceneAsset(facts){
+    var checks=(facts&&facts.checks)||[];
+    return checks.length?('me_'+checks[0].state):null;
+  }
+  // 최근 14일 재료를 하루씩 나눈다(로컬 자정 경계) — 오늘부터 역순.
+  function albumBuildPages(){
+    var today=new Date();today.setHours(0,0,0,0);
+    var checksAll=meChecksLoad(),sessAll=allSessions()||[],tasksAll=DATA.tasks||[];
+    var pages=[];
+    for(var back=0;back<14;back++){
+      var day=new Date(today.getTime()-back*86400000),dMs=day.getTime(),eMs=dMs+86400000;
+      var checks=checksAll.filter(function(c){return c.ts>=dMs&&c.ts<eMs;});
+      var focusSec=sessAll.filter(function(s){
+        var st=new Date(s.start).getTime();return st>=dMs&&st<eMs;
+      }).reduce(function(a,s){return a+(s.focusedSec||0);},0);
+      var doneCount=tasksAll.filter(function(t){
+        if(!t.completedAt||t.isRewardItem)return false;
+        var c=new Date(t.completedAt).getTime();return c>=dMs&&c<eMs;
+      }).length;
+      var facts={checks:checks,focusSec:focusSec,doneCount:doneCount};
+      var empty=checks.length===0&&focusSec<60&&doneCount===0;
+      pages.push({date:day,line:albumDayLine(facts),scene:albumSceneAsset(facts),empty:empty});
+    }
+    return pages;
+  }
+  function albumRowHTML(p){
+    var wd=['일','월','화','수','목','금','토'][p.date.getDay()];
+    var img=p.scene?('assets/'+p.scene+'.png'):'assets/ele_writing.png';
+    var op=(!p.scene&&p.empty)?' style="opacity:.35"':'';                 // 빈 날의 '쓰는 엘리'만 흐리게.
+    return '<div class="album-row'+(p.empty?' empty':'')+'">'
+      +'<div class="album-date"><b>'+p.date.getDate()+'</b><span>'+wd+'</span></div>'
+      +'<img class="album-scene" src="'+img+'"'+op+' alt="">'
+      +'<div class="album-line">'+esc(p.line)+'</div></div>';
+  }
+  function albumBodyHTML(){
+    var nm=eleName();
+    var html='<div class="album-cover"><img src="assets/ele_album.png" alt="">'
+      +'<h4>'+esc(nm)+'의 일기</h4>'
+      +'<p>내가 보낸 하루를, '+esc(jo(nm,'이가','가'))+' 한 줄로 기억해요.</p></div>'
+      +'<div class="album-list">'+albumBuildPages().map(albumRowHTML).join('')+'</div>';
+    return html;
+  }
+  // 주간 카드 ↔ 앨범 전환 — 같은 모달을 재사용, 뒤로가기 ‹ 로 복귀.
+  function openAlbum(){
+    var view=document.getElementById('weeklyView'),wrap=document.getElementById('albumWrap');
+    var back=document.getElementById('albumBack');
+    if(!view||!wrap)return;
+    wrap.innerHTML=albumBodyHTML();
+    view.style.display='none';wrap.style.display='block';
+    if(back)back.style.display='flex';
+  }
+  function closeAlbum(){
+    var view=document.getElementById('weeklyView'),wrap=document.getElementById('albumWrap');
+    var back=document.getElementById('albumBack');
+    if(view)view.style.display='';
+    if(wrap)wrap.style.display='none';
+    if(back)back.style.display='none';
   }
   // ── 공유 이미지 합성 (정사각 1080×1080, 다크 고정) — 작업 이름 없이 별·숫자·엘리만.
   function weeklyRoundRectPath(g,x,y,w,h,r){
@@ -13020,6 +13152,8 @@
     var x=document.getElementById('weeklyX');if(x)x.addEventListener('click',function(){sc.classList.remove('open');});
     var banner=document.getElementById('weeklyBanner');if(banner)banner.addEventListener('click',openWeeklyCard);
     var shareBtn=document.getElementById('weeklyShare');if(shareBtn)shareBtn.addEventListener('click',weeklyShareNow);
+    var albumBtn=document.getElementById('weeklyAlbumOpen');if(albumBtn)albumBtn.addEventListener('click',openAlbum);
+    var albumBack=document.getElementById('albumBack');if(albumBack)albumBack.addEventListener('click',closeAlbum);
   })();
   function meAnswer(k,choice){
     if(choice==='rest'){meBranch('쉬고 싶었구나. 그래도 돼.','10분 쉼 놔두기',
