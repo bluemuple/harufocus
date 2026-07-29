@@ -223,9 +223,15 @@
   /* ⚠ 자식이 전부 절대배치라 **본인 폭이 0으로 붕괴**한다 — 다짐 모달은
      블록 흐름이라 우연히 100%였지만, flex(.me-pane) 안에선 글자가 세로로
      떨어지고 canvas가 10px가 되는 사고(2026-07-29). 폭을 명시한다. */
-  .pledge-scratch{position:relative;width:100%;flex:1 1 100%;height:48px;border-radius:14px;overflow:visible;z-index:5}
-  .pledge-scratch .ps-under{position:absolute;inset:0;border-radius:14px;background:var(--chip,#EEF1F5);
-    display:flex;align-items:center;justify-content:center;gap:8px;padding:0 14px;font-size:13px;font-weight:700;text-align:center}
+  /* ⚠ 높이를 못 박지 않는다 (요청 2026-07-29): 프롬프트를 두 줄로 끊게 되면서
+     48px 고정에선 아랫줄이 잘렸다. .ps-under를 흐름에 두어 글이 높이를 정하고,
+     코팅 캔버스만 그 위에 절대배치로 덮는다. */
+  .pledge-scratch{position:relative;width:100%;flex:1 1 100%;min-height:48px;border-radius:14px;overflow:visible;z-index:5}
+  .pledge-scratch .ps-under{position:relative;min-height:48px;box-sizing:border-box;
+    border-radius:14px;background:var(--chip,#EEF1F5);
+    display:flex;align-items:center;justify-content:center;gap:8px;padding:7px 14px;font-size:13px;font-weight:700;text-align:center}
+  /* 두 줄로 끊은 자리(\n)를 그대로 살린다 — twoLines()가 정한 줄바꿈이다. */
+  .pledge-scratch .ps-under>span{white-space:pre-line;line-height:1.35}
   .pledge-scratch .ps-under .ps-copy{flex:0 0 auto;border:0;border-radius:999px;padding:4px 10px;cursor:pointer;
     background:rgba(255,123,74,.15);color:#E8632F;font-weight:800;font-size:11.5px;display:none}
   .pledge-scratch.revealed .ps-under .ps-copy{display:inline-block}
@@ -251,6 +257,27 @@
   .pledge-ok.off{opacity:.35}
   .pledge-hist-t{display:block;margin:10px auto 0;border:0;background:none;color:var(--ink-soft,#667);
     font-weight:700;font-size:12.5px;cursor:pointer}
+  /* [나의 다짐 | 나와의 약속] 세그먼트 (요청 2026-07-29) — meAct 안 .me-tabs와
+     같은 생김새지만 그쪽 선택자는 .me-act 아래로 갇혀 있어 여기 따로 둔다. */
+  .pledge-tabs{display:flex;gap:4px;background:var(--card-2);border-radius:12px;padding:3px;margin:10px 0 12px}
+  .pledge-tabs button{flex:1 1 0;padding:8px 6px;border:0;border-radius:9px;background:transparent;
+    font-family:inherit;font-size:13px;font-weight:700;color:var(--ink-soft);cursor:pointer}
+  .pledge-tabs button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.09)}
+  /* 나와의 약속 — 만약 [상황] , / 나는 [행동] 약속한다 */
+  .pm-art{display:block;height:72px;width:auto;margin:0 auto 10px}
+  .pm-line{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+  .pm-line b{flex:0 0 auto;font-size:13.5px;font-weight:800}
+  /* ⚠ min-width:0 이 없으면 긴 선택지가 줄을 밀어내 ','와 '약속한다'가
+     화면 밖으로 나간다(flex 기본 min-width:auto 함정). */
+  .pm-sel,.pm-in{flex:1 1 auto;min-width:0;padding:8px 10px;border:1px solid var(--line);
+    border-radius:10px;background:var(--card-2);color:var(--ink);
+    font-family:inherit;font-size:13.5px;font-weight:700;outline:none}
+  /* ⚠ 오른쪽 여백을 넉넉히: 브라우저가 그리는 ▾ 화살표가 글자 위에 겹쳐
+     "…덜어낼 것⌄"처럼 붙어 읽혔다(모바일에서 확인). */
+  .pm-sel{padding-right:26px}
+  .pm-sel.empty{font-weight:400;color:var(--ink-soft)}
+  .pm-sel:disabled{opacity:.6;cursor:not-allowed}
+  .pledge-sep{height:1px;background:var(--line);margin:16px 0 0}
   .pledge-now{display:flex;align-items:center;gap:8px;margin-top:14px}
   .pledge-now b{font-size:14.5px}
   .pledge-now .pn-cap{display:flex;align-items:center;gap:7px;padding:6px 12px;border:1px solid var(--line);
@@ -920,10 +947,37 @@
   #listSheet .ls-row:hover{background:rgba(20,24,39,.05)}
   #listSheet .ls-row.on{color:#3E7FA6;font-weight:700}
   #listSheet .ls-ic{width:22px;display:grid;place-items:center}
+  #listSheet .ls-ic svg{width:19px;height:19px;display:block}
   #listSheet .ls-name{flex:1}
   #listSheet .ls-ck{color:#4BA3D3;font-weight:800}
   #listSheet .ls-del{color:#c66;padding:0 6px;font-size:13px}
   #listSheet .ls-new{color:#3E7FA6;font-weight:700}
+  /* 새 목록 만들기 (요청 2026-07-29, 앱 NewFolderForm 파리티) — **시트를 새로
+     띄우지 않는다**: 목록 시트가 그대로 있고 그 안의 내용만 이 폼으로 바뀐다.
+     패널이 내려갔다 올라오는 왕복이 사라져 눈이 따라가기 쉽고 빠르다.
+     아이콘판도 접어 두지 않고 **처음부터 펼쳐** 둔다 — 눌러서 여는 순간의
+     기다림 자체가 요청의 불만이었다. */
+  #listSheet .nf-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+  #listSheet .nf-head .nf-t{flex:1;text-align:center;font-weight:800}
+  #listSheet .nf-head button{border:0;background:none;font:inherit;font-size:14px;
+    color:#3E7FA6;font-weight:700;cursor:pointer;padding:4px 2px}
+  #listSheet .nf-head button:disabled{opacity:.35;cursor:default}
+  #listSheet .nf-row{display:flex;align-items:center;gap:10px}
+  #listSheet .nf-pick{flex:0 0 auto;width:46px;height:46px;border:1px solid #dfe3ea;border-radius:12px;
+    background:#f4f6fa;display:grid;place-items:center;cursor:pointer;color:#8a93a5}
+  #listSheet .nf-pick svg{width:22px;height:22px}
+  #listSheet .nf-pick.on{color:#3E7FA6}
+  #listSheet .nf-name{flex:1;min-width:0;height:46px;box-sizing:border-box;padding:0 12px;
+    border:1px solid #dfe3ea;border-radius:12px;background:#f4f6fa;font:inherit;font-size:15px;outline:none}
+  #listSheet .nf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+  #listSheet .nf-cell{border:0;background:none;padding:0;cursor:pointer;display:grid;gap:5px;justify-items:center}
+  #listSheet .nf-cell i{width:44px;height:44px;border-radius:12px;background:#f4f6fa;
+    display:grid;place-items:center;color:#3E7FA6}
+  #listSheet .nf-cell i svg{width:22px;height:22px}
+  /* ⚠ 고른 칸은 **애니메이션 없이 즉시** 색이 찬다 (요청): 여닫는 움직임이
+     느리다는 지적이 이 화면을 다시 만든 이유다. */
+  #listSheet .nf-cell.on i{background:#3E7FA6;color:#fff}
+  #listSheet .nf-cell span{font-size:11px;color:#888}
   /* 장기 목표 만들기 모달 (요청: 웹에서도 생성) */
   #goalModal .gm-dim{position:fixed;inset:0;background:rgba(10,14,30,.45);z-index:80}
   #goalModal .gm-card{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:81;
@@ -1363,7 +1417,8 @@
   .list-btn{font-family:inherit;font-size:14px;font-weight:700;color:rgba(255,255,255,.95);
     background:rgba(255,255,255,.16);border:0;border-radius:11px;padding:5px 10px;cursor:pointer;
     display:inline-flex;align-items:center;gap:5px}
-  .list-btn .lb-ic{font-size:12px}
+  .list-btn .lb-ic{font-size:12px;display:inline-flex;align-items:center}
+  .list-btn .lb-ic svg{width:15px;height:15px;display:block}
   .list-btn .lb-ch{opacity:.6;font-size:11px}
   /* 요일 캡슐 (요청 2026-07-27 확정): 우측 '지금, 좀 어때?' 캡슐과 같은
      두께(32px)·같은 눈높이. 누르면 주간 날짜가 바로 아래 팝오버로. */
@@ -1530,13 +1585,19 @@
   .d-head{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-bottom:4px}
   .d-card.dark .d-head{color:#aab4cc}
   .d-head .ic{width:13px;height:13px}
-  .d-elewrap{position:absolute;right:8px;bottom:6px;display:flex;align-items:flex-end;gap:6px;z-index:2}
-  .d-elehint{font-size:10.5px;color:var(--ink-soft);background:rgba(255,255,255,.95);border:1px solid var(--line);
-    border-radius:999px;padding:4px 9px;margin-bottom:4px;white-space:nowrap}
-  .d-card.dark .d-elehint{background:rgba(30,38,60,.95);color:#aab4cc;border-color:#3a466b}
-  .d-elebadge{border:0;background:none;padding:0;cursor:pointer;height:34px}
-  .d-elebadge img{height:34px;display:block}
-  .d-card:has(.d-elewrap) .d-body{padding-right:44px}
+  /* 한마디류 글의 종류 아이콘 (다짐=손·약속=갈래 화살표) — 앱 DiaryKindFace. */
+  .d-head .dkf{width:13px;height:13px;flex:0 0 auto;vertical-align:-2px}
+  /* 상단바 노출 토글 (요청 2026-07-29): 앉은 엘리 그림을 걷어내고 머리줄
+     **오른쪽 끝 작은 눈 버튼**으로 옮겼다 — 글마다 그림이 하나씩 붙으니
+     목록이 시끄러웠고, 정작 자주 쓰는 기능도 아니다. 기능은 남기되
+     눈에서 치운다. (앱은 같은 이유로 롱프레스 메뉴로 옮겼다.) */
+  .d-eyebtn{margin-left:auto;flex:0 0 auto;border:0;background:none;padding:2px;cursor:pointer;
+    color:var(--ink-soft);opacity:.45;line-height:0}
+  .d-eyebtn.on{opacity:.95;color:var(--sky-blue,#5B7CE0)}
+  .d-eyebtn svg{width:15px;height:15px;display:block}
+  .d-card.dark .d-eyebtn{color:#aab4cc}
+  /* (.d-elewrap/.d-elehint/.d-elebadge 삭제 — 요청 2026-07-29: 한마디 옆
+     앉은 엘리 그림을 없앴다. 토글은 위 .d-eyebtn이 맡는다.) */
   .d-eye{margin-left:auto;border:0;background:none;cursor:pointer;color:var(--ink-soft);padding:2px}
   .d-eye.on{color:var(--sky-blue)}
   .d-body{font-size:15px;line-height:1.6;color:var(--ink);word-break:break-word;
@@ -3089,26 +3150,67 @@
   <div class="modal me-modal">
     <button class="me-x" id="pledgeX" aria-label="닫기">✕</button>
     <h3>나의 다짐</h3>
-    <div class="pledge-scratch" id="pledgeScratch">
-      <div class="ps-under"><span id="pledgePromptTxt"></span><button class="ps-copy" id="pledgeCopy" type="button">복사</button></div>
-      <canvas class="ps-coat" id="pledgeCoat"></canvas>
+    <!-- 탭 (요청 2026-07-29, 앱 IfThenPanel 세그먼트 컨트롤 파리티): 같은 창이
+         두 가지 글을 만든다 — 다짐(내가 나에게 하는 말)과 약속(실행의도). -->
+    <div class="pledge-tabs" id="pledgeTabs">
+      <button type="button" class="on" data-pt="pledge">나의 다짐</button>
+      <button type="button" data-pt="promise">나와의 약속</button>
     </div>
-    <div class="pledge-write">
-      <div class="pledge-input">
-        <textarea id="pledgeInput" maxlength="200"></textarea>
+    <div id="pledgePane">
+      <div class="pledge-scratch" id="pledgeScratch">
+        <div class="ps-under"><span id="pledgePromptTxt"></span><button class="ps-copy" id="pledgeCopy" type="button">복사</button></div>
+        <canvas class="ps-coat" id="pledgeCoat"></canvas>
       </div>
-      <img src="assets/me_will.png" alt="">
+      <div class="pledge-write">
+        <div class="pledge-input">
+          <textarea id="pledgeInput" maxlength="200"></textarea>
+        </div>
+        <img src="assets/me_will.png" alt="">
+      </div>
+      <!-- 토글은 **2줄**, [완료]는 '일기에 추가' 오른쪽 (요청 2026-07-28 모바일):
+           한 줄에 몰면 좁은 화면에서 글자가 세로로 쪼개진다. -->
+      <!-- 토글 2칼럼 + 아래 전폭 [완료] (요청 2026-07-28 재조정) -->
+      <div class="pledge-toggles">
+        <label><input type="checkbox" id="pledgeToBar" checked><span>상단 말풍선</span></label>
+        <label><input type="checkbox" id="pledgeToDiary" checked><span>일기에 추가</span></label>
+      </div>
+      <button class="pledge-ok" id="pledgeSave" type="button">완료</button>
+      <button class="pledge-hist-t" id="pledgeHistT" type="button">예전 다짐 ▾</button>
+      <div class="me-words" id="pledgeHist" style="display:none"></div>
     </div>
-    <!-- 토글은 **2줄**, [완료]는 '일기에 추가' 오른쪽 (요청 2026-07-28 모바일):
-         한 줄에 몰면 좁은 화면에서 글자가 세로로 쪼개진다. -->
-    <!-- 토글 2칼럼 + 아래 전폭 [완료] (요청 2026-07-28 재조정) -->
-    <div class="pledge-toggles">
-      <label><input type="checkbox" id="pledgeToBar" checked><span>상단 말풍선</span></label>
-      <label><input type="checkbox" id="pledgeToDiary" checked><span>일기에 추가</span></label>
+    <!-- 나와의 약속 (요청 2026-07-29, 앱 IfThenPanel 파리티) — 실행의도 문장.
+         두 줄로 읽힌다:  만약 [상황 ▼],  /  나는 [행동 ▼]을 약속한다
+         ⚠ '나는'을 넣는다: 실행의도 연구의 형태가 "만약 X면 **나는** Y를
+           한다"이고, 무엇보다 이 기능의 이름이 '나와의 약속'이다. 주어가
+           있어야 남에게 하는 말이 아니라 나에게 하는 말이 된다. -->
+    <div id="promisePane" style="display:none">
+      <!-- ⚠ 종이 두 장을 든 엘리는 문장 **오른쪽이 아니라 위**에 (요청):
+           만약~ 문장이 길어 오른쪽엔 그림이 들어갈 자리가 없다. 위에 작게
+           놓으면 종이의 두 낱말이 아래 문장의 뼈대를 그대로 예고한다. -->
+      <img class="pm-art" src="assets/ele-promise.png" alt="">
+      <div class="pm-line">
+        <b>만약</b>
+        <select id="pmSit" class="pm-sel"></select>
+        <input id="pmSitIn" class="pm-in" placeholder="어떤 때?" maxlength="40" style="display:none">
+        <b>,</b>
+      </div>
+      <div class="pm-line">
+        <b>나는</b>
+        <select id="pmAct" class="pm-sel"></select>
+        <input id="pmActIn" class="pm-in" placeholder="무엇을 할까? (…할 것)" maxlength="40" style="display:none">
+        <b>약속한다</b>
+      </div>
+      <div class="pledge-toggles">
+        <label><input type="checkbox" id="pmToBar" checked><span>상단 말풍선</span></label>
+        <label><input type="checkbox" id="pmToDiary" checked><span>일기에 추가</span></label>
+      </div>
+      <button class="pledge-ok" id="pmSave" type="button">약속하기</button>
+      <button class="pledge-hist-t" id="pmHistT" type="button">예전 약속 ▾</button>
+      <div class="me-words" id="pmHist" style="display:none"></div>
     </div>
-    <button class="pledge-ok" id="pledgeSave" type="button">완료</button>
-    <button class="pledge-hist-t" id="pledgeHistT" type="button">예전 다짐 ▾</button>
-    <div class="me-words" id="pledgeHist" style="display:none"></div>
+    <!-- 다짐·약속 화면과 '지금 나는'을 가르는 줄 (요청 2026-07-29): 위는
+         '무엇을 쓸까', 아래는 '지금 나는 어떤가' — 다른 이야기다. -->
+    <div class="pledge-sep"></div>
     <div class="pledge-now">
       <b>지금 나는</b>
       <button class="pn-cap" id="pledgeNowCap" type="button"></button>
@@ -3307,6 +3409,9 @@
     star:svgI('<path d="M12 3.5l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/>'),
     starFill:svgI('<path d="M12 3.5l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/>','currentColor'),
     trash:svgI('<path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/>'),
+    /* 상단바 노출 토글 (요청 2026-07-29, 일기 한마디 옆 엘리 그림 대체). */
+    eye:svgI('<path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.7"/>'),
+    eyeOff:svgI('<path d="M4 4l16 16"/><path d="M9.6 6.3A9.6 9.6 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3.3 3.9"/><path d="M6.2 8.1A17 17 0 0 0 2.5 12S6 18 12 18c1.2 0 2.3-.2 3.3-.6"/><path d="M9.9 9.9a2.9 2.9 0 0 0 4.1 4.1"/>'),
     grid:svgI('<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'),
     sunrise:svgI('<path d="M3 19h18M7.5 19a4.5 4.5 0 0 1 9 0M12 9.8v2.4M5.9 12.6l1.5 1.5M18.1 12.6l-1.5 1.5M3.5 16h1.8M18.7 16h1.8"/>'),
     curve:svgI('<path d="M6 19v-3.5A7.5 7.5 0 0 1 13.5 8H17"/><path d="M13.8 4.2L17.6 8l-3.8 3.8"/>'),
@@ -6983,6 +7088,30 @@
     }
     return '담아둔 일';
   }
+  /* 목록 아이콘 9종 (요청 2026-07-29, 3×3 — 앱 FolderIcons.all과 **한 쌍**).
+     목록에 담기는 것들을 넓게 덮도록 골랐다: 공부·일·마음·집·운동·장보기·
+     사람·아이디어·중요.
+     ⚠ 여기 **순서가 곧 화면의 3×3 순서**다.
+     ⚠ key는 앱의 SF Symbol 이름을 그대로 쓴다 — 스냅샷 folders[].iconName이
+       두 기기를 왕복하므로, 이름이 어긋나면 폰에서 만든 목록이 웹에서
+       물음표로 보인다(그 반대도). */
+  var FOLDER_ICONS=[
+    {k:'book.fill',ko:'공부',s:'<path d="M12 6.4C10.4 5.2 8 4.7 5 4.7c-.5 0-.9.4-.9.9v11.8c0 .5.4.9.9.9 2.9 0 5.4.5 7 1.6 1.6-1.1 4.1-1.6 7-1.6.5 0 .9-.4.9-.9V5.6c0-.5-.4-.9-.9-.9-3 0-5.4.5-7 1.7z" fill="currentColor"/>'},
+    {k:'briefcase.fill',ko:'일',s:'<rect x="2.8" y="7.4" width="18.4" height="12.2" rx="2.4" fill="currentColor"/><path d="M9 7.4V5.8a1.6 1.6 0 0 1 1.6-1.6h2.8A1.6 1.6 0 0 1 15 5.8v1.6" fill="none" stroke="currentColor" stroke-width="1.8"/>'},
+    {k:'heart.fill',ko:'마음',s:'<path d="M12 20.4 4.4 13a4.7 4.7 0 0 1 6.6-6.7l1 1 1-1A4.7 4.7 0 0 1 19.6 13z" fill="currentColor"/>'},
+    {k:'house.fill',ko:'집',s:'<path d="M12 3.2 2.8 11h2.4v9h5v-5.6h3.6V20h5v-9h2.4z" fill="currentColor"/>'},
+    {k:'figure.run',ko:'운동',s:'<circle cx="15.4" cy="4.6" r="2.1" fill="currentColor"/><path d="M13.6 8.2 9.2 10l-1.6 4.2 2.4.9 1.1-2.7 2 1.6-1.4 5.4 2.5.6 1.7-6.6-2.4-2.3 3.4-1.3 1.9 2.6 2-1.4-2.6-3.4z" fill="currentColor"/>'},
+    {k:'cart.fill',ko:'장보기',s:'<path d="M2.6 4.4h2.6l2.6 9.8h9.4l2.2-7.2H7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.4" cy="18.6" r="1.7" fill="currentColor"/><circle cx="16.6" cy="18.6" r="1.7" fill="currentColor"/>'},
+    {k:'person.2.fill',ko:'사람',s:'<circle cx="8.6" cy="7.6" r="3.2" fill="currentColor"/><path d="M2.6 19.4c0-3.3 2.7-5 6-5s6 1.7 6 5z" fill="currentColor"/><circle cx="16.6" cy="8.4" r="2.6" fill="currentColor"/><path d="M14 14.9c.8-.3 1.7-.5 2.6-.5 2.8 0 4.8 1.5 4.8 4.4h-5.1c0-1.6-.9-2.9-2.3-3.9z" fill="currentColor"/>'},
+    {k:'lightbulb.fill',ko:'아이디어',s:'<path d="M12 2.6a6.4 6.4 0 0 0-3.6 11.7v2.1h7.2v-2.1A6.4 6.4 0 0 0 12 2.6z" fill="currentColor"/><path d="M9.4 18.4h5.2M10.2 20.8h3.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'},
+    {k:'star.fill',ko:'중요',s:'<path d="M12 3.4l2.6 5.3 5.9.8-4.3 4.1 1 5.8L12 16.7l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8z" fill="currentColor"/>'}];
+  // 아직 안 고른 목록 — 물음표로 "고를 수 있다"를 말한다 (앱 FolderIcons.unset).
+  var FOLDER_ICON_UNSET='<path d="M9.2 8.8a2.9 2.9 0 1 1 3.6 2.8c-.8.2-1.2.8-1.2 1.6v.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="11.6" cy="17.4" r="1.3" fill="currentColor"/>';
+  function folderIconSVG(name){
+    var f=FOLDER_ICONS.filter(function(x){return x.k===name;})[0];
+    return '<svg viewBox="0 0 24 24">'+(f?f.s:FOLDER_ICON_UNSET)+'</svg>';
+  }
+  function folderById(id){return (DATA.folders||[]).filter(function(x){return x.id===id;})[0]||null;}
   function openListSheet(){
     var old=document.getElementById('listSheet');if(old)old.remove();
     function row(label,icon,kind,id,delId){
@@ -7000,11 +7129,13 @@
     var html='<div class="ls-dim"></div><div class="ls-card"><div class="ls-title">목록</div>'+
       row('모든 할 일','🗂','all')+row('담아둔 일','📥','inbox')+row('장기 목표',goalIcon,'goal')+
       '<div class="ls-sec">내 목록</div>'+
-      (DATA.folders||[]).map(function(f){return row(f.name,'📁','folder',f.id,f.id);}).join('')+
+      // 목록 아이콘 (요청 2026-07-29) — 안 고른 목록은 물음표.
+      (DATA.folders||[]).map(function(f){return row(f.name,folderIconSVG(f.iconName),'folder',f.id,f.id);}).join('')+
       '<button class="ls-row ls-new"><span class="ls-ic">＋</span><span class="ls-name">새 목록</span></button></div>';
     var wrap=document.createElement('div');wrap.id='listSheet';wrap.innerHTML=html;
     document.body.appendChild(wrap);
     function close(){wrap.remove();}
+    function card(){return wrap.querySelector('.ls-card');}
     wrap.querySelector('.ls-dim').addEventListener('click',close);
     wrap.querySelectorAll('.ls-row[data-kind]').forEach(function(b){
       b.addEventListener('click',function(ev){
@@ -7019,14 +7150,56 @@
         todoPick={kind:b.dataset.kind,id:b.dataset.id||null};
         close();renderTodo();
       });});
+    /* 새 목록 (요청 2026-07-29 개정, 앱 NewFolderForm 파리티): **패널을 새로
+       띄우지 않는다** — 이 카드의 내용만 폼으로 갈아 끼운다. 시트가 내려갔다
+       올라오는 왕복이 없으니 눈이 따라가기 쉽고 무엇보다 빠르다.
+       ⚠ 아이콘판은 접어 두지 않고 처음부터 펼쳐 둔다: 눌러서 여는 순간의
+         기다림 자체가 요청의 불만이었다. */
     wrap.querySelector('.ls-new').addEventListener('click',function(){
-      var name=prompt('새 목록 이름');if(!name)return;
-      name=name.trim();if(!name)return;
-      if(!DATA.folders)DATA.folders=[];
-      var f={id:uuid(),name:name,order:(DATA.folders.length?DATA.folders[DATA.folders.length-1].order+1:1),
-        createdAt:new Date().toISOString()};
-      DATA.folders.push(f);todoPick={kind:'folder',id:f.id};
-      close();renderAll();pushSnapshot();
+      var icon='';
+      var c=card();
+      c.innerHTML='<div class="nf-head"><button type="button" class="nf-cancel">취소</button>'+
+        '<span class="nf-t">새 목록</span>'+
+        '<button type="button" class="nf-create" disabled>만들기</button></div>'+
+        '<div class="nf-row">'+
+        '<button type="button" class="nf-pick" aria-label="고른 아이콘 — 누르면 지움">'+folderIconSVG('')+'</button>'+
+        '<input class="nf-name" placeholder="예: 영어 공부" maxlength="24"></div>'+
+        '<div class="nf-grid">'+FOLDER_ICONS.map(function(it){
+          return '<button type="button" class="nf-cell" data-ic="'+it.k+'">'+
+            '<i>'+folderIconSVG(it.k)+'</i><span>'+it.ko+'</span></button>';}).join('')+'</div>';
+      var nameInp=c.querySelector('.nf-name'),
+          pick=c.querySelector('.nf-pick'),
+          okBtn=c.querySelector('.nf-create');
+      function syncOk(){okBtn.disabled=!nameInp.value.trim();}
+      function setIcon(k){
+        icon=k;
+        pick.innerHTML=folderIconSVG(icon);
+        pick.classList.toggle('on',!!icon);
+        [].forEach.call(c.querySelectorAll('.nf-cell'),function(x){
+          x.classList.toggle('on',!!icon&&x.dataset.ic===icon);});
+      }
+      c.querySelectorAll('.nf-cell').forEach(function(b){
+        // 이미 고른 칸을 다시 누르면 물음표로 되돌린다 (앱: 미리보기 탭과 같은 뜻).
+        b.addEventListener('click',function(){setIcon(icon===b.dataset.ic?'':b.dataset.ic);});
+      });
+      pick.addEventListener('click',function(){setIcon('');});
+      nameInp.addEventListener('input',syncOk);
+      nameInp.addEventListener('keydown',function(e){
+        if(e.key==='Enter'){e.preventDefault();create();}});
+      c.querySelector('.nf-cancel').addEventListener('click',function(){close();openListSheet();});
+      okBtn.addEventListener('click',create);
+      setTimeout(function(){nameInp.focus();},30);
+      function create(){
+        var name=(nameInp.value||'').trim();if(!name)return;
+        if(!DATA.folders)DATA.folders=[];
+        /* iconName은 앱 FolderDTO와 **같은 키** — 이 이름으로 스냅샷을 왕복한다.
+           비어 있으면 물음표로 보인다(옛 목록·옛 클라이언트도 잃는 것 없음). */
+        var f={id:uuid(),name:name,iconName:icon||null,
+          order:(DATA.folders.length?DATA.folders[DATA.folders.length-1].order+1:1),
+          createdAt:new Date().toISOString()};
+        DATA.folders.push(f);todoPick={kind:'folder',id:f.id};
+        close();renderAll();pushSnapshot();
+      }
     });
   }
   function renderTodo(){
@@ -7113,7 +7286,11 @@
       : visible.filter(function(t){return !t.isDone;}).length;
     list.insertAdjacentHTML('beforeend','<div class="sec-h sec-h-btn">'+
       '<button class="list-btn" id="todoListBtn"><span class="lb-ic">'+
-      ({inbox:'📥',all:'🗂',goal:'🌱',folder:'📁'}[todoPick.kind]||'📥')+'</span>'+
+      /* 내 목록이면 **그 목록의 아이콘** (요청 2026-07-29): 목록 시트와 상단
+         버튼이 같은 그림이라야 지금 어느 목록에 있는지 그림만으로 읽힌다. */
+      (todoPick.kind==='folder'
+        ? folderIconSVG((folderById(todoPick.id)||{}).iconName)
+        : ({inbox:'📥',all:'🗂',goal:'🌱'}[todoPick.kind]||'📥'))+'</span>'+
       esc(todoPickTitle())+' '+headCount+'<span class="lb-ch">▾</span></button>'+
       (goalPick?('<button class="list-btn goal-all'+(goalShowAll?' on':'')+'" id="goalAllBtn">전체</button>'):'')+
       '</div>');
@@ -8415,11 +8592,30 @@
     }
     return o;
   }
+  /* 한마디류 글의 **얼굴**(아이콘 + 이름) — 요청 2026-07-29, 앱 DiaryKindFace 파리티.
+     같은 kind("word"/"wordbar")로 저장되지만 쓴 자리가 다르다. 일기에서
+     "엘리에게 한마디"로 뭉뚱그리면 '나의 다짐'에 쓴 글까지 그렇게 불려
+     무엇을 썼는지 헷갈린다. 저장할 때 찍는 `prompt` 표식으로 가른다.
+     ⚠ 표식이 없는 옛 글은 예전대로 '엘리에게 한마디'다 — 소급해서 이름을
+       바꾸면 유저가 기억하는 것과 달라진다. */
+  function dKindFace(e){
+    if(e.prompt==='pledge')                       // 앱: hand.raised.fill
+      return {label:'나의 다짐',icon:'<svg class="dkf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'
+        +'<path d="M9 11V4.6a1.4 1.4 0 0 1 2.8 0V11"/><path d="M11.8 10.6V3.4a1.4 1.4 0 0 1 2.8 0v7.2"/>'
+        +'<path d="M14.6 11V5.2a1.4 1.4 0 0 1 2.8 0V14c0 3.9-2.5 6.8-6.2 6.8-3 0-4.6-1.6-5.7-4L3.8 13c-.5-1 0-2.1 1-2.5 1-.4 1.9 0 2.4.9L9 14"/></svg>'};
+    if(e.prompt==='promise')                      // 앱: arrow.triangle.branch (만약 → 그러면)
+      return {label:'나와의 약속',icon:'<svg class="dkf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'
+        +'<circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/>'
+        +'<path d="M6 7.2v9.6"/><path d="M8.2 5h6.4a3.4 3.4 0 0 1 3.4 3.4v1.2"/>'
+        +'<path d="M15.8 8.4 18 10.6l2.2-2.2"/></svg>'};
+    return {label:eleName()+'에게 한마디',icon:'💬'};
+  }
   function dKindMeta(e){
     // label=모달 제목(textContent, 이스케이프 불필요) / head=카드 헤더(innerHTML, esc 필수·아이콘만이면 '')
     if(e.kind==='emotion'){var m=EMO[e.emotionKind==='blue'?'gloom':e.emotionKind]||{k:'마음',c:'#E85A8A',e:'💗'};return {label:'마음 · '+m.k,head:'',color:m.c,icon:m.e};}  // blue=과거 웹 데이터 별칭
     if(e.kind==='focus'){var FC={proud:'#F2C259',relieved:'#8CC79E',wistful:'#9EADDB'};var fl=e.prompt||'집중';return {label:fl,head:esc(fl),color:FC[e.emotionKind]||'#5b93e6',icon:'⏱'};}
-    if(e.kind==='word')return {label:'한마디',head:esc(eleName())+'에게 한마디',color:eleTint(),icon:'💬'};
+    if(e.kind==='word'||e.kind==='wordbar'){var f=dKindFace(e);
+      return {label:f.label,head:esc(f.label),color:eleTint(),icon:f.icon};}
     if(e.kind==='bucket')return {label:'물통',head:esc(catName(e.categoryID||'focus')),color:catColor(e.categoryID||'focus'),icon:'💧'};
     return {label:'일기',head:'',color:'#9AA3B2',icon:'📝'};
   }
@@ -8524,12 +8720,14 @@
             '<div class="d-head">'+m.icon+(m.head?' '+m.head:'')+
             getTags(e).slice(0,3).map(function(tg){return '<span class="d-tag">'+getTagIcon(tg)+esc(tg)+'</span>';}).join('')+
             (getTags(e).length>3?'<span class="d-tag">+'+(getTags(e).length-3)+'</span>':'')+
-            (e.kind==='bucket'?'':' '+time)+'</div>'+
+            (e.kind==='bucket'?'':' '+time)+
+            /* 한마디류만 — 상단바에 보일지 여기서 끄고 켠다. 뜬 눈=보임 /
+               감은 눈=숨김 (예전 앉은 엘리 그림이 하던 일). */
+            (e.kind==='word'?'<button class="d-eyebtn'+(e.shownInBar?' on':'')+'" data-id="'+e.id+'"'
+              +' title="'+(e.shownInBar?'상단바에서 숨기기':'상단바에 보이기')+'">'
+              +(e.shownInBar?IC.eye:IC.eyeOff)+'</button>':'')+
+            '</div>'+
             '<div class="d-row"><div class="d-main"><div class="d-body">'+dMd(e.text)+'</div></div>'+photos+'</div>'+
-            (e.kind==='word'?
-              '<div class="d-elewrap">'+
-              (!localStorage.getItem('hfEleWordHint')?'<span class="d-elehint">날 누르면 이 한마디를 상단에서 숨겨줘요</span>':'')+
-              '<button class="d-elebadge" data-id="'+e.id+'" data-open="'+(e.shownInBar?1:0)+'"><img alt=""></button></div>':'')+
             '</div></div>';
         }).join('')+
         taskFootprints(d)+
@@ -8546,19 +8744,18 @@
     });
     wrap.querySelectorAll('.d-card').forEach(function(c){
       c.addEventListener('click',function(e){
-        if(e.target.closest('.d-eye'))return;
+        if(e.target.closest('.d-eye,.d-eyebtn'))return;
         var entry=diaryEntries().find(function(x){return String(x.id)===c.dataset.id;});
         if(entry)openDiaryEntry(entry,false);
       });
     });
-    wrap.querySelectorAll('.d-elebadge').forEach(function(b){
-      // 앉은 엘리 = 상단바 노출 토글 (앱: 눈 버튼 대체). 뜬눈=보임/감은눈=숨김.
-      eleWordImg(b.dataset.open==='1'?'ele-word-open':'ele-word',eleTint(),function(u){
-        if(u)b.querySelector('img').src=u;});
+    /* 상단바 노출 토글 (요청 2026-07-29): 앉은 엘리 그림(.d-elebadge)을 걷고
+       머리줄 오른쪽 눈 버튼으로 옮겼다 — 기능은 그대로, 그림만 사라진다. */
+    wrap.querySelectorAll('.d-eyebtn').forEach(function(b){
       b.addEventListener('click',function(e){e.stopPropagation();
         var entry=(DATA.diary||[]).find(function(x){return String(x.id)===b.dataset.id;});
         if(entry){entry.shownInBar=!entry.shownInBar;entry.updatedAt=new Date().toISOString();
-          localStorage.setItem('hfEleWordHint','1');renderDiary();pushSnapshot();}});
+          renderDiary();paintBar(false);pushSnapshot();}});
     });
     // 썸네일 로드 (§3: signed URL; 비로그인/미수신은 자리 표시)
     wrap.querySelectorAll('.d-photos[data-ph]').forEach(function(el){
@@ -11939,7 +12136,11 @@
      ⚠ 원본은 1024²이라 30px 자리에 그대로 쓰면 낭비다 → **몸 + 소품을 합친 뒤**
      내용 기준 정사각 크롭 후 96²로 줄여 담았다(5~11KB). 몸만 쓰면 공책·폰·
      책·서류더미·엉킨 실이 빠져 상태가 안 읽힌다(30px에서 눈확인). */
-  var AVATAR_STATES=['focus','phone','distract','overload','messy','tired','refuse'];
+  /* ⚠ deadline(마감 전에 끝내고파)은 **직접 고를 때만** 나온다 (요청 2026-07-29,
+     앱 AvatarState의 같은 주석과 한 쌍): 자동 판정 사다리(avatarState)는 앱
+     AvatarStateRule과 한 쌍이라 한쪽만 늘리면 같은 상황에서 두 기기가 다른
+     얼굴을 띄운다. 판정 규칙은 양쪽을 함께 손볼 때 넣는다 — 지금은 그리드에만. */
+  var AVATAR_STATES=['focus','phone','distract','overload','messy','tired','refuse','deadline'];
   /* 상단바 상태 **아이콘** (2026-07-28 앱 MeStateIcon 파리티): 작은 엘리 대신
      상태를 그림 하나로 — 책/폰/곁눈/책더미/소용돌이/달. '하기 싫어'만 엘리 유지. */
   function spiralPath(cx,cy,maxR){
@@ -11970,6 +12171,14 @@
       +'<rect x="2.2" y="7.6" width="16.2" height="8.8" rx="2.6"/>'
       +'<path d="M20.4 10.4v3.2a1.6 1.6 0 0 0 0-3.2z" fill="'+sw('#6163B8','#BFC0FA')+'" stroke="none"/>'
       +'<rect x="4.6" y="9.9" width="3" height="4.2" rx="1" fill="'+sw('#6163B8','#BFC0FA')+'" stroke="none"/></svg>';
+    /* 마감 전에 끝내고파 = **울리는 알람시계** (요청 2026-07-29, 앱 alarm.fill과
+       한 쌍): 시계만으론 '시간을 본다'로 읽힌다 — 종 두 개가 붙어야 '쫓기고
+       있다'가 된다. 색은 앱과 같은 붉은 흙빛(밤엔 밝은 변주). */
+    if(st==='deadline'){var dc=sw('#B85434','#FAB88C');
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="'+dc+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'
+        +'<circle cx="12" cy="13.4" r="7.1"/><path d="M12 9.8v3.8l2.5 1.6"/>'
+        +'<path d="M4.6 4.2 2.2 6.6M19.4 4.2l2.4 2.4"/>'
+        +'<path d="M6.6 20.4 5 22M17.4 20.4 19 22"/></svg>';}
     return null;   // refuse = 엘리 유지
   }
   function avatarSVG(state){
@@ -12562,7 +12771,8 @@
   }
   /* '지금 나' 시트 (요청): 아바타를 누르면 7종 중에서 내가 고른다. */
   var ME_LABEL={focus:'집중하고 있어',phone:'폰만 보고 있어',distract:'자꾸 딴 데 가',
-    overload:'할 게 너무 많아',messy:'머리가 엉켰어',tired:'지쳤어',refuse:'하기 싫어'};
+    overload:'할 게 너무 많아',messy:'머리가 엉켰어',tired:'지쳤어',refuse:'하기 싫어',
+    deadline:'마감 전에 끝내고파'};
   /* 고른 상태에 내가 나에게 하는 한 줄 (요청 설계 법칙: 엘리는 말하지 않는다).
      ⚠ 위로도 잔소리도 아니다 — 지금을 인정하고 **다음 한 걸음만** 말한다. */
   /* ⚠ 원칙: **짐작하되 지시하지 않는다**, 행동을 지적하지 않고 **짐을 짚는다**.
@@ -12575,7 +12785,11 @@
     overload:'다 보려니까 아무것도 안 보이지.',
     messy:'무슨 일 있었어?',
     tired:'몸이 먼저 지쳤네.',
-    refuse:'그래, 오늘은 좀 그런 날이야.'};
+    refuse:'그래, 오늘은 좀 그런 날이야.',
+    /* ⚠ '서두르자'가 아니다 (요청 2026-07-29): 마감에 쫓기는 사람에게 재촉은
+       한 겹 더 얹는 짐이다. 시간이 아니라 **계획의 크기**를 짚어야 다음
+       버튼(잘게 쪼개기)이 왜 첫 자리인지 말이 된다. */
+    deadline:'시간이 모자란 게 아니라, 계획이 큰 걸지도.'};
   /* 짐작에 답하는 2지선다 (요청 흐름 4단계). 상태마다 두 갈래이고, 각 갈래가
      **서로 다른 화면**으로 간다. overload·refuse는 선택지가 아니라 **오늘 목록**
      자체를 보여준다 — 짐을 말로만 짚지 않고 실제로 덜어내는 게 이 화면의 값이다. */
@@ -12586,16 +12800,21 @@
     overload:'pick1',
     messy:[['work','일 때문'],['life','일 아닌 것 때문']],
     tired:[['lie','5분 눕기'],['walk','5분 걷기']],
-    refuse:'pick2'
+    refuse:'pick2',
+    /* 마감은 **묻지 않는다** (앱 MeAsk.deadlineWays 파리티): 이 상태에 온
+       사람은 이미 답답한데 질문을 한 겹 더 얹으면 그 자체가 일이다 —
+       meRenderStep이 길 셋을 바로 편다. */
+    deadline:'ways'
   };
   /* '한마디' 탭 말풍선 멘트 (요청 2026-07-24 Stage2 — 앱 inputAsk 파리티):
      한 걸음(짐작)과 달리, 여기선 **내가 나에게 적도록** 짧게 청한다. */
   var ME_INPUT_ASK={focus:'이 집중, 한마디로 남겨둘까?',phone:'손이 간 이유, 나한테만 적어봐.',
     distract:'지금 마음은 어디 있어?',overload:'가장 무거운 하나, 여기 내려놔.',
-    messy:'엉킨 생각, 한 줄로 꺼내자.',tired:'지금 나한테 필요한 말은?',refuse:'왜 싫은지, 솔직하게 적어봐.'};
+    messy:'엉킨 생각, 한 줄로 꺼내자.',tired:'지금 나한테 필요한 말은?',refuse:'왜 싫은지, 솔직하게 적어봐.',
+    deadline:'무엇부터 끝내야 마음이 놓일까?'};
   /* 말풍선 라벨 (앱 sayLabel 파리티, 요청 2026-07-29) — 상태마다 1~2단어. */
   var ME_SAY_LABEL={focus:'한마디',phone:'사실은',distract:'속마음',overload:'털어놓기',
-    messy:'엉킨 말',tired:'속엣말',refuse:'왜 싫지'};
+    messy:'엉킨 말',tired:'속엣말',refuse:'왜 싫지',deadline:'남은 시간'};
   /* '날 칭찬해줘' 질문 (요청 #d: statement 아니라 **질문** — 스스로 칭찬을 쓰게).
      앱 praiseQ와 같은 10개. 큰 말풍선에서 ▲▼로 넘긴다. */
   var PRAISE_Q=['오늘 나의 어떤 점이 기특해?','여기까지 온 나에게 뭐라고 해줄까?',
@@ -12732,6 +12951,105 @@
       box.appendChild(trim);
       return;
     }
+    if(k==='deadline'){
+      /* 마감을 못 맞출 것 같을 때의 길 셋 (요청 2026-07-29, 앱 stateActions의
+         .deadline 분기와 같은 순서·문구).
+         ⚠ **쪼개기를 첫 버튼으로** 둔다: 시간을 늘리는 쪽이 손은 더 쉽지만,
+           실제로 마감을 지키게 하는 건 계획을 줄이는 쪽이다. 첫 버튼은 색이
+           차 있어 기본 선택처럼 읽히므로 그 자리에 '줄이기'를 놓아야 앱이
+           권하는 길이 분명해진다. */
+      btn('잘게 쪼개기',true,function(){
+        meLogAction('split');meScene('me_deadline_after');
+        meDeadline('split','가장 큰 일 하나만 골라 — 첫 단계만 떼어 줄게.');});
+      btn('마감 시간 늘리기',false,function(){
+        meLogAction('push_due');meScene('me_deadline_after');
+        meDeadline('push','늘릴 일을 골라 — 마감을 30분씩 뒤로 밀어 줄게.');});
+      /* 세 번째 길은 **집중 중에도 늘릴 수 있다**는 안내다 (요청). 지금 당장
+         뭘 바꾸는 게 아니라 '나중에 이렇게 하면 된다'를 알려 주는 자리라,
+         버튼이 아니라 작은 글씨 한 줄이다.
+         ⚠ 웹엔 앱의 me-adjust 그림이 없다 — 글만 남긴다(없는 그림 자리를
+           비워 두면 안내가 붕 뜬다). */
+      var hint=document.createElement('button');hint.className='wide';hint.type='button';
+      hint.style.cssText='border:0;background:none;box-shadow:none;font-size:12.5px;color:var(--ink-soft,#667);padding:4px';
+      hint.textContent='ⓘ 집중하는 중에도 늘릴 수 있어요';
+      hint.onclick=function(){meDeadline('hint','');};
+      box.appendChild(hint);
+      return;
+    }
+  }
+  /* 마감 대응 세 갈래 (요청 2026-07-29, 앱 deadlineArea 파리티).
+     셋 다 **같은 과자 그리드**를 쓴다 — 이 시트에서 작업을 고르는 손놀림은
+     이미 하나로 굳어 있어, 새 규칙을 배우게 하면 그것부터가 일이다. */
+  function meDeadline(mode,say){
+    var box=document.getElementById('meTabPane');if(!box)return;
+    box.innerHTML='';
+    if(say)meSay(say);
+    if(mode==='hint'){
+      var h=document.createElement('div');h.className='me-note';h.style.fontSize='12.5px';
+      /* ⚠ 앱 문구의 [시간 조절]·[마감 고정]은 웹 집중 화면의 실제 버튼 이름
+         (± 시간 조절 / 마감 고정)으로 바꿔 적는다 — 없는 이름을 부르면
+         안내가 아니라 헛걸음이 된다. */
+      h.textContent='집중 화면 아래 [± 시간 조절]을 누르면 남은 시간을 늘리거나 줄일 수 있어요. '
+        +'마감을 그대로 두고 싶으면 [마감 고정]을 켜요.';
+      box.appendChild(h);
+    }else{
+      var list=mePickTasks();
+      if(!list.length){
+        var p=document.createElement('div');p.className='me-note';
+        p.textContent='끝내지 못한 일이 없어요 — 마감이 걱정될 일이 없네요.';
+        box.appendChild(p);
+      }else{
+        var g=document.createElement('div');g.className='me-snack-grid';
+        list.forEach(function(t){
+          var name=t.title||'할 일';
+          var b=document.createElement('button');b.className='me-snack';b.type='button';
+          b.innerHTML='<img src="assets/me_snack.png" alt=""><b'+(name.length>8?' class="small"':'')+'></b>';
+          b.querySelector('b').textContent=name;
+          b.onclick=function(){meDeadlineTap(mode,t);};
+          g.appendChild(b);
+        });
+        box.appendChild(g);
+        if(mode==='push'){
+          // 방금 무엇을 밀었는지 (누를 때마다 갈아 끼운다).
+          var r=document.createElement('div');r.className='me-note';r.id='meDueRes';
+          r.style.cssText='font-size:13px;font-weight:700;color:var(--ink)';
+          box.appendChild(r);
+          /* 여러 번 눌러 더 밀 수 있다는 걸 말로 알려 준다 (요청) — 결과 줄이
+             떠도 **이 안내는 남는다**: 한 번 눌러 본 사람이 '또 눌러도 되나'를
+             다시 묻지 않게. */
+          var n=document.createElement('div');n.className='me-note';n.id='meDueNote';
+          n.textContent='한 번 누를 때마다 30분씩 뒤로 가요.';
+          box.appendChild(n);
+        }
+      }
+    }
+    var back=document.createElement('button');back.className='me-back-cap';back.type='button';
+    back.textContent='돌아가기';
+    back.onclick=function(){var b=manualState()||avatarState();
+      paintMeStage(b,false);meSay(ME_LINE[b]||'');paintMeAct(b);};
+    box.appendChild(back);
+  }
+  /* 고른 작업에 실제로 손대는 곳 — 쪼개기 / 마감 밀기 (앱 deadlineTap 파리티). */
+  function meDeadlineTap(mode,t){
+    var name=t.title||'할 일';
+    if(mode==='push'){
+      /* 마감을 30분 뒤로. **여러 번 누르면 계속 밀린다** — 얼마나 밀지 미리
+         정하게 하면 그 계산부터가 부담이라, 한 번에 30분씩 눌러 가며 몸으로
+         정하게 한다. 그래서 그리드를 걷지 않고 그 자리에 결과만 갈아 끼운다. */
+      t.durationMin=(t.durationMin||0)+30;
+      renderAll();pushSnapshot();
+      var r=document.getElementById('meDueRes');
+      if(r)r.textContent='『'+name+'』 마감을 30분 뒤로 미뤘어.';
+      return;
+    }
+    /* 쪼개기: 그 작업의 **첫 단계만** 30분짜리로 떼어 지금 뒤에 놓는다.
+       ⚠ 원본은 건드리지 않는다 — 큰 일을 지우면 남은 몫이 어디 갔는지 알 수
+         없어진다. 첫 단계를 따로 세워 두면 '여기서부터'가 눈에 보이고,
+         원본은 그대로 남아 나중을 지킨다. */
+    meLogAction('split_done');
+    var blk=mePlaceBlockNow(name+' — 첫 단계',t.categoryID||'focus',30);
+    closeMeSheet();
+    if(blk)startFocus(blk);
   }
   /* 오늘 목록 다중 선택 → 내일로/지우기 (기존 pick1·pick2 흐름 유지). */
   function meRenderPickList(k,ask){
@@ -12864,10 +13182,48 @@
   /* 긁는 bar 공용 (요청 2026-07-29): 나의 다짐의 그것과 같은 어법 —
      은박을 문지르면 프롬프트가 드러나고 (복사)가 입력란으로 가져온다.
      ⚠ 다짐 모달 것은 고정 id를 쓰므로 이 쪽은 **인스턴스마다 새로** 만든다. */
+  /* 긁는 카드 프롬프트를 **두 줄로 나누는 규칙** (요청 2026-07-29, 앱
+     ScratchCard.twoLines와 한 쌍).
+     자동 줄바꿈에 맡기면 윗줄만 꽉 차고 아랫줄에 한두 낱말이 남아 카드가
+     기우뚱해 보인다. 그래서 직접 끊는다:
+     ① 쉼표가 있으면 **쉼표에서** 끊는다 — 원래 숨을 쉬라고 찍은 자리다.
+        여러 개면 문장 가운데에 가장 가까운 것.
+     ② 없으면 낱말 경계 중 **두 줄 길이가 가장 고른** 자리. 길이가 다르면
+        아랫줄이 더 길게 — 아랫줄이 짧으면 문장이 흐르다 만 것처럼 읽힌다.
+     ⚠ 낱말이 2개 이하면 자르지 않는다. */
+  function twoLines(s){
+    s=String(s==null?'':s);
+    var words=s.split(' ').filter(function(x){return x!=='';});
+    if(words.length<=2)return s;
+    var total=s.length;
+    // ① 쉼표: 가운데에 가장 가까운 쉼표 뒤에서 끊는다.
+    var commaCut=null,best=Infinity,acc=0;
+    for(var i=0;i<words.length-1;i++){
+      acc+=words[i].length+(i===0?0:1);
+      if(/[,，]$/.test(words[i])){
+        var d=Math.abs(acc*2-total);
+        if(d<best){best=d;commaCut=i;}
+      }
+    }
+    if(commaCut!=null)
+      return words.slice(0,commaCut+1).join(' ')+'\n'+words.slice(commaCut+1).join(' ');
+    /* ② 쉼표가 없으면 **실제 두 줄 길이를 재서** 가장 고른 자리를 고른다.
+       누적 길이로 어림잡으면 경계에서 한 낱말씩 어긋나 위가 더 길어진다.
+       아래가 짧으면 큰 벌점 — 길이가 다르면 아랫줄이 더 길어야 한다. */
+    var cut=0,bestScore=Infinity;
+    for(var c=0;c<words.length-1;c++){
+      var top=words.slice(0,c+1).join(' ').length,
+          bottom=words.slice(c+1).join(' ').length;
+      var score=Math.abs(top-bottom)+(bottom<top?100:0);
+      if(score<bestScore){bestScore=score;cut=c;}
+    }
+    return words.slice(0,cut+1).join(' ')+'\n'+words.slice(cut+1).join(' ');
+  }
   function makeScratchBar(prompt,onCopy){
     var wrap=document.createElement('div');wrap.className='pledge-scratch';
     var under=document.createElement('div');under.className='ps-under';
-    var txt=document.createElement('span');txt.textContent=prompt;
+    // 보이는 건 두 줄로 끊은 글, (복사)로 가져가는 건 원래 한 줄이다.
+    var txt=document.createElement('span');txt.textContent=twoLines(prompt);
     var copy=document.createElement('button');copy.type='button';copy.className='ps-copy';copy.textContent='복사';
     copy.onclick=function(){if(onCopy)onCopy(prompt);};
     under.appendChild(txt);under.appendChild(copy);
@@ -13218,8 +13574,13 @@
     },5*60*1000);
     meDone('5분 뒤에 다시 물어볼게.');
   }
-  /* 한마디 말풍선 행 공용 (그리드 아래 목록 + 나의 다짐 '예전 다짐'). */
-  function buildWordRows(host,refresh){
+  /* 한마디 말풍선 행 공용 (그리드 아래 목록 + 나의 다짐 '예전 다짐').
+     `pick`을 주면 그 글만 (요청 2026-07-29: '예전 약속'은 약속만 보여야
+     한다 — 다짐·한마디까지 섞이면 무엇을 약속했는지 안 보인다).
+     ⚠ pick이 있으면 설정 motto '유령' 줄은 건너뛴다: motto엔 표식(prompt)이
+       없어 어느 갈래인지 알 수 없고, 약속 목록에 끼면 지울 수 없는 남의
+       글처럼 보인다. */
+  function buildWordRows(host,refresh,pick){
     host.innerHTML='';
     var S=DATA.settings||{};
     function row(text,onX){
@@ -13231,11 +13592,12 @@
     }
     var motto=(S.motto||S.todayVow||'').trim();
     var words=(DATA.diary||[]).filter(function(e){
-      return (e.kind==='word'||e.kind==='wordbar')&&(e.text||'').trim();});
+      if(!((e.kind==='word'||e.kind==='wordbar')&&(e.text||'').trim()))return false;
+      return pick?pick(e):true;});
     words.sort(function(a,b){return new Date(b.date||0)-new Date(a.date||0);});
     var n=0;
     // 설정 motto로만 남은 옛 글(유령) — DiaryEntry가 없어도 X로 걷는다.
-    if(motto&&!words.some(function(e){return (e.text||'').trim()===motto;})){
+    if(!pick&&motto&&!words.some(function(e){return (e.text||'').trim()===motto;})){
       n++;row(motto,function(){S.motto='';S.todayVow='';
         refresh();renderDiary();paintBar(false);pushSnapshot();});
     }
@@ -13294,16 +13656,23 @@
     '천천히 가도 괜찮다. 멈추지만 않으면 된다.'];
   var pledgePrompt='',pledgeRevealed=false,pledgePts=0,pledgeSpanL=1e9,pledgeSpanR=-1e9,pledgeHistOpen=false;
   var ME_LABEL_KO={focus:'집중하고 있어',phone:'폰만 보고 있어',distract:'자꾸 딴 데 가',
-    overload:'할 게 너무 많아',messy:'머리가 엉켰어',tired:'지쳤어',refuse:'하기 싫어'};
+    overload:'할 게 너무 많아',messy:'머리가 엉켰어',tired:'지쳤어',refuse:'하기 싫어',
+    deadline:'마감 전에 끝내고파'};
   function openPledge(){
     var sc=document.getElementById('pledgeScrim');if(!sc)return;
     sc.classList.add('open');
     pledgePrompt=PLEDGE_POOL[Math.floor(Math.random()*PLEDGE_POOL.length)];
-    document.getElementById('pledgePromptTxt').textContent=pledgePrompt;
+    // 보이는 건 두 줄로 끊은 글, (복사)로 가져가는 건 원래 한 줄이다 (요청).
+    document.getElementById('pledgePromptTxt').textContent=twoLines(pledgePrompt);
     document.getElementById('pledgeInput').value='';
     document.getElementById('pledgeToBar').checked=true;
     document.getElementById('pledgeToDiary').checked=true;
     pledgeHistOpen=false;renderPledgeHist();
+    /* ⚠ 탭을 **먼저** 되돌린다 (요청 2026-07-29): 지난번에 약속 탭에서 닫았으면
+       #pledgePane이 display:none인 채로 남아 있다. 그 상태로 긁는 카드를
+       초기화하면 rAF가 폭 0을 재서 코팅 캔버스가 10×10으로 만들어지고,
+       CSS로 늘어난 은박에 '긁어보세요' 글자가 뭉개진다(실제로 그렇게 났다). */
+    pledgeTab('pledge');   // 열 때는 언제나 다짐 탭부터
     pledgeResetScratch();
     paintPledgeNowCap();
   }
@@ -13323,6 +13692,194 @@
       p.style.cssText='font-size:12px;color:var(--ink-soft,#889);text-align:center';
       p.textContent='아직 저장한 다짐이 없어요.';box.appendChild(p);}
   }
+
+  /* ── 나와의 약속 (요청 2026-07-29, 앱 IfThenCatalog·IfThenPanel 파리티) ──
+     '만약 X가 일어나면, 나는 Y를 한다'는 형태의 계획(실행의도)은 그 순간에
+     결정을 새로 하지 않게 해 자기조절 부담을 줄인다(골위처). 성인 ADHD
+     메타인지치료도 같은 형태의 자기지시를 쓴다.
+     그래서 목록을 이렇게 짰다:
+     · 상황(A)은 **공부 밖까지** 넓게 — 몸(졸림·허기)과 관계(연락·방해)도
+       집중을 무너뜨리는 진짜 이유다.
+     · 행동(B)은 **작고 거창하지 않게**. 거창한 다짐은 그 순간에 못 지킨다.
+       전부 '~것'으로 끝나 "…을 약속한다"에 그대로 이어진다.
+     ⚠ 앱 IfThenCatalog.all과 **한 쌍**이다 — 순서·문구를 그대로 옮겼다.
+       (en은 지금 화면에 안 쓰지만 앱과 대조할 정본이라 함께 둔다.) */
+  var IFTHEN=[
+    {ko:'폰을 집어들고 싶어지면',en:'I want to pick up my phone',a:[
+      ['폰을 뒤집어 엎어 둘 것','turn the phone face-down'],
+      ['폰을 다른 방에 둘 것','put the phone in another room'],
+      ['딴짓 잠그기로 잠글 것','lock it with Distraction lock'],
+      ['10분만 더 하고 볼 것','do ten more minutes first']]},
+    {ko:'다른 탭이나 영상을 열고 싶어지면',en:'I want to open another tab or video',a:[
+      ['하고 싶은 걸 메모에 적고 돌아올 것','write the urge down and come back'],
+      ['딴짓 포스트잇에 적어 둘 것','put it on the distraction post-it'],
+      ['한 문장만 더 쓰고 생각할 것','write one more sentence first']]},
+    {ko:'시작하기가 싫어지면',en:"I don't feel like starting",a:[
+      ['5분 타이머만 켤 것','just start a five-minute timer'],
+      ['첫 단계만 할 것','do only the first step'],
+      ['책상에 앉아 도구만 펼칠 것','sit down and open the materials']]},
+    {ko:'무엇을 해야 할지 모르겠으면',en:"I don't know what to do",a:[
+      ['더 작은 단계로 쪼갤 것','break it into smaller steps'],
+      ['가장 쉬운 것부터 고를 것','pick the easiest one first'],
+      ['딱 하나만 골라 10분 할 것','pick just one and do ten minutes']]},
+    {ko:'집중이 흐트러진 걸 알아차리면',en:"I notice I've drifted",a:[
+      ['숨 세 번 쉬고 돌아올 것','take three breaths and return'],
+      ['지금 문장만 끝낼 것','finish just this sentence'],
+      ['자책 없이 다시 시작할 것','restart without blaming myself']]},
+    {ko:'계획보다 늦어져 마음이 급해지면',en:"I'm behind and feeling rushed",a:[
+      ['마감을 다시 정할 것','set a new deadline'],
+      ['오늘 안 해도 될 것을 덜어낼 것',"trim what today doesn't need"],
+      ['지금 하나만 끝낼 것','finish just one thing now']]},
+    {ko:'졸리거나 몸이 무거워지면',en:'I get sleepy or heavy',a:[
+      ['5분 걷고 올 것','walk for five minutes'],
+      ['물 한 컵 마실 것','drink a glass of water'],
+      ['20분만 자고 올 것','nap for twenty minutes'],
+      ['창문을 열 것','open a window']]},
+    {ko:'배가 고파 집중이 안 되면',en:"I'm too hungry to focus",a:[
+      ['간단히 먹고 올 것','eat something simple'],
+      ['물부터 한 컵 마실 것','drink water first'],
+      ['15분 뒤에 먹기로 정할 것','decide to eat in fifteen minutes']]},
+    {ko:'누가 말을 걸거나 알림이 오면',en:'someone interrupts or a notification arrives',a:[
+      ['알림을 꺼 둘 것','turn notifications off'],
+      ['나중에 답하겠다고 말할 것',"say I'll reply later"],
+      ['이어폰을 낄 것','put my earphones in']]},
+    {ko:'친구나 SNS가 신경 쓰이면',en:'friends or social media pull at me',a:[
+      ['확인은 쉬는 시간에 하기로 할 것','check only on a break'],
+      ['지금 마음을 한 줄 적을 것','write one line about how I feel'],
+      ['끝내고 나서 연락할 것','reach out after I finish']]},
+    {ko:'잘 안 돼서 자책이 들면',en:"it's going badly and I blame myself",a:[
+      ['오늘 잘한 것 하나를 적을 것','write down one thing that went well'],
+      ['엘리에게 한마디 남길 것','leave a word for Elly'],
+      ['오늘의 최소 기준만 지킬 것',"keep only today's minimum"]]},
+    {ko:'다 못 끝낸 채 잘 시간이 되면',en:'bedtime comes with things unfinished',a:[
+      ['남은 것을 내일로 내릴 것','move the rest to tomorrow'],
+      ['여기까지 한 걸 기록할 것','record how far I got'],
+      ['잠들 준비를 시작할 것','start getting ready for bed']]}];
+  var PM_OWN='__own__';          // '직접 입력' 선택지의 값
+  var pmHistOpen=false;
+  /* 한 문장으로 — 일기·상단바에 저장되는 형태 (앱 IfThenCatalog.sentence).
+     "만약 폰을 집어들고 싶어지면, 나는 폰을 뒤집어 엎어 둘 것을 약속한다." */
+  function pmSentence(sit,act){
+    return '만약 '+sit+', 나는 '+act+josa(act,'을','를')+' 약속한다.';
+  }
+  function pmEls(){
+    return {sit:document.getElementById('pmSit'),act:document.getElementById('pmAct'),
+      sitIn:document.getElementById('pmSitIn'),actIn:document.getElementById('pmActIn'),
+      save:document.getElementById('pmSave')};
+  }
+  /* 지금 고른 상황·행동 문구 (직접 입력이면 그 글). */
+  function pmSitText(){var e=pmEls();
+    return e.sitIn.style.display!=='none'?e.sitIn.value.trim()
+      :(e.sit.value&&e.sit.value!==PM_OWN?e.sit.value:'');}
+  function pmActText(){var e=pmEls();
+    return e.actIn.style.display!=='none'?e.actIn.value.trim()
+      :(e.act.value&&e.act.value!==PM_OWN?e.act.value:'');}
+  function pmSyncOk(){
+    var e=pmEls();
+    var toBar=document.getElementById('pmToBar').checked,
+        toDiary=document.getElementById('pmToDiary').checked;
+    e.save.classList.toggle('off',!(pmSitText()&&pmActText()&&(toBar||toDiary)));
+  }
+  /* 행동 목록은 **고른 상황에 딸린 것만** — 남의 상황의 행동을 고르면
+     문장이 말이 안 된다. 상황 미선택이면 잠근 채 안내만. */
+  function pmFillActions(){
+    var e=pmEls();
+    var s=(e.sit.value&&e.sit.value!==PM_OWN)
+      ?IFTHEN.filter(function(x){return x.ko===e.sit.value;})[0]:null;
+    e.act.innerHTML='';
+    var ph=document.createElement('option');ph.value='';
+    ph.textContent=s?'이걸 한다…':'먼저 만약을 고르세요';
+    e.act.appendChild(ph);
+    var own=document.createElement('option');own.value=PM_OWN;own.textContent='직접 입력';
+    e.act.appendChild(own);
+    if(s)s.a.forEach(function(a){var o=document.createElement('option');
+      o.value=a[0];o.textContent=a[0];e.act.appendChild(o);});
+    e.act.value='';e.act.disabled=!s;e.act.classList.add('empty');
+  }
+  function pmReset(){
+    var e=pmEls();
+    e.sit.innerHTML='';
+    var ph=document.createElement('option');ph.value='';ph.textContent='이럴 때…';
+    e.sit.appendChild(ph);
+    // ⚠ '직접 입력'은 **맨 위** (요청) — 내 말이 목록 열두 줄 아래 묻히면 안 된다.
+    var own=document.createElement('option');own.value=PM_OWN;own.textContent='직접 입력';
+    e.sit.appendChild(own);
+    IFTHEN.forEach(function(s){var o=document.createElement('option');
+      o.value=s.ko;o.textContent=s.ko;e.sit.appendChild(o);});
+    e.sit.value='';e.sit.classList.add('empty');
+    e.sitIn.value='';e.actIn.value='';
+    e.sitIn.style.display='none';e.actIn.style.display='none';
+    e.sit.style.display='';e.act.style.display='';
+    document.getElementById('pmToBar').checked=true;
+    document.getElementById('pmToDiary').checked=true;
+    pmFillActions();pmSyncOk();
+    pmHistOpen=false;renderPmHist();
+  }
+  function renderPmHist(){
+    var t=document.getElementById('pmHistT'),box=document.getElementById('pmHist');
+    if(!t||!box)return;
+    t.textContent='예전 약속 '+(pmHistOpen?'▴':'▾');
+    box.style.display=pmHistOpen?'':'none';
+    if(!pmHistOpen)return;
+    var n=buildWordRows(box,renderPmHist,function(e){return e.prompt==='promise';});
+    if(!n){var p=document.createElement('div');
+      p.style.cssText='font-size:12px;color:var(--ink-soft,#889);text-align:center';
+      p.textContent='아직 한 약속이 없어요.';box.appendChild(p);}
+  }
+  function pledgeTab(which){
+    var tabs=document.getElementById('pledgeTabs');if(!tabs)return;
+    [].forEach.call(tabs.querySelectorAll('button'),function(b){
+      b.classList.toggle('on',b.dataset.pt===which);});
+    document.getElementById('pledgePane').style.display=which==='pledge'?'':'none';
+    document.getElementById('promisePane').style.display=which==='promise'?'':'none';
+    if(which==='promise')pmReset();
+  }
+  function pmSaveFn(){
+    var toBar=document.getElementById('pmToBar').checked,
+        toDiary=document.getElementById('pmToDiary').checked;
+    var sit=pmSitText(),act=pmActText();
+    if(!sit||!act||(!toBar&&!toDiary))return;
+    /* prompt='promise' 표식 (앱 DiaryKindFace와 같은 표식) — 일기에서 이 글을
+       '나와의 약속'으로 불러 준다. 없으면 '엘리에게 한마디'로 뭉뚱그려진다. */
+    newDiaryEntry(toDiary?'word':'wordbar',
+      {text:pmSentence(sit,act),shownInBar:toBar,prompt:'promise'});
+    renderDiary();barIdx=0;paintBar(false);pushSnapshot();
+    document.getElementById('pledgeScrim').classList.remove('open');
+  }
+  (function(){
+    var tabs=document.getElementById('pledgeTabs');if(!tabs)return;
+    tabs.addEventListener('click',function(e){
+      var b=e.target.closest('button[data-pt]');if(b)pledgeTab(b.dataset.pt);});
+    var e0=pmEls();
+    e0.sit.addEventListener('change',function(){
+      var e=pmEls();
+      if(e.sit.value===PM_OWN){
+        /* 만약을 직접 쓰면 **행동도 함께 입력창으로** (요청 2026-07-29, 앱과
+           동일): 내가 지어낸 상황엔 딸린 행동 목록이 없다 — 목록을 열어 봤자
+           빈 메뉴이거나 남의 상황의 행동이다. 한 번에 둘 다 연다. */
+        e.sit.style.display='none';e.sitIn.style.display='';e.sitIn.focus();
+        e.act.style.display='none';e.actIn.style.display='';
+      }else{
+        e.sit.classList.toggle('empty',!e.sit.value);
+        e.actIn.style.display='none';e.act.style.display='';
+        pmFillActions();
+      }
+      pmSyncOk();
+    });
+    e0.act.addEventListener('change',function(){
+      var e=pmEls();
+      if(e.act.value===PM_OWN){e.act.style.display='none';e.actIn.style.display='';e.actIn.focus();}
+      else e.act.classList.toggle('empty',!e.act.value);
+      pmSyncOk();
+    });
+    e0.sitIn.addEventListener('input',pmSyncOk);
+    e0.actIn.addEventListener('input',pmSyncOk);
+    document.getElementById('pmToBar').addEventListener('change',pmSyncOk);
+    document.getElementById('pmToDiary').addEventListener('change',pmSyncOk);
+    document.getElementById('pmSave').addEventListener('click',pmSaveFn);
+    document.getElementById('pmHistT').addEventListener('click',function(){
+      pmHistOpen=!pmHistOpen;renderPmHist();});
+  })();
   function pledgeResetScratch(){
     var wrap=document.getElementById('pledgeScratch');if(!wrap)return;
     wrap.classList.remove('revealed');
@@ -13461,7 +14018,7 @@
        램프 등 소품)이라 eleWordImg 파이프라인(몸통 multiply + -fix 소품)을
        태우면 장면 전체가 물든다. 손(hand_*)도 넣지 않는다 — 앱이 A안에서
        돌봄 손을 뺐고, 책상 장면 위에 손이 겹치면 장면이 무너진다. */
-  var ME_SCENES={phone:1,distract:1,overload:1,messy:1,tired:1,refuse:1,focus:1};
+  var ME_SCENES={phone:1,distract:1,overload:1,messy:1,tired:1,refuse:1,focus:1,deadline:1};
   var meSceneKey=null;                       // 지금 무대에 걸린 장면(after 포함)
   function meScene(name){                    // 결과 장면으로 바꾸기 (없으면 무시)
     var full=document.getElementById('meFull');if(!full||!name)return;
@@ -13654,8 +14211,15 @@
   }
   /* 한마디가 캡슐 최대 폭(타임라인 우측변)을 넘으면 잘라 버리지 않고
      여러 조각으로 나눠 차례로 보여 준다 (요청). 낱말 단위로 채우고,
-     한 낱말이 통째로 넘치면 그때만 글자 단위로 끊는다. */
-  var barChunks=[''],barChunkIdx=0,barChunkTimer=null,tcSeq=0;
+     한 낱말이 통째로 넘치면 그때만 글자 단위로 끊는다.
+     ⚠ **낱말 단위로 자른다** (요청 2026-07-29, 앱 wordChunks와 한 쌍): 글자
+       단위로 자르던 시절엔 "…뒤집어 엎어 둘 것" / "을 약속한다."처럼 조사만
+       다음 줄로 떨어져 말이 토막 났다. 공백에서만 끊으면 각 조각이 스스로
+       읽힌다. */
+  var barChunks=[''],barChunkIdx=0,barChunkTimer=null,tcSeq=0,barPinW=0;
+  /* 말풍선 한 조각이 머무는 시간 (요청 2026-07-29): 6초. 예전 2.8초는
+     읽기도 전에 넘어갔다. 앱 TopBar.chipDwellSec와 같은 값. */
+  var CHIP_DWELL_MS=6000;
   function tcFit(text){
     text=String(text==null?'':text);
     var cap=document.getElementById('topCap'),txt=document.getElementById('tcTxt'),
@@ -13670,6 +14234,23 @@
     m.style.font=getComputedStyle(txt).font;
     document.body.appendChild(m);
     function w(x){m.textContent=x;return m.offsetWidth;}
+    /* ⚠ **나와의 약속은 뜻 단위로 끊는다** (요청 2026-07-29, 앱 wordChunks의
+       같은 가지): 폭에 맞춰 자르면 "…뒤집어 엎어 둘" / "것을 약속한다"처럼
+       뜻이 반토막 난다. 약속 문장은 원래 두 마디(만약~ / 나는~을 약속한다)로
+       지어졌으니 그 이음매에서 끊으면 각 조각이 통째로 하나의 뜻이 된다.
+       ⚠ 한 마디가 그래도 폭을 넘으면 그 안에서만 낱말 단위로 다시 자른다
+         (쉼표를 붙여 되부르므로 ', '가 없어 재귀가 여기서 멈춘다). */
+    /* ⚠ 웹 캡슐은 한마디를 **따옴표로 감싼다**(앱은 quote 아이콘이라 글자엔
+       없다) — 그래서 '만약'을 그냥 startsWith로 보면 영영 안 걸린다.
+       여는 따옴표 한 글자만 벗겨 보고, 벗긴 건 앞 조각에 다시 붙인다. */
+    var q=/^[“"']/.test(text)?text.charAt(0):'';
+    var body=q?text.slice(1):text;
+    var ci=body.indexOf(', ');
+    if(body.indexOf('만약 ')===0&&ci>0){
+      document.body.removeChild(m);
+      return [q+body.slice(0,ci)+',',body.slice(ci+2)].reduce(function(acc,part){
+        return acc.concat(tcFit(part));},[]);
+    }
     if(w(text)<=avail){document.body.removeChild(m);return [text];}
     var out=[],cur='';
     text.split(/\s+/).forEach(function(word){
@@ -13689,6 +14270,22 @@
     document.body.removeChild(m);
     return out.length?out:[text];
   }
+  /* 조각들 중 가장 넓은 글씨 폭 (요청 2026-07-29, 앱 pinnedW와 한 쌍):
+     A가 길고 B가 짧으면 6초마다 말풍선이 늘었다 줄었다 해 거슬린다.
+     ⚠ 조각이 하나뿐이면 0을 돌려준다 — 짧은 말을 억지로 넓히면 빈
+       말풍선처럼 보인다. 문장이 바뀌는 건 전환 주기에 한 번이라 괜찮다. */
+  function tcPinWidth(chunks){
+    if(!chunks||chunks.length<2)return 0;
+    var txt=document.getElementById('tcTxt');if(!txt)return 0;
+    var m=document.createElement('span');
+    m.style.cssText='position:absolute;left:-9999px;top:0;white-space:nowrap;visibility:hidden';
+    m.style.font=getComputedStyle(txt).font;
+    document.body.appendChild(m);
+    var mx=0;
+    chunks.forEach(function(c){m.textContent=c;mx=Math.max(mx,m.offsetWidth);});
+    document.body.removeChild(m);
+    return Math.ceil(mx);
+  }
   function setTcText(sTxt,anim){
     var cap=document.getElementById('topCap'),txt=document.getElementById('tcTxt');
     function apply(){
@@ -13696,6 +14293,9 @@
       cap.style.transition='none';
       var before=cap.offsetWidth;
       cap.style.width='auto';txt.textContent=sTxt;
+      /* 잘린 문장이면 **그 문장의 가장 넓은 조각**으로 글씨 자리를 고정
+         (요청 2026-07-29) — 6초마다 말풍선이 늘었다 줄었다 하지 않게. */
+      txt.style.width=barPinW?barPinW+'px':'';
       var after=cap.offsetWidth;
       if(anim&&before!==after){
         cap.style.width=before+'px';void cap.offsetWidth;
@@ -13753,13 +14353,19 @@
     cap.classList.toggle('two-line',window.innerWidth<1100);
     var sub=document.getElementById('tcSub');
     sub.textContent=(c.sub&&cap.classList.contains('two-line'))?c.sub:'';
+    /* ⚠ **두 층으로 돈다** (요청 2026-07-29, 앱 rotatingChip과 한 쌍):
+       ① 바깥 = 항목(문장). 설정의 '전환 주기'(분)가 한 문장이 화면을 쓰는
+          시간이다 — startBarRotation의 barTimer가 맡는다.
+       ② 안쪽 = 그 문장의 조각. 6초마다 A-B-A-B…로 **그 주기 내내 돈다**.
+       즉 1분 동안 A-B-A-B, 다음 1분은 다음 문장이 C-D-C-D. */
     barChunks=tcFit(c.txt);barChunkIdx=0;
+    barPinW=tcPinWidth(barChunks);
     setTcText(barChunks[0],anim);
     clearInterval(barChunkTimer);barChunkTimer=null;
     if(barChunks.length>1)barChunkTimer=setInterval(function(){
       barChunkIdx=(barChunkIdx+1)%barChunks.length;
       setTcText(barChunks[barChunkIdx],true);
-    },2800);
+    },CHIP_DWELL_MS);
   }
   function barAdvance(){if(capSignal&&capSignal.text)return;var keys=capPool();if(!keys.length)return;barIdx=(barIdx+1)%keys.length;barWordTick++;paintBar(true);}
   function startBarRotation(){
