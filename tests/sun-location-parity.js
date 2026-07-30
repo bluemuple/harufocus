@@ -33,7 +33,7 @@ const CONSTS = [
 ].join('\n');
 const HELPERS = ['toDays', 'julianCycle', 'approx', 'M', 'eclLng', 'dec',
                  'solarTransitJ', 'hourAngle', 'sunTimes', 'obsLat', 'obsLng', 'geoSaved',
-                 'tzGeo', 'isSeoulPoison']
+                 'tzGeo', 'isSeoulPoison', 'isTzEstimate']
   .map(n => { try { return grab(n); } catch (e) { return '/* missing: ' + n + ' */'; } })
   .join('\n');
 
@@ -49,7 +49,7 @@ const harness = `
     return { timeZone: __tz }; } }; } };
   var Date = globalThis.Date;
 ${HELPERS}
-  module.exports = { sunTimes, obsLat, obsLng,
+  module.exports = { sunTimes, obsLat, obsLng, geoSaved,
     setSaved(o){ if(o) store['harufocusGeo'] = JSON.stringify(o); else delete store['harufocusGeo']; },
     setSettings(s){ DATA.settings = s || {}; },
     setTZ(z){ __tz = z; },
@@ -88,6 +88,18 @@ t('⚠뉴질랜드에서 저장된 서울 값은 무시된다', W.obsLat() < 0);
 
 W.setSettings({}); W.setSaved({ lat: 37.5665, lng: 126.9780 });
 t('⚠거부 표식으로 박힌 서울도 무시된다', W.obsLat() < 0);
+
+/* ⚠ 저장된 값이 **시간대 추정치와 똑같으면** 잰 값이 아니다 (2026-07-31 실제
+   상황): 옛 코드가 거부 시 추정 좌표를 저장해 둬서, 유저가 나중에 위치를
+   허용해도 "이미 저장값이 있다"며 다시 묻지 않아 영영 추정치를 썼다.
+   (크라이스트처치 사람이 오클랜드 좌표에 묶여 일출이 23분 일렀다.) */
+W.setTZ('Pacific/Auckland'); W.setSettings({}); W.setSaved({ lat: -36.85, lng: 174.76 });
+t('⚠저장값이 시간대 추정치와 같으면 잰 값으로 안 친다',
+  W.geoSaved() === null);
+W.setSaved({ lat: -43.53, lng: 172.64 });     // 진짜로 잰 크라이스트처치
+t('진짜 측정값은 그대로 쓴다', near(W.obsLat(), -43.53, 1e-6));
+W.setSaved({ est: true });                     // 거부 표식
+t('거부 표식이면 시간대 추정으로 떨어진다', near(W.obsLat(), -36.85, 0.01));
 
 W.setTZ('Asia/Seoul'); W.setSettings({ lat: 37.5665, lng: 126.9780 }); W.setSaved(null);
 t('한국에서는 서울 값을 그대로 쓴다 (오탐 금지)', near(W.obsLat(), 37.5665, 1e-6));

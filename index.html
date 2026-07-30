@@ -9669,9 +9669,19 @@
        ② 다른 시간대로 이동해도 굳어 버린 추정치가 계속 이겼다.
      이제 추정치는 저장하지 않는다 — 없으면 obsLat이 그때그때 tzGeo()로
      계산하므로 시간대를 따라 저절로 움직인다. 저장소엔 '물어봤음' 표식만. */
+  /* 저장값이 **시간대 추정치와 소수점까지 같으면** 그건 잰 값이 아니라
+     추정치다 (2026-07-31: 옛 코드가 추정치를 좌표처럼 저장해 둔 흔적).
+     이걸 걸러야 나중에 위치를 허용했을 때 진짜 좌표를 받아 올 수 있다 —
+     서울 폴백을 걸러낸 것과 같은 수법이고, 실제 GPS가 표의 값과 소수점까지
+     일치할 일은 없다. */
+  function isTzEstimate(lat,lng){
+    var g=tzGeo();
+    return Math.abs(lat-g.lat)<0.001&&Math.abs(lng-g.lng)<0.001;
+  }
   function geoSaved(){
     try{var o=JSON.parse(localStorage.getItem(GEO_KEY)||'null');
       if(o&&o.est)return null;                 // 추정치 표식 → 좌표로 안 쓴다
+      if(o&&typeof o.lat==='number'&&isTzEstimate(o.lat,o.lng))return null;
       if(o&&typeof o.lat==='number'&&typeof o.lng==='number'){
         if(isSeoulPoison(o.lat,o.lng)){        // 옛 '거부' 표식 → 없던 걸로
           try{localStorage.removeItem(GEO_KEY);}catch(_){} return null;}
