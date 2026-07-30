@@ -2407,6 +2407,18 @@
      이제 필요한 만큼만 자라고 길어지면 그때 스크롤한다. */
   .me-modal{max-width:340px;position:relative;overflow:hidden;
     display:flex;flex-direction:column;max-height:86vh}
+  /* ⚠ 내용이 길어지면 **모달 안에서 스크롤**한다 (신고 2026-07-31: '예전 다짐'을
+     펼치면 아래 항목이 잘려 못 봤다). .me-modal은 max-height 86vh에
+     overflow:hidden이라, 넘치는 만큼은 그냥 **사라졌다** — 스크롤 막대도 없으니
+     항목이 더 있다는 사실조차 안 보인다.
+     ⚠ flex 자식이 줄어들려면 `min-height:0`이 **반드시** 있어야 한다. 없으면
+       기본값(min-height:auto)이 내용 높이만큼 버텨서 overflow-y:auto가 아무
+       일도 하지 않는다 — 이 한 줄이 빠지면 증상이 그대로 돌아온다. */
+  #pledgePane,#promisePane{flex:1 1 auto;min-height:0;overflow-y:auto;
+    -webkit-overflow-scrolling:touch}
+  /* '지금 나는' 쪽 목록은 코끼리 위에 떠 있는 카드라 자기 안에서 스크롤한다
+     (아래 내용을 밀지 않는다는 성질을 지키면서 길이 제한만 둔다). */
+  .me-words-fold{max-height:46vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
   /* '지금 나는'·'나의 다짐' 모달 다크 대응 (요청 2026-07-31).
      ⚠ 색을 요소마다 두 벌로 새로 칠하지 않는다 — 이 두 모달 안 거의 모든
      칩·버튼·입력창이 이미 --card/--card-2/--ink/--ink-soft/--line/--panel/--chip
@@ -3150,7 +3162,11 @@
     <button class="me-x" id="meX" aria-label="닫기" data-i18n-en-aria="Close">✕</button>
     <!-- 타이틀 줄: 그리드를 접으면 여기 가운데에 현재 상태 캡슐이 뜬다
          (요청 2026-07-28) — 누르면 그리드가 다시 나온다. -->
-    <h3 class="me-title" data-i18n-en="Right now I'm">지금 나는 <button class="me-title-cap" id="meTitleCap" type="button" style="display:none"></button></h3>
+    <!-- ⚠ 영어는 **"Right now"**까지만 (요청 2026-07-31 재신고): 바로 뒤 캡슐
+         문구가 "I keep drifting"처럼 I로 시작해 "Right now I'm I keep
+         drifting"으로 읽혔다. 한국어 '지금 나는'+'자꾸 딴 데 가'는 그대로
+         자연스러우니 건드리지 않는다(data-i18n-en은 영어에서만 쓰인다). -->
+    <h3 class="me-title" data-i18n-en="Right now">지금 나는 <button class="me-title-cap" id="meTitleCap" type="button" style="display:none"></button></h3>
     <!-- ① 장면 = 말풍선 + 엘리 + 선택지. 셋이 **한 덩어리**여야 대화로 읽힌다
          (아래 얼굴 고르는 칸과는 배경으로 갈라 놓는다). -->
     <div class="me-top">
