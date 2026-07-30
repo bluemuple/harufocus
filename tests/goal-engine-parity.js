@@ -14,7 +14,31 @@ function grab(name) {
   }
   throw new Error('unbalanced: ' + name);
 }
-eval([grab('goalAmountText'), grab('goalSessionDays'), grab('goalRangeLabel')].join('\n'));
+/* ⚠ i18n 도입(2026-07-30) 뒤 goalRangeLabel이 전역 IS_KO를 읽는다 — 함수만
+   뽑아 eval하는 이 하네스엔 그 전역이 없어 ReferenceError로 죽었다.
+   여기서 **언어를 직접 세운다**: 아래 케이스들은 앱의 한국어 기대값과
+   맞춘 것이라 기본은 한국어로 두고, 끝에서 영어로 한 번 더 돌려
+   '영어에서도 안 죽는지'를 본다(문구까지 고정하면 카피 손볼 때마다 깨진다). */
+var IS_KO = true;
+function L(ko, en) { return IS_KO ? ko : (en || ko); }
+/* ⚠ i18n(2026-07-30) 뒤 goalRangeLabel의 의존성이 늘었다: 단위 표기를
+   goalUnitShort에 위임하고, 그 함수는 다시 두 매핑 테이블을 읽는다
+   (키 '쪽'을 저장하고 **화면에만** 언어를 입히는 구조).
+   함수만 뽑던 하네스로는 테이블을 못 가져와 ReferenceError로 죽었다 —
+   `var NAME={...};` 형태도 뽑을 수 있게 grabVar를 더한다. */
+function grabVar(name) {
+  const at = SRC.indexOf('var ' + name + '=');
+  if (at < 0) throw new Error('not found: var ' + name);
+  let depth = 0;
+  for (let j = SRC.indexOf('{', at); j < SRC.length; j++) {
+    if (SRC[j] === '{') depth++;
+    else if (SRC[j] === '}') { depth--; if (depth === 0) return SRC.slice(at, j + 1) + ';'; }
+  }
+  throw new Error('unbalanced: var ' + name);
+}
+eval([grabVar('GOAL_UNIT_EN'), grabVar('GOAL_UNIT_SHORT_EN'),
+      grab('goalAmountText'), grab('goalUnitShort'),
+      grab('goalSessionDays'), grab('goalRangeLabel')].join('\n'));
 
 let failed = 0;
 function eq(a, b, msg) {
@@ -65,3 +89,19 @@ function eq(a, b, msg) {
 
 if (failed) { console.error('goal-engine-parity: ' + failed + ' FAILED'); process.exit(1); }
 console.log('goal-engine-parity: all passed');
+
+/* 영어 모드 스모크 (i18n 2026-07-30): 문구를 못 박지 않는다 — 카피는 바뀔 수
+   있다. **죽지 않고, 한국어가 새어 나오지 않는지**만 본다. */
+IS_KO = false;
+{
+  const out = [
+    goalRangeLabel(0, 3, 100, '쪽', 0),
+    goalRangeLabel(0, 2, 10, '챕터', 0),
+    goalRangeLabel(0, 30, 30, '분', 0),
+    goalRangeLabel(0, 1.5, 10, '시간', 0),
+  ];
+  const leaked = out.filter(t => /[가-힣]/.test(t));
+  eq(leaked.length, 0, '영어 모드에 한국어가 안 새어 나온다' +
+     (leaked.length ? ' — ' + JSON.stringify(leaked) : ''));
+}
+IS_KO = true;
