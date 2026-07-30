@@ -5933,6 +5933,9 @@
        유저가 적은 값이 아니게 된다.
      ⚠ 앱 RewardEngine.moneyString과 **같은 규칙**이다(거기도 $ 접두). 예전
        웹만 ' KRW' 접미라 같은 화면이 기기마다 다르게 보였다. */
+  /* 통화 기호 하나로 (요청 2026-07-30): 칩·안내문·아이콘에 ₩가 박혀 있어
+     영어 화면인데 원화 기호가 섞여 나왔다(첨부: "₩ Money"). */
+  var CURRENCY = IS_KO ? '₩' : '$';
   function moneyStr(n){
     var num=(n||0).toLocaleString(LOCALE);
     return IS_KO ? num+'원' : '$'+num;
@@ -8208,7 +8211,7 @@
     mind:'<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 20.3S4.2 15 4.2 9.4C4.2 6.6 6.3 5.2 8.1 5.2 9.6 5.2 11 6.1 12 7.4 13 6.1 14.4 5.2 15.9 5.2 17.7 5.2 19.8 6.6 19.8 9.4 19.8 15 12 20.3 12 20.3Z"/></svg>',
     health:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4.6" r="1.9" fill="currentColor" stroke="none"/><path d="M12.7 8.2 10 11l2.6 1.4.9 4.4"/><path d="M10 11 6.4 11.4"/><path d="M15.6 12.7 17.2 15"/><path d="M13.5 16.8 11.4 20"/></svg>',
     rest:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8.2"/><path d="M8.4 13.6c.9 1.5 2.2 2.2 3.6 2.2s2.7-.7 3.6-2.2" stroke-linecap="round"/><circle cx="9.2" cy="10" r=".95" fill="currentColor" stroke="none"/><circle cx="14.8" cy="10" r=".95" fill="currentColor" stroke="none"/></svg>',
-    life:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8.4"/><text x="12" y="16.3" font-size="11" text-anchor="middle" fill="currentColor" stroke="none" font-weight="700">₩</text></svg>',
+    life:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8.4"/><text x="12" y="16.3" font-size="11" text-anchor="middle" fill="currentColor" stroke="none" font-weight="700">'+(IS_KO?'₩':'$')+'</text></svg>',
     study:'<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 4C9 4.5 4.5 11 4.5 19.5c0 .3.2.5.5.5C13.5 20 20 13 20 4Z"/><path d="M7 18C9 12 12 9 17 7" fill="none" stroke="#fff" stroke-width="1.1" stroke-linecap="round" opacity=".55"/></svg>',
     focus:'<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect x="4" y="4" width="4" height="16" rx="1"/><rect x="9.5" y="4" width="4" height="16" rx="1" opacity=".72"/><path d="M15.2 5.3 19.4 6.4 16.4 21 12.2 19.9Z" opacity=".5"/></svg>',
     people:'<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="8.6" cy="8" r="3"/><circle cx="16" cy="8.6" r="2.6" opacity=".8"/><path d="M3.4 19c0-2.9 2.3-5 5.2-5s5.2 2.1 5.2 5Z"/><path d="M14.2 19c.1-2.4 1.5-4.3 3.5-4.9 2 .6 3.3 2.4 3.3 4.9Z" opacity=".8"/></svg>'
@@ -8456,7 +8459,7 @@
       '<div class="wl-guide"><button class="wl-x" id="wlGuideX" title="'+L('닫기','Close')+'">✕</button>'+
       '<h4>'+L('내가 나에게 주는 용돈','Pocket money, from me to me')+'</h4>'+
       '<div class="wl-steps">'+L('작업 추가 → 보상 🎁 선택 → 돈 ₩ 선택 →<br>그 작업을 끝내면 여기 쌓여요.',
-        'Add a task → pick reward 🎁 → pick money ₩ →<br>finish it and it piles up here.')+'</div>'+
+        'Add a task → pick reward 🎁 → pick money $ →<br>finish it and it piles up here.')+'</div>'+
       '<div class="wl-quote">'+L('“만족스러운 결과가 뒤따르는 행동은 다시 일어나기 쉽다.”<br>— 심리학자 에드워드 손다이크, ‘효과의 법칙’',
         '“Behaviour followed by satisfying consequences tends to be repeated.”<br>— Edward Thorndike, the Law of Effect')+'</div></div>';
     var list=ledger.length
@@ -11883,7 +11886,7 @@
     if(!cap.notePlaceholderShown){cap.rewardPh=REWARD_EXAMPLES[Math.floor(Math.random()*REWARD_EXAMPLES.length)];cap.notePlaceholderShown=true;}
     var isMoney=cap.draft.rewardIsMoney;
     return '<div class="cap-panel"><div class="cap-row">'+
-      '<button class="cap-chip'+(isMoney?' on':'')+'" id="capRewMoney">'+L('₩ 돈','₩ Money')+'</button>'+
+      '<button class="cap-chip'+(isMoney?' on':'')+'" id="capRewMoney">'+CURRENCY+L(' 돈',' Money')+'</button>'+
       '<input id="capRewText" placeholder="'+(isMoney?L('금액 (숫자만)','Amount (digits only)'):esc(cap.rewardPh))+'" value="'+esc(cap.draft.rewardText)+'" '+
         'style="flex:1;min-width:120px;border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-family:inherit">'+
       (isMoney?'':'<button class="cap-chip'+(cap.draft.rewardToQ4?' on':'')+'" id="capRewQ4">'+L('Q4 추가','Add to Q4')+'</button>')+
