@@ -7608,7 +7608,10 @@
           if(!gdue){gdue=document.createElement('div');gdue.className='ghost-due';
             gdue.innerHTML='<div class="gd-wire"></div><div class="gd-lab"></div><div class="gd-cap"></div>';
             sc.appendChild(gdue);}
-          gdue.style.top=yFor(hf)+'px';
+          // 밴드 오프셋 보정 — 할일 드래그 쪽과 **같은 이유·같은 식**이다
+          // (거기 긴 주석 참고). 같은 고스트를 두 경로가 쓰는데 한쪽만 고치면
+          // 매트릭스에서 끌 때만 선이 화면 밖에 그려진다.
+          gdue.style.top=(tlTodayTop()+yFor(hf))+'px';
           var anchor=dropAnchorMs(T,t),avail=Math.max(0,Math.round((T-anchor)/60000));
           gdue.querySelector('.gd-lab').innerHTML='<b>'+esc(t.title||'')+'</b>'+
             (avail>0?'<i>'+hmText(avail)+'</i>':'');
@@ -10155,7 +10158,20 @@
       if(!gdue){gdue=document.createElement('div');gdue.className='ghost-due';
         gdue.innerHTML='<div class="gd-wire"></div><div class="gd-lab"></div><div class="gd-cap"></div>';
         sc.appendChild(gdue);}
-      gdue.style.top=yFor(hf)+'px';
+      /* ⚠⚠ 밴드 오프셋을 **더한다** (버그 2026-07-30 '가로선이 안 보인다'):
+         yFor()는 '보고 있는 날' 밴드(.tl-day) **안쪽** 좌표인데, 이 고스트는
+         밴드가 아니라 #tlScroll(어제·오늘·내일 3일을 담은 스크롤러) 직계
+         자식이라 좌표계가 한 밴드만큼 다르다. 바로 위 히트테스트가
+         `y-tlTodayTop()`으로 밴드 기준까지 내려온 것과 짝이 맞아야 한다.
+         빠져 있던 동안 선은 어제 밴드 높이(1400px 남짓)만큼 위에, 즉 화면
+         밖에 그려져 **드롭 피드백이 통째로 안 보였다** — 놓으면 제자리에
+         꽂히니(dropAt은 히트테스트 값이라 멀쩡) '선만 사라진' 걸로 보였다.
+         범인은 3일 연속 스크롤(3650aff): 히트테스트에는 -tlEditTop을 넣고
+         그리는 쪽은 그대로 뒀다.
+         ⚠ 타임라인 안 다른 오버레이(dueline·cap-ghost·지금선·집게)는 모두
+           밴드에 append하므로 yFor 그대로가 맞다 — sc 직계인 이 고스트만
+           보정이 필요하다. 여기 손대면 부모가 누구인지부터 확인할 것. */
+      gdue.style.top=(tlTodayTop()+yFor(hf))+'px';
       /* 추가 뒤 마감선과 **같은 값·같은 자리**: 왼쪽엔 이름 + 여기까지 남은 시간,
          오른쪽 캡슐엔 `hh:mm까지`. 예전엔 '지금부터 2시간' 한 덩어리가 선 위에
          떠 있다가, 놓는 순간 전혀 다른 배치로 바뀌었다 (요청 ②). */
