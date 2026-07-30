@@ -2416,9 +2416,9 @@
        일도 하지 않는다 — 이 한 줄이 빠지면 증상이 그대로 돌아온다. */
   #pledgePane,#promisePane{flex:1 1 auto;min-height:0;overflow-y:auto;
     -webkit-overflow-scrolling:touch}
-  /* '지금 나는' 쪽 목록은 코끼리 위에 떠 있는 카드라 자기 안에서 스크롤한다
-     (아래 내용을 밀지 않는다는 성질을 지키면서 길이 제한만 둔다). */
-  .me-words-fold{max-height:46vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  /* '지금 나는' 모달도 내용이 길어지면 안에서 스크롤한다 (예전 한마디를
+     펼치면 .me-pick 아래로 길어진다). 규칙은 위 다짐 패널과 같다. */
+  #mePane{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
   /* '지금 나는'·'나의 다짐' 모달 다크 대응 (요청 2026-07-31).
      ⚠ 색을 요소마다 두 벌로 새로 칠하지 않는다 — 이 두 모달 안 거의 모든
      칩·버튼·입력창이 이미 --card/--card-2/--ink/--ink-soft/--line/--panel/--chip
@@ -2462,15 +2462,8 @@
      그림→탭→버튼이 한 호흡으로 읽히게. */
   .me-stage{position:relative;width:100%;height:clamp(128px,20vh,168px);margin:0 0 6px}
   .me-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
-  /* 예전 한마디 접힘 (요청 2026-07-31): .me-stage(position:relative)의
-     자식으로 두어 **엘리와 같은 쌓임 레이어**에서 절대배치한다 — 펼쳐도
-     .me-stage 자신의 레이아웃 높이(clamp 128~168px)는 그대로라 아래
-     .me-act·.me-pick·토글 버튼을 밀어내지 않고, 그 위에 카드처럼 겹쳐 뜬다.
-     z-index는 .me-side(3)보다 위, 목록이 길면 안에서만 스크롤. */
-  .me-words.me-words-fold{position:absolute;left:0;right:0;top:0;z-index:8;
-    max-height:210px;overflow-y:auto;margin:0;padding:9px;box-sizing:border-box;
-    background:var(--card,#fff);border:1px solid var(--line);border-radius:14px;
-    box-shadow:0 8px 22px rgba(20,40,80,.28)}
+  /* (2026-07-31 정정) '예전 한마디'를 엘리 위로 겹쳐 띄우던 규칙은 걷어냈다 —
+     버튼 바로 아래에서 평범하게 펼쳐진다. 길어지면 #mePane이 스크롤한다. */
   /* ⚠ 새 손 그림은 **팔이 길어져** 예전 거리(14%)로는 들어오는 느낌이 안 나고
      제자리에서 나타나는 것처럼 보인다 — 화면 밖에서 들어오도록 더 멀리서. */
   .me-hand{opacity:0;transform:translate(34%,26%);
@@ -3167,6 +3160,11 @@
          drifting"으로 읽혔다. 한국어 '지금 나는'+'자꾸 딴 데 가'는 그대로
          자연스러우니 건드리지 않는다(data-i18n-en은 영어에서만 쓰인다). -->
     <h3 class="me-title" data-i18n-en="Right now">지금 나는 <button class="me-title-cap" id="meTitleCap" type="button" style="display:none"></button></h3>
+    <!-- ⚠ 제목·닫기는 고정하고 **그 아래만 스크롤**한다 (요청 2026-07-31):
+         '예전 한마디'를 펼치면 모달이 86vh를 넘는데, 예전엔 넘치는 만큼 그냥
+         잘려서 아래 항목을 볼 수 없었다. 스크롤 막대조차 없어 더 있다는 것도
+         몰랐다. 제목이 같이 밀려 올라가면 지금 무슨 창인지 놓치므로 밖에 둔다. -->
+    <div id="mePane">
     <!-- ① 장면 = 말풍선 + 엘리 + 선택지. 셋이 **한 덩어리**여야 대화로 읽힌다
          (아래 얼굴 고르는 칸과는 배경으로 갈라 놓는다). -->
     <div class="me-top">
@@ -3181,12 +3179,6 @@
              이 말풍선만은 코끼리가 직접 말한다("아이디어가 필요해"류, 매번 랜덤).
              누르면 큰 말풍선에 프롬프트 피커가 뜬다. 큰 말풍선·캡슐은 여전히 '내가 나에게'. -->
         <button class="me-side" id="meSide" style="display:none"></button>
-        <!-- 예전 한마디 목록 (요청 2026-07-31): '나의 다짐'의 '예전 다짐'과
-             같은 접힘 UI(.me-words·.me-word-row·buildWordRows 재사용, 중복
-             금지)이지만, 펼치는 자리는 다르다 — **엘리와 같은 쌓임 레이어**
-             (.me-stage 안 position:absolute)에 둬서, 펼쳐도 아래 .me-pick·
-             버튼을 밀어내지 않고 엘리 위로 겹쳐 뜬다. -->
-        <div class="me-words me-words-fold" id="meWordList" style="display:none"></div>
       </div>
       <!-- 짐작에 답하는 자리 (2지선다 / 오늘 목록 칩).
            ⚠ 높이를 고정한다 — 안 그러면 얼굴을 바꿀 때마다 아래 칸이 들썩인다. -->
@@ -3202,6 +3194,13 @@
          버튼만 여기 있고, 실제 목록(#meWordList)은 위 .me-stage 안에 접혀
          있다가 이 버튼으로 펼친다(pledgeHistT와 같은 토글 로직). -->
     <button class="pledge-hist-t" id="meHistT" type="button" data-i18n-en="Earlier words ▾">예전 한마디 ▾</button>
+    <!-- ⚠ 목록은 **버튼 바로 아래**에 평범하게 펼쳐진다 (요청 2026-07-31 정정).
+         한때 .me-stage 안 position:absolute로 두어 **엘리 위로 겹쳐** 띄웠는데,
+         '아래 내용을 안 민다'는 장점보다 "쓴 글이 코끼리를 덮고 위로 올라간다"는
+         이상함이 컸다. 접힘 UI는 눌린 그 자리 아래에서 열려야 읽힌다.
+         길어지면 모달이 스크롤한다(#mePane). -->
+    <div class="me-words" id="meWordList" style="display:none"></div>
+    </div><!-- /#mePane -->
   </div>
 </div>
 <!-- 나의 다짐 (2026-07-28 앱 파리티): 상단바 말풍선을 누르면 열린다 —
