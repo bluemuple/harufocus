@@ -2201,6 +2201,14 @@
     background:rgba(255,255,255,.14);color:rgba(255,255,255,.92);font-size:18px;line-height:1;
     cursor:pointer;padding:0;display:grid;place-items:center}
   .ft-sub{font-size:13px;opacity:.9;margin-top:10px;min-height:18px;text-shadow:0 1px 2px rgba(0,0,0,.2)}
+  /* '0 도달' 아래 물음 패널 (앱 4c093e80 이식) — 버튼은 기존 .ft-chip과 같은
+     재질(둥근 캡슐·흰 글씨)을 더 작게 재사용한다(요청: 새 스타일 금지). */
+  .ft-zero{margin-top:8px;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .ft-zero-msg{font-size:13px;font-weight:600;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.3);min-height:16px}
+  .ft-zero-btns{display:flex;gap:10px}
+  .ft-zbtn{font-family:inherit;font-size:13px;font-weight:700;border:0;border-radius:999px;
+    padding:8px 14px;cursor:pointer;background:rgba(255,255,255,.12);color:#fff}
+  .ft-zbtn.on{background:rgba(255,255,255,.30);color:#ffd76a}
   .ft-morepanel{position:absolute;bottom:calc(20px + env(safe-area-inset-bottom));left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:4}
   /* 전환 카드 (§5): 링 안 원형 크롭 엘리 그림 5초, 종이 위 다음 작업명. */
   .ft-nextcard{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:78%;aspect-ratio:1;
@@ -2985,6 +2993,12 @@
       <button class="ft-pausebtn" id="ftPause" title="일시정지" data-i18n-en-title="Pause">⏸</button>
     </div>
   </div>
+  <!-- '0 도달' 아래 물음 (앱 4c093e80 이식) — 포모도로 OFF에서 계획을 다
+       쓰면 링 바로 아래 여기에 뜬다. 팝업이 아니라 자리에 눌러앉는다. -->
+  <div class="ft-zero" id="ftZero" style="display:none">
+    <div class="ft-zero-msg" id="ftZeroMsg"></div>
+    <div class="ft-zero-btns" id="ftZeroBtns"></div>
+  </div>
   <div class="ft-sub" id="ftSub"></div>
   <div class="postit" id="postit" style="display:none">
     <div class="pi-front" id="piFront"><span class="pi-pencil"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.6 14.9 5.7l3.4 3.4L6.4 21H3z"/><path d="M16.1 4.5 17.6 3a1.6 1.6 0 0 1 2.3 0l1.1 1.1a1.6 1.6 0 0 1 0 2.3l-1.5 1.5z"/><path d="M3 22.4h18v1.2H3z" opacity=".45"/></svg></span><span class="pi-ftext" id="piFtext" data-i18n-en-html="Elly,<br>hold on<br>a moment">엘리야<br>조금만<br>기다려</span><span class="pi-badge" id="piBadge" style="display:none"></span></div>
@@ -3583,11 +3597,47 @@
     var d=Math.floor(calSel.getTime()/86400000);
     return a[((d%a.length)+a.length)%a.length];
   }
-  // 작업 메타 칩(요청: duration · 매트릭스 힌트 · 보상) — 할일/매트릭스/타임라인 공용.
+  /* D-day 캡슐(자정 기준 날짜 차이) — 상단바 전역 D-day 캡슐(capContent의
+     'dday' 분기, 아래쪽)과 **같은 계산식**을 공유한다(앱 27dc5714 이식:
+     "TopBar의 전역 D-day 캡슐과 같은 계산을 그대로 쓴다"). 시각은 안 본다 —
+     23:59와 00:01은 2분 차이지만 날짜가 다르면 하루가 튀어야 하고, 같은 날
+     안에서는 몇 시든 0이어야 한다. */
+  function ddayDiffDays(now,due){
+    var a=new Date(now);a.setHours(0,0,0,0);
+    var b=new Date(due);b.setHours(0,0,0,0);
+    return Math.round((b.getTime()-a.getTime())/86400000);
+  }
+  function ddayShortLabel(diff){
+    if(diff===0)return 'D-day';
+    return diff>0?('D-'+diff):('D+'+(-diff));
+  }
+  /* 할일 줄 D-day 캡슐 (앱 27dc5714 이식, 요청 3) — 마감일(dueDate)이 있는
+     작업의 줄에 "언제까지"를 맨 앞에서 말해준다. 색은 셋뿐: 남음=차분한
+     보조색, 오늘=강조색, 지남=주황 — ⚠지난 것(D+)에 **빨강은 쓰지 않는다**
+     (요청: 이 앱은 나무라지 않는다 — 앱 라우틴 '끊긴 습관' 표시와 같은 결의
+     부드러운 경고색 #FF9500, 이미 이 파일에서 쓰는 값 재사용). */
+  function ddayCapsule(t){
+    if(!t.dueDate)return '';
+    var diff=ddayDiffDays(new Date(),new Date(t.dueDate));
+    var tint=diff<0?'#FF9500':(diff===0?'var(--accent)':'var(--ink-soft)');
+    var bg=diff<0?'rgba(255,149,0,.16)':(diff===0?'rgba(242,193,78,.28)':'var(--card-2)');
+    var lab=diff===0?L('마감 오늘','Due today'):(diff>0?L('마감 '+diff+'일 전',diff+' days to go'):L('마감 '+(-diff)+'일 지남',(-diff)+' days overdue'));
+    return '<span class="t-hint" style="color:'+tint+';background:'+bg+'" title="'+esc(lab)+'" aria-label="'+esc(lab)+'">'+ddayShortLabel(diff)+'</span>';
+  }
+  /* "몇 조각" — 하위 작업 개수 (앱 27dc5714 이식, 요청 4): 가장 덜 급한
+     정보라 메타 줄 맨 끝에 둔다. 아이콘은 캡처 패널 '하위 작업' 옵션과
+     같은 IC.steps를 재사용한다(새 기호를 만들지 않는다). */
+  function subtaskCountHTML(n){
+    if(!n)return '';
+    var lab=L('하위 작업 '+n+'개',n+' subtasks');
+    return '<span class="t-hint t-ico" title="'+esc(lab)+'" aria-label="'+esc(lab)+'">'+IC.steps+'<b>'+n+'</b></span>';
+  }
+  // 작업 메타 칩(요청: 매트릭스 힌트 · 보상) — 할일/매트릭스/타임라인 공용.
+  // ⚠ duration(goalLabelHTML)·D-day·타임라인 배지는 **호출부가 먼저** 붙인다
+  // (앱 27dc5714 이식, 요청 4: 읽는 순서 = 급한 순서 — D-day > 길이 >
+  // 타임라인 > 이 함수의 매트릭스 힌트… 순. buildTodoRow 참고).
   function taskMetaHTML(t){
     var out='';
-    // B2 (요청): duration = **오늘 집중 목표**. '목표 25분' → 1분 뒤 '24분 남음'.
-    out+=goalLabelHTML(t);
     /* 매트릭스 칸도 기호+번호로 접는다 (B2 후속, 백로그 제안) — '빨리 처리'
        네 글자가 목표 칩과 나란히 서면 메타 줄이 두 줄이 된다. 번호는 매트릭스
        페이지의 칸 번호와 같아 옮겨 읽기 쉽다. 전체 문구는 title/aria에. */
@@ -4563,6 +4613,34 @@
   function taskDueAt(t){return t.planDueAt?new Date(t.planDueAt)
     :new Date(new Date(t.scheduledStart).getTime()+(t.durationMin||0)*60000);}
   function taskByID(id){return (DATA.tasks||[]).find(function(x){return x.id===id;});}
+  /* '마감 시간 늘리기' 파리티 (앱 4fc67771 이식, TaskBlock.pushDueLater) —
+     ⚠ 예전 meDeadlineTap('push')은 durationMin만 늘리고 planDueAt은 그대로
+     뒀다. 화면은 전부 taskDueAt()(바로 위, planDueAt 우선)을 보므로 마감선은
+     **얼어붙은 채** 안 움직였다 — 앱은 이게 "durationMin이 몇 시간으로 부풀며
+     타이머가 736:30까지 흐르는" 폭주로 드러났지만, 웹의 durationMin은
+     '오늘 목표 분'(goalRemainMin)이라 그 폭주는 없다. 대신 증상은 "버튼을
+     눌러도 타임라인의 마감선이 그대로다"로 나타난다 — 같은 원인, 다른 증상.
+     고치는 법은 앱과 같다: 마감선(planDueAt)을 실제로 옮긴다.
+     ⚠ 이미 지난 마감이면 지금+30분으로 다시 앉힌다 — 집중 기록이 없는
+     계획-전용 작업이면 블록(scheduledStart)도 지금부터 30분으로 재배치한다
+     (원래 의도: "지금부터 30분 뒤로 옮겨, 누른 만큼 실제로 아래로 내려간다"). */
+  function pushDueLater(t,now){
+    now=now||Date.now();
+    var due=t.planDueAt?new Date(t.planDueAt).getTime()
+      :(t.scheduledStart?new Date(t.scheduledStart).getTime()+(t.durationMin||0)*60000:null);
+    if(due!==null&&due<=now){
+      t.planDueAt=new Date(now+30*60000).toISOString();
+      if((t.actualFocusedSec||0)===0&&!t.isDone&&t.scheduledStart){
+        t.scheduledStart=new Date(now).toISOString();
+        t.durationMin=30;
+      }
+    }else{
+      t.durationMin=(t.durationMin||0)+30;
+      // 아직 안 지난 마감도 표시는 planDueAt 우선이라, durationMin만 늘리면
+      // 화면이 그대로다 — 늘어난 만큼 마감선도 같이 옮긴다.
+      if(t.scheduledStart)t.planDueAt=new Date(new Date(t.scheduledStart).getTime()+t.durationMin*60000).toISOString();
+    }
+  }
   // 세션 → 그날 블록. 병합(§3): 같은 작업 + 갭≤30분 + 사이 다른 작업 세션 없음.
   /* 같은 작업을 다시 재생했을 때 **한 블록으로 합칠 최대 공백** (요청).
      합치는 이유는 5~10px짜리 조각이 한 자리에 몰리는 걸 막기 위함이고,
@@ -6229,12 +6307,39 @@
   // nil로 떨어지지 않고 리듬을 잇는다: 꼬리가 작업으로 끝났으면 그 작업을
   // 25분까지 마저 채우고(w1), 그 뒤로는 [휴식 5 → 작업 25]를 무한 반복.
   // over 플래그는 '계획 끝'을 알리는 신호로 남겨 자동 전환이 계속 동작한다.
+  /* '0 도달' 판정 3종 파리티 (앱 4c093e80 이식, FocusManager.zeroReached·
+     zeroBranch·overtimeSec) — 순수 함수라 뷰 없이 테스트한다
+     (tests/focus-zero-parity.js). 포모도로가 꺼져 있으면 계획을 다 써도
+     예전엔 여기서 그냥 1시간 랩 카운트업으로 흘려보내 "다 채웠다"는 신호가
+     전혀 없었다 — 그게 4fc67771의 736:30 버그(마감 안 옮기고 durationMin만
+     불어남)가 발각도 안 된 채 흘러갈 수 있었던 배경이다. */
+  function focusZeroReached(pomodoroOn,plannedSec,elapsed){
+    return !pomodoroOn&&plannedSec>0&&elapsed>=plannedSec;
+  }
+  /* 다음 블록 '시작'까지 30분 이하면 임박(near) — 그 외(다음이 없거나 30분
+     초과)는 멀거나 없음(farOrNone). 30분 넘게 비어 있으면 사실상 다음이
+     없는 셈이라 재촉하면 안 된다는 게 앱과 같은 설계 의도. */
+  function focusZeroBranch(nextStartGapSec){
+    if(nextStartGapSec==null)return 'farOrNone';
+    return nextStartGapSec<=30*60?'near':'farOrNone';
+  }
+  // 초과 시간(초) — 계획을 넘긴 만큼만, 아직 안 넘었으면 0으로 클램프.
+  function focusOvertimeSec(elapsed,plannedSec){
+    return Math.max(0,elapsed-plannedSec);
+  }
   function focusPhase(el){
     var plan=fPlanSec();
     if(!fPomoOn()){
       if(plan>0){
         if(el<plan)return{total:plan,left:plan-el,rest:false,countdown:true};
-        return{total:3600,left:0,rest:false,countdown:false,over:true};       // 초과 = 랩 count-up
+        /* 초과 (앱 4c093e80 이식, 요청): 예전엔 total=3600·countdown=false로
+           떨어져 '시침 없는 1시간 랩'이 계속 돌았다 — 마치 새 60분을 또
+           약속하는 것처럼 보이는 그림이었다. 계획(plan) 프레임을 그대로
+           이어받아(tickFocus가 정적인 연한 링으로 그린다) 초과분만 별도로
+           넘긴다 — 가운데는 '+mm:ss'로 위로 세어 "약속은 지켰다, 지금부터는
+           덤"으로 읽히게 한다. overtimeStatic이 바로 그 렌더 분기 신호다. */
+        return{total:plan,left:0,rest:false,countdown:true,over:true,overtimeStatic:true,
+               overtimeSec:focusOvertimeSec(el,plan)};
       }
       return{total:3600,left:0,rest:false,countdown:false};   // 0분 딥포커스 = count-up (§5)
     }
@@ -6395,17 +6500,31 @@
   }
 
   var fAdvanced=false;
+  /* '0 도달' 패널 상태 (앱 4c093e80 이식) — fZeroChoiceMade: '이어서 하기'
+     /'계속하기'를 이미 골랐으면 같은 초과 구간 동안 다시 묻지 않는다.
+     fZeroAutoFired: 근접 갈래의 10초 자동전환이 한 세션에 한 번만 일어나게. */
+  var fZeroChoiceMade=false,fZeroAutoFired=false;
   // 휴식 문구 (앱 restLines 파리티): 휴식 진입(edge) 때만 랜덤 1개 선택해 위상 동안 유지.
   var fRestLines=[L('잠깐, 창밖 가장 먼 곳에 눈의 초점을 맡겨 보세요','For a moment, let your eyes rest on the farthest point outside the window'),L('물 한 잔이 어울리는 시간이에요','This is a good moment for a glass of water'),L('두어 걸음이면 충분해요 — 방이 생각보다 넓어요','A couple of steps is plenty — the room is bigger than you think'),L('어깨와 목을 천천히 한 바퀴 —','Roll your shoulders and neck, slowly —'),L('하늘 한 번 보고 오면 다음 25분이 가벼워요','One look at the sky makes the next 25 minutes lighter'),L('가장 멀리 있는 것을 하나 찾아보세요','Find the farthest thing you can see'),L('허리를 펴면 생각도 펴져요','Straighten your back and your thoughts straighten too')];
   var fRestMsg='',fWasRest=false;
   function nextDueTask(){
     if(!fTask||!fTask.scheduledStart)return null;
-    var myDue=taskDueAt(fTask).getTime(),best=null,bestDue=1/0;
+    var myDue=taskDueAt(fTask).getTime(),now=Date.now(),best=null,bestDue=1/0;
     (DATA.tasks||[]).forEach(function(t){
       if(t===fTask||t.isDone||t.isRewardItem)return;
       if(!isPlanOnly(t))return;                                // 오늘 · 미완료 · 계획-전용 (§5)
       var d=taskDueAt(t);if(dateKey(d.toISOString())!==todayKey())return;
-      var dm=d.getTime();if(dm>myDue&&dm<bestDue){bestDue=dm;best=t;}
+      var dm=d.getTime();
+      /* ⚠⚠ 앱 파리티(d51b12b0, 신고: "다음 데드라인인 Test2가 떠야 하는데
+         어제 작업이 뜬다") — 하한이 없었다. 예전엔 `dm>myDue`만 봤는데, 이
+         부등호는 **myDue가 미래일 때만** "지난 마감선은 걸러진다"가 참이다.
+         계획 시간을 다 써서 myDue가 과거가 되는 순간(=이 함수가 불리는 바로
+         그 순간, ph.over/줌0-도달) 그때부터 myDue~지금 사이의 '이미 지난'
+         마감선이 dm>myDue를 통과해 '다음'으로 새어 들어온다.
+         '다음'은 **아직 오지 않은 것**이다 — 지금(now)을 하한으로 못 박는다.
+         60초 여유는 방금 지난 마감선이 경계에서 튕겨나가지 않게(앱과 동일). */
+      if(dm<=now-60000)return;
+      if(dm>myDue&&dm<bestDue){bestDue=dm;best=t;}
     });
     return best;
   }
@@ -6434,6 +6553,43 @@
     else if(t.rewardText)segs.push('🎁 '+L('끝나면 '+t.rewardText,t.rewardText+' when done'));
     return segs.join(' · ');
   }
+  /* 다음 작업으로 전환 — 포모도로 ON 경계 자동전환과 '0 도달' 근접 갈래가
+     공유하는 동작 (요청: 새 경로를 만들지 않는다). 기록 남기고 시작하고
+     효과음·전환 카드까지 한 번에. */
+  function advanceFocusTo(nx){
+    var prevTitle=fTask.title;
+    endFocusSession();                                   // 기록 남기고
+    startFocus(nx);                                      // 다음 작업으로
+    playChime();showAdvanceCard(nx.title);               // 전환 연출 (§5)
+    document.getElementById('ftSub').textContent=L('"'+(nx.title||'')+'" 할 시간이에요 — "'+(prevTitle||'')+'" 수고했어요',
+      'Time for "'+(nx.title||'')+'" — nice work on "'+(prevTitle||'')+'"');
+  }
+  /* '0 도달' 아래 물음 패널 (앱 4c093e80 이식) — 포모도로 OFF에서 계획을 다
+     쓰면 링 바로 아래에 뜬다. 팝업이 아니라 이 자리에 눌러앉는다(요청).
+     근접(다음 블록 시작까지 30분 이내)이면 '이어서 하기/다음으로 ▸10'
+     (10초 자동 진행), 멀거나 없으면 '계속하기/끝내기'(자동 진행 없음) —
+     그만큼 비어 있으면 재촉할 이유가 없다는 게 앱과 같은 설계 의도. */
+  function renderZeroPanel(show,near,nextTitle,overtimeSec){
+    var wrap=document.getElementById('ftZero');if(!wrap)return;
+    if(!show){wrap.style.display='none';return;}
+    wrap.style.display='';
+    var autoLeft=Math.max(0,10-overtimeSec);
+    document.getElementById('ftZeroMsg').textContent=
+      near?L("다음은 '"+nextTitle+"'이에요","Next up: '"+nextTitle+"'"):'';
+    var btns=document.getElementById('ftZeroBtns');
+    btns.innerHTML=near
+      ?'<button class="ft-zbtn" data-z="keep">'+esc(L('이어서 하기','Keep going'))+'</button>'
+       +'<button class="ft-zbtn on" data-z="next">'+esc(L('다음으로 ▸ '+autoLeft,'Next ▸ '+autoLeft))+'</button>'
+      :'<button class="ft-zbtn" data-z="keep">'+esc(L('계속하기','Keep going'))+'</button>'
+       +'<button class="ft-zbtn" data-z="finish">'+esc(L('끝내기','Finish'))+'</button>';
+    btns.querySelectorAll('button').forEach(function(b){
+      b.onclick=function(){
+        if(b.dataset.z==='keep'){fZeroChoiceMade=true;wrap.style.display='none';}
+        else if(b.dataset.z==='next'){var nx=nextDueTask();if(nx){fZeroAutoFired=true;advanceFocusTo(nx);}}
+        else if(b.dataset.z==='finish'){var cb=document.getElementById('ftCheck');if(cb)cb.click();}   // 상단 체크와 같은 완료 경로 재사용
+      };
+    });
+  }
   function tickFocus(){
     if(!fTask)return;var el=focusElapsed(),ph=focusPhase(el);
     // 경계 자동 전환 (§5): 계획 끝 + 90초 이내 + 포모도로 ON → 다음 마감선 작업.
@@ -6442,15 +6598,7 @@
       var plan=fPlanSec();
       if(plan>0&&el-plan<90){
         var nx=nextDueTask();
-        if(nx){
-          var prevTitle=fTask.title;
-          endFocusSession();                                   // 기록 남기고
-          startFocus(nx);                                      // 다음 작업으로
-          playChime();showAdvanceCard(nx.title);               // 전환 연출 (§5)
-          document.getElementById('ftSub').textContent=L('"'+(nx.title||'')+'" 할 시간이에요 — "'+(prevTitle||'')+'" 수고했어요',
-            'Time for "'+(nx.title||'')+'" — nice work on "'+(prevTitle||'')+'"');
-          return;
-        }
+        if(nx){advanceFocusTo(nx);return;}
       }
     }
     var planS=fPlanSec();
@@ -6465,14 +6613,52 @@
       document.getElementById('ftTimer').textContent=fmtMS(ph.left);
     }else{
       var col=ph.rest?REST_COLOR:taskDisplayColor(fTask);
-      var key=ph.total+'|'+col+'|'+ph.countdown;
+      var key=ph.total+'|'+col+'|'+ph.countdown+'|'+(ph.overtimeStatic?1:0);
       if(key!==ftKey){ftKey=key;buildRing(ph.total,col,ph.countdown);}
-      var prog=ph.countdown?1-(ph.left/ph.total):((el%3600)/3600);
-      var C=2*Math.PI*114,arc=document.getElementById('ftArc');
-      if(arc){if(ph.countdown){arc.setAttribute('stroke-dasharray',((1-prog)*C)+' '+C);arc.setAttribute('stroke-dashoffset',String(-prog*C));}
-        else{arc.setAttribute('stroke-dasharray',(Math.max(0.001,prog)*C)+' '+C);arc.setAttribute('stroke-dashoffset','0');}}
-      var kn=document.getElementById('ftKnob');if(kn)kn.setAttribute('transform','rotate('+(prog*360)+' 150 150)');
-      document.getElementById('ftTimer').textContent=fmtMS(ph.countdown?ph.left:el);
+      var kn=document.getElementById('ftKnob');
+      if(ph.overtimeStatic){
+        /* 초과 — 링은 전부 연한 테마색, 바늘 없음 (앱 4c093e80 이식). 이 링의
+           색 문법은 '남은 구간=진한 테마색 / 지나간 구간=연한 테마색'이고,
+           계획을 다 채웠다는 건 전부 지나갔다는 뜻이라 링은 온통 연한 색
+           이어야 한다. buildRing이 그린 트랙(countdown=true라 opacity .28,
+           바로 위 countdown 분기 참고)만 남기고 ftArc(찬 아크)는 통째로
+           숨긴다 — progress를 0으로 두면 오히려 "아직 하나도 안 썼다"는
+           정반대 신호가 된다(처음 구현에서 겪은 그 버그, 앱 커밋 참고). */
+        var C0=2*Math.PI*114,arc0=document.getElementById('ftArc');
+        if(arc0)arc0.setAttribute('stroke-dasharray','0 '+C0);
+        if(kn)kn.style.display='none';
+        // '+3:20' — 다 쓴 계획을 다시 세는 게 아니라 '덤'을 세고 있음을 알린다.
+        document.getElementById('ftTimer').textContent=
+          '+'+Math.floor(ph.overtimeSec/60)+':'+('0'+(ph.overtimeSec%60)).slice(-2);
+      }else{
+        if(kn)kn.style.display='';
+        var prog=ph.countdown?1-(ph.left/ph.total):((el%3600)/3600);
+        var C=2*Math.PI*114,arc=document.getElementById('ftArc');
+        if(arc){if(ph.countdown){arc.setAttribute('stroke-dasharray',((1-prog)*C)+' '+C);arc.setAttribute('stroke-dashoffset',String(-prog*C));}
+          else{arc.setAttribute('stroke-dasharray',(Math.max(0.001,prog)*C)+' '+C);arc.setAttribute('stroke-dashoffset','0');}}
+        if(kn)kn.setAttribute('transform','rotate('+(prog*360)+' 150 150)');
+        document.getElementById('ftTimer').textContent=fmtMS(ph.countdown?ph.left:el);
+      }
+    }
+    // '0 도달' 아래 물음 (앱 4c093e80 이식) — 포모도로 OFF + 계획 소진일 때만.
+    var zReached=focusZeroReached(fPomoOn(),planS,el);
+    if(zReached&&!fZeroChoiceMade){
+      var znx=nextDueTask(),zNear=false;
+      if(znx&&znx.scheduledStart){
+        var zGap=(new Date(znx.scheduledStart).getTime()-Date.now())/1000;
+        zNear=focusZeroBranch(zGap)==='near';
+      }
+      renderZeroPanel(true,zNear,znx?znx.title:'',ph.overtimeSec);
+      // 근접 갈래 기본값 '다음으로' — 유저가 10초 안에 아무것도 안 고르면
+      // 자동전환(앱과 같은 10~100초 창 — 묵은 트리거가 뒤늦게 발동하는 것 방지).
+      if(zNear&&!fZeroAutoFired&&ph.overtimeSec>=10&&ph.overtimeSec<100){
+        fZeroAutoFired=true;advanceFocusTo(znx);return;
+      }
+    }else{
+      renderZeroPanel(false);
+      // 계획을 늘려(± 시간 조절) elapsed가 다시 계획 아래로 내려가면 '이미
+      // 답했다' 기록을 지운다 — 나중에 또 0에 닿으면 새로 물어야 한다.
+      if(!zReached){fZeroChoiceMade=false;fZeroAutoFired=false;}
     }
     // 휴식 문구: 휴식 진입 에지에서만 랜덤 재추첨(위상 index 대체) — 앱 restLines·수동 일시정지 폴백.
     if(ph.rest&&!fWasRest)fRestMsg=fRestLines[Math.floor(Math.random()*fRestLines.length)];
@@ -6678,6 +6864,7 @@
        2시간 만료와 별개로, 다음 집중이 곧 새 사실이다. */
     setManualState(null);
     fTask=t;fStart=Date.now();fPausedAcc=0;fPauseAt=0;fPaused=false;ftKey='';fAdvanced=false;fWasRest=false;fRestMsg='';
+    fZeroChoiceMade=false;fZeroAutoFired=false;   // 새 세션 = '0 도달' 상태 초기화 (앱 파리티)
     meNoteFocusStart();                // 체크인 로그: 방금 고른 상태에 시작 시각을 심어둔다(10분 창)
     // 첫걸음 가이드 ① 졸업 (요청 2026-07-29): ▶를 한 번이라도 눌러 본 사람에겐
     // '▶ 눌러서 시작' 안내가 다시 뜨지 않는다 — 앱 sundialGuideDueDone과 같은 자리.
@@ -7134,7 +7321,11 @@
           ?'<span class="t-icon" style="color:'+col+'">'+findIconSvg(t.iconName)+'</span>'
           :'<span class="swatch" style="background:'+catColor(t.categoryID)+'"></span>')+
         '<div class="t-main"><div class="t-title">'+esc(t.title)+'</div>'+
-          '<div class="t-meta">'+(placed?'<span class="t-time">'+fmtTime(t.scheduledStart)+'</span>':'')+taskMetaHTML(t)+tlBadgeHTML(t)+'</div></div>'+
+          /* 캡슐 순서 (앱 27dc5714 이식, 요청 4: 읽는 순서 = 급한 순서) —
+             언제까지(D-day) > 얼마나(길이) > 타임라인 > 사분면(taskMetaHTML
+             안) > … > 몇 조각(하위 작업 수, 가장 덜 급해 맨 끝). */
+          '<div class="t-meta">'+(placed?'<span class="t-time">'+fmtTime(t.scheduledStart)+'</span>':'')
+            +ddayCapsule(t)+goalLabelHTML(t)+tlBadgeHTML(t)+taskMetaHTML(t)+subtaskCountHTML(subs.length)+'</div></div>'+
         memoIconHTML(t)+
         (inDone?'':
           ((t.countTarget>0?'<button class="t-plus" title="'+L('1회 완료','Log one')+'" style="color:'+col+'">'+svgI('<circle cx="12" cy="12" r="9"/><path d="M12 8.5v7M8.5 12h7"/>')+'</button>':'')+
@@ -13426,8 +13617,10 @@
     if(mode==='push'){
       /* 마감을 30분 뒤로. **여러 번 누르면 계속 밀린다** — 얼마나 밀지 미리
          정하게 하면 그 계산부터가 부담이라, 한 번에 30분씩 눌러 가며 몸으로
-         정하게 한다. 그래서 그리드를 걷지 않고 그 자리에 결과만 갈아 끼운다. */
-      t.durationMin=(t.durationMin||0)+30;
+         정하게 한다. 그래서 그리드를 걷지 않고 그 자리에 결과만 갈아 끼운다.
+         ⚠ durationMin만 고치면 마감선이 얼어붙는다 (앱 4fc67771 파리티) —
+         pushDueLater가 planDueAt까지 실제로 옮긴다. */
+      pushDueLater(t);
       renderAll();pushSnapshot();
       var r=document.getElementById('meDueRes');
       if(r)r.textContent=L('『'+name+'』 마감을 30분 뒤로 미뤘어.','Pushed ‘'+name+'’ 30 minutes later.');
@@ -14653,10 +14846,9 @@
     }
     if(k==='dday'){
       if(!S.ddayDate)return {ic:IC.flag,txt:L('D-day 미설정','No D-day set')};
-      var dd=new Date(S.ddayDate);dd.setHours(0,0,0,0);var td=new Date();td.setHours(0,0,0,0);
-      var diff=Math.round((dd-td)/86400000);
+      var diff=ddayDiffDays(new Date(),new Date(S.ddayDate));   // 할일 줄 D-day 캡슐과 같은 계산 (요청)
       var lab=setDdayTitle().trim();
-      var dtxt=diff===0?'D-day':(diff>0?'D-'+diff:'D+'+(-diff));
+      var dtxt=ddayShortLabel(diff);
       return {ic:IC.flag,txt:dtxt+(lab?' '+lab:'')};
     }
     return {ic:IC.note,txt:''};
