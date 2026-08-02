@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>엘리의 하루: 내 안의 코끼리를 위한 플래너</title>
+<!-- 제목은 **한 언어만** 보여준다 (요청 2026-08-02): 한국어 사용자는 한국어,
+     그 외에는 영어. 병기하면 탭 폭이 좁아 둘 다 잘려 아무것도 안 읽힌다.
+     ⚠ 치환을 **여기서** 한다 — 본 스크립트(맨 아래)에서 하면 영어 사용자가
+       한국어 제목을 한 번 봤다 바뀐다. head 안 인라인이라 첫 페인트 전에 끝난다.
+     ⚠ 정적 <title>은 한국어로 남긴다: 크롤러·링크 미리보기는 JS 실행 전에
+       읽고, 주 시장이 한국이다 (description을 병기로 둔 것과 같은 판단). -->
+<script>(function(){try{
+  if((navigator.language||'ko').toLowerCase().indexOf('ko')!==0){
+    document.title='Elly Day: A Planner for Your Inner Elephant';
+    document.documentElement.lang='en';
+  }
+}catch(e){}})();</script>
 <!-- ⚠ description은 **하나만** 둔다 (2026-07-30 정리): 예전엔 두 줄이었는데
      크롤러는 첫 번째만 읽고 나머지를 버린다 — 두 번째 줄("시간을 하늘 색으로
      보여주는…")은 아무 데도 안 쓰이고 있었다. 그쪽 표현이 더 구체적이라
