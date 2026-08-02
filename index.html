@@ -9852,7 +9852,12 @@
     var st=document.getElementById('setAcctStatus'),ab=document.getElementById('setAccountBtn');
     if(!st||!ab)return;
     if(session&&session.user){
-      st.style.display='';st.innerHTML='✅ <b>'+esc(session.user.email)+'</b>';
+      // acctSyncStale이 true일 때만(=서버 응답으로 오래됨/빈 데이터를 확인했을 때만)
+      // 조용한 한 줄을 붙인다. null(응답 전)·false(최근 동기화)면 아무것도 안 붙는다.
+      var note=acctSyncStale?('<br><span>'+esc(L(
+        '앱과의 동기화는 Plus 기능이에요 — 폰의 엘리의 하루 앱 → 설정 → 엘리의 하루 Plus에서 시작할 수 있어요',
+        'Syncing with the app is a Plus feature — turn it on in the Elly Day app → Settings → Elly Day Plus'))+'</span>'):'';
+      st.style.display='';st.innerHTML='✅ <b>'+esc(session.user.email)+'</b>'+note;
       ab.textContent=L('로그아웃','Sign out');ab.style.marginTop='8px';
     }else{
       st.style.display='none';st.innerHTML='';
@@ -10072,6 +10077,27 @@
   /* 서버 스냅샷을 통째로 보관 (schemaVersion·sessions 등 앱 전용 필드 보존).
      DATA.tasks는 serverSnap.tasks와 같은 참조라 편집이 그대로 반영된다. */
   var serverSnap=null;
+  /* ── 동기화 게이트 조용한 안내 (요청 2026-08-02) ────────────────────
+     앱이 방금 Plus 게이트를 얻었다: 무료 계정은 앱이 서버로 push/pull을 안
+     한다(기존 로그인 세션은 영구 예외). 그러면 **새 무료 유저**가 웹에
+     로그인해도 폰 데이터가 하나도 안 보이고, 웹에서 적어도 폰에 안 간다 —
+     원인을 모르면 "동기화가 고장났다"로 보인다. 계정 상태 자리에 조용한
+     한 줄만 띄운다(팝업·배너 금지). 이미 잘 도는 계정(grandfathered·Plus)엔
+     서버 updated_at이 최신이라 조건이 거짓 → 절대 안 뜬다.
+     ⚠ null=아직 서버 응답 전(모름) — 이땐 안내를 띄우지 않는다. fetchSnapshot이
+     응답을 받은 뒤에야 true/false로 정해진다(오탐 방지: 로그인 직후 깜빡임 없이). */
+  var acctSyncStale=null;
+  var ACCT_SYNC_STALE_MS=3*24*3600*1000;   // 3일 — 이보다 오래된 updated_at만 "앱이 안 올리는 중"으로 본다
+  /* 순수 함수로 분리 — tests/가 index.html에서 이 함수만 뽑아 돌린다(short-block.js와 같은 방식).
+     hasSession이 거짓이면 애초에 안내 대상이 아니다(로그아웃 상태).
+     updatedAtISO가 없으면(=서버에 이 계정 행이 아예 없음) 새 계정이라 무조건 안내 대상. */
+  function acctSyncGateStale(hasSession,updatedAtISO,nowMs){
+    if(!hasSession)return false;
+    if(!updatedAtISO)return true;
+    var ts=Date.parse(updatedAtISO);
+    if(!ts)return true;
+    return (nowMs-ts)>ACCT_SYNC_STALE_MS;
+  }
   /* 전송이 '날아가는 중'인지 (요청 버그: 웹 삭제가 되살아남).
      doPush는 fetch를 걸기 전에 pushTimer를 비운다 — 그 사이에 탭 복귀
      (visibilitychange)나 폴이 서버를 내려받으면 아직 삭제 이전 스냅샷으로
@@ -10123,6 +10149,10 @@
       // 변경을 통째로 삼킨다**. 백그라운드 탭으로 열어 둔 사이 앱이 바꾼
       // 내용이 영영 안 내려오고, 그 상태로 웹에서 뭘 고치면 앱 변경이 지워졌다.
       if(rows&&rows.length&&rows[0].updated_at)lastSeenUpdated=rows[0].updated_at;
+      // 동기화 게이트 안내 판정 (요청 2026-08-02) — 서버 응답을 받은 지금에야 안다.
+      acctSyncStale=acctSyncGateStale(!!(session&&session.user),
+        (rows&&rows.length)?rows[0].updated_at:null, Date.now());
+      paintAcctSection();
       serverSnap=(rows&&rows.length&&rows[0].snapshot)||{schemaVersion:1,tasks:[],habits:[],sessions:[],settings:null};
       var revived=tombApply(serverSnap);   // 반대쪽이 되살린 삭제분 제거 (요청)
       DATA=normalize(serverSnap,DATA);   // prev = 도메인 표가 정본일 때 지킬 것들
@@ -10579,6 +10609,7 @@
     if(pendingInvite)setTimeout(acceptInvite,300);}   // 초대 → 가입/로그인 → 친구 수락
   function signOut(){session=null;localStorage.removeItem(AUTH_KEY);
     try{localStorage.removeItem(SNAP_CACHE_KEY);}catch(_){}   // 남의 데이터가 남지 않게
+    acctSyncStale=null;   // 다음 계정의 판정이 올 때까지는 안내를 띄우지 않는다 (요청 2026-08-02)
     updateAcct();DATA=DEMO;renderAll();}
   /* 만료 60초 전이면 refresh_token으로 갱신하고 유효한 access_token을 돌려준다.
      실패(재사용된 토큰 등) 시 로그아웃 후 null. 예전 저장분(refresh 없음)은
