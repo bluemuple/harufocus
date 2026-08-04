@@ -4567,7 +4567,19 @@
     if(tlMode==='week'){
       var wsc=document.getElementById('view-week');
       var nr=wsc&&wsc.querySelector('.mday-row.wk-now');
-      if(!nr){cap.classList.remove('show');return;}   // 이번 주가 아니면 '지금'이 없다
+      if(!nr){
+        /* ‹›로 딴 주에 가 있으면 지금 행 자체가 없다 — '지금 행이 화면 밖'의
+           극단이라 캡슐을 띄운다(스펙의 안전망 역할). 화살표는 지금이 있는
+           쪽: 미래 주를 보고 있으면 ↑(이전), 과거 주면 ↓(이후). */
+        if(typeof wkOffset!=='undefined'&&wkOffset){
+          cap.querySelector('.nc-ar').innerHTML=(wkOffset>0)
+            ? '<path d="M12 19V5M6 11l6-6 6 6"/>'
+            : '<path d="M12 5v14M6 13l6 6 6-6"/>';
+          cap.classList.toggle('day',isDaytimeNow());
+          cap.classList.add('show');
+        }else cap.classList.remove('show');
+        return;
+      }
       var wt=wsc.scrollTop,wb=wt+wsc.clientHeight;
       var y0=nr.offsetTop,y1=y0+nr.offsetHeight;
       if(y1>wt+8&&y0<wb-8){cap.classList.remove('show');return;}
@@ -4597,6 +4609,8 @@
     if(tlMode==='week'){
       // 스펙: 지금 행 **위 3줄**이 보이게 — 지금 행이 위에서 4번째 줄이 된다.
       var wsc=document.getElementById('view-week');
+      // ‹›로 딴 주에 가 있었으면 먼저 이번 주로 — 캡슐의 약속은 '지금으로 가기'다.
+      if(wkOffset){wkOffset=0;renderMosaicWeek();}
       var nr=wsc&&wsc.querySelector('.mday-row.wk-now');
       if(!nr)return;
       var pitch=nr.offsetHeight+3;                 // 줄 높이 + .mday gap 3px
@@ -5776,8 +5790,15 @@
     guideWatchDues();renderTimelineGuides();
   }
   // 날짜 이동은 모자이크(하루 판·막대 칼럼)도 같은 날을 봐야 한다 (스펙: 선택일 기준).
-  document.getElementById('dayPrev').addEventListener('click',function(){dayOffset--;renderBig();if(tlMode==='mosaic')renderMosaic();});
-  document.getElementById('dayNext').addEventListener('click',function(){dayOffset++;renderBig();if(tlMode==='mosaic')renderMosaic();});
+  /* 주간 모드에선 같은 ‹›가 **주 이동**이 된다 (스펙: 상단 = 주 표기 + ‹›) —
+     dayOffset은 안 건드린다: 주간에서 나가면 보던 날짜가 그대로여야 한다.
+     이동 후 home 렌더 = 과거 주는 마지막 집중 행이 하단, 미래 주는 맨 위. */
+  document.getElementById('dayPrev').addEventListener('click',function(){
+    if(tlMode==='week'){wkOffset--;renderMosaicWeek(true);return;}
+    dayOffset--;renderBig();if(tlMode==='mosaic')renderMosaic();});
+  document.getElementById('dayNext').addEventListener('click',function(){
+    if(tlMode==='week'){wkOffset++;renderMosaicWeek(true);return;}
+    dayOffset++;renderBig();if(tlMode==='mosaic')renderMosaic();});
   /* ⚠ 옛 '하루씩 페이징'(오버스크롤로 날 바뀜)은 걷어냈다 (요청 2026-07-23):
      스크롤바가 리셋되는 게 어색하다고 해서, 어제·오늘·내일 **3일을 한 스크롤에**
      이어 그린다(renderBig의 TLWIN 루프). 그 너머(그제·모레)는 날짜 버튼(‹›)이
@@ -6104,10 +6125,15 @@
     }
     return rows;
   }
+  /* 보는 주 = 이번 주 + wkOffset주 (스펙: 상단 ‹›로 주 이동). 주간 모드에
+     **진입할 때 0으로 리셋**한다 — 기본 스크롤(지금+2h 행 하단) 규칙이
+     '주간을 열면 이번 주'를 전제하기 때문. */
+  var wkOffset=0;
   function renderMosaicWeek(home){
     var box=document.getElementById('wkRows');if(!box)return;
     var now=Date.now();
-    var ws=calWeekStart(new Date());                  // 주 시작 설정(일/월)을 따른다
+    var base=new Date();base.setDate(base.getDate()+wkOffset*7);   // setDate = 달 경계 안전
+    var ws=calWeekStart(base);                        // 주 시작 설정(일/월)을 따른다
     var we=new Date(ws);we.setDate(we.getDate()+7);
     // 상단 날짜 자리 = 주 표기 (스펙: "8월 1주" / "AUG W1"). 주 시작일 기준.
     var wkN=Math.floor((ws.getDate()-1)/7)+1;
@@ -6160,6 +6186,9 @@
         var tgt=now+2*3600000,el=null,els=box.querySelectorAll('.mday-row');
         for(var k=0;k<els.length;k++){if(+els[k].getAttribute('data-t')<=tgt)el=els[k];}
         if(el&&sc.clientHeight)sc.scrollTop=Math.max(0,el.offsetTop+el.offsetHeight-sc.clientHeight+14);
+        /* ‹›로 간 주가 통째로 미래면 tgt보다 이른 행이 없다(el=null) —
+           그대로 두면 직전 주의 스크롤이 남아 엉뚱한 데를 본다. 맨 위부터. */
+        else if(sc.clientHeight)sc.scrollTop=0;
       }else sc.scrollTop=prev;                        // 갱신 재렌더는 자리 보존
     }
     updateNowCap();
@@ -10297,11 +10326,17 @@
       if(editBarOn)closeEditBar();
       var pf=document.getElementById('dueEditFab');if(pf)pf.style.display='none';
     }
-    /* 주간은 '이번 주' 고정(스펙: 지금~주 끝) — 날짜 ‹›가 할 일이 없어 숨긴다.
-       visibility로 숨겨 상단 줄 레이아웃은 안 흔들린다. */
+    /* 주간에선 같은 ‹›가 '주 이동'이 된다 (스펙 확정 — 예전 '이번 주 고정'
+       판단으로 숨겼던 걸 되살림). 진입 때 이번 주로 리셋: 기본 스크롤
+       (지금+2h 행 하단)이 '이번 주'를 전제한다. aria도 뜻에 맞춰 바꾼다. */
     var np=document.getElementById('dayPrev'),nn=document.getElementById('dayNext');
-    if(np)np.style.visibility=m==='week'?'hidden':'';
-    if(nn)nn.style.visibility=m==='week'?'hidden':'';
+    if(m==='week')wkOffset=0;
+    if(np){np.style.visibility='';
+      np.setAttribute('aria-label',m==='week'?L('이전 주','Previous week'):L('이전 날','Previous day'));
+      np.setAttribute('data-i18n-en-aria',m==='week'?'Previous week':'Previous day');}
+    if(nn){nn.style.visibility='';
+      nn.setAttribute('aria-label',m==='week'?L('다음 주','Next week'):L('다음 날','Next day'));
+      nn.setAttribute('data-i18n-en-aria',m==='week'?'Next week':'Next day');}
     if(m==='big')renderBig();
     // ⚠ 진입 시점에 직접 그린다 — renderAll 등 이벤트 렌더만 믿으면 낡은 판이 뜬다.
     if(m==='mosaic')renderMosaic();
