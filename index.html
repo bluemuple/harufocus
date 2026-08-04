@@ -956,14 +956,16 @@
   #view-mosaic{position:absolute;inset:0;overflow-y:auto;
     background:linear-gradient(180deg,var(--sky-top,#2E86D8),var(--sky-bot,#AFDBF2));
     padding:14px 14px 90px;display:none}
-  /* 주간 모자이크 (모자이크2) — 지금은 모드 순환용 골격. 다음 단계가 채운다. */
+  /* 주간 모자이크 (모자이크2 — 유저 확정 2026-08-04): 셀 크기·간격 = 하루와
+     동일(.mday 부품 그대로), 세로 스크롤. 왼쪽 라벨만 넓다 — 날짜가 바뀌는
+     첫 행에 '수 · 08'을 붙여야 해서. 시(時)는 오른끝 정렬이라 세로가 맞는다. */
   #view-week{position:absolute;inset:0;overflow-y:auto;
     background:linear-gradient(180deg,var(--sky-top,#2E86D8),var(--sky-bot,#AFDBF2));
     padding:14px 14px 90px;display:none}
-  .week-skel{display:flex;flex-direction:column;align-items:center;justify-content:center;
-    min-height:60%;gap:10px;color:#fff;text-shadow:0 1px 4px rgba(20,40,80,.35)}
-  .week-skel .wk-cap{font-size:15px;font-weight:800}
-  .week-skel .wk-note{font-size:12.5px;opacity:.85}
+  .mwk-h{flex-basis:50px;white-space:nowrap}
+  .mwk-h .wd{font-weight:800}
+  /* 토=파랑 일=빨강 (스펙) — 달력 머리줄(.cal-wd)과 같은 하늘 위 파스텔. */
+  .mwk-h .wd.sun{color:#ffb4b4}.mwk-h .wd.sat{color:#bcd4ff}
   .mo-sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:12px}
   .mo-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
   .mo-day{width:52px;font-size:12px;color:var(--ink-soft);flex:0 0 auto}
@@ -2745,7 +2747,7 @@
     <div data-i18n-en=" Move it by 5 min"><kbd id="scMod">⌘</kbd>+<kbd>↑</kbd><kbd>↓</kbd> 마감선 5분씩 옮기기</div>
     <div data-i18n-en=" Remove the deadline"><kbd>Delete</kbd> 마감선 지우기</div>
     <div data-i18n-en=" Done editing"><kbd>Esc</kbd> 편집 끝내기</div>
-    <div data-i18n-en=" Mosaic ↔ timeline"><kbd>M</kbd> 모자이크 ↔ 타임라인</div>
+    <div data-i18n-en=" Cycle views (timeline · day · week)"><kbd>M</kbd> 모드 순환 (타임라인·하루·주간)</div>
   </div>
   <div class="undobar" id="undoBar"><span id="undoMsg"></span><button id="undoDo" data-i18n-en="Undo">실행 취소</button><button id="undoX" aria-label="닫기" data-i18n-en-aria="Close">✕</button></div>
 
@@ -2820,9 +2822,13 @@
             <div class="mo-tasks" id="moTasks"></div>
           </div>
         </div>
-        <!-- 주간 모자이크 (모자이크2) — 다음 단계가 채울 골격. 전환만 동작한다. -->
+        <!-- 주간 모자이크 (모자이크2 — 유저 확정 2026-08-04): 하루 셀 부품 재사용.
+             과거 빈 시간대 압축 + 지금~주 끝 전부. 우측 = 그 주 생성·완료 막대. -->
         <div id="view-week">
-          <div class="week-skel" id="weekSkel"></div>
+          <div class="mo-flex">
+            <div class="mo-left"><div class="mday" id="wkRows"></div></div>
+            <div class="mo-tasks" id="wkTasks"></div>
+          </div>
         </div>
       </div>
     </section>
@@ -3167,6 +3173,10 @@
     <!-- 앱 SettingsView Stepper와 같은 범위 60...720, step 30 -->
     <div class="elabel" data-i18n-en="Daily focus goal (min)">하루 집중 목표 (분)</div><input type="number" id="setGoal" min="60" max="720" step="30">
     <div class="msub" style="margin-top:4px" data-i18n-en="Wake and bedtime set the hours the timeline shows.">기상·취침 시각이 타임라인에 보이는 시간대를 정해요.</div>
+    <!-- 주 시작 (유저 스펙 2026-08-04): 요일 줄을 그리는 모든 화면(달력·루틴·
+         주간 모자이크·요일 선택 칩)이 weekdayOrder 하나로 이 값을 따른다. -->
+    <div class="elabel" data-i18n-en="Week starts on">주 시작 요일</div>
+    <div class="seg hseg" id="setWeekStart"><button data-w="sun" class="on" data-i18n-en="Sunday">일요일</button><button data-w="mon" data-i18n-en="Monday">월요일</button></div>
 
     <div class="set-sec" data-i18n-en="Adding Tasks">작업 추가</div>
     <div class="elabel" data-i18n-en="Default length (min)">추가할 때 기본 길이 (분)</div><input type="number" id="setDefDur" min="0" step="5">
@@ -3563,6 +3573,15 @@
      ⚠ 이름을 `L`로 쓰던 지역변수 두 개를 여기로 합쳤다 — 지역 `var L`은
         전역 L(ko,en)을 가려 버리는 지뢰였다. */
   var WDAY=IS_KO?['일','월','화','수','목','금','토']:['S','M','T','W','T','F','S'];
+  /* 주 시작 요일 (설정 '주 시작: 일(기본)/월' — 유저 스펙 2026-08-04).
+     ⚠ 요일 **줄**을 그리는 모든 곳(캘린더 스트립·루틴 주/월·요일 선택 칩·
+     주간 모자이크)이 이 한 순수 함수에서 순서를 얻는다 — 예전 WDAY처럼
+     "일요일 시작" 가정이 코드 곳곳에 흩어지면 설정 하나로 못 뒤집는다.
+     기기 취향이라 localStorage(스냅샷 아님) — 앱 스냅샷이 모르는 키를
+     싣었다가 앱이 되밀며 지우는 사고(CodingKeys 전례)를 피한다. */
+  function weekdayOrderFrom(startMon){var o=[];for(var i=0;i<7;i++)o.push(startMon?(i+1)%7:i);return o;}
+  function weekStartMon(){try{return localStorage.getItem('hfWeekStartMon')==='1';}catch(e){return false;}}
+  function weekdayOrder(){return weekdayOrderFrom(weekStartMon());}
   // ⚠ toLocaleDateString/TimeString은 로케일을 박아 두면 영어에서도 한국어 날짜가 나온다.
   var LOCALE=IS_KO?'ko-KR':'en-US';
 
@@ -3885,7 +3904,10 @@
     });
     return out.slice(0,4);
   }
-  function calWeekStart(d){var s=new Date(d);s.setDate(s.getDate()-s.getDay());s.setHours(0,0,0,0);return s;}
+  /* 보는 주의 시작 — 설정(주 시작: 일/월)을 따른다. 화면용 전부가 이걸 쓴다.
+     ⚠ 루틴 스냅샷 프로토콜(weekStartStr)은 예외 — 아래 sunWeekStart 참고. */
+  function calWeekStart(d){var s=new Date(d),o=weekdayOrder()[0];
+    s.setDate(s.getDate()-((s.getDay()-o+7)%7));s.setHours(0,0,0,0);return s;}
   function renderCalStrips(){
     document.querySelectorAll('.calstrip').forEach(function(el){el.innerHTML=buildCalHTML();wireCalStrip(el);});
     placeCal();paintCalToday();
@@ -3974,13 +3996,14 @@
     '</div>';
   }
   function buildCalHTML(){
-    var wl=WDAY,today=new Date();today.setHours(0,0,0,0);
+    // 요일 머리줄·달 첫 칸 모두 weekdayOrder를 탄다 (주 시작 설정).
+    var ord=weekdayOrder(),today=new Date();today.setHours(0,0,0,0);
     var head='<div class="cal-grid cal-headrow">';
-    for(var i=0;i<7;i++)head+='<div class="cal-wd'+(i===0?' sun':i===6?' sat':'')+'">'+wl[i]+'</div>';
+    for(var i=0;i<7;i++)head+='<div class="cal-wd'+(ord[i]===0?' sun':ord[i]===6?' sat':'')+'">'+WDAY[ord[i]]+'</div>';
     head+='</div>';
     if(calMonthly){
       var first=new Date(calSel.getFullYear(),calSel.getMonth(),1);
-      var gridStart=new Date(first);gridStart.setDate(1-first.getDay());
+      var gridStart=new Date(first);gridStart.setDate(1-((first.getDay()-ord[0]+7)%7));
       var html='<div class="cal-grid">';
       for(var k=0;k<42;k++){var d=new Date(gridStart);d.setDate(gridStart.getDate()+k);
         html+=calCellHTML(d,d.getMonth()!==calSel.getMonth(),today);}
@@ -4539,8 +4562,24 @@
        .pane-tabs 레이아웃이면 그대로 보인다.) */
     if(window.innerWidth<1100&&document.body.dataset.m&&document.body.dataset.m!=='timeline'){
       cap.classList.remove('show');return;}
-    /* 타임라인 '지금' 캡슐은 타임라인 모드 전용 — 모자이크·주간 위에 남으면
-       엉뚱한 스크롤(숨은 tlScroll)로 점프하는 유령 버튼이 된다 (스펙 재설계). */
+    /* 주간 모자이크의 (지금) 캡슐 — 같은 부품 재사용 (스펙). 지금 행이 화면
+       밖일 때만 뜨고, 누르면(scrollToNowLine) 지금 행 위 3줄이 보이게 간다. */
+    if(tlMode==='week'){
+      var wsc=document.getElementById('view-week');
+      var nr=wsc&&wsc.querySelector('.mday-row.wk-now');
+      if(!nr){cap.classList.remove('show');return;}   // 이번 주가 아니면 '지금'이 없다
+      var wt=wsc.scrollTop,wb=wt+wsc.clientHeight;
+      var y0=nr.offsetTop,y1=y0+nr.offsetHeight;
+      if(y1>wt+8&&y0<wb-8){cap.classList.remove('show');return;}
+      cap.querySelector('.nc-ar').innerHTML=(y0<wt)
+        ? '<path d="M12 19V5M6 11l6-6 6 6"/>'
+        : '<path d="M12 5v14M6 13l6 6 6-6"/>';
+      cap.classList.toggle('day',isDaytimeNow());
+      cap.classList.add('show');
+      return;
+    }
+    /* 타임라인 '지금' 캡슐은 그 외엔 타임라인 모드 전용 — 하루 모자이크 위에
+       남으면 엉뚱한 스크롤(숨은 tlScroll)로 점프하는 유령 버튼이 된다. */
     if(tlMode!=='big'){cap.classList.remove('show');return;}
     var sc=document.getElementById('tlScroll');if(!sc)return;
     var nf=nowHourFrac();
@@ -4555,6 +4594,16 @@
     cap.classList.add('show');
   }
   function scrollToNowLine(){
+    if(tlMode==='week'){
+      // 스펙: 지금 행 **위 3줄**이 보이게 — 지금 행이 위에서 4번째 줄이 된다.
+      var wsc=document.getElementById('view-week');
+      var nr=wsc&&wsc.querySelector('.mday-row.wk-now');
+      if(!nr)return;
+      var pitch=nr.offsetHeight+3;                 // 줄 높이 + .mday gap 3px
+      var wt=Math.max(0,nr.offsetTop-3*pitch);
+      try{wsc.scrollTo({top:wt,behavior:'smooth'});}catch(_){wsc.scrollTop=wt;}
+      return;
+    }
     var sc=document.getElementById('tlScroll');if(!sc)return;
     var nf=nowHourFrac();if(nf==null)return;
     var target=Math.max(0,Math.min(sc.scrollHeight-sc.clientHeight,tlTodayTop()+yFor(nf)-PPH));
@@ -5720,7 +5769,8 @@
     updateNowCap();
     syncAnimPending=false;      // 한 번의 원격 반영에 한 번만 (⑤)
     var lbl=dayOffset===0?L('오늘','Today'):dayOffset===-1?L('어제','Yesterday'):dayOffset===1?L('내일','Tomorrow'):'';
-    try{document.getElementById('tlDate').textContent=selDate().toLocaleDateString(LOCALE,{month:'long',day:'numeric',weekday:'short'})+(lbl?' · '+lbl:'');}catch(e){}
+    // 주간 모드의 날짜 자리는 주 표기("8월 1주") — renderMosaicWeek 소관이라 안 덮는다.
+    try{if(tlMode!=='week')document.getElementById('tlDate').textContent=selDate().toLocaleDateString(LOCALE,{month:'long',day:'numeric',weekday:'short'})+(lbl?' · '+lbl:'');}catch(e){}
     // 첫걸음 가이드 — 새 마감 감시 + 말풍선 재부착(요청: sc.innerHTML='' 가
     // 매 렌더 지운 DOM을 여기서 다시 붙인다).
     guideWatchDues();renderTimelineGuides();
@@ -5813,48 +5863,63 @@
     if(fill<=0&&(planMs||0)>0)border=(planMs>cellMs/2)?'full':'half';
     return {fillRatio:fill,border:border};
   }
+  // 그날 계획(마감선) 구간 — 셀 문법대로 **테마색 테두리**가 된다.
+  // 색은 catColor가 아니라 **테마색**(colorKey ?? 범주색) — 막대·블록과 같은 말.
+  function mosaicDayPlans(tk){
+    return (DATA.tasks||[]).filter(function(t){
+      return t.scheduledStart&&(t.durationMin||0)>0&&!t.isRewardItem&&
+        dateKey(t.scheduledStart)===tk;
+    }).map(function(t){var st=new Date(t.scheduledStart).getTime();
+      return {s:st,e:st+t.durationMin*60000,col:taskDisplayColor(t)};});
+  }
+  // 'YYYY-M-D' 키 → 그날 0시 ms. (selKey는 0패딩이 없어 Date 파서가 못 읽는다.)
+  function dayBaseMs(tk){
+    var d=new Date(tk+'T00:00:00');
+    if(isNaN(d.getTime())){var p=tk.split('-');d=new Date(+p[0],+p[1]-1,+p[2]);}
+    return d.getTime();
+  }
+  /* 한 줄(1시간=6칸)의 셀들 — 하루·주간 모자이크가 **같은 판**을 쓴다
+     (스펙: 주간도 셀 크기·간격·문법 동일 — 두 벌 유지하면 반드시 갈라진다).
+     rowT0 = 줄 시작 ms. recs·plans는 여러 날 것을 합쳐 넘겨도 겹침 계산은 같다. */
+  function mosaicRowCellsHTML(rowT0,recs,plans,now){
+    function ov(a0,a1,b0,b1){return Math.max(0,Math.min(a1,b1)-Math.max(a0,b0));}
+    var html='';
+    for(var q=0;q<6;q++){
+      var t0=rowT0+q*600000,t1=t0+600000,cellMs=600000;
+      // ① 집중한 시간 — 블록에서 쉼(빗금) 구간을 뺀 만큼.
+      var focMs=0,col=null;
+      recs.forEach(function(b){
+        var o=ov(t0,t1,b.start,b.end);if(o<=0)return;
+        (b.rest||[]).forEach(function(r){o-=ov(t0,t1,r.s,r.e);});
+        if(o>0){focMs+=o;
+          // 채움도 테마색 — 블록엔 taskID만 있어 작업을 되찾아 읽는다.
+          if(!col){var bt=taskByID(b.taskID);col=bt?taskDisplayColor(bt):catColor(b.categoryID);}}
+      });
+      // ② 계획 — 겹친 만큼 그대로 센다. 채움과의 승부는 셀 문법 함수가 가린다.
+      var planMs=0,planCol=null;
+      plans.forEach(function(pl){var o=ov(t0,t1,pl.s,pl.e);
+        if(o>0){planMs+=o;if(!planCol)planCol=pl.col;}});
+      var isNow=(t0<=now&&now<t1),past=(t1<=now);
+      var spec=mosaicCellSpec(focMs,planMs,cellMs);
+      var inner='';
+      if(spec.fillRatio>0)inner+='<i class="mday-fill" style="width:'+(spec.fillRatio*100)+'%;background:'+(col||'var(--mo-done)')+'"></i>';
+      if(spec.border!=='none')inner+='<i class="mday-bd'+(spec.border==='half'?' half':'')
+        +'" style="border-color:'+(past?'var(--mo-past)':(planCol||'var(--mo-plan)'))+'"></i>';
+      var td=new Date(t0);
+      html+='<div class="mday-c'+(isNow?' now':'')+'" title="'+('0'+td.getHours()).slice(-2)+':'+('0'+td.getMinutes()).slice(-2)+'">'+inner+'</div>';
+    }
+    return html;
+  }
   function renderMosaicDay(){
     var box=document.getElementById('moDay');if(!box)return;
     var tk=selKey(),now=Date.now();
     var recs=dayRecordBlocks(tk,{keepShort:true});
-    // 계획(마감선) 구간 — 셀 문법대로 **테마색 테두리**가 된다.
-    var plans=(DATA.tasks||[]).filter(function(t){
-      return t.scheduledStart&&(t.durationMin||0)>0&&!t.isRewardItem&&
-        dateKey(t.scheduledStart)===tk;
-    }).map(function(t){var st=new Date(t.scheduledStart).getTime();
-      // 색은 catColor가 아니라 **테마색**(colorKey ?? 범주색) — 막대·블록과 같은 말.
-      return {s:st,e:st+t.durationMin*60000,col:taskDisplayColor(t)};});
-    var day0=new Date(new Date(tk+'T00:00:00').getTime());
-    if(isNaN(day0.getTime())){var p0=tk.split('-');day0=new Date(+p0[0],+p0[1]-1,+p0[2]);}
-    var base=day0.getTime();
-    function ov(a0,a1,b0,b1){return Math.max(0,Math.min(a1,b1)-Math.max(a0,b0));}
+    var plans=mosaicDayPlans(tk);
+    var base=dayBaseMs(tk);
     var html='';
     for(var h=0;h<24;h++){
-      html+='<div class="mday-row"><span class="mday-h">'+String(h).padStart(2,'0')+'</span><div class="mday-cells">';
-      for(var q=0;q<6;q++){
-        var t0=base+(h*60+q*10)*60000,t1=t0+600000,cellMs=600000;
-        // ① 집중한 시간 — 블록에서 쉼(빗금) 구간을 뺀 만큼.
-        var focMs=0,col=null;
-        recs.forEach(function(b){
-          var o=ov(t0,t1,b.start,b.end);if(o<=0)return;
-          (b.rest||[]).forEach(function(r){o-=ov(t0,t1,r.s,r.e);});
-          if(o>0){focMs+=o;
-            // 채움도 테마색 — 블록엔 taskID만 있어 작업을 되찾아 읽는다.
-            if(!col){var bt=taskByID(b.taskID);col=bt?taskDisplayColor(bt):catColor(b.categoryID);}}
-        });
-        // ② 계획 — 겹친 만큼 그대로 센다. 채움과의 승부는 셀 문법 함수가 가린다.
-        var planMs=0,planCol=null;
-        plans.forEach(function(pl){var o=ov(t0,t1,pl.s,pl.e);
-          if(o>0){planMs+=o;if(!planCol)planCol=pl.col;}});
-        var isNow=(t0<=now&&now<t1),past=(t1<=now);
-        var spec=mosaicCellSpec(focMs,planMs,cellMs);
-        var inner='';
-        if(spec.fillRatio>0)inner+='<i class="mday-fill" style="width:'+(spec.fillRatio*100)+'%;background:'+(col||'var(--mo-done)')+'"></i>';
-        if(spec.border!=='none')inner+='<i class="mday-bd'+(spec.border==='half'?' half':'')
-          +'" style="border-color:'+(past?'var(--mo-past)':(planCol||'var(--mo-plan)'))+'"></i>';
-        html+='<div class="mday-c'+(isNow?' now':'')+'" title="'+String(h).padStart(2,'0')+':'+String(q*10).padStart(2,'0')+'">'+inner+'</div>';
-      }
-      html+='</div></div>';
+      html+='<div class="mday-row"><span class="mday-h">'+('0'+h).slice(-2)+'</span><div class="mday-cells">'+
+        mosaicRowCellsHTML(base+h*3600000,recs,plans,now)+'</div></div>';
     }
     box.innerHTML=html;
   }
@@ -5863,6 +5928,8 @@
   function renderMosaic(){
     renderMosaicDay();
     renderMosaicBars();
+    // renderAll이 이 함수만 부른다 — 주간 모드로 떠 있으면 주간 판도 데이터를 따라간다.
+    if(typeof tlMode!=='undefined'&&tlMode==='week')renderMosaicWeek();
     var grid=document.getElementById('moGrid');grid.innerHTML='';
     var hours=[];for(var h=6;h<24;h++)hours.push(h);
     for(var off=0;off>=-6;off--){
@@ -6015,16 +6082,141 @@
     inner.addEventListener('pointerup',end);inner.addEventListener('pointercancel',end);
   }
 
-  /* ---------- 주간 모자이크 (모자이크2) — 골격 ----------
-     스펙의 행 압축·요일 라벨·(지금) 캡슐·주간 막대는 **다음 단계**가 채운다.
-     지금은 모드 순환이 막히지 않게 주 표기와 자리만 놓는다. */
-  function renderMosaicWeek(){
-    var box=document.getElementById('weekSkel');if(!box)return;
-    var d=new Date(),wk=Math.floor((d.getDate()-1)/7)+1;
-    var lbl=IS_KO?((d.getMonth()+1)+'월 '+wk+'주'):(MON_SHORT[d.getMonth()].toUpperCase()+' W'+wk);
-    box.innerHTML='<div class="wk-cap">'+lbl+'</div>'+
-      '<div class="wk-note">'+L('주간 모자이크를 준비하고 있어요.','The weekly mosaic is on its way.')+'</div>';
+  /* ---------- 주간 모자이크 (모자이크2 — 유저 확정 2026-08-04) ----------
+     행 = 하루 모자이크와 같은 1시간 줄(셀 크기·간격·문법 동일, 부품 재사용).
+     행 목록 규칙(스펙):
+     · 과거(지금 행 이전)는 **집중이 있는 행만** 시간순 — 빈 시간대는 압축
+     · 지금 행부터 주 끝까지는 **전부** — 표시된 행의 빈 칸은 그대로 보인다
+     기본 스크롤 = 지금+2시간 행이 하단. 왼쪽 라벨은 날짜가 바뀌는 첫 행만
+     '수 · 08', 이후엔 '09' — 시(時)가 오른끝 정렬로 세로가 맞는다. */
+  /* 행 압축 — 순수 함수 (tests/mosaic-week-rows.js와 한 쌍). focus=[{s,e}] ms.
+     DOM 없이 규칙만: '지금이 든 행'의 index를 경계로 과거/미래가 갈린다. */
+  function mosaicWeekRows(focus,weekStartMs,weekEndMs,nowMs){
+    var HOUR=3600000,rows=[];
+    var nowRow=Math.floor((nowMs-weekStartMs)/HOUR);
+    var total=Math.round((weekEndMs-weekStartMs)/HOUR);
+    for(var i=0;i<total;i++){
+      var t0=weekStartMs+i*HOUR,t1=t0+HOUR;
+      if(i>=nowRow){rows.push(t0);continue;}          // 지금부터 주 끝까지 전부
+      var has=false;
+      for(var j=0;j<(focus||[]).length;j++){var f=focus[j];if(f.s<t1&&f.e>t0){has=true;break;}}
+      if(has)rows.push(t0);                           // 과거는 집중 있는 행만
+    }
+    return rows;
   }
+  function renderMosaicWeek(home){
+    var box=document.getElementById('wkRows');if(!box)return;
+    var now=Date.now();
+    var ws=calWeekStart(new Date());                  // 주 시작 설정(일/월)을 따른다
+    var we=new Date(ws);we.setDate(we.getDate()+7);
+    // 상단 날짜 자리 = 주 표기 (스펙: "8월 1주" / "AUG W1"). 주 시작일 기준.
+    var wkN=Math.floor((ws.getDate()-1)/7)+1;
+    try{document.getElementById('tlDate').textContent=
+      IS_KO?((ws.getMonth()+1)+'월 '+wkN+'주'):(MON_SHORT[ws.getMonth()].toUpperCase()+' W'+wkN);}catch(e){}
+    // 7일치 재료 — 기록·계획을 한 배열에 합친다 (셀 판정은 겹침 계산이라 합쳐도 같다).
+    var recs=[],plans=[],focus=[];
+    for(var i=0;i<7;i++){
+      var d=new Date(ws);d.setDate(ws.getDate()+i);
+      var tk=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+      dayRecordBlocks(tk,{keepShort:true}).forEach(function(b){
+        recs.push(b);
+        // 압축 판정용 '집중 구간' = 블록에서 쉼(빗금)을 뺀 조각들 —
+        // 쉼만 걸친 행이 '집중 있는 행'으로 살아남으면 압축이 거짓말이 된다.
+        var segs=[{s:b.start,e:b.end}];
+        (b.rest||[]).forEach(function(r){
+          var next=[];
+          segs.forEach(function(g2){
+            if(r.e<=g2.s||r.s>=g2.e){next.push(g2);return;}
+            if(r.s>g2.s)next.push({s:g2.s,e:r.s});
+            if(r.e<g2.e)next.push({s:r.e,e:g2.e});
+          });
+          segs=next;
+        });
+        segs.forEach(function(g2){if(g2.e>g2.s)focus.push(g2);});
+      });
+      plans=plans.concat(mosaicDayPlans(tk));
+    }
+    var rows=mosaicWeekRows(focus,ws.getTime(),we.getTime(),now);
+    var html='',lastTk='';
+    rows.forEach(function(t0){
+      var d0=new Date(t0),tk0=dateKey(d0);
+      var first=(tk0!==lastTk);lastTk=tk0;
+      var wd=d0.getDay(),hh=('0'+d0.getHours()).slice(-2);
+      var lab=first?('<b class="wd'+(wd===0?' sun':wd===6?' sat':'')+'">'+WDAY[wd]+'</b> · '+hh):hh;
+      var isNowRow=(t0<=now&&now<t0+3600000);
+      html+='<div class="mday-row'+(isNowRow?' wk-now':'')+'" data-t="'+t0+'">'+
+        '<span class="mday-h mwk-h">'+lab+'</span><div class="mday-cells">'+
+        mosaicRowCellsHTML(t0,recs,plans,now)+'</div></div>';
+    });
+    var sc=document.getElementById('view-week'),prev=sc?sc.scrollTop:0;
+    box.innerHTML=html;
+    renderMosaicWeekBars(ws.getTime(),we.getTime());
+    if(sc){
+      if(home){
+        /* 기본 스크롤 (스펙): 지금+2시간이 든 행이 화면 **하단**에 —
+           과거 압축분이 위로 접혀 있으니 '조금 전~곧'이 첫눈에 온다.
+           주 끝을 넘으면 마지막 행. (화면 밖 렌더면 clientHeight=0이라
+           못 가지만, 그땐 (지금) 캡슐이 안전망이다.) */
+        var tgt=now+2*3600000,el=null,els=box.querySelectorAll('.mday-row');
+        for(var k=0;k<els.length;k++){if(+els[k].getAttribute('data-t')<=tgt)el=els[k];}
+        if(el&&sc.clientHeight)sc.scrollTop=Math.max(0,el.offsetTop+el.offsetHeight-sc.clientHeight+14);
+      }else sc.scrollTop=prev;                        // 갱신 재렌더는 자리 보존
+    }
+    updateNowCap();
+  }
+  /* 우측 막대 — **그 주** 생성·완료 작업 (스펙: 하루 부품 buildMoBar 재사용).
+     그룹: ① 이 주 마감(마감 순) + 이 주 생성(만든 순) ② 〈완료(n)〉 기본 펼침.
+     하루의 〈전날 할 일〉 그룹은 주간엔 없다 — 스펙이 '그 주 생성·완료'만 말한다. */
+  function weekBarGroups(tasks,wsMs,weMs){
+    var main=[],done=[];
+    (tasks||[]).forEach(function(t){
+      if(t.isRewardItem||t.goalID)return;             // 하루 칼럼과 같은 제외 규칙
+      if(t.isDone){
+        var c=t.completedAt?new Date(t.completedAt).getTime():null;
+        if(c!=null&&c>=wsMs&&c<weMs)done.push(t);
+        return;
+      }
+      // 다음 주로 미룬 일은 이 주 칼럼에서 숨김 (renderTodo·하루 칼럼과 같은 정신).
+      if(t.deferredUntil&&new Date(t.deferredUntil).getTime()>=weMs)return;
+      var hasDue=!!t.scheduledStart&&(t.durationMin||0)>0;
+      var due=hasDue?taskDueAt(t).getTime():null;
+      var made=t.createdAt?new Date(t.createdAt).getTime():null;
+      if(due!=null&&due>=wsMs&&due<weMs)main.push(t);
+      else if(made!=null&&made>=wsMs&&made<weMs)main.push(t);
+    });
+    function dueIn(t){if(!(t.scheduledStart&&(t.durationMin||0)>0))return null;
+      var d=taskDueAt(t).getTime();return (d>=wsMs&&d<weMs)?d:null;}
+    main.sort(function(a,b){
+      var da=dueIn(a),db=dueIn(b);
+      if(da!=null&&db!=null)return da-db;             // 마감끼리 = 이른 마감이 위
+      if(da!=null)return -1;if(db!=null)return 1;     // 마감이 먼저, 만든 건 뒤
+      return new Date(a.createdAt||0)-new Date(b.createdAt||0);});
+    done.sort(function(a,b){return new Date(a.completedAt||0)-new Date(b.completedAt||0);});
+    return {main:main,done:done};
+  }
+  function renderMosaicWeekBars(wsMs,weMs){
+    var box=document.getElementById('wkTasks');if(!box)return;
+    var g=weekBarGroups(DATA.tasks,wsMs,weMs);
+    var doneOpen=localStorage.getItem('hfWkDoneOpen')!=='0';   // 기본 펼침 (하루와 같은 관례)
+    box.innerHTML='';
+    if(!g.main.length&&!g.done.length){
+      box.insertAdjacentHTML('beforeend','<div class="mot-empty">'+
+        L('이번 주 작업이 아직 없어요 — ＋로 담아 보세요.','Nothing this week yet — add one with ＋.')+'</div>');
+      return;
+    }
+    g.main.forEach(function(t){box.appendChild(buildMoBar(t,false));});
+    if(g.done.length){
+      box.insertAdjacentHTML('beforeend','<button class="mot-grp" id="wkDoneBtn">'+
+        (doneOpen?'▼':'▶')+' '+L('완료한 작업','Completed')+' ('+g.done.length+')</button>');
+      document.getElementById('wkDoneBtn').addEventListener('click',function(){
+        try{localStorage.setItem('hfWkDoneOpen',doneOpen?'0':'1');}catch(e){}
+        renderMosaicWeekBars(wsMs,weMs);});
+      if(doneOpen)g.done.forEach(function(t){box.appendChild(buildMoBar(t,true));});
+    }
+  }
+  // 주간 스크롤 = (지금) 캡슐 갱신 (타임라인 tlScroll과 같은 관례, 계산이 가벼워 rAF 불요).
+  (function(){var sc=document.getElementById('view-week');
+    if(sc)sc.addEventListener('scroll',function(){updateNowCap();},{passive:true});})();
 
   /* ---------- to-do (with send-to-timeline) ---------- */
   /* 다음 빈 슬롯 (시각, 소수 시간).
@@ -6190,8 +6382,9 @@
       '<input id="gmName" class="gm-in" style="flex:1" placeholder="'+L('예: 해리포터와 마법사의 돌','e.g. Harry Potter 1')+'"></div>'+
       '<div class="gm-row"><input type="date" id="gmStart" class="gm-in" value="'+d2v(today)+'">'+
       '<span>'+L('부터','from')+'</span><input type="date" id="gmEnd" class="gm-in" value="'+d2v(endD)+'"><span>'+L('까지','to')+'</span></div>'+
-      '<div class="gm-row" id="gmWd">'+wd.map(function(w,i){
-        return '<span class="gm-chip'+(i>=1&&i<=5?' on':'')+'" data-i="'+i+'">'+w+'</span>';}).join('')+
+      // 요일 칩도 주 시작 설정 순서 — data-i는 실제 getDay 값이라 마스크는 안 변한다.
+      '<div class="gm-row" id="gmWd">'+weekdayOrder().map(function(i){
+        return '<span class="gm-chip'+(i>=1&&i<=5?' on':'')+'" data-i="'+i+'">'+wd[i]+'</span>';}).join('')+
       '<label class="gm-every"><input type="checkbox" id="gmEveryOn"> '+L('매','Every')+' <input type="number" id="gmEveryN" value="2" min="1" max="14">'+L('일에 1번','days, once')+'</label></div>'+
       '<div class="gm-row"><select id="gmUnit" class="gm-in">'+GOAL_UNITS.map(function(u){
         return '<option value="'+u+'">'+goalUnitText(u)+'</option>';}).join('')+'</select>'+
@@ -7380,6 +7573,9 @@
     document.getElementById('setPostItQ4').checked=localStorage.getItem('hfPostItToQ4')!=='0';
     var scen=s.sceneryRaw||'plain';
     document.querySelectorAll('#setScenery button').forEach(function(b){b.classList.toggle('on',b.dataset.s===scen);});
+    // 주 시작 — 기기 취향(localStorage). 스냅샷에 안 싣는 이유는 weekdayOrder 주석 참고.
+    var wsMon=weekStartMon();
+    document.querySelectorAll('#setWeekStart button').forEach(function(b){b.classList.toggle('on',(b.dataset.w==='mon')===wsMon);});
     // (엘리 몸 색 스와치 폐지 — 요청 2026-07-29)
     document.getElementById('setDdayLabel').value=setDdayTitle();
     document.getElementById('setDdayDate').value=s.ddayDate?s.ddayDate.slice(0,10):'';
@@ -7414,6 +7610,9 @@
     S.eleName=(document.getElementById('setEleName').value||'').trim();
     var scb=document.querySelector('#setScenery button.on');
     if(scb)S.sceneryRaw=scb.dataset.s;
+    // 주 시작 — 저장하면 renderAll이 달력·루틴·모자이크 요일 줄을 새 순서로 다시 그린다.
+    var wsb=document.querySelector('#setWeekStart button.on');
+    if(wsb){try{localStorage.setItem('hfWeekStartMon',wsb.dataset.w==='mon'?'1':'0');}catch(_){}}
     var selc=document.querySelector('#setEleColors button.on');
     if(selc)S.eleTintHex=selc.dataset.c;
     S.ddayTitle=document.getElementById('setDdayLabel').value||'';
@@ -8670,7 +8869,8 @@
     document.querySelectorAll('#hRepeat button').forEach(function(b){b.classList.toggle('on',b.dataset.r===hRepeat);});
     document.getElementById('hDays').style.display=hRepeat==='weekdays'?'flex':'none';
     document.getElementById('hInterval').style.display=hRepeat==='interval'?'flex':'none';
-    document.getElementById('hDays').innerHTML=WDAY.map(function(l,i){return '<button class="hday'+((hMask&(1<<i))?' on':'')+'" data-wd="'+i+'">'+l+'</button>';}).join('');
+    // 요일 버튼 순서 = 주 시작 설정. data-wd는 실제 getDay 값 — 마스크 뜻은 불변.
+    document.getElementById('hDays').innerHTML=weekdayOrder().map(function(i){return '<button class="hday'+((hMask&(1<<i))?' on':'')+'" data-wd="'+i+'">'+WDAY[i]+'</button>';}).join('');
     document.querySelectorAll('#hDays .hday').forEach(function(b){b.addEventListener('click',function(){hMask^=(1<<+b.dataset.wd);paintHabitSheet();});});
     document.getElementById('hIntNum').textContent=hInterval;
     // '놓치면 다음 날부터 다시'는 앱과 같이 '며칠마다'에서만 의미가 있다.
@@ -8708,7 +8908,8 @@
   var rWeekOffset=0,rMonthOffset=0,rViewMode='week';
   function rWeekDays(){
     var base=new Date();base.setHours(0,0,0,0);
-    base.setDate(base.getDate()-base.getDay()+rWeekOffset*7);   // 일요일 시작
+    // 주 시작 설정(일/월)을 따른다 — 예전엔 일요일이 코드에 박혀 있었다.
+    base.setDate(base.getDate()-((base.getDay()-weekdayOrder()[0]+7)%7)+rWeekOffset*7);
     var arr=[];for(var i=0;i<7;i++){var d=new Date(base);d.setDate(base.getDate()+i);arr.push(d);}
     return arr;
   }
@@ -8731,7 +8932,8 @@
   function schedLabel(h){
     if(h.scheduleKindRaw==='interval')return L((h.intervalDays||2)+'일마다','every '+(h.intervalDays||2)+' days');
     if(h.weekdaysMask&&h.weekdaysMask!==127){var out=[];
-      for(var i=0;i<7;i++)if(h.weekdaysMask&(1<<i))out.push(WDAY[i]);return out.join('·');}
+      // 나열 순서도 주 시작 설정을 따른다 (월 시작이면 '월·화·…·일').
+      weekdayOrder().forEach(function(i){if(h.weekdaysMask&(1<<i))out.push(WDAY[i]);});return out.join('·');}
     return L('매일','Daily');
   }
   function renderRoutine(){
@@ -8748,13 +8950,14 @@
     if(segW)segW.classList.toggle('on',!monthly);
     if(segM)segM.classList.toggle('on',monthly);
     var w=document.getElementById('routineList');w.innerHTML='';
-    var labels=WDAY;
+    var labels=weekdayOrder().map(function(i){return WDAY[i];});   // 주 시작 설정 순서
     if(!(DATA.habits||[]).length){w.innerHTML='<div class="empty" style="color:#fff;text-shadow:0 1px 2px rgba(20,40,80,.4)">'+L('루틴이 없어요. + 로 추가하세요.','No routines yet. Add one with +.')+'</div>';return;}
     var todayKeyStr=habitKey();
     // 월 모드용 날짜 배열(1일 앞 빈칸 = 일요일 시작 기준) + 6행(42칸) 고정
     var monthCells=null;
     if(monthly){
-      var y=mAnchor.getFullYear(),mo=mAnchor.getMonth(),lead=mAnchor.getDay(),dim=new Date(y,mo+1,0).getDate();
+      // 1일 앞 빈칸 = 주 시작 요일 기준 (설정을 따른다 — 예전엔 일요일 고정).
+      var y=mAnchor.getFullYear(),mo=mAnchor.getMonth(),lead=(mAnchor.getDay()-weekdayOrder()[0]+7)%7,dim=new Date(y,mo+1,0).getDate();
       monthCells=[];for(var b=0;b<lead;b++)monthCells.push(null);
       for(var dn=1;dn<=dim;dn++)monthCells.push(new Date(y,mo,dn));
       // 마지막 주까지만 (6행 고정은 남는 주가 통째로 빈 행이 됐다 — 요청).
@@ -9750,11 +9953,17 @@
     }).catch(function(){cb(null);});
   }
   // 내 루틴 스냅샷 업로드 — 루틴 페이지 열 때 (iOS RoutineSnapshotBuilder 형식).
-  function weekStartStr(d){var ws=calWeekStart(d||new Date());
+  /* ⚠ 스냅샷 프로토콜의 주 경계는 **일요일 고정** — 주 시작 설정(일/월)은
+     화면 취향일 뿐이고, 여기 문자열은 앱(RoutineSnapshotBuilder)과 친구
+     기기가 같은 키로 읽는 약속이다. calWeekStart(설정 반영)를 쓰면 월 시작
+     유저의 업로드가 다른 주로 흩어진다. */
+  function sunWeekStart(d){var s=new Date(d||new Date());
+    s.setDate(s.getDate()-s.getDay());s.setHours(0,0,0,0);return s;}
+  function weekStartStr(d){var ws=sunWeekStart(d);
     return ws.getFullYear()+'-'+('0'+(ws.getMonth()+1)).slice(-2)+'-'+('0'+ws.getDate()).slice(-2);}
   function uploadRoutineSnapshot(){
     if(!session)return;
-    var ws=calWeekStart(new Date()),days=[];
+    var ws=sunWeekStart(new Date()),days=[];
     for(var i=0;i<7;i++){var d=new Date(ws);d.setDate(ws.getDate()+i);
       days.push(d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2));}
     var routines=(DATA.habits||[]).map(function(h){
@@ -9814,8 +10023,11 @@
     sReq('sundial_routine_snapshots?user_id=eq.'+fid+'&select=user_id,week').then(function(rows){
       var wk=rows&&rows[0]&&rows[0].week;
       if(!wk||!wk.routines||!wk.routines.length){g.innerHTML='<div class="msub">'+L('공유된 루틴이 없어요.','Nothing shared yet.')+'</div>';return;}
-      var ws=new Date(wk.week||weekStartStr());var days=[],labels=WDAY;
+      /* 라벨은 스냅샷의 주 시작 날짜에서 **실제 요일**을 읽는다 — 프로토콜
+         주 경계(일요일 고정)와 내 화면 설정이 달라도 요일이 어긋나지 않는다. */
+      var ws=new Date(wk.week||weekStartStr());var days=[],labels=[];
       for(var i=0;i<7;i++){var d=new Date(ws);d.setDate(ws.getDate()+i);
+        labels.push(WDAY[d.getDay()]);
         days.push(d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2));}
       var html='<div class="fd-grid" style="grid-template-columns:minmax(60px,1fr) repeat(7,24px)">'+
         '<div></div>'+labels.map(function(l){return '<div class="hd">'+l+'</div>';}).join('');
@@ -10085,11 +10297,16 @@
       if(editBarOn)closeEditBar();
       var pf=document.getElementById('dueEditFab');if(pf)pf.style.display='none';
     }
+    /* 주간은 '이번 주' 고정(스펙: 지금~주 끝) — 날짜 ‹›가 할 일이 없어 숨긴다.
+       visibility로 숨겨 상단 줄 레이아웃은 안 흔들린다. */
+    var np=document.getElementById('dayPrev'),nn=document.getElementById('dayNext');
+    if(np)np.style.visibility=m==='week'?'hidden':'';
+    if(nn)nn.style.visibility=m==='week'?'hidden':'';
     if(m==='big')renderBig();
     // ⚠ 진입 시점에 직접 그린다 — renderAll 등 이벤트 렌더만 믿으면 낡은 판이 뜬다.
     if(m==='mosaic')renderMosaic();
-    if(m==='week')renderMosaicWeek();
-    updateNowCap();                       // '지금' 캡슐은 타임라인 전용 (스펙: 주간은 자기 캡슐을 가진다)
+    if(m==='week')renderMosaicWeek(true);   // true = 기본 스크롤(지금+2h 행 하단)로
+    updateNowCap();                       // '지금' 캡슐은 모드별 규칙 — updateNowCap이 가린다
   }
   function modeNext(){setMode(TL_MODES[(TL_MODES.indexOf(tlMode)+1)%TL_MODES.length]);}
   // 직접 선택 메뉴 — 케밥 메뉴 부품(kmenu) 재사용: 바깥 탭 닫힘도 공짜로 얻는다.
@@ -10148,8 +10365,9 @@
   /* 집중 중 실시간 채움 (스펙: "집중하면 네모 실시간 채움") — 셀이 10분이라
      30초면 5% 걸음으로 자란다. 모자이크가 보일 때만, 숨은 탭에선 안 돈다. */
   setInterval(function(){
-    if(tlMode!=='mosaic'||document.hidden)return;
-    renderMosaicDay();
+    if(document.hidden)return;
+    if(tlMode==='mosaic')renderMosaicDay();
+    else if(tlMode==='week')renderMosaicWeek();   // 스크롤 보존 재렌더 (지금 행·채움 갱신)
   },30000);
 
   /* ---------- auth + snapshot ---------- */
@@ -11512,6 +11730,11 @@
     b.addEventListener('click',function(){
       document.querySelectorAll('#setScenery button').forEach(function(x){x.classList.remove('on');});
       b.classList.add('on');});});
+  // 주 시작 seg — 장소 seg와 같은 관례(선택만 표시, 실제 저장은 saveSettings).
+  document.querySelectorAll('#setWeekStart button').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('#setWeekStart button').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on');});});
   document.getElementById('setStatsBtn').addEventListener('click',function(){document.getElementById('settingsScrim').classList.remove('open');openStats();});
   document.getElementById('setAccountBtn').addEventListener('click',accountAction);
   document.getElementById('moreScrim').addEventListener('click',function(e){if(e.target===this){navEditMode=false;closeMore();}});
@@ -12631,13 +12854,14 @@
 
   function renderDuePanel(){
     var y=cap.calMonth.getFullYear(),m=cap.calMonth.getMonth();
-    var first=new Date(y,m,1),startWd=first.getDay(),days=new Date(y,m+1,0).getDate();
+    // 첫 칸 밀기·요일 머리줄 모두 주 시작 설정을 따른다.
+    var first=new Date(y,m,1),startWd=(first.getDay()-weekdayOrder()[0]+7)%7,days=new Date(y,m+1,0).getDate();
     var today=new Date();today.setHours(0,0,0,0);
     var selISO=cap.draft.dueDate?new Date(cap.draft.dueDate).toDateString():null;
     var html='<div class="cap-panel"><div class="cap-cal-head"><span>'+ymText(new Date(y,m,1))+'</span><span>'+
       '<button class="cap-fmt" id="capCalPrev" style="display:inline-grid">‹</button> '+
       '<button class="cap-fmt" id="capCalNext" style="display:inline-grid">›</button></span></div>'+
-      '<div class="cap-cal-grid">'+WDAY.map(function(w){return '<div class="wd">'+w+'</div>';}).join('');
+      '<div class="cap-cal-grid">'+weekdayOrder().map(function(i){return '<div class="wd">'+WDAY[i]+'</div>';}).join('');
     for(var i=0;i<startWd;i++)html+='<div class="cd dim"></div>';
     for(var dnum=1;dnum<=days;dnum++){
       var dt=new Date(y,m,dnum);
@@ -12721,9 +12945,9 @@
   }
 
   function renderRepeatPanel(){
-    var lb=WDAY;
+    // 요일 버튼 순서 = 주 시작 설정. data-wd는 실제 getDay 값 — 마스크 뜻은 불변.
     return '<div class="cap-panel"><div class="cap-days">'+
-      lb.map(function(l,i){return '<button class="cap-day'+((cap.draft.repeatDaysMask&(1<<i))?' on':'')+'" data-wd="'+i+'">'+l+'</button>';}).join('')+
+      weekdayOrder().map(function(i){return '<button class="cap-day'+((cap.draft.repeatDaysMask&(1<<i))?' on':'')+'" data-wd="'+i+'">'+WDAY[i]+'</button>';}).join('')+
       // '완료' 삭제(앱 5165c146 이식) — 아이콘 줄 재탭으로 대체.
       '</div></div>';
   }
