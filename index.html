@@ -440,6 +440,10 @@
   .seg button{font-family:inherit;font-size:12.5px;font-weight:600;border:none;background:transparent;color:var(--ink-soft);
     padding:6px 12px;border-radius:8px;cursor:pointer}
   .seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  /* 모드 순환 버튼 (유저 확정 2026-08-04): 버튼 1개가 현재 모드 아이콘을 보여준다. */
+  #modeBtn{display:inline-flex;align-items:center;gap:6px}
+  #modeBtn svg{width:15px;height:15px;display:block}
+  .kmenu button svg{width:14px;height:14px;vertical-align:-2px;margin-right:6px}
   .bseg{margin:8px 0 14px;width:100%}.bseg button{flex:1}
   .wl-guide{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;margin-bottom:14px;position:relative}
   .wl-guide h4{margin:0 0 8px;font-size:15px}
@@ -863,8 +867,9 @@
     body:has(.edit-bar:hover) .pane-tabs .page-fab,
     body:has(.edit-bar:hover) .pane-tabs .goal-fab{opacity:.3}
   }
-  /* 모자이카 전환 FAB (요청 2026-07-26: 편집 연필 왼쪽) — 연필과 같은 톤. */
+  /* 모드 순환 FAB (유저 확정 2026-08-04: 모자이카 전환 → 3모드 순환) — 연필과 같은 톤. */
   .tl-mofab.on{background:var(--card);color:var(--ink)}
+  .tl-mofab svg{width:19px;height:19px;display:block}
   /* 스크롤 중 UI 투명화 (요청): '지금'·모자이카·편집·추가가 스크롤하는 동안만
      반투명해지고, 멈추면 다시 또렷해진다 — 상단 캡슐(capFade)과 같은 리듬. */
   .tl-fabs,.tl-nowcap{transition:opacity .18s ease}
@@ -896,16 +901,69 @@
     position:relative;overflow:hidden}
   .mday-c.now{outline:2px solid var(--sky-blue);outline-offset:-2px}
   .mday-fill{position:absolute;left:0;top:0;bottom:0;border-radius:3px}
+  /* 셀 문법 (유저 확정 2026-08-04, 앱과 동일 문법): 계획은 채움이 아니라
+     **테두리**다 — 집중(채움)과 한눈에 갈리게. 5분(반 칸) 이하 계획은
+     왼쪽 절반만 테두리. border 대신 자식 요소로 그려 셀 크기가 안 변한다. */
+  .mday-bd{position:absolute;inset:0;border:1.5px solid var(--mo-plan);border-radius:3px;
+    box-sizing:border-box;pointer-events:none}
+  .mday-bd.half{right:50%;border-radius:3px 0 0 3px}
   .mday-legend{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;
     margin-top:10px;font-size:11px;color:var(--ink-soft)}
   .mday-legend span{display:inline-flex;align-items:center;gap:5px}
-  .mday-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .mday-legend i{width:10px;height:10px;border-radius:3px;display:inline-block;box-sizing:border-box}
+
+  /* ── 하루 모자이크 우측 '작업 막대' 칼럼 (유저 확정 2026-08-04) ──
+     좁은 화면(모바일·좁은 좌측 페인)에선 flex-wrap이 칼럼을 그리드 아래로
+     내린다 — 340px 페인에 두 칼럼을 우겨 넣으면 셀이 다 죽는다.
+     ⚠ sticky+내부 스크롤은 쓰지 않는다 — 줄바꿈은 **페인 폭**이 정하는데
+     미디어쿼리는 **뷰포트 폭**만 봐서, 좁은 페인+넓은 창에서 칼럼이 그리드
+     아래로 내려간 채 내부 스크롤에 갇혀 완료 그룹에 닿지 못했다(브라우저 실측).
+     그냥 페이지와 함께 흐르게 두면 어느 배치에서든 끝까지 닿는다. */
+  .mo-flex{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+  .mo-left{flex:1 1 300px;min-width:255px}
+  .mo-tasks{flex:1 1 190px;min-width:170px;display:flex;flex-direction:column;gap:7px;
+    padding-bottom:8px}
+  .mot-grp{border:0;background:rgba(255,255,255,.16);color:#fff;font-family:inherit;font-size:12px;
+    font-weight:700;border-radius:8px;padding:7px 10px;text-align:left;cursor:pointer;
+    backdrop-filter:blur(4px);flex:0 0 auto}
+  .mot-empty{font-size:12px;color:#fff;opacity:.8;text-shadow:0 1px 3px rgba(20,40,80,.4)}
+  .mo-bar{position:relative;border-radius:10px;overflow:hidden;flex:0 0 auto}
+  .mob-in{position:relative;z-index:1;display:flex;align-items:center;gap:8px;padding:8px 10px;
+    border-radius:10px;color:#fff;cursor:pointer;min-height:36px;box-sizing:border-box}
+  .mob-title{flex:1;min-width:0;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;text-shadow:0 1px 2px rgba(20,40,80,.25)}
+  .mo-bar.done .mob-in{opacity:.6}
+  .mo-bar.done .mob-title{text-decoration:line-through}
+  .mob-play{border:0;background:transparent;padding:0;cursor:pointer;flex:0 0 auto;
+    display:grid;place-items:center}
+  .mob-chk{width:19px;height:19px;border-radius:50%;border:2px solid #fff;background:#fff;color:#3a4a68;
+    padding:0;flex:0 0 auto;display:grid;place-items:center;cursor:pointer}
+  .mob-chk svg{width:12px;height:12px}
+  /* PC hover 완료·삭제 (유저 재량 허용분: 웹은 조작만 웹답게). 터치는 스와이프. */
+  .mob-acts{display:none;gap:5px;flex:0 0 auto}
+  .mob-acts button{width:25px;height:25px;border-radius:50%;border:0;background:rgba(255,255,255,.94);
+    display:grid;place-items:center;cursor:pointer;padding:0}
+  .mob-acts button svg{width:14px;height:14px}
+  .mba-ok{color:#1d9d57}.mba-del{color:#d64545}
+  @media(hover:hover) and (pointer:fine){.mo-bar:hover .mob-acts{display:flex}}
+  .mo-bar .swipe-grp{z-index:0}
+  .mo-bar.sw-right .swipe-grp.trail{visibility:visible}
+  .mo-bar .swipe-grp.trail::before{background:#1d9d57}
+  .mo-bar.done .swipe-grp.trail::before{background:#FF3B30}
 
   /* mosaic */
   /* 모자이카도 같은 하늘 아래 (요청 2026-07-27) — 셀은 카드가 지킨다. */
   #view-mosaic{position:absolute;inset:0;overflow-y:auto;
     background:linear-gradient(180deg,var(--sky-top,#2E86D8),var(--sky-bot,#AFDBF2));
     padding:14px 14px 90px;display:none}
+  /* 주간 모자이크 (모자이크2) — 지금은 모드 순환용 골격. 다음 단계가 채운다. */
+  #view-week{position:absolute;inset:0;overflow-y:auto;
+    background:linear-gradient(180deg,var(--sky-top,#2E86D8),var(--sky-bot,#AFDBF2));
+    padding:14px 14px 90px;display:none}
+  .week-skel{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:60%;gap:10px;color:#fff;text-shadow:0 1px 4px rgba(20,40,80,.35)}
+  .week-skel .wk-cap{font-size:15px;font-weight:800}
+  .week-skel .wk-note{font-size:12.5px;opacity:.85}
   .mo-sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:12px}
   .mo-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
   .mo-day{width:52px;font-size:12px;color:var(--ink-soft);flex:0 0 auto}
@@ -2004,9 +2062,6 @@
        (아래는 스크립트가 못 돌았을 때의 대비값) */
     #view-matrix.on>.matrix{flex:0 0 auto;height:calc(100dvh - 82px)}
     body[data-m] .topcap{display:flex}          /* 데스크톱에선 항상 (타임라인 상시 표시) */
-    /* 모자이카 '타임라인으로' 버튼 (요청 2026-07-27 삭제): PC에선 왼쪽에
-       타임라인이 항상 있어 돌아갈 필요가 없다. */
-    #moToggleBack{display:none}
     /* 우상단 원형 네비 */
     .desk-nav{display:flex;gap:9px;position:fixed;top:20px;right:16px;z-index:45}   /* 윗줄 3요소 세로 가운데 (요청) */
     .desk-nav>button{width:32px;height:32px;border-radius:50%;border:0;background:rgba(255,255,255,.88);
@@ -2705,8 +2760,11 @@
           <button class="daynav" id="dayNext" aria-label="다음 날" data-i18n-en-aria="Next day">›</button>
         </div>
         <div class="seg tl-seg">
-          <button id="segBig" class="on" data-mode="big" data-i18n-en="Timeline">큰 타임라인</button>
-          <button id="segMo" data-mode="mosaic" data-i18n-en="Mosaic">모자이카</button>
+          <!-- 모드 순환 버튼 1개 (유저 확정 2026-08-04): 누를 때마다
+               타임라인 → 하루 모자이크 → 주간 모자이크 순환. 아이콘·라벨은
+               **현재 모드**의 것 — 내용은 updateModeBtns()가 채운다.
+               길게 누르거나 우클릭 = 직접 선택 메뉴 (재량 허용분). -->
+          <button id="modeBtn" class="on" title="모드 전환 (M · 길게=선택)" data-i18n-en-title="Switch view (M · hold to pick)"></button>
         </div>
         <button id="tlEdit" class="tledit" data-i18n-en="Edit">편집</button>
         <button id="tlAdd" class="tladd" data-i18n-en="+ Task">+ 작업</button>
@@ -2740,23 +2798,31 @@
           </div>
         </div>
         <div id="view-mosaic">
-          <button class="mo-toggle on" id="moToggleBack" title="타임라인으로 (M · Esc)" aria-label="타임라인으로" data-i18n-en-title="Back to timeline (M · Esc)" data-i18n-en-aria="Back to timeline">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-              <path d="M5 4v16"/><path d="M5 8h11M5 13h14M5 18h8"/>
-            </svg>
-          </button>
-          <!-- 하루 한 판 (앱 MosaicDayView 파리티): 한 줄 = 1시간, 6칸 = 10분씩 -->
-          <div class="mday" id="moDay"></div>
-          <div class="mday-legend">
-            <span data-i18n-en="Free time"><i style="background:var(--mo-empty)"></i>빈 시간</span>
-            <span data-i18n-en="Plan"><i style="background:var(--mo-plan)"></i>계획</span>
-            <span data-i18n-en="Focus time"><i style="background:var(--mo-done)"></i>집중한 시간</span>
-            <span data-i18n-en="Passed plan"><i style="background:var(--mo-past)"></i>지나간 계획</span>
+          <!-- (모드 전환은 이제 상단 seg·FAB의 순환 버튼 1개 — 유저 확정 2026-08-04.
+               예전 우상단 '타임라인으로' 버튼은 걷어냈다.) -->
+          <div class="mo-flex">
+            <div class="mo-left">
+              <!-- 하루 한 판 (앱 MosaicDayView 파리티): 한 줄 = 1시간, 6칸 = 10분씩 -->
+              <div class="mday" id="moDay"></div>
+              <!-- 범례: 계획 견본도 셀 문법 그대로 **테두리 네모** (유저 확정 스펙). -->
+              <div class="mday-legend">
+                <span data-i18n-en="Free time"><i style="background:var(--mo-empty)"></i>빈 시간</span>
+                <span data-i18n-en="Planned"><i style="background:transparent;border:1.5px solid var(--mo-plan)"></i>계획</span>
+                <span data-i18n-en="Focus time"><i style="background:var(--mo-done)"></i>집중한 시간</span>
+                <span data-i18n-en="Passed plan"><i style="background:transparent;border:1.5px solid var(--mo-past)"></i>지나간 계획</span>
+              </div>
+              <!-- 기존 '지난 7일' 훑어보기는 아래에 그대로 둔다 (요청과 별개 기능) -->
+              <div class="mo-sub" style="margin:20px 0 8px" data-i18n-en="Last 7 Days">지난 7일</div>
+              <div id="moGrid"></div>
+              <div class="mo-legend" id="moLegend"></div>
+            </div>
+            <!-- 우측 '작업 막대' 칼럼 (유저 확정 2026-08-04): 할 일·마감 작업 막대 -->
+            <div class="mo-tasks" id="moTasks"></div>
           </div>
-          <!-- 기존 '지난 7일' 훑어보기는 아래에 그대로 둔다 (요청과 별개 기능) -->
-          <div class="mo-sub" style="margin:20px 0 8px" data-i18n-en="Last 7 Days">지난 7일</div>
-          <div id="moGrid"></div>
-          <div class="mo-legend" id="moLegend"></div>
+        </div>
+        <!-- 주간 모자이크 (모자이크2) — 다음 단계가 채울 골격. 전환만 동작한다. -->
+        <div id="view-week">
+          <div class="week-skel" id="weekSkel"></div>
         </div>
       </div>
     </section>
@@ -2931,8 +2997,9 @@
 <button class="tl-nowcap" id="tlNowCap" title="지금으로" data-i18n-en-title="Jump to now"><svg class="nc-ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg><span data-i18n-en="Now">지금</span></button>
 <div class="tl-fabs">
   <button class="tl-donebtn" id="batchDone" data-i18n-en="OK">확인</button>
-  <!-- 모자이카 전환 — 편집(연필) 왼쪽 (요청 2026-07-26). -->
-  <button class="tl-batchbtn tl-mofab" id="moToggle" title="모자이크 보기 (M)" aria-label="모자이크 보기" data-i18n-en-title="Mosaic view (M)" data-i18n-en-aria="Mosaic view" style="width:44px;height:44px"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="width:19px;height:19px"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg></button>
+  <!-- 모드 순환 (유저 확정 2026-08-04): 타임라인→하루→주간 순환, 아이콘=현재 모드.
+       내용은 updateModeBtns()가 채운다 (모바일에선 상단 seg가 숨어 이 FAB가 그 버튼). -->
+  <button class="tl-batchbtn tl-mofab" id="moToggle" title="모드 전환 (M · 길게=선택)" aria-label="모드 전환" data-i18n-en-title="Switch view (M · hold to pick)" data-i18n-en-aria="Switch view" style="width:44px;height:44px"></button>
   <button class="tl-batchbtn" id="dueEditFab" title="마감선 편집" data-i18n-en-title="Edit deadlines" style="display:none;width:44px;height:44px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/></svg></button>
   <button class="tl-plusbtn" id="tlFab" title="작업 추가" data-i18n-en-title="Add a task"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
 </div>
@@ -4472,6 +4539,9 @@
        .pane-tabs 레이아웃이면 그대로 보인다.) */
     if(window.innerWidth<1100&&document.body.dataset.m&&document.body.dataset.m!=='timeline'){
       cap.classList.remove('show');return;}
+    /* 타임라인 '지금' 캡슐은 타임라인 모드 전용 — 모자이크·주간 위에 남으면
+       엉뚱한 스크롤(숨은 tlScroll)로 점프하는 유령 버튼이 된다 (스펙 재설계). */
+    if(tlMode!=='big'){cap.classList.remove('show');return;}
     var sc=document.getElementById('tlScroll');if(!sc)return;
     var nf=nowHourFrac();
     if(nf==null){cap.classList.remove('show');return;}   // 오늘이 아니면 '지금'이 없다
@@ -5630,7 +5700,8 @@
     addBatchHandles(editLane);                            // 배치 조절 핸들 (오늘 밴드)
     addDueClamp(editLane);                                // 마감집게 (오늘 밴드)
     var pf=document.getElementById('dueEditFab');
-    if(pf)pf.style.display=(dayOffset===0&&todayDueLines(true).length)?'grid':'none';
+    // 스펙 ⑤: 마감선 편집 연필은 **타임라인 모드에서만** — 모자이크·주간에선 안 뜬다.
+    if(pf)pf.style.display=(tlMode==='big'&&dayOffset===0&&todayDueLines(true).length)?'grid':'none';
     renderMeadow();applyScenery();                        // 들풀·반딧불·장소 (§1·§7)
     // (요청) 태양·달 제거 — 동적 하늘색만 유지.
     updateTlSky();
@@ -5654,16 +5725,20 @@
     // 매 렌더 지운 DOM을 여기서 다시 붙인다).
     guideWatchDues();renderTimelineGuides();
   }
-  document.getElementById('dayPrev').addEventListener('click',function(){dayOffset--;renderBig();});
-  document.getElementById('dayNext').addEventListener('click',function(){dayOffset++;renderBig();});
+  // 날짜 이동은 모자이크(하루 판·막대 칼럼)도 같은 날을 봐야 한다 (스펙: 선택일 기준).
+  document.getElementById('dayPrev').addEventListener('click',function(){dayOffset--;renderBig();if(tlMode==='mosaic')renderMosaic();});
+  document.getElementById('dayNext').addEventListener('click',function(){dayOffset++;renderBig();if(tlMode==='mosaic')renderMosaic();});
   /* ⚠ 옛 '하루씩 페이징'(오버스크롤로 날 바뀜)은 걷어냈다 (요청 2026-07-23):
      스크롤바가 리셋되는 게 어색하다고 해서, 어제·오늘·내일 **3일을 한 스크롤에**
      이어 그린다(renderBig의 TLWIN 루프). 그 너머(그제·모레)는 날짜 버튼(‹›)이
      3일 창을 통째로 옮긴다. 리소스 부담 없다(하루=시간줄+데이터 자리뿐). */
   // 타임라인에서 직접 작업 추가 (요청): 지금(또는 다음 빈 슬롯)에 블록을 만들고
   // 편집 모달을 열어 모든 옵션을 설정. 보고 있는 날짜에 배치된다.
-  document.getElementById('tlAdd').addEventListener('click',function(){openCapture('timeline');});
-  document.getElementById('tlFab').addEventListener('click',function(){openCapture('timeline');});
+  /* ＋의 뜻은 모드를 따른다 (유저 확정 2026-08-04): 타임라인의 ＋는 불변
+     (마감선 배치), 모자이크·주간의 ＋는 **마감 없는 작업**(할일식 캡처) —
+     할일 목록·막대 칼럼에 뜨고 타임라인 마감선은 안 생긴다. */
+  document.getElementById('tlAdd').addEventListener('click',function(){openCapture(tlMode==='big'?'timeline':'todo');});
+  document.getElementById('tlFab').addEventListener('click',function(){openCapture(tlMode==='big'?'timeline':'todo');});
   document.getElementById('tlNowCap').addEventListener('click',scrollToNowLine);
   // 편집 bar v2 배선 (D2-3)
   document.getElementById('dueEditFab').addEventListener('click',function(){openEditBar(null);});
@@ -5722,21 +5797,33 @@
   });
 
   /* ---------- 하루 모자이크 (앱 MosaicDayView 파리티) ----------
-     한 줄 = 1시간, 6칸 = 10분씩. 칸을 통째로 칠하지 않고 **그 10분 중 실제로
-     겹친 만큼만** 가로로 채운다 — 앱과 같은 규칙이라 5분짜리는 반 칸이다.
-     · 집중한 시간  = 작업색 (세션 기록, 쉼 구간은 걷어낸다)
-     · 계획         = 앞으로 할 계획(옅게) / 지나간 계획은 회색
+     한 줄 = 1시간, 6칸 = 10분씩.
+     셀 문법 (유저 확정 2026-08-04 — 앱과 동일 문법):
+     · 집중  = 테마색 **채움** (그 10분 중 겹친 만큼 가로로 — 실시간로 자란다)
+     · 계획만 = 테마색 **테두리** (칸의 절반을 넘으면 전체 둘레)
+     · 5분(반 칸) 이하 계획 = **왼쪽 절반만** 테두리
+     · 겹치면 채움이 이긴다 / 지나간 계획은 회색 테두리
      ⚠ 2분 미만 집중도 그린다 (keepShort) — 여기선 1px로도 칠할 수 있다. */
+  /* 셀 문법 판정 — 순수 함수 (tests/mosaic-cell-grammar.js와 한 쌍).
+     DOM 없이 규칙만: 집중이 조금이라도 있으면 채움이 이기고 테두리는 없다. */
+  function mosaicCellSpec(focMs,planMs,cellMs){
+    cellMs=cellMs||600000;
+    var fill=Math.max(0,Math.min(1,(focMs||0)/cellMs));
+    var border='none';
+    if(fill<=0&&(planMs||0)>0)border=(planMs>cellMs/2)?'full':'half';
+    return {fillRatio:fill,border:border};
+  }
   function renderMosaicDay(){
     var box=document.getElementById('moDay');if(!box)return;
     var tk=selKey(),now=Date.now();
     var recs=dayRecordBlocks(tk,{keepShort:true});
-    // 계획(마감선) 구간 — 기록이 없는 시간에만 옅게 깔린다.
+    // 계획(마감선) 구간 — 셀 문법대로 **테마색 테두리**가 된다.
     var plans=(DATA.tasks||[]).filter(function(t){
       return t.scheduledStart&&(t.durationMin||0)>0&&!t.isRewardItem&&
         dateKey(t.scheduledStart)===tk;
     }).map(function(t){var st=new Date(t.scheduledStart).getTime();
-      return {s:st,e:st+t.durationMin*60000,col:catColor(t.categoryID)};});
+      // 색은 catColor가 아니라 **테마색**(colorKey ?? 범주색) — 막대·블록과 같은 말.
+      return {s:st,e:st+t.durationMin*60000,col:taskDisplayColor(t)};});
     var day0=new Date(new Date(tk+'T00:00:00').getTime());
     if(isNaN(day0.getTime())){var p0=tk.split('-');day0=new Date(+p0[0],+p0[1]-1,+p0[2]);}
     var base=day0.getTime();
@@ -5751,18 +5838,20 @@
         recs.forEach(function(b){
           var o=ov(t0,t1,b.start,b.end);if(o<=0)return;
           (b.rest||[]).forEach(function(r){o-=ov(t0,t1,r.s,r.e);});
-          if(o>0){focMs+=o;if(!col)col=catColor(b.categoryID);}
+          if(o>0){focMs+=o;
+            // 채움도 테마색 — 블록엔 taskID만 있어 작업을 되찾아 읽는다.
+            if(!col){var bt=taskByID(b.taskID);col=bt?taskDisplayColor(bt):catColor(b.categoryID);}}
         });
-        // ② 계획 — 기록이 채우지 못한 나머지 자리에만.
+        // ② 계획 — 겹친 만큼 그대로 센다. 채움과의 승부는 셀 문법 함수가 가린다.
         var planMs=0,planCol=null;
         plans.forEach(function(pl){var o=ov(t0,t1,pl.s,pl.e);
           if(o>0){planMs+=o;if(!planCol)planCol=pl.col;}});
-        planMs=Math.max(0,Math.min(planMs,cellMs-focMs));
         var isNow=(t0<=now&&now<t1),past=(t1<=now);
+        var spec=mosaicCellSpec(focMs,planMs,cellMs);
         var inner='';
-        if(focMs>0)inner+='<i class="mday-fill" style="width:'+(focMs/cellMs*100)+'%;background:'+(col||'var(--mo-done)')+'"></i>';
-        if(planMs>0)inner+='<i class="mday-fill" style="left:'+(focMs/cellMs*100)+'%;width:'+(planMs/cellMs*100)+'%;'
-          +'background:'+(past?'var(--mo-past)':hexA(planCol||'#9CC0E8',0.45))+'"></i>';
+        if(spec.fillRatio>0)inner+='<i class="mday-fill" style="width:'+(spec.fillRatio*100)+'%;background:'+(col||'var(--mo-done)')+'"></i>';
+        if(spec.border!=='none')inner+='<i class="mday-bd'+(spec.border==='half'?' half':'')
+          +'" style="border-color:'+(past?'var(--mo-past)':(planCol||'var(--mo-plan)'))+'"></i>';
         html+='<div class="mday-c'+(isNow?' now':'')+'" title="'+String(h).padStart(2,'0')+':'+String(q*10).padStart(2,'0')+'">'+inner+'</div>';
       }
       html+='</div></div>';
@@ -5773,6 +5862,7 @@
   /* ---------- mosaic (last 7 days) ---------- */
   function renderMosaic(){
     renderMosaicDay();
+    renderMosaicBars();
     var grid=document.getElementById('moGrid');grid.innerHTML='';
     var hours=[];for(var h=6;h<24;h++)hours.push(h);
     for(var off=0;off>=-6;off--){
@@ -5792,6 +5882,148 @@
     }
     var used={};(DATA.tasks||[]).forEach(function(t){if(t.scheduledStart&&t.durationMin)used[t.categoryID]=1;});
     document.getElementById('moLegend').innerHTML=Object.keys(used).map(function(k){return '<span><i style="background:'+catColor(k)+'"></i>'+catName(k)+'</span>';}).join('');
+  }
+
+  /* ---------- 하루 모자이크 우측 '작업 막대' 칼럼 (유저 확정 2026-08-04) ----------
+     내용 = 할 일의 작업 + 마감 작업. 정렬 규칙은 순수 함수로 뽑아 테스트가 문다
+     (tests/mosaic-bars.js와 한 쌍):
+     ① 그날 마감(마감 순) + 그날 만든 작업(만든 순) — 항상 보임
+     ② 〈▶ 전날 할 일 (n)〉 — 그 전에 만든 미완료. 기본 접힘, 0이면 그룹 자체가 없다
+     ③ 〈완료한 작업 (n)〉 — **그날 완료만**. 기본 펼침
+     접힘 상태는 localStorage(기기 취향 — 스냅샷 아님)에 남는다. */
+  function mosaicBarGroups(tasks,tk,dayStartMs){
+    var main=[],prev=[],done=[];
+    (tasks||[]).forEach(function(t){
+      if(t.isRewardItem||t.goalID)return;                  // 보상·장기목표 분량은 이 칼럼의 일이 아니다
+      // 내일로 미룬 일은 그날까지 숨김 — renderTodo와 같은 규칙 (두 화면이 다르면 유령이 된다).
+      if(t.deferredUntil&&new Date(t.deferredUntil).getTime()>dayStartMs)return;
+      if(t.isDone){
+        if(t.completedAt&&dateKey(t.completedAt)===tk)done.push(t);
+        return;                                            // 다른 날 완료는 그 날 칼럼의 몫
+      }
+      var hasDue=!!t.scheduledStart&&(t.durationMin||0)>0;
+      var dueTk=hasDue?dateKey(taskDueAt(t).toISOString()):null;
+      if(dueTk===tk)main.push(t);
+      else if(t.createdAt&&dateKey(t.createdAt)===tk)main.push(t);
+      else prev.push(t);
+    });
+    function dueMs(t){var has=!!t.scheduledStart&&(t.durationMin||0)>0;
+      if(!has)return null;var d=taskDueAt(t);
+      return dateKey(d.toISOString())===tk?d.getTime():null;}
+    main.sort(function(a,b){
+      var da=dueMs(a),db=dueMs(b);
+      if(da!=null&&db!=null)return da-db;                  // 마감끼리 = 이른 마감이 위
+      if(da!=null)return -1;if(db!=null)return 1;          // 마감이 먼저, 만든 건 뒤
+      return new Date(a.createdAt||0)-new Date(b.createdAt||0);   // 만든 순
+    });
+    prev.sort(function(a,b){return new Date(a.createdAt||0)-new Date(b.createdAt||0);});
+    done.sort(function(a,b){return new Date(a.completedAt||0)-new Date(b.completedAt||0);});
+    return {main:main,prev:prev,done:done};
+  }
+  function renderMosaicBars(){
+    var box=document.getElementById('moTasks');if(!box)return;
+    var tk=selKey();
+    var d0=selDate();d0.setHours(0,0,0,0);
+    var g=mosaicBarGroups(DATA.tasks,tk,d0.getTime());
+    var prevOpen=localStorage.getItem('hfMoPrevOpen')==='1';       // 기본 접힘
+    var doneOpen=localStorage.getItem('hfMoDoneOpen')!=='0';       // 기본 펼침
+    box.innerHTML='';
+    if(!g.main.length&&!g.prev.length&&!g.done.length){
+      box.insertAdjacentHTML('beforeend','<div class="mot-empty">'+
+        L('아직 작업이 없어요 — ＋로 담아 보세요.','No tasks yet — add one with ＋.')+'</div>');
+      return;
+    }
+    g.main.forEach(function(t){box.appendChild(buildMoBar(t,false));});
+    if(g.prev.length){
+      box.insertAdjacentHTML('beforeend','<button class="mot-grp" id="motPrevBtn">'+
+        (prevOpen?'▼':'▶')+' '+L('전날 할 일','Earlier to-dos')+' ('+g.prev.length+')</button>');
+      document.getElementById('motPrevBtn').addEventListener('click',function(){
+        try{localStorage.setItem('hfMoPrevOpen',prevOpen?'0':'1');}catch(e){}
+        renderMosaicBars();});
+      if(prevOpen)g.prev.forEach(function(t){box.appendChild(buildMoBar(t,false));});
+    }
+    if(g.done.length){
+      box.insertAdjacentHTML('beforeend','<button class="mot-grp" id="motDoneBtn">'+
+        (doneOpen?'▼':'▶')+' '+L('완료한 작업','Completed')+' ('+g.done.length+')</button>');
+      document.getElementById('motDoneBtn').addEventListener('click',function(){
+        try{localStorage.setItem('hfMoDoneOpen',doneOpen?'0':'1');}catch(e){}
+        renderMosaicBars();});
+      if(doneOpen)g.done.forEach(function(t){box.appendChild(buildMoBar(t,true));});
+    }
+  }
+  /* 막대 한 줄 — 테마색 bar + 작업명 + 재생. 완료 막대는 체크 동그라미 + 취소선.
+     조작 = PC hover 완료·삭제 / 터치는 왼쪽 스와이프(할일 bar와 같은 관례). */
+  function buildMoBar(t,done){
+    var col=taskDisplayColor(t);
+    var ckPath='<path d="M5 12.5l4.5 4.5L19 7"/>';
+    var bar=document.createElement('div');bar.className='mo-bar'+(done?' done':'');bar.dataset.id=t.id;
+    bar.innerHTML=
+      '<div class="swipe-grp trail">'+
+        (done?'':'<button class="sa mob-sw-ok" style="background:#1d9d57">'+svgI(ckPath)+'<b>'+L('완료','Done')+'</b></button>')+
+        '<button class="sa mob-sw-del" style="background:#FF3B30">'+IC.trash+'<b>'+L('삭제','Delete')+'</b></button></div>'+
+      '<div class="mob-in" style="background:'+col+'">'+
+        (done?'<button class="mob-chk" title="'+L('완료 해제','Mark as not done')+'">'+svgI(ckPath)+'</button>':'')+
+        '<span class="mob-title">'+esc(t.title)+'</span>'+
+        '<span class="mob-acts">'+
+          (done?'':'<button class="mba-ok" title="'+L('완료','Done')+'">'+svgI(ckPath)+'</button>')+
+          '<button class="mba-del" title="'+L('삭제','Delete')+'">'+IC.trash+'</button></span>'+
+        (done?'':'<button class="mob-play" title="'+L('집중 시작','Start focus')+'">'+
+          '<svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="11" fill="rgba(255,255,255,.95)"/><path d="M9.8 7.6v8.8L17 12z" fill="'+col+'"/></svg></button>')+
+      '</div>';
+    function moComplete(){t.isDone=true;t.completedAt=new Date().toISOString();
+      grantReward(t);renderAll();pushSnapshot();}          // 할일 체크와 같은 경로 (새 로직 금지)
+    if(done){
+      // 체크 해제 → 미완료 구역으로 복귀 + 재생 복귀 (재렌더가 자리를 되돌린다).
+      bar.querySelector('.mob-chk').addEventListener('click',function(e){e.stopPropagation();
+        t.isDone=false;t.completedAt=null;renderAll();pushSnapshot();});
+    }else{
+      // 재생 = 기존 집중 시작 경로 재사용 (스펙: 새 로직 금지).
+      bar.querySelector('.mob-play').addEventListener('click',function(e){e.stopPropagation();startFocus(t);});
+      bar.querySelector('.mba-ok').addEventListener('click',function(e){e.stopPropagation();moComplete();});
+      bar.querySelector('.mob-sw-ok').addEventListener('click',function(){closeSwipe();moComplete();});
+    }
+    bar.querySelector('.mba-del').addEventListener('click',function(e){e.stopPropagation();deleteTask(t);});
+    bar.querySelector('.mob-sw-del').addEventListener('click',function(){closeSwipe();deleteTask(t);});
+    // bar 탭 = 캡처 패널 편집 (할일 행과 같은 관례 — 마감 있으면 타임라인 꼴로).
+    bar.querySelector('.mob-in').addEventListener('click',function(e){
+      if(e.target.closest('.mob-chk,.mob-play,.mob-acts,.sa'))return;
+      openCapture(t.scheduledStart?'timeline':'todo',{task:t});
+    });
+    attachBarSwipe(bar,done);
+    return bar;
+  }
+  /* 터치 스와이프 — 할일 bar(attachSwipe)와 같은 규칙·같은 장부(swipeOpen)를
+     쓰되, 이 막대는 **왼쪽으로만** 열린다(버튼이 완료·삭제뿐이라 오른쪽 열림이 없다). */
+  function attachBarSwipe(row,done){
+    var inner=row.querySelector('.mob-in'),sx=0,sy=0,cur=0,startCur=0,drag=false,lock='';
+    var RW=done?64:128;                                    // 버튼 수(1·2)만큼만
+    row.querySelector('.swipe-grp').style.width=RW+'px';
+    function set(x){cur=x;inner.style.transform='translateX('+x+'px)';
+      row.classList.toggle('sw-right',x<-6);}
+    function curX(){var m=/translateX\((-?[\d.]+)px\)/.exec(inner.style.transform||'');return m?parseFloat(m[1]):0;}
+    inner.addEventListener('pointerdown',function(e){if(e.pointerType==='mouse')return;
+      closeOtherSwipes(inner);
+      cur=curX();sx=e.clientX;sy=e.clientY;startCur=cur;drag=true;lock='';inner.style.transition='none';});
+    inner.addEventListener('pointermove',function(e){if(!drag)return;
+      var dx=e.clientX-sx,dy=e.clientY-sy;
+      if(!lock){if(Math.abs(dx)<6&&Math.abs(dy)<6)return;lock=Math.abs(dx)>Math.abs(dy)?'x':'y';}
+      if(lock!=='x')return;e.preventDefault();
+      set(Math.max(-RW,Math.min(0,startCur+dx)));});
+    function end(){if(!drag)return;drag=false;inner.style.transition='transform .22s cubic-bezier(.3,0,.2,1)';
+      if(cur<-RW*0.4){set(-RW);swipeOpen=inner;}
+      else{set(0);if(swipeOpen===inner)swipeOpen=null;}}
+    inner.addEventListener('pointerup',end);inner.addEventListener('pointercancel',end);
+  }
+
+  /* ---------- 주간 모자이크 (모자이크2) — 골격 ----------
+     스펙의 행 압축·요일 라벨·(지금) 캡슐·주간 막대는 **다음 단계**가 채운다.
+     지금은 모드 순환이 막히지 않게 주 표기와 자리만 놓는다. */
+  function renderMosaicWeek(){
+    var box=document.getElementById('weekSkel');if(!box)return;
+    var d=new Date(),wk=Math.floor((d.getDate()-1)/7)+1;
+    var lbl=IS_KO?((d.getMonth()+1)+'월 '+wk+'주'):(MON_SHORT[d.getMonth()].toUpperCase()+' W'+wk);
+    box.innerHTML='<div class="wk-cap">'+lbl+'</div>'+
+      '<div class="wk-note">'+L('주간 모자이크를 준비하고 있어요.','The weekly mosaic is on its way.')+'</div>';
   }
 
   /* ---------- to-do (with send-to-timeline) ---------- */
@@ -7269,7 +7501,9 @@
      attachMxSwipe만 자기 클로저에 열린 상태를 감춰 둬, 매트릭스에서 한 줄을
      열어 둔 채 다른 줄을 밀거나 빈 곳을 눌러도 그대로 열려 있었다. */
   function closeSwipe(){
-    if(!swipeOpen)return;var innerEl=swipeOpen,rowEl=innerEl.closest('.task,.mtask');
+    // ⚠ .mo-bar(모자이크 막대)도 같은 장부를 쓴다 — 빼먹으면 sw-right가 남아
+    //    닫혔는데 버튼이 계속 비친다 (할일 bar에서 겪은 그 버그).
+    if(!swipeOpen)return;var innerEl=swipeOpen,rowEl=innerEl.closest('.task,.mtask,.mo-bar');
     innerEl.style.transition='transform .2s cubic-bezier(.3,0,.2,1)';innerEl.style.transform='translateX(0)';
     if(rowEl)rowEl.classList.remove('sw-left','sw-right','mx-open');swipeOpen=null;}
   /* 열려 있는 스와이프는 **화면에 하나뿐**이다 (요청 2026-07-23).
@@ -9815,28 +10049,78 @@
     if(name==='routine'&&session){uploadRoutineSnapshot();renderMsgBanner();}   // 소셜 (iOS 파리티)
   }
   document.querySelectorAll('.tabrow button,.mbtn').forEach(function(b){b.addEventListener('click',function(){if(b.dataset.tab)setTab(b.dataset.tab);});});
+  /* ── 모드 순환 (유저 확정 2026-08-04) ───────────────────────────
+     타임라인 → 하루 모자이크 → 주간 모자이크 → 타임라인. 버튼(상단 seg 1개 +
+     FAB — 모바일에선 seg가 숨어 FAB가 그 버튼이다)은 **현재 모드의 아이콘**을
+     보여준다. 마지막 모드는 localStorage(hfTlMode) — 기기 취향이라 스냅샷이 아니다.
+     길게 누르기·우클릭 = 직접 선택 메뉴 (재량 허용분). */
+  var TL_MODES=['big','mosaic','week'];
+  var MODE_META={
+    big:{ko:'타임라인',en:'Timeline',
+      ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 4v16"/><path d="M5 8h11M5 13h14M5 18h8"/></svg>'},
+    mosaic:{ko:'하루 모자이크',en:'Day mosaic',
+      ic:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg>'},
+    week:{ko:'주간 모자이크',en:'Week mosaic',
+      ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8.6 9.5v10M14.4 9.5v10"/></svg>'}
+  };
+  var tlMode='big';
+  function updateModeBtns(){
+    var meta=MODE_META[tlMode];
+    var b=document.getElementById('modeBtn');
+    if(b)b.innerHTML=meta.ic+'<span>'+L(meta.ko,meta.en)+'</span>';
+    var f=document.getElementById('moToggle');
+    if(f){f.innerHTML=meta.ic;f.classList.toggle('on',tlMode!=='big');}
+  }
   function setMode(m){
-    document.getElementById('segBig').classList.toggle('on',m==='big');
-    document.getElementById('segMo').classList.toggle('on',m==='mosaic');
+    if(TL_MODES.indexOf(m)<0)m='big';
+    tlMode=m;
+    try{localStorage.setItem('hfTlMode',m);}catch(e){}
     document.getElementById('view-big').style.display=m==='big'?'block':'none';
     document.getElementById('view-mosaic').style.display=m==='mosaic'?'block':'none';
+    var vw=document.getElementById('view-week');if(vw)vw.style.display=m==='week'?'block':'none';
+    updateModeBtns();
+    /* 스펙 ⑤: 모자이크·주간에선 마감선 편집(= '지난 마감 내리기'가 사는
+       재정비 포함)이 안 뜬다. 타임라인으로 돌아오면 renderBig()이 조건대로 되살린다. */
+    if(m!=='big'){
+      if(editBarOn)closeEditBar();
+      var pf=document.getElementById('dueEditFab');if(pf)pf.style.display='none';
+    }
     if(m==='big')renderBig();
+    // ⚠ 진입 시점에 직접 그린다 — renderAll 등 이벤트 렌더만 믿으면 낡은 판이 뜬다.
+    if(m==='mosaic')renderMosaic();
+    if(m==='week')renderMosaicWeek();
+    updateNowCap();                       // '지금' 캡슐은 타임라인 전용 (스펙: 주간은 자기 캡슐을 가진다)
   }
-  document.getElementById('segBig').addEventListener('click',function(){setMode('big');});
-  document.getElementById('segMo').addEventListener('click',function(){setMode('mosaic');});
-
-  /* ── 모자이크 들어가는 길 셋 (요청) ─────────────────────────────
-     ① ▦ 칩  ② 타임라인에서 핀치 아웃  ③ 키보드 M
-     ⚠ Ctrl+휠은 쓰지 않는다 — 브라우저 확대·축소를 빼앗는 조작이라
-       페이지를 키우려다 모자이크가 열린다. */
-  function toggleMosaic(){
-    setMode(document.getElementById('view-mosaic').style.display==='block'?'big':'mosaic');
+  function modeNext(){setMode(TL_MODES[(TL_MODES.indexOf(tlMode)+1)%TL_MODES.length]);}
+  // 직접 선택 메뉴 — 케밥 메뉴 부품(kmenu) 재사용: 바깥 탭 닫힘도 공짜로 얻는다.
+  function openModeMenu(anchor){
+    closeKebab();
+    var m=document.createElement('div');m.className='kmenu';
+    m.innerHTML=TL_MODES.map(function(k){var mm=MODE_META[k];
+      return '<button data-k="'+k+'"'+(k===tlMode?' style="font-weight:800"':'')+'>'+mm.ic+L(mm.ko,mm.en)+'</button>';}).join('');
+    document.body.appendChild(m);kmenuEl=m;
+    var r=anchor.getBoundingClientRect(),mw=m.offsetWidth,mh=m.offsetHeight;
+    m.style.left=Math.min(window.innerWidth-mw-8,Math.max(8,r.left))+'px';
+    m.style.top=((r.bottom+mh+8>window.innerHeight)?Math.max(8,r.top-mh-6):(r.bottom+6))+'px';
+    m.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(e){
+      e.stopPropagation();var k=b.dataset.k;closeKebab();setMode(k);});});
   }
-  document.getElementById('moToggle').addEventListener('click',toggleMosaic);
-  document.getElementById('moToggleBack').addEventListener('click',toggleMosaic);
+  // 순환 버튼 배선: 탭=다음 모드, 길게(터치)·우클릭=선택 메뉴.
+  function wireModeBtn(el){
+    if(!el)return;
+    var lpT=null,lpFired=false;
+    el.addEventListener('click',function(){if(lpFired){lpFired=false;return;}modeNext();});
+    el.addEventListener('contextmenu',function(e){e.preventDefault();openModeMenu(el);});
+    el.addEventListener('pointerdown',function(e){if(e.pointerType==='mouse')return;
+      lpFired=false;lpT=setTimeout(function(){lpFired=true;openModeMenu(el);},480);});
+    ['pointerup','pointercancel','pointerleave'].forEach(function(ev){
+      el.addEventListener(ev,function(){clearTimeout(lpT);});});
+  }
+  wireModeBtn(document.getElementById('modeBtn'));
+  wireModeBtn(document.getElementById('moToggle'));
 
   // ② 핀치 — 타임라인 안에서만. 페이지 전체 확대는 그대로 두고(접근성),
-  //    두 손가락이 **타임라인 위에서** 벌어질 때만 가로챈다.
+  //    두 손가락이 **타임라인 위에서** 벌어질 때만 가로챈다. 벌리면 하루 모자이크.
   (function(){
     var big=document.getElementById('view-big'),base=0;
     if(!big)return;
@@ -9847,20 +10131,26 @@
     big.addEventListener('touchmove',function(e){
       if(e.touches.length!==2||!base)return;
       var r=dist(e.touches)/base;
-      if(r>1.35){base=0;toggleMosaic();}      // 벌리면 모자이크
+      if(r>1.35){base=0;setMode('mosaic');}      // 벌리면 모자이크
     },{passive:true});
     big.addEventListener('touchend',function(){base=0;},{passive:true});
   })();
 
-  // ③ 키보드 M (모자이크에선 Esc로도 나온다). 입력 중엔 무시.
+  // ③ 키보드 M = 다음 모드 (Esc = 타임라인으로). 입력 중엔 무시.
   document.addEventListener('keydown',function(e){
     if(e.metaKey||e.ctrlKey||e.altKey)return;
     var el=document.activeElement,tag=el&&el.tagName;
     if(tag==='INPUT'||tag==='TEXTAREA'||(el&&el.isContentEditable))return;
-    var onMosaic=document.getElementById('view-mosaic').style.display==='block';
-    if(e.key==='m'||e.key==='M'){e.preventDefault();toggleMosaic();}
-    else if(e.key==='Escape'&&onMosaic){e.preventDefault();setMode('big');}
+    if(e.key==='m'||e.key==='M'){e.preventDefault();modeNext();}
+    else if(e.key==='Escape'&&tlMode!=='big'){e.preventDefault();setMode('big');}
   });
+
+  /* 집중 중 실시간 채움 (스펙: "집중하면 네모 실시간 채움") — 셀이 10분이라
+     30초면 5% 걸음으로 자란다. 모자이크가 보일 때만, 숨은 탭에선 안 돈다. */
+  setInterval(function(){
+    if(tlMode!=='mosaic'||document.hidden)return;
+    renderMosaicDay();
+  },30000);
 
   /* ---------- auth + snapshot ---------- */
   var session=null;try{session=JSON.parse(localStorage.getItem(AUTH_KEY)||'null');}catch(e){}
@@ -11807,8 +12097,8 @@
     if(!swipeOpen)return;
     if(e.target.closest('.sa')||e.target.closest('.mx-pick'))return;
     // ⚠ 매트릭스 bar(.mtask)도 같은 규칙 (요청): 예전엔 .task만 봐서, 매트릭스에서
-    //    열어 둔 줄이 빈 곳을 눌러도 안 닫혔다.
-    var row=e.target.closest('.task,.mtask');
+    //    열어 둔 줄이 빈 곳을 눌러도 안 닫혔다. 모자이크 막대(.mo-bar)도 합류.
+    var row=e.target.closest('.task,.mtask,.mo-bar');
     if(row&&row.contains(swipeOpen))return;              // 열린 행은 드래그 핸들러가 처리
     closeSwipe();
   },true);
@@ -15242,6 +15532,10 @@
     if(m.style.display!=='none'&&!e.target.closest('#deskNav'))m.style.display='none';
   });
   applySky();renderNav();updateAcct();setTab('todo');renderAll();startBarRotation();if(session)fetchSnapshot();
+  // 마지막 타임라인 모드 복원 (유저 확정 2026-08-04) — 기본은 타임라인.
+  // 버튼 내용(현재 모드 아이콘)은 어느 모드든 한 번은 채워야 한다.
+  try{var _sm=localStorage.getItem('hfTlMode');if(_sm&&_sm!=='big')setMode(_sm);}catch(e){}
+  updateModeBtns();
   if(shouldShowIntro())openIntro();   // 하늘·닉네임까지 다 앉힌 뒤에 덮는다 — 닫으면 바로 평소 화면
   navFlashReady=true;   // 부팅 setTab은 신호가 아니다 — 여기서부터 반짝인다
   // 초대 랜딩 (핵심): ?invite=<코드>
