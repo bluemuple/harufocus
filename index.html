@@ -88,6 +88,11 @@
     transition:background .3s,color .3s}
   .tl-nowcap.show{display:inline-flex}
   .tl-nowcap svg{width:17px;height:17px;flex:0 0 auto}
+  /* 모드 전환 캡슐 (앱 파리티 2026-08-05): 모자이크·주간 **진입** 순간 '지금'
+     캡슐 자리에 모드 이름이 1.3초 떴다 fade out — 겉모습은 .tl-nowcap 재사용
+     (같은 자리·같은 판이라 두 벌이 어긋날 일이 없다). 누르는 물건이 아니라
+     pointer-events를 끄고, fade는 .tl-nowcap의 .18s보다 느긋한 .4s로 덮는다. */
+  #tlModeCap{pointer-events:none;transition:opacity .4s ease}
   /* (.day 변형은 폐지 — 편집 버튼과 같은 판으로 통일. 클래스는 JS가 계속
      붙이지만 모양은 바꾸지 않는다.) */
   .tl-batchbtn{width:48px;height:48px;border-radius:50%;border:0;background:rgba(40,50,80,.72);color:#fff;
@@ -894,6 +899,15 @@
      보인다. */
   .mday{display:flex;flex-direction:column;gap:3px}
   .mday-row{display:flex;align-items:center;gap:5px}
+  /* 행 미끄러짐 (앱 파리티 2026-08-05): 정시가 지나면 — 집중 없던 지금 행은
+     fade out(높이도 접혀 아래 행이 부드럽게 당겨진다), 새 발밑 행은 fade in.
+     어느 행이 사라지고 생기는지는 mosaicWeekRows(행 규칙 v2)가 정하고 여기는
+     그리기만 한다(wkSyncRows). margin-bottom -3px = 부모 .mday의 gap 3px 상쇄
+     — 없으면 접힌 행이 제거되는 순간 gap만큼 툭 튄다. */
+  .mday-row{transition:opacity .35s ease,height .35s ease,margin-bottom .35s ease}
+  .mday-row.wk-out{opacity:0;height:0!important;margin-bottom:-3px;overflow:hidden}
+  .mday-row.wk-in{opacity:0}
+  @media(prefers-reduced-motion:reduce){.mday-row{transition:none}}
   .mday-h{flex:0 0 20px;text-align:right;font-size:10px;color:var(--ink-soft);
     font-variant-numeric:tabular-nums;line-height:1}
   .mday-cells{flex:1;display:grid;grid-template-columns:repeat(6,1fr);gap:3px}
@@ -923,17 +937,33 @@
   .mo-left{flex:1 1 300px;min-width:255px}
   .mo-tasks{flex:1 1 190px;min-width:170px;display:flex;flex-direction:column;gap:7px;
     padding-bottom:8px}
-  .mot-grp{border:0;background:rgba(255,255,255,.16);color:#fff;font-family:inherit;font-size:12px;
-    font-weight:700;border-radius:8px;padding:7px 10px;text-align:left;cursor:pointer;
+  /* 그룹 머리글 = 날짜 크기 (앱 파리티 2026-08-05: 머리글이 막대보다 작아
+     위계가 뒤집혀 보였다 — .tl-date 13.5px와 같은 크기). 버튼 전체가 이미
+     전폭이라 어디를 눌러도 접힌다(앱 contentShape 요청과 같은 결과). */
+  .mot-grp{border:0;background:rgba(255,255,255,.16);color:#fff;font-family:inherit;font-size:13.5px;
+    font-weight:700;border-radius:8px;padding:8px 10px;text-align:left;cursor:pointer;
     backdrop-filter:blur(4px);flex:0 0 auto}
   .mot-empty{font-size:12px;color:#fff;opacity:.8;text-shadow:0 1px 3px rgba(20,40,80,.4)}
-  .mo-bar{position:relative;border-radius:10px;overflow:hidden;flex:0 0 auto}
+  .mo-bar{position:relative;border-radius:10px;overflow:hidden;flex:0 0 auto;
+    /* 막대 불투명 밑판 — 앱 barSurface와 같은 값(낮=흰 카드 F2F6FA·밤=남색
+       1C2240). buildMoBar가 이 위에 테마색 알파를 합성한다(아래 주석). */
+    --mo-bar-base:#F2F6FA}
+  body.night .mo-bar{--mo-bar-base:#1C2240}
+  /* 두께 36→52px (앱 mosaicBarH 파리티 2026-08-05: 얇아서 조작이 어려웠다 —
+     매트릭스 task bar와 같은 '조작하는 막대' 두께). */
   .mob-in{position:relative;z-index:1;display:flex;align-items:center;gap:8px;padding:8px 10px;
-    border-radius:10px;color:#fff;cursor:pointer;min-height:36px;box-sizing:border-box}
-  .mob-title{flex:1;min-width:0;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;
-    white-space:nowrap;text-shadow:0 1px 2px rgba(20,40,80,.25)}
-  .mo-bar.done .mob-in{opacity:.6}
-  .mo-bar.done .mob-title{text-decoration:line-through}
+    border-radius:10px;color:#fff;cursor:pointer;min-height:52px;box-sizing:border-box}
+  /* 제목 두 줄 허용 (앱 lineLimit(2) 파리티) — 두꺼워진 막대라 두 줄 여유가
+     생겨 좁은 칼럼에서 이름이 덜 잘린다. */
+  .mob-title{flex:1;min-width:0;font-size:13px;font-weight:700;overflow:hidden;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+    text-shadow:0 1px 2px rgba(20,40,80,.25)}
+  /* ⚠ 완료 막대의 옅음은 **불투명 합성**으로 (앱 barSurface 파리티 2026-08-05):
+     예전 opacity:.6은 막대 전체를 반투명으로 만들어, 스와이프로 아래 깔린
+     삭제 버튼 색이 막대에 비쳤다(앱에서 유저 실기기가 지적한 결함과 동일).
+     옅은 톤은 buildMoBar의 moBarSurface가 밑판 위에 테마색 45%를 합성해
+     만든다 — 표면은 늘 불투명이라 뒤(버튼·하늘)가 절대 안 비친다. */
+  .mo-bar.done .mob-title{text-decoration:line-through;opacity:.85}
   .mob-play{border:0;background:transparent;padding:0;cursor:pointer;flex:0 0 auto;
     display:grid;place-items:center}
   .mob-chk{width:19px;height:19px;border-radius:50%;border:2px solid #fff;background:#fff;color:#3a4a68;
@@ -944,7 +974,10 @@
   .mob-acts button{width:25px;height:25px;border-radius:50%;border:0;background:rgba(255,255,255,.94);
     display:grid;place-items:center;cursor:pointer;padding:0}
   .mob-acts button svg{width:14px;height:14px}
-  .mba-ok{color:#1d9d57}.mba-del{color:#d64545}
+  /* 되돌리기 = 파랑 (앱 파리티 2026-08-05: iOS '상태 되돌리기' 어법 — 초록
+     완료·빨강 삭제와 한눈에 갈린다. 주황은 빨강과 붙어 보이고 회색은 비활성
+     으로 읽혀 탈락한 것도 앱과 같은 근거). */
+  .mba-ok{color:#1d9d57}.mba-del{color:#d64545}.mba-undo{color:#007AFF}
   @media(hover:hover) and (pointer:fine){.mo-bar:hover .mob-acts{display:flex}}
   .mo-bar .swipe-grp{z-index:0}
   .mo-bar.sw-right .swipe-grp.trail{visibility:visible}
@@ -962,8 +995,19 @@
   #view-week{position:absolute;inset:0;overflow-y:auto;
     background:linear-gradient(180deg,var(--sky-top,#2E86D8),var(--sky-bot,#AFDBF2));
     padding:14px 14px 90px;display:none}
-  .mwk-h{flex-basis:50px;white-space:nowrap}
-  .mwk-h .wd{font-weight:800}
+  /* 라벨 폭 = 하루(.mday-h 20px)와 **동일** (앱 MosaicLayout.labelW 단일 원본
+     원칙, 2026-08-05): 예전 flex-basis:50px는 요일 몫으로 넓혀서 주간의 시
+     숫자·격자가 하루보다 30px 오른쪽에 있었다 — 두 모드의 x가 갈라진 원인.
+     요일은 아래 .wdw(폭 0)로 숫자 왼쪽에 얹어 라벨 폭에 안 낀다. */
+  .mwk-h{white-space:nowrap}
+  /* 요일 '붙여 쓰기' (앱 rowLabel 파리티: "수16"/"Wed16", 구분자 폐지) —
+     폭 0 inline-block + rtl이면 내용이 상자 **왼쪽 바깥**으로 넘쳐 시 숫자에
+     딱 붙는다. 넘침은 #view-week의 왼 패딩(14px) 위에 그려질 뿐 격자 x는
+     1px도 안 민다. 잘림 없음: "Wed"(8.5px)≈15px < 숫자 왼쪽 여유 8px+패딩 14px. */
+  .mwk-h .wdw{display:inline-block;width:0;direction:rtl;white-space:nowrap}
+  /* 요일만 살짝 작게 — 시 숫자(10px)는 불가침 (앱: 요일 8pt/숫자 9pt와 같은 비.
+     예전에 요일 때문에 숫자까지 줄었다 지적받은 전례가 앱에 있다). */
+  .mwk-h .wd{font-weight:800;font-size:8.5px}
   /* 토=파랑 일=빨강 (스펙) — 달력 머리줄(.cal-wd)과 같은 하늘 위 파스텔. */
   .mwk-h .wd.sun{color:#ffb4b4}.mwk-h .wd.sat{color:#bcd4ff}
   .mo-sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:12px}
@@ -2813,14 +2857,19 @@
                 <span data-i18n-en="Focus time"><i style="background:var(--mo-done)"></i>집중한 시간</span>
                 <span data-i18n-en="Passed plan"><i style="background:transparent;border:1.5px solid var(--mo-past)"></i>지나간 계획</span>
               </div>
-              <!-- 기존 '지난 7일' 훑어보기는 아래에 그대로 둔다 (요청과 별개 기능) -->
-              <div class="mo-sub" style="margin:20px 0 8px" data-i18n-en="Last 7 Days">지난 7일</div>
-              <div id="moGrid"></div>
-              <div class="mo-legend" id="moLegend"></div>
             </div>
             <!-- 우측 '작업 막대' 칼럼 (유저 확정 2026-08-04): 할 일·마감 작업 막대 -->
             <div class="mo-tasks" id="moTasks"></div>
           </div>
+          <!-- '지난 7일' 훑어보기 (요청과 별개 기능) — .mo-flex **밖**으로 내렸다
+               (2026-08-05, 앱 아이패드 세로 스펙 검토): 좁은 화면에서 .mo-flex가
+               줄바꿈되면 막대 칼럼이 .mo-left 전체 **아래**로 내려가는데, 예전엔
+               '지난 7일'이 .mo-left 안에 있어 막대가 그보다도 밑에 깔렸다 —
+               앱 순서(날짜 → 전폭 격자 → 막대)와 어긋난다. 밖에 두면 좁은
+               화면 = 격자→범례→막대→지난7일, 넓은 화면 = 두 칼럼 아래 전폭. -->
+          <div class="mo-sub" style="margin:20px 0 8px" data-i18n-en="Last 7 Days">지난 7일</div>
+          <div id="moGrid"></div>
+          <div class="mo-legend" id="moLegend"></div>
         </div>
         <!-- 주간 모자이크 (모자이크2 — 유저 확정 2026-08-04): 하루 셀 부품 재사용.
              과거 빈 시간대 압축 + 지금~주 끝 전부. 우측 = 그 주 생성·완료 막대. -->
@@ -5979,6 +6028,19 @@
      ② 〈▶ 전날 할 일 (n)〉 — 그 전에 만든 미완료. 기본 접힘, 0이면 그룹 자체가 없다
      ③ 〈완료한 작업 (n)〉 — **그날 완료만**. 기본 펼침
      접힘 상태는 localStorage(기기 취향 — 스냅샷 아님)에 남는다. */
+  /* 손 순서 오버레이 (앱 handOrdered 파리티 2026-08-05): 앱에서 막대를 꾹 눌러
+     바꾼 순서가 스냅샷 mosaicSort(0=미지정)로 온다. 지정값 순서가 시간 순보다
+     우선하고, 미지정은 **뒤에서** 원래(시간) 순 유지 — 할일 ord '0은 맨 뒤'와
+     같은 문법이라 감각이 하나다. 그룹 안에서만 논다(그룹 간 이동 불가도 앱 규칙).
+     ⚠ 웹은 드래그 재정렬을 만들지 않는다(앱 전용 조작 — 스펙) — 보존+반영만.
+     sort 안정성을 못 믿어 원래 색인을 둘째 축으로 명시한다 (앱과 같은 근거). */
+  function moHandOrder(arr){
+    return arr.map(function(t,i){return{t:t,i:i};}).sort(function(a,b){
+      var x=(a.t.mosaicSort>0)?a.t.mosaicSort:Infinity;
+      var y=(b.t.mosaicSort>0)?b.t.mosaicSort:Infinity;
+      return x!==y?(x<y?-1:1):(a.i-b.i);
+    }).map(function(o){return o.t;});
+  }
   function mosaicBarGroups(tasks,tk,dayStartMs){
     var main=[],prev=[],done=[];
     (tasks||[]).forEach(function(t){
@@ -6006,7 +6068,8 @@
     });
     prev.sort(function(a,b){return new Date(a.createdAt||0)-new Date(b.createdAt||0);});
     done.sort(function(a,b){return new Date(a.completedAt||0)-new Date(b.completedAt||0);});
-    return {main:main,prev:prev,done:done};
+    // 시간 순 위에 손 순서(mosaicSort)를 마지막에 얹는다 — 앱 classify와 같은 순서.
+    return {main:moHandOrder(main),prev:moHandOrder(prev),done:moHandOrder(done)};
   }
   function renderMosaicBars(){
     var box=document.getElementById('moTasks');if(!box)return;
@@ -6039,31 +6102,52 @@
       if(doneOpen)g.done.forEach(function(t){box.appendChild(buildMoBar(t,true));});
     }
   }
-  /* 막대 한 줄 — 테마색 bar + 작업명 + 재생. 완료 막대는 체크 동그라미 + 취소선.
-     조작 = PC hover 완료·삭제 / 터치는 왼쪽 스와이프(할일 bar와 같은 관례). */
+  /* 막대 표면 — **완전 불투명** (앱 barSurface 파리티 2026-08-05): 예전 완료
+     막대는 opacity:.6이라 아래 깔린 스와이프 버튼 색이 비쳤다(앱 유저 실기기
+     지적과 같은 결함). 방식도 앱 그대로: 테마색 알파(0.92·0.45)는 두고 합성
+     상대만 '불투명 밑판'(--mo-bar-base: 낮=흰 카드·밤=남색)으로 — 알파가
+     만들던 톤 문법(완료=옅게)은 유지되고 뒤는 절대 안 비친다. 8자리 hex를
+     못 만드는 색(rgb() 문자열 등)은 원색 그대로 — 어차피 불투명이라 안 비친다. */
+  function moBarSurface(col,alpha){
+    if(/^#[0-9a-fA-F]{6}$/.test(col)){
+      var a=Math.round(alpha*255).toString(16);if(a.length<2)a='0'+a;
+      return 'linear-gradient(0deg,'+col+a+','+col+a+'),var(--mo-bar-base)';
+    }
+    return col;
+  }
+  /* 막대 한 줄 — 테마색 bar + 작업명 + 재생. 완료 막대는 체크 동그라미 + 취소선
+     + 〈되돌리기〉(hover, 파랑 — 앱 리딩 스와이프 파리티. 터치는 체크 재탭이
+     같은 일을 한다). 조작 = PC hover / 터치는 왼쪽 스와이프(할일 bar 관례). */
   function buildMoBar(t,done){
     var col=taskDisplayColor(t);
     var ckPath='<path d="M5 12.5l4.5 4.5L19 7"/>';
+    // arrow.uturn.backward (앱 되돌리기 아이콘)의 웹 근사.
+    var unPath='<path d="M8 5L4 9l4 4"/><path d="M4 9h9.5a5.5 5.5 0 0 1 0 11H10"/>';
     var bar=document.createElement('div');bar.className='mo-bar'+(done?' done':'');bar.dataset.id=t.id;
     bar.innerHTML=
       '<div class="swipe-grp trail">'+
         (done?'':'<button class="sa mob-sw-ok" style="background:#1d9d57">'+svgI(ckPath)+'<b>'+L('완료','Done')+'</b></button>')+
         '<button class="sa mob-sw-del" style="background:#FF3B30">'+IC.trash+'<b>'+L('삭제','Delete')+'</b></button></div>'+
-      '<div class="mob-in" style="background:'+col+'">'+
+      '<div class="mob-in" style="background:'+moBarSurface(col,done?0.45:0.92)+'">'+
         (done?'<button class="mob-chk" title="'+L('완료 해제','Mark as not done')+'">'+svgI(ckPath)+'</button>':'')+
         '<span class="mob-title">'+esc(t.title)+'</span>'+
         '<span class="mob-acts">'+
-          (done?'':'<button class="mba-ok" title="'+L('완료','Done')+'">'+svgI(ckPath)+'</button>')+
+          (done?'<button class="mba-undo" title="'+L('되돌리기','Undo')+'">'+svgI(unPath)+'</button>'
+               :'<button class="mba-ok" title="'+L('완료','Done')+'">'+svgI(ckPath)+'</button>')+
           '<button class="mba-del" title="'+L('삭제','Delete')+'">'+IC.trash+'</button></span>'+
         (done?'':'<button class="mob-play" title="'+L('집중 시작','Start focus')+'">'+
-          '<svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="11" fill="rgba(255,255,255,.95)"/><path d="M9.8 7.6v8.8L17 12z" fill="'+col+'"/></svg></button>')+
+          // 20→26px (앱: 막대가 두꺼워진 만큼 재생 원도 비례해 키움).
+          '<svg viewBox="0 0 24 24" width="26" height="26"><circle cx="12" cy="12" r="11" fill="rgba(255,255,255,.95)"/><path d="M9.8 7.6v8.8L17 12z" fill="'+col+'"/></svg></button>')+
       '</div>';
     function moComplete(){t.isDone=true;t.completedAt=new Date().toISOString();
       grantReward(t);renderAll();pushSnapshot();}          // 할일 체크와 같은 경로 (새 로직 금지)
+    // 완료 해제 → 미완료 구역으로 복귀 + 재생 복귀 (재렌더가 자리를 되돌린다).
+    // 체크 재탭과 hover 〈되돌리기〉가 **같은 함수** — 앱 uncompleteBar와 같은
+    // 근거: 해제 경로가 둘이면 두 곳이 갈린다.
+    function moUndo(){t.isDone=false;t.completedAt=null;renderAll();pushSnapshot();}
     if(done){
-      // 체크 해제 → 미완료 구역으로 복귀 + 재생 복귀 (재렌더가 자리를 되돌린다).
-      bar.querySelector('.mob-chk').addEventListener('click',function(e){e.stopPropagation();
-        t.isDone=false;t.completedAt=null;renderAll();pushSnapshot();});
+      bar.querySelector('.mob-chk').addEventListener('click',function(e){e.stopPropagation();moUndo();});
+      bar.querySelector('.mba-undo').addEventListener('click',function(e){e.stopPropagation();moUndo();});
     }else{
       // 재생 = 기존 집중 시작 경로 재사용 (스펙: 새 로직 금지).
       bar.querySelector('.mob-play').addEventListener('click',function(e){e.stopPropagation();startFocus(t);});
@@ -6105,23 +6189,39 @@
 
   /* ---------- 주간 모자이크 (모자이크2 — 유저 확정 2026-08-04) ----------
      행 = 하루 모자이크와 같은 1시간 줄(셀 크기·간격·문법 동일, 부품 재사용).
-     행 목록 규칙(스펙):
+     행 목록 규칙 **v2** (유저 확정 2026-08-05 — 앱 실기기 피드백으로 v1 폐기):
      · 과거(지금 행 이전)는 **집중이 있는 행만** 시간순 — 빈 시간대는 압축
-     · 지금 행부터 주 끝까지는 **전부** — 표시된 행의 빈 칸은 그대로 보인다
-     기본 스크롤 = 지금+2시간 행이 하단. 왼쪽 라벨은 날짜가 바뀌는 첫 행만
-     '수 · 08', 이후엔 '09' — 시(時)가 오른끝 정렬로 세로가 맞는다. */
-  /* 행 압축 — 순수 함수 (tests/mosaic-week-rows.js와 한 쌍). focus=[{s,e}] ms.
-     DOM 없이 규칙만: '지금이 든 행'의 index를 경계로 과거/미래가 갈린다. */
+     · **지금 행(집중 없어도 무조건) + 그 아래 2행** — 주 끝에서 클램프.
+       v1의 '지금부터 주 끝까지 전부'는 미래의 빈 줄 수십 개가 화면을 지배해
+       기록 조망이라는 목적이 죽었다 (유저 예: 지금 3시 → 마지막 세 줄=3·4·5시.
+       4시 0~5분만 집중했어도 4시 줄 전체가 선다 — 행 단위 판정이라 자동).
+     · 미래 주 = **빈 목록** (지금 행이 그 주에 없다) — 뷰는 안내 한 줄만.
+     기본 스크롤 = 마지막 행(= 지금+2h 행, 과거 주는 최근 기록 행)이 하단.
+     왼쪽 라벨은 날짜가 바뀌는 첫 행만 '수16'(붙여 쓰기), 이후엔 '09'. */
+  /* 행 압축 — 순수 함수 (tests/mosaic-week-rows.js와 한 쌍, 앱
+     MosaicWeekModel.rows와 같은 판정). focus=[{s,e}] ms. DOM 없이 규칙만. */
   function mosaicWeekRows(focus,weekStartMs,weekEndMs,nowMs){
     var HOUR=3600000,rows=[];
-    var nowRow=Math.floor((nowMs-weekStartMs)/HOUR);
+    if(weekEndMs<=weekStartMs)return rows;
     var total=Math.round((weekEndMs-weekStartMs)/HOUR);
-    for(var i=0;i<total;i++){
-      var t0=weekStartMs+i*HOUR,t1=t0+HOUR;
-      if(i>=nowRow){rows.push(t0);continue;}          // 지금부터 주 끝까지 전부
-      var has=false;
-      for(var j=0;j<(focus||[]).length;j++){var f=focus[j];if(f.s<t1&&f.e>t0){has=true;break;}}
-      if(has)rows.push(t0);                           // 과거는 집중 있는 행만
+    var nowRow=Math.floor((nowMs-weekStartMs)/HOUR);   // 지금 행 index — 주 밖이면 <0 또는 >=total
+    // ① 과거 구역: 주 시작 ~ 지금 행 직전 — 집중이 겹친 행만 (빈 시간대 압축).
+    //    과거 주 조회(지금이 주 끝 뒤)면 주 전체가 과거 구역이다.
+    var pastEnd=Math.min(nowRow,total);
+    for(var i=0;i<pastEnd;i++){
+      var t0=weekStartMs+i*HOUR,t1=t0+HOUR,has=false;
+      for(var j=0;j<(focus||[]).length;j++){var f=focus[j];
+        // 반개구간 겹침 (앱과 동일): 정시에 딱 끝난 집중(22:00 종료)은 22시
+        // 행을 안 만든다 — 0초 겹침은 겹침이 아니다. 길이 0 구간도 같은 이유.
+        if(f.e>f.s&&f.s<t1&&f.e>t0){has=true;break;}}
+      if(has)rows.push(t0);
+    }
+    // ② 지금 행 + 아래 2행 — 주 범위([ws,we) 반개구간) 안만. 지금 행은 집중이
+    //    없어도 **무조건**: 방금 시작한 집중이 실시간으로 색칠될 자리가 필요
+    //    하다 (유저 확정). ①이 지금 행 직전에서 멈추므로 중복은 구조적으로
+    //    불가능하다. 미래 주(nowRow<0)는 여기서도 0행 → 목록이 빈다.
+    if(nowRow>=0)for(var k=0;k<3;k++){
+      if(nowRow+k<total)rows.push(weekStartMs+(nowRow+k)*HOUR);
     }
     return rows;
   }
@@ -6129,6 +6229,73 @@
      **진입할 때 0으로 리셋**한다 — 기본 스크롤(지금+2h 행 하단) 규칙이
      '주간을 열면 이번 주'를 전제하기 때문. */
   var wkOffset=0;
+  /* 마지막으로 그린 주 시작 ms — 주가 바뀌면 '다른 목록'이지 이 목록의 수정이
+     아니다: 페이드 없이 통째로 새 판 (앱 .id(weekStartDay)와 같은 근거 —
+     없으면 주를 넘길 때마다 전 행이 fade out/in 하며 높이가 출렁인다). */
+  var wkLastWs=0;
+  /* 요일 3글자 (주간 라벨 전용): 전역 WDAY의 영어는 한 글자(T/T·S/S 구분
+     불가)라 "Wed16" 표기(앱 weekdayEn 파리티)에 못 쓴다. */
+  var WD3=IS_KO?['일','월','화','수','목','금','토']:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  /* 행 DOM 동기화 (요청 2026-08-05: 시간이 흘러 행이 미끄러진다) — key=data-t
+     =(day,hour) 안정 신원. innerHTML을 통째로 갈면 요소가 매번 새 것이라 CSS
+     transition이 붙을 자리가 없다. 남는 행은 **같은 요소**에 내용만 갱신(스크롤
+     불변), 사라지는 행은 fade out+높이 접힘 뒤 제거, 새 행은 투명 삽입 후
+     다음 프레임에 fade in. 보통 틱(집중 없던 지금 행 하나 빠지고 발밑 행 하나
+     붙음)은 행 수가 그대로라 콘텐츠 높이가 안 변해 보던 자리가 안 튄다.
+     instant = 주 교체·진입·동작 줄이기 — 페이드 없이 즉시 교체. */
+  function wkSyncRows(box,list,instant){
+    function inner(d){return '<span class="mday-h mwk-h">'+d.lab+'</span><div class="mday-cells">'+d.cells+'</div>';}
+    var reduce=false;
+    try{reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+    if(instant||reduce){
+      box.innerHTML=list.map(function(d){
+        return '<div class="mday-row'+d.nowCls+'" data-t="'+d.t0+'">'+inner(d)+'</div>';}).join('');
+      return;
+    }
+    var want={};list.forEach(function(d){want[d.t0]=1;});
+    // 살아 있는 기존 행 지도 — 제거 중(.wk-out)인 행과 행이 아닌 잔여물(빈 주
+    // 안내)은 지도 밖: 안내는 즉시 지우고, wk-out은 제 타이머가 치운다.
+    var old={},ch=box.children,gone=[];
+    for(var i=0;i<ch.length;i++){
+      var el=ch[i];
+      if(!el.classList.contains('mday-row')){gone.push(el);continue;}
+      if(el.classList.contains('wk-out'))continue;
+      if(want[el.getAttribute('data-t')])old[el.getAttribute('data-t')]=el;
+      else gone.push(el);
+    }
+    gone.forEach(function(el){
+      if(!el.classList.contains('mday-row')){el.parentNode.removeChild(el);return;}
+      // 시작 높이를 인라인으로 굳혀야 height:0으로 transition이 붙는다
+      // (auto→0은 애니메이션이 안 된다). reflow 한 번으로 시작값 확정.
+      el.style.height=el.offsetHeight+'px';
+      void el.offsetHeight;
+      el.classList.add('wk-out');
+      setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},400);
+    });
+    // 시간순 병합: 두 목록 다 시간순이라 커서 한 번으로 끝난다. wk-out 행은
+    // 커서가 그냥 지나쳐 접히는 자리에 그대로 남는다(아래 행이 미끄러져 온다).
+    var ref=box.firstElementChild,fresh=[];
+    list.forEach(function(d){
+      var el=old[d.t0];
+      if(el){
+        while(ref&&ref!==el)ref=ref.nextElementSibling;
+        el.className='mday-row'+d.nowCls;      // wk-now 갱신 (캡슐 판정이 이 클래스를 본다)
+        el.innerHTML=inner(d);                 // 채움 진행 등 내용만 — 요소는 그대로
+        ref=el.nextElementSibling;
+      }else{
+        var nw=document.createElement('div');
+        nw.className='mday-row wk-in'+d.nowCls;
+        nw.setAttribute('data-t',d.t0);
+        nw.innerHTML=inner(d);
+        box.insertBefore(nw,ref);
+        fresh.push(nw);
+      }
+    });
+    if(fresh.length){
+      void box.offsetHeight;                   // 삽입 상태(opacity 0)를 한 프레임으로 굳힌 뒤
+      fresh.forEach(function(nw){nw.classList.remove('wk-in');});   // → fade in
+    }
+  }
   function renderMosaicWeek(home){
     var box=document.getElementById('wkRows');if(!box)return;
     var now=Date.now();
@@ -6163,41 +6330,59 @@
       plans=plans.concat(mosaicDayPlans(tk));
     }
     var rows=mosaicWeekRows(focus,ws.getTime(),we.getTime(),now);
-    var html='',lastTk='';
-    rows.forEach(function(t0){
-      var d0=new Date(t0),tk0=dateKey(d0);
-      var first=(tk0!==lastTk);lastTk=tk0;
-      var wd=d0.getDay(),hh=('0'+d0.getHours()).slice(-2);
-      var lab=first?('<b class="wd'+(wd===0?' sun':wd===6?' sat':'')+'">'+WDAY[wd]+'</b> · '+hh):hh;
-      var isNowRow=(t0<=now&&now<t0+3600000);
-      html+='<div class="mday-row'+(isNowRow?' wk-now':'')+'" data-t="'+t0+'">'+
-        '<span class="mday-h mwk-h">'+lab+'</span><div class="mday-cells">'+
-        mosaicRowCellsHTML(t0,recs,plans,now)+'</div></div>';
-    });
-    var sc=document.getElementById('view-week'),prev=sc?sc.scrollTop:0;
-    box.innerHTML=html;
-    renderMosaicWeekBars(ws.getTime(),we.getTime());
-    if(sc){
-      if(home){
-        /* 기본 스크롤 (스펙): 지금+2시간이 든 행이 화면 **하단**에 —
-           과거 압축분이 위로 접혀 있으니 '조금 전~곧'이 첫눈에 온다.
-           주 끝을 넘으면 마지막 행. (화면 밖 렌더면 clientHeight=0이라
-           못 가지만, 그땐 (지금) 캡슐이 안전망이다.) */
-        var tgt=now+2*3600000,el=null,els=box.querySelectorAll('.mday-row');
-        for(var k=0;k<els.length;k++){if(+els[k].getAttribute('data-t')<=tgt)el=els[k];}
-        if(el&&sc.clientHeight)sc.scrollTop=Math.max(0,el.offsetTop+el.offsetHeight-sc.clientHeight+14);
-        /* ‹›로 간 주가 통째로 미래면 tgt보다 이른 행이 없다(el=null) —
-           그대로 두면 직전 주의 스크롤이 남아 엉뚱한 데를 본다. 맨 위부터. */
-        else if(sc.clientHeight)sc.scrollTop=0;
-      }else sc.scrollTop=prev;                        // 갱신 재렌더는 자리 보존
+    var freshWeek=(ws.getTime()!==wkLastWs);wkLastWs=ws.getTime();
+    var sc=document.getElementById('view-week');
+    if(!rows.length){
+      /* 행 0 = ① 미래 주 (행 규칙 v2는 미래를 안 그린다 — 지금 행조차 없다),
+         ② 과거 주 + 집중 0. 텅 빈 화면은 고장처럼 보여 안내 한 줄 — 미래
+         주에 "기록이 없어요"는 오답(아직 올 수 없는 기록)이라 문구를 간다
+         (앱과 같은 두 갈래). */
+      box.innerHTML='<div class="mot-empty" style="padding:44px 4px;text-align:center">'+
+        (ws.getTime()>now?L('아직 오지 않은 주예요',"This week hasn't come yet")
+                         :L('이 주엔 집중 기록이 없어요','No focus this week'))+'</div>';
+    }else{
+      var lastTk='';
+      var list=rows.map(function(t0){
+        var d0=new Date(t0),tk0=dateKey(d0);
+        var first=(tk0!==lastTk);lastTk=tk0;
+        var wd=d0.getDay(),hh=('0'+d0.getHours()).slice(-2);
+        /* 붙여 쓰기 "수16"/"Wed16" (앱 rowLabel 파리티 2026-08-05 — 구분자
+           폐지·요일만 작게·시 숫자 크기 불변). .wdw = 폭 0이라 격자 x 불변. */
+        var lab=first?('<b class="wdw"><span class="wd'+(wd===0?' sun':wd===6?' sat':'')+'">'
+          +WD3[wd]+'</span></b>'+hh):hh;
+        return {t0:t0,lab:lab,cells:mosaicRowCellsHTML(t0,recs,plans,now),
+                nowCls:(t0<=now&&now<t0+3600000)?' wk-now':''};
+      });
+      /* home(진입·주 이동·지금 복귀)도 instant — 화면 갈아타기는 페이드의
+         몫이 아니다 (앱과 같은 구분: 페이드는 '시간이 흘러 한 줄 생기고
+         지워지는' 몫). 30초 틱·데이터 갱신 재렌더만 애니메이션 경로를 탄다. */
+      wkSyncRows(box,list,freshWeek||!!home);
     }
+    renderMosaicWeekBars(ws.getTime(),we.getTime());
+    if(home&&sc&&sc.clientHeight){
+      /* 기본 스크롤 (행 규칙 v2 재검토): 목록 자체가 지금+2h 행에서 끝나므로
+         '마지막 행이 화면 하단'이 곧 스펙이다 — 현재 주는 지금+2h 행(주 끝
+         클램프 포함), 과거 주는 가장 최근 기록 행, 미래 주는 행이 없어 맨 위.
+         '지금+2h 행 찾기'를 따로 두지 않는 이유 = 판정 원본이 둘로 갈라져
+         어긋나는 사고 방지 (앱 defaultAnchor와 같은 단일화). */
+      var els=box.querySelectorAll('.mday-row:not(.wk-out)');
+      var el=els.length?els[els.length-1]:null;
+      if(el)sc.scrollTop=Math.max(0,el.offsetTop+el.offsetHeight-sc.clientHeight+14);
+      else sc.scrollTop=0;
+    }
+    /* 갱신 재렌더(비 home)의 자리 보존은 공짜가 됐다 — wkSyncRows가 DOM을
+       통째로 갈지 않으니 scrollTop을 건드릴 일 자체가 없다. */
     updateNowCap();
   }
-  /* 우측 막대 — **그 주** 생성·완료 작업 (스펙: 하루 부품 buildMoBar 재사용).
-     그룹: ① 이 주 마감(마감 순) + 이 주 생성(만든 순) ② 〈완료(n)〉 기본 펼침.
-     하루의 〈전날 할 일〉 그룹은 주간엔 없다 — 스펙이 '그 주 생성·완료'만 말한다. */
+  /* 우측 막대 — **그 주** 마감·생성·완료 작업 (하루 부품 buildMoBar 재사용).
+     문법 = 하루와 **한 몸통, 경계만 한 주** (앱 MosaicBarGroups week 모드
+     파리티 2026-08-05): ① 이 주 마감(마감 순) + 이 주 생성(만든 순)
+     ② 〈이전 주 할 일〉 = 미완료인데 마감(또는 생성)이 주 시작 이전 — 기본
+     접힘, 0이면 그룹 없음 (예전 웹은 이 그룹이 아예 없어 지난주 미완료가
+     주간 칼럼에서 안 보였다 — 하루와 다른 판정이 남는 '같은 사실 두 곳' 결함)
+     ③ 〈완료(n)〉 = 그 주 완료만, 기본 펼침. */
   function weekBarGroups(tasks,wsMs,weMs){
-    var main=[],done=[];
+    var main=[],prev=[],done=[];
     (tasks||[]).forEach(function(t){
       if(t.isRewardItem||t.goalID)return;             // 하루 칼럼과 같은 제외 규칙
       if(t.isDone){
@@ -6210,8 +6395,18 @@
       var hasDue=!!t.scheduledStart&&(t.durationMin||0)>0;
       var due=hasDue?taskDueAt(t).getTime():null;
       var made=t.createdAt?new Date(t.createdAt).getTime():null;
-      if(due!=null&&due>=wsMs&&due<weMs)main.push(t);
-      else if(made!=null&&made>=wsMs&&made<weMs)main.push(t);
+      // 마감 작업: 소속은 마감 날짜가 정한다 (앱과 동일 — 한 작업이 두 그룹에
+      // 겹치지 않는 근거). 주 뒤 마감은 이 칼럼의 일이 아니라 안 그린다.
+      if(due!=null){
+        if(due>=wsMs&&due<weMs)main.push(t);
+        else if(due<wsMs)prev.push(t);
+        return;
+      }
+      // 기간 뒤에 만든 작업은 그때 존재하지 않았다 — 과거 주를 볼 때 나중
+      // 주의 담아둔 일이 새어 들어오는 것을 막는다 (앱 createdAt>=p1 가드).
+      if(made!=null&&made>=weMs)return;
+      if(made!=null&&made>=wsMs)main.push(t);
+      else prev.push(t);
     });
     function dueIn(t){if(!(t.scheduledStart&&(t.durationMin||0)>0))return null;
       var d=taskDueAt(t).getTime();return (d>=wsMs&&d<weMs)?d:null;}
@@ -6220,20 +6415,35 @@
       if(da!=null&&db!=null)return da-db;             // 마감끼리 = 이른 마감이 위
       if(da!=null)return -1;if(db!=null)return 1;     // 마감이 먼저, 만든 건 뒤
       return new Date(a.createdAt||0)-new Date(b.createdAt||0);});
+    // 이전 그룹은 마감(있으면) 또는 생성 시각 순 — 앱 previous의 at과 같은 축.
+    function prevAt(t){return (t.scheduledStart&&(t.durationMin||0)>0)
+      ?taskDueAt(t).getTime():new Date(t.createdAt||0).getTime();}
+    prev.sort(function(a,b){return prevAt(a)-prevAt(b);});
     done.sort(function(a,b){return new Date(a.completedAt||0)-new Date(b.completedAt||0);});
-    return {main:main,done:done};
+    return {main:moHandOrder(main),prev:moHandOrder(prev),done:moHandOrder(done)};
   }
   function renderMosaicWeekBars(wsMs,weMs){
     var box=document.getElementById('wkTasks');if(!box)return;
     var g=weekBarGroups(DATA.tasks,wsMs,weMs);
+    var prevOpen=localStorage.getItem('hfWkPrevOpen')==='1';   // 기본 접힘 (하루와 같은 관례)
     var doneOpen=localStorage.getItem('hfWkDoneOpen')!=='0';   // 기본 펼침 (하루와 같은 관례)
     box.innerHTML='';
-    if(!g.main.length&&!g.done.length){
+    if(!g.main.length&&!g.prev.length&&!g.done.length){
       box.insertAdjacentHTML('beforeend','<div class="mot-empty">'+
         L('이번 주 작업이 아직 없어요 — ＋로 담아 보세요.','Nothing this week yet — add one with ＋.')+'</div>');
       return;
     }
     g.main.forEach(function(t){box.appendChild(buildMoBar(t,false));});
+    if(g.prev.length){
+      /* 주간에선 '전날'이 거짓말이 된다 — 기간이 한 주라 '이전 주까지'가
+         사실이다 (앱과 같은 라벨 분기: "이전 주 할 일"/"Earlier weeks"). */
+      box.insertAdjacentHTML('beforeend','<button class="mot-grp" id="wkPrevBtn">'+
+        (prevOpen?'▼':'▶')+' '+L('이전 주 할 일','Earlier weeks')+' ('+g.prev.length+')</button>');
+      document.getElementById('wkPrevBtn').addEventListener('click',function(){
+        try{localStorage.setItem('hfWkPrevOpen',prevOpen?'0':'1');}catch(e){}
+        renderMosaicWeekBars(wsMs,weMs);});
+      if(prevOpen)g.prev.forEach(function(t){box.appendChild(buildMoBar(t,false));});
+    }
     if(g.done.length){
       box.insertAdjacentHTML('beforeend','<button class="mot-grp" id="wkDoneBtn">'+
         (doneOpen?'▼':'▶')+' '+L('완료한 작업','Completed')+' ('+g.done.length+')</button>');
@@ -6288,7 +6498,11 @@
     reminderOffsets:[],nudgeEnabled:false,deferredUntil:null,deferCount:0,verificationCount:0,
     focusLockUsed:false,actualFocusedSec:0,cumulativeFocusedSec:0,lastFocusedAt:null,
     createdAt:new Date().toISOString(),restSpansJSON:'[]',completedAt:null,
-    rewardText:'',rewardMoney:0,rewardToQ4:false,isRewardItem:false,rewardGranted:false,matrixSort:0
+    rewardText:'',rewardMoney:0,rewardToQ4:false,isRewardItem:false,rewardGranted:false,matrixSort:0,
+    // 모자이크 막대 손 순서 (앱 TaskBlock.mosaicSort, 2026-08-05) — 0=미지정.
+    // 앱 DTO에선 optional이라 없어도 디코딩은 살지만, 기본값을 실어야 앱이
+    // 정한 순서를 웹이 되밀 때 지우지 않는다(빈 채택 금지와 같은 정신).
+    mosaicSort:0
   });
     Object.keys(o||{}).forEach(function(k){if(o[k]!==undefined)d[k]=o[k];});
     return d;}
@@ -10305,6 +10519,34 @@
       ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8.6 9.5v10M14.4 9.5v10"/></svg>'}
   };
   var tlMode='big';
+  /* 모드 전환 캡슐 (앱 파리티 2026-08-05): 모자이크·주간 **진입** 순간 '지금'
+     캡슐 자리에 "하루 모자이크"/"주간 모자이크"가 1.3초 떴다 fade out —
+     타임라인 복귀 땐 없음(스펙: 돌아온 화면은 설명이 필요 없다). 그동안 진짜
+     '지금' 캡슐은 잠깐 숨긴다 — 같은 자리라 겹쳐 보인다. */
+  var modeCapT=[];
+  function flashModeCap(m){
+    var old=document.getElementById('tlModeCap');
+    var nowCap=document.getElementById('tlNowCap');
+    if(m==='big'){
+      // 타임라인 복귀: 떠 있던 캡슐은 즉시 걷는다 — 모드 이름이 더는 사실이 아니다.
+      modeCapT.forEach(clearTimeout);modeCapT=[];
+      if(old&&old.parentNode)old.parentNode.removeChild(old);
+      if(nowCap)nowCap.style.visibility='';
+      return;
+    }
+    modeCapT.forEach(clearTimeout);modeCapT=[];
+    if(old&&old.parentNode)old.parentNode.removeChild(old);
+    var cap=document.createElement('div');cap.id='tlModeCap';
+    cap.className='tl-nowcap show';                     // 같은 판 재사용 (CSS 주석 참고)
+    cap.textContent=L(MODE_META[m].ko,MODE_META[m].en);
+    document.body.appendChild(cap);
+    if(nowCap)nowCap.style.visibility='hidden';
+    modeCapT.push(setTimeout(function(){cap.style.opacity='0';},1300));
+    modeCapT.push(setTimeout(function(){
+      if(cap.parentNode)cap.parentNode.removeChild(cap);
+      if(nowCap)nowCap.style.visibility='';
+    },1750));
+  }
   function updateModeBtns(){
     var meta=MODE_META[tlMode];
     var b=document.getElementById('modeBtn');
@@ -10314,6 +10556,7 @@
   }
   function setMode(m){
     if(TL_MODES.indexOf(m)<0)m='big';
+    var prevMode=tlMode;                 // 캡슐은 **바뀔 때만** — 같은 모드 재호출은 소음
     tlMode=m;
     try{localStorage.setItem('hfTlMode',m);}catch(e){}
     document.getElementById('view-big').style.display=m==='big'?'block':'none';
@@ -10340,8 +10583,9 @@
     if(m==='big')renderBig();
     // ⚠ 진입 시점에 직접 그린다 — renderAll 등 이벤트 렌더만 믿으면 낡은 판이 뜬다.
     if(m==='mosaic')renderMosaic();
-    if(m==='week')renderMosaicWeek(true);   // true = 기본 스크롤(지금+2h 행 하단)로
+    if(m==='week')renderMosaicWeek(true);   // true = 기본 스크롤(마지막 행 하단)로
     updateNowCap();                       // '지금' 캡슐은 모드별 규칙 — updateNowCap이 가린다
+    if(m!==prevMode)flashModeCap(m);      // 모드 이름 캡슐 (updateNowCap 뒤 — 숨김이 이겨야 한다)
   }
   function modeNext(){setMode(TL_MODES[(TL_MODES.indexOf(tlMode)+1)%TL_MODES.length]);}
   // 직접 선택 메뉴 — 케밥 메뉴 부품(kmenu) 재사용: 바깥 탭 닫힘도 공짜로 얻는다.
@@ -10402,7 +10646,10 @@
   setInterval(function(){
     if(document.hidden)return;
     if(tlMode==='mosaic')renderMosaicDay();
-    else if(tlMode==='week')renderMosaicWeek();   // 스크롤 보존 재렌더 (지금 행·채움 갱신)
+    // 주간: 이 30초 틱이 '행 미끄러짐'의 심장이다 — 정시가 지나면 행 목록
+    // (행 규칙 v2)이 바뀌고 wkSyncRows가 fade out/in으로 그린다. 목록이
+    // 같으면 내용 갱신뿐이라 스크롤·애니메이션 아무 일도 없다.
+    else if(tlMode==='week')renderMosaicWeek();
   },30000);
 
   /* ---------- auth + snapshot ---------- */

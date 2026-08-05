@@ -24,12 +24,15 @@ function grab(name) {
 const harness = `
 ${grab('dateKey')}
 ${grab('taskDueAt')}
+${grab('moHandOrder')}
 ${grab('mosaicBarGroups')}
-  module.exports = { mosaicBarGroups };
+${grab('weekBarGroups')}
+  module.exports = { mosaicBarGroups, weekBarGroups };
 `;
 const m = new module.constructor();
 m._compile(harness, '/mosaic-bars-harness.js');
 const groups = m.exports.mosaicBarGroups;
+const wkGroups = m.exports.weekBarGroups;
 
 let pass = 0, fail = 0;
 const t = (name, ok) => { (ok ? pass++ : fail++); console.log((ok ? 'PASS  ' : 'FAIL  ') + name); };
@@ -91,6 +94,40 @@ t('내일로 미룬 일은 그날까지 숨김(renderTodo와 같은 규칙)',
 const deferHere = { id: 'dh', createdAt: D(9, 0, 3), isDone: false, deferredUntil: D(0, 0) };
 g = groups([deferHere], TK, DAY0);
 t('미룬 날짜가 오면 다시 보인다(전날 그룹)', ids(g.prev) === 'dh');
+
+// ── 손 순서 mosaicSort (앱 handOrdered 파리티 2026-08-05) ──
+// 앱에서 꾹 눌러 바꾼 순서가 스냅샷 mosaicSort로 온다 — 지정값(>0) 순서가
+// 시간 순보다 우선, 미지정(0/없음)은 뒤에서 원래(시간) 순. 그룹 안에서만.
+const hA = { id: 'hA', scheduledStart: D(9, 0), durationMin: 30, createdAt: D(7, 0), isDone: false, mosaicSort: 2 };  // 마감 09:30
+const hB = { id: 'hB', scheduledStart: D(14, 0), durationMin: 60, createdAt: D(7, 0), isDone: false, mosaicSort: 1 }; // 마감 15:00
+const hC = { id: 'hC', createdAt: D(10, 0), isDone: false, mosaicSort: 0 };   // 0 = 미지정
+const hD = { id: 'hD', createdAt: D(11, 0), isDone: false };                  // 필드 없음 = 미지정
+g = groups([hA, hB, hC, hD], TK, DAY0);
+t('⚠ mosaicSort 지정값이 시간 순(마감 우선)을 이긴다 — 1이 2보다 위',
+  ids(g.main) === 'hB,hA,hC,hD');
+t('미지정(0/없음)은 맨 뒤에서 원래(시간) 순 유지 — 할일 ord와 같은 문법',
+  ids(g.main).endsWith('hC,hD'));
+const hE = { id: 'hE', createdAt: D(8, 0), isDone: true, completedAt: D(15, 0), mosaicSort: 1 };
+const hF = { id: 'hF', createdAt: D(8, 0), isDone: true, completedAt: D(10, 0) };
+g = groups([hE, hF], TK, DAY0);
+t('완료 그룹도 같은 손 순서 규칙', ids(g.done) === 'hE,hF');
+
+// ── 주간 그룹 (앱 MosaicBarGroups week 모드 파리티 2026-08-05) ──
+// 기준 주: 2026-08-02(일)~08-09. TK 주간이 아니라 ms 경계로 판정한다.
+const WS_MS = new Date(2026, 7, 2).getTime(), WE_MS = new Date(2026, 7, 9).getTime();
+const wDue   = { id: 'wD', scheduledStart: D(9, 0), durationMin: 30, createdAt: D(7, 0, 1), isDone: false };   // 이 주 마감 (7/1 생성이어도 마감이 우선)
+const wMade  = { id: 'wM', createdAt: D(10, 0, 6), isDone: false };                                            // 이 주 생성
+const wOld   = { id: 'wO', createdAt: D(9, 0, 1), isDone: false };                                             // 7/1 생성 = 이전 주
+const wOldDue = { id: 'wP', scheduledStart: D(9, 0, 1), durationMin: 30, createdAt: D(8, 0, 1), isDone: false }; // 7/1 마감 = 이전 주
+const wNext  = { id: 'wN', createdAt: new Date(2026, 7, 12).toISOString(), isDone: false };                    // 다음 주 생성
+const wDone  = { id: 'wC', createdAt: D(8, 0, 1), isDone: true, completedAt: D(12, 0, 4) };                    // 이 주 완료
+let wg = wkGroups([wMade, wDue, wOld, wOldDue, wNext, wDone], WS_MS, WE_MS);
+t('주간 ①: 이 주 마감 + 이 주 생성', ids(wg.main) === 'wD,wM');
+t('주간 ② 이전 주 할 일: 마감·생성이 주 시작 이전 (마감/생성 시각 순 — 9:00 생성이 9:30 마감보다 위)',
+  ids(wg.prev) === 'wO,wP');
+t('주간: 기간 뒤에 만든 작업은 그때 존재하지 않았다 — 과거 주에 안 샌다',
+  [...wg.main, ...wg.prev, ...wg.done].every(x => x.id !== 'wN'));
+t('주간 ③: 이 주 완료만', ids(wg.done) === 'wC');
 
 console.log(fail ? `\n${fail}/${pass + fail} FAILED` : `\n${pass}/${pass} 통과 (mosaic-bars)`);
 process.exit(fail ? 1 : 0);
