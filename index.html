@@ -6572,6 +6572,36 @@
     return t;
   }
   function healTasks(a){return (a||[]).map(healTask);}
+
+  /* ⭐⭐ 작업 **updatedAt 찍기** (2026-08-06 재발 수리 — 웹→앱 동기화).
+     앱은 `SundialSnapshot`에서 작업별 `updatedAt`을 견줘 최신 쪽을 남긴다.
+     그런데 **웹이 그 값을 한 번도 안 실어 보냈다** — 앱엔 nil → `.distantPast`로
+     읽혀 **앱 사본이 무조건 이겼다**. 그래서 웹에서 완료해도 앱이 되돌리고,
+     새로고침하면 완료가 풀려 있었다(앱→웹만 되던 이유). 목표·폴더는 올릴 때
+     병합하게 고쳐 뒀는데 **작업만 빠져 있었다**.
+
+     아무 데나 다 찍으면 웹이 항상 이겨서 반대 사고가 난다. 그래서 **마지막으로
+     받아 둔 서버 사본과 견줘 실제로 달라진 것에만** 찍는다.
+     ⚠ 비교는 **양쪽을 똑같이 healTask에 통과시킨 뒤** 한다 — 기본값이 채워진
+       로컬과 필드가 빠진 서버본을 그냥 비교하면 안 바뀐 작업도 달라 보인다.
+     ⚠ `updatedAt` 자체는 비교에서 뺀다(넣으면 매번 달라 전부 찍힌다).
+     순수 함수 — tests/task-updated-stamp.js가 그대로 뽑아 돌린다. */
+  function taskFingerprint(t){
+    var c;try{c=healTask(JSON.parse(JSON.stringify(t)));}catch(_){return '?';}
+    delete c.updatedAt;
+    return JSON.stringify(Object.keys(c).sort().map(function(k){return [k,c[k]];}));
+  }
+  function stampTasks(list,serverList,nowISO){
+    var prev={};(serverList||[]).forEach(function(t){if(t&&t.id)prev[t.id]=t;});
+    var now=nowISO||new Date().toISOString();
+    return (list||[]).map(function(t){
+      if(!t||!t.id)return t;
+      var p=prev[t.id];
+      if(!p||taskFingerprint(p)!==taskFingerprint(t))t.updatedAt=now;
+      else if(!t.updatedAt&&p.updatedAt)t.updatedAt=p.updatedAt;   // 안 바뀐 건 서버 값 유지
+      return t;
+    });
+  }
   function setPlanFromSchedule(t){                      // planDueAt = 만들 때 계획 끝 (§1·§2)
     if(t.scheduledStart&&(t.durationMin||0)>0)
       t.planDueAt=new Date(new Date(t.scheduledStart).getTime()+t.durationMin*60000).toISOString();
@@ -11107,7 +11137,11 @@
     serverSnap=serverSnap||{schemaVersion:1,tasks:[],habits:[],sessions:[],settings:null};
     /* ⚠ 올리기 직전에 한 번 더 메운다 — 필수 필드가 빠진 작업이 하나라도
        올라가면 앱이 스냅샷 **전체**를 못 읽어 모든 동기화가 멈춘다. */
-    serverSnap.tasks=healTasks(DATA.tasks);serverSnap.habits=DATA.habits;
+    /* ⭐ 작업에 updatedAt을 찍어 올린다 (stampTasks 주석 참조) — 이게 없으면
+       앱이 웹의 변경을 **항상** 되돌린다. serverSnap.tasks는 이 줄 전까지는
+       아직 '마지막으로 받아 둔 서버 사본'이라 비교 기준으로 쓸 수 있다. */
+    serverSnap.tasks=stampTasks(healTasks(DATA.tasks),serverSnap.tasks);
+    serverSnap.habits=DATA.habits;
     serverSnap.sessions=(DATA.sessions&&DATA.sessions.length)?DATA.sessions:(serverSnap.sessions||[]);
     if(DATA.settings)serverSnap.settings=DATA.settings;
     // diary 왕복 보존 (앱 핸드오프 §8): 서버에 있었거나 웹이 항목을 만든 경우에만 실어 보낸다.
