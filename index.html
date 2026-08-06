@@ -13976,7 +13976,14 @@
     var out=['myword'];                                  // 2순위 — 항상 후보
     // (해질녘은 뺐다 — 2026-07-28 상단바 다이어트: 내 말·D-day만, 앱 파리티)
     var S=DATA.settings||{};
-    if(S.ddayDate&&S.chipDday!==false&&Date.now()-lastDdayAt>=DDAY_COOLDOWN_MS)out.push('dday');
+    /* ⚠ **지난 D-day는 회전에서 빠진다** (요청 2026-08-07): 남았거나 그날일
+       때만 뜬다. 예전엔 지나도 계속 "19 days since Test."가 올라왔다 —
+       ⑴할 게 없는 숫자가 영원히 커지고, ⑵시험이 끝나도 스스로 물러나지
+       않아 아무도 설정에 들어가 지우지 않으며, ⑶풀이 둘뿐이라 그 죽은 숫자가
+       **나의 다짐 자리를 뺏는다**. 이 앱에서 제일 중요한 한 줄인데.
+       지나면 저절로 조용해지고, 새 D-day를 넣으면 다시 돈다. */
+    if(S.ddayDate&&S.chipDday!==false&&Date.now()-lastDdayAt>=DDAY_COOLDOWN_MS
+       &&ddayDiffDays(new Date(),new Date(S.ddayDate))>=0)out.push('dday');
     return out;
   }
   /* 캡슐에 남는 다짐 (요청 개편 #4) — '지금 나' 시트 안에서 적은 한마디.
@@ -14029,11 +14036,15 @@
       var dd=new Date(S.ddayDate);dd.setHours(0,0,0,0);
       var td=new Date();td.setHours(0,0,0,0);
       var diff=Math.round((dd-td)/86400000);
-      var lab=(setDdayTitle()||'').trim()||L('그날','that day');
+      var lab=(setDdayTitle()||'').trim();
       lastDdayAt=Date.now();
-      if(diff===0)return {txt:L(lab+', 오늘이야.',lab+' is today.'),sub:''};
-      if(diff<0)return {txt:L(lab+'에서 '+daysKo(-diff)+' 지났어.',(-diff)+' days since '+lab+'.'),sub:''};
-      return {txt:L(lab+'까지 '+daysKo(diff)+' 남았어.',diff+' days to '+lab+'.'),sub:''};
+      /* 표기는 **D-day 관례 그대로** (요청 2026-08-07): `D-3 시험` · `D-day 시험`.
+         ⚠ 문장체("시험까지 사흘 남았어.")를 버린 이유: 이 캡슐은 몇 초 스쳐
+            지나가는 자리라 한눈에 읽히는 게 먼저다. 그리고 할 일 줄의 D-day
+            캡슐이 이미 이 표기를 쓴다 — 같은 뜻을 두 표기로 쓰지 않는다
+            (ddayShortLabel 하나가 정본, 웹·앱 공용).
+         ⚠ D+(지남)는 여기 안 온다 — capPool이 지난 D-day를 아예 안 넣는다. */
+      return {txt:ddayShortLabel(diff)+(lab?' '+lab:''),sub:''};
     }
     return {txt:'',sub:''};
   }
