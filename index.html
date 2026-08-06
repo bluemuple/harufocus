@@ -188,12 +188,17 @@
   #tlScroll.editing .block{box-shadow:0 0 0 2px rgba(255,255,255,.6),0 6px 15px rgba(20,30,60,.22)}
   /* 페이지 우하단 + FAB (요청: 앱 파리티) — 할일·매트릭스 공용. */
   .page-fab{position:fixed;right:22px;bottom:calc(22px + env(safe-area-inset-bottom));width:56px;height:56px;
-    border-radius:50%;border:0;background:var(--sky-blue);color:#fff;box-shadow:0 8px 20px rgba(20,60,120,.28);
+    /* 액센트는 하늘에서 (앱 skyTheme.accent 파리티) — JS applySky가 채운다.
+       폴백은 예전 고정색. 무채색 구간에선 타임라인 ＋와 같은 #80CDE9가 된다. */
+    border-radius:50%;border:0;background:var(--pg-accent,var(--sky-blue));
+    color:var(--pg-onaccent,#fff);box-shadow:0 8px 20px rgba(20,60,120,.28);
     cursor:pointer;display:grid;place-items:center;z-index:15}
   /* 장기 목표 버튼 (요청 2026-07-27): + FAB **왼쪽** — 앱 배치 파리티. */
   .goal-fab{position:fixed;right:88px;bottom:calc(27px + env(safe-area-inset-bottom));
+    /* 아이콘 색은 옆 동그라미들(친구 등)과 같은 회색 — ＋ 옆 동그라미는 한
+       세트로 보여야 한다 (요청 2026-08-06). 예전 보라 #6B5FA8은 혼자 튀었다. */
     width:46px;height:46px;border:0;border-radius:50%;background:rgba(255,255,255,.92);
-    color:#6B5FA8;display:none;place-items:center;cursor:pointer;z-index:41;
+    color:var(--ink-soft);display:none;place-items:center;cursor:pointer;z-index:41;
     box-shadow:0 4px 14px rgba(20,40,80,.18)}
   .goal-fab svg{width:24px;height:24px}
   /* #view-todo 안에 있어 뷰가 켜질 때만 보인다 (page-fab과 같은 규칙). */
@@ -204,7 +209,9 @@
   /* 삭제 FAB (요청 2026-07-28): 장기 목표 버튼 **왼쪽**, 같은 크기(46)·
      같은 높이 — 예전 right:90px가 goal-fab(88px)과 정확히 겹쳤다. */
   .fab-del{right:146px;bottom:calc(27px + env(safe-area-inset-bottom));
-    width:46px;height:46px;background:#FF3B30}
+    /* 빨강 위 글자는 항상 흰색 — .page-fab이 --pg-onaccent(낮엔 짙은 잉크)를
+       주므로 여기서 되돌리지 않으면 빨강 위에 검정 아이콘이 된다. */
+    width:46px;height:46px;background:#FF3B30;color:#fff}
   .fab-del svg{width:22px;height:22px}
   .fab-del .fab-n{position:absolute;top:-2px;right:-2px;min-width:20px;height:20px;border-radius:999px;
     background:#fff;color:#FF3B30;font-size:11px;font-weight:800;display:grid;place-items:center;padding:0 5px}
@@ -2012,7 +2019,12 @@
   body.night .quad h3{color:rgba(235,238,246,.72)}
   body.night .qhint-big{color:rgba(235,238,246,.34)}
   body.night .mtask-inner{background:rgba(28,32,48,.92);color:#ECEEF6}
-  body.night .goal-fab{background:rgba(30,34,50,.85);color:#B9AAF0}
+  /* 밤 배경은 **동그라미 전체**에 (요청 2026-08-06). 예전엔 goal-fab만 있어
+     밤에 목표는 어둡고 친구는 흰색으로 갈라졌다 — 같은 세트인데 다른 규칙. */
+  /* ⚠ 아이콘 색을 var(--ink-soft)로 쓰면 안 된다 — 그 변수는 body.night에서
+     안 뒤집힌다(다크 값은 #meScrim/.modal.dark 스코프 안에만 있다). 어두운
+     배경에 어두운 아이콘이 된다. 여기선 그 다크 값을 직접 쓴다. */
+  body.night .goal-fab,body.night .friends-fab{background:rgba(30,34,50,.85);color:#93A0C0}
   /* 모자이카 칸 대비 (요청 2026-07-28): 밤 = 흰빛으로 또렷하게,
      낮 = 어둡게. 예전 밤 규칙은 오히려 어둡게(brightness .85) 만들어
      어두운 배경에 칸이 묻혔다. */
@@ -4330,7 +4342,14 @@
     var span=up[0]-lo[0],t=span===0?0:smooth01((up[0]-a)/span);
     function hz(k){return isDawn?k[2]:k[3];}
     var bell=1-Math.min(1,Math.abs(alt-1)/7);
+    /* 액센트 계산용 **실수** 채널도 함께 낸다 (2026-08-06). lerpHex는 8bit로
+       자르는데(|0), 무채색 근처에선 그 1/255 계단이 hue를 크게 흔들어 ＋ 버튼
+       색이 계단처럼 튀었다. 화면에 칠하는 hex는 그대로 두고 계산만 실수로. */
+    function lerpCh(a,b,u){var f=function(v){return [(v>>16&255)/255,(v>>8&255)/255,(v&255)/255];};
+      var A=f(a),B=f(b);return [A[0]+(B[0]-A[0])*u,A[1]+(B[1]-A[1])*u,A[2]+(B[2]-A[2])*u];}
     return {top:lerpHex(up[1],lo[1],t),horizon:lerpHex(hz(up),hz(lo),t),
+      topF:lerpCh(up[1],lo[1],t),horizonF:lerpCh(hz(up),hz(lo),t),
+      warmF:isDawn?[1,0x9E/255,0x8C/255]:[1,0x7B/255,0x4A/255],
       star:up[4]+(lo[4]-up[4])*t,glow:smooth01(bell),warm:isDawn?'#FF9E8C':'#FF7B4A',alt:alt};
   }
   // 하루 중 시각 h(로컬)의 하늘 팔레트 — 관측 좌표·오늘 날짜 기준.
@@ -9578,6 +9597,44 @@
   function hx(v){return '#'+('000000'+v.toString(16)).slice(-6);}
   function lerpHex(a,b,t){var ar=a>>16,ag=(a>>8)&255,ab=a&255,br=b>>16,bg=(b>>8)&255,bb=b&255;
     return hx(((ar+(br-ar)*t)|0)<<16|((ag+(bg-ag)*t)|0)<<8|((ab+(bb-ab)*t)|0));}
+
+  /* ── 페이지 액센트 = 앱 SkyTheme.init(palette:) 포팅 (2026-08-06) ──
+     ＋ 버튼 색을 지평선 hue에서 뽑는다. **무채색 가드까지 그대로** 옮겼다:
+     태양 고도 10~12°에서 지평선이 거의 무채색(#E6EDEB, 채도 0.03)을 지나는데,
+     그 구간의 hue는 채널 1/255 차이에 100° 넘게 흔들려 무의미하다. 아래
+     채도 하한 0.45가 그 값을 선명한 색으로 부풀리면 하늘에 없는 초록(#81EBD1)·
+     연두(#BDEB81)가 만들어진다(앱에서 아침 8시대에 실제로 그랬다).
+     원본 채도로 신뢰도를 매겨, 믿을 수 없으면 **타임라인 액센트와 같은 기준색**
+     으로 수렴시킨다 — 그 구간에선 타임라인 ＋와 페이지 ＋가 같은 색이 된다.
+     ⚠ 상수 넷은 앱 SkyTheme.swift와 같은 값이어야 한다 (tests/sky-accent-guard.js). */
+  var PG_TRUST_LO=0.08,PG_TRUST_HI=0.18,PG_REF_DAY=0x80CDE9,PG_REF_NIGHT=0x273B9E;
+  function hexInt(s){return parseInt(String(s).slice(1),16);}
+  function chan(v){return [(v>>16&255)/255,(v>>8&255)/255,(v&255)/255];}
+  function relLum(c){function f(v){return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);}
+    return 0.2126*f(c[0])+0.7152*f(c[1])+0.0722*f(c[2]);}
+  function contrastRatio(a,b){var l1=Math.max(relLum(a),relLum(b)),l2=Math.min(relLum(a),relLum(b));
+    return (l1+0.05)/(l2+0.05);}
+  function skyAccent(pal){
+    // 전 과정을 **실수로** — 8bit로 자르면 무채색 근처의 hue가 양자화 잡음만큼
+    // 더 흔들려 색이 계단처럼 튄다 (skyPalette의 horizonF/warmF가 그래서 있다).
+    var hzc=pal.horizonF||chan(hexInt(pal.horizon)),wc=pal.warmF||chan(hexInt(pal.warm)),gt=pal.glow*0.6;
+    var m=[hzc[0]+(wc[0]-hzc[0])*gt,hzc[1]+(wc[1]-hzc[1])*gt,hzc[2]+(wc[2]-hzc[2])*gt];
+    var r=m[0],g=m[1],b=m[2],mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn,h=0;
+    if(d>0){h=(mx===r?(((g-b)/d)%6+6)%6:(mx===g?(b-r)/d+2:(r-g)/d+4))*60;}
+    var s0=mx===0?0:d/mx;
+    var S=Math.min(0.75,Math.max(0.45,s0+0.25)),B=Math.min(0.92,Math.max(0.62,mx));
+    var c=B*S,hp=(((h%360)+360)%360)/60,x=c*(1-Math.abs(hp%2-1)),m2=B-c;
+    var t=[[c,x,0],[x,c,0],[0,c,x],[0,x,c],[x,0,c],[c,0,x]][Math.min(5,Math.floor(hp))];
+    var derived=[t[0]+m2,t[1]+m2,t[2]+m2];
+    // 밤 판정은 앱과 같게 하늘 위쪽 휘도 (고도 −3° 기준이 아니다).
+    var ref=chan(relLum(pal.topF||chan(hexInt(pal.top)))<=0.179?PG_REF_NIGHT:PG_REF_DAY);
+    var trust=smooth01((s0-PG_TRUST_LO)/(PG_TRUST_HI-PG_TRUST_LO));
+    var out=[0,1,2].map(function(i){return ref[i]+(derived[i]-ref[i])*trust;});
+    var dark=chan(0x141827),light=chan(0xF5F7FF);
+    return {accent:hx(out.map(function(v){return Math.max(0,Math.min(255,Math.round(v*255)));})
+                         .reduce(function(a,v,i){return a|v<<(16-8*i);},0)),
+            onAccent:contrastRatio(dark,out)>=contrastRatio(light,out)?'#141827':'#F5F7FF'};
+  }
   function applySky(){
     /* 시각 키프레임 → **태양고도 팔레트** (요청 2026-07-27: 페이지 배경이
        타임라인 하늘과 같은 소스로 — 일출·일몰·밤이 실제 위치 기준으로 맞고,
@@ -9586,6 +9643,9 @@
     var pal=skyPalette(sun.alt,sun.H<0);
     var r=document.documentElement.style;
     r.setProperty('--sky-top',pal.top);r.setProperty('--sky-bot',pal.horizon);
+    // ＋ 버튼 액센트도 같은 하늘에서 (앱 파리티 2026-08-06 — 무채색 가드 포함).
+    var ac=skyAccent(pal);
+    r.setProperty('--pg-accent',ac.accent);r.setProperty('--pg-onaccent',ac.onAccent);
     // 밤 판정도 고도 기준 (타임라인 tl-night와 같은 −3°) — 시계 기반이면
     // 위치·계절에 따라 하늘은 밤인데 카드가 낮인 채로 갈라졌다.
     var nt=sun.alt<-3;
