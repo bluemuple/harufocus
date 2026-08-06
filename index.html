@@ -311,6 +311,13 @@
     font-weight:700;font-size:12.5px;cursor:pointer}
   /* [나의 다짐 | 나와의 약속] 세그먼트 (요청 2026-07-29) — meAct 안 .me-tabs와
      같은 생김새지만 그쪽 선택자는 .me-act 아래로 갇혀 있어 여기 따로 둔다. */
+  /* '고치는 중' 띠 (요청 2026-08-07) — 강조색으로 상태를 말하고, 오른쪽 캡슐로 벗어난다. */
+  .pledge-editbar{display:flex;align-items:center;gap:8px;margin:8px 2px 0}
+  .pledge-editbar b{font-size:12.5px;font-weight:800;color:var(--sky-blue);flex:1}
+  .pledge-editbar button{border:0;border-radius:999px;background:var(--card-2);color:var(--ink);
+    font-family:inherit;font-size:12px;font-weight:800;padding:5px 10px;cursor:pointer}
+  /* 연필은 ✕와 같은 크기·같은 자리 어법 (mw-x를 그대로 물려받고 글자만 다르다). */
+  .me-word-row .mw-edit{margin-right:2px}
   .pledge-tabs{display:flex;gap:4px;background:var(--card-2);border-radius:12px;padding:3px;margin:10px 0 12px}
   .pledge-tabs button{flex:1 1 0;padding:8px 6px;border:0;border-radius:9px;background:transparent;
     font-family:inherit;font-size:13px;font-weight:700;color:var(--ink-soft);cursor:pointer}
@@ -3633,6 +3640,12 @@
       <!-- 토글은 **2줄**, [완료]는 '일기에 추가' 오른쪽 (요청 2026-07-28 모바일):
            한 줄에 몰면 좁은 화면에서 글자가 세로로 쪼개진다. -->
       <!-- 토글 2칼럼 + 아래 전폭 [완료] (요청 2026-07-28 재조정) -->
+      <!-- 고치는 중 표시 + **빠져나갈 문** (요청 2026-08-07): 이 줄이 없으면
+           연필을 눌러 놓고 마음이 바뀌어 새 다짐을 써도 [완료]가 남의 줄을 덮는다. -->
+      <div class="pledge-editbar" id="pledgeEditBar" style="display:none">
+        <b data-i18n-en="✎ Editing">✎ 고치는 중</b>
+        <button type="button" id="pledgeEditNew" data-i18n-en="Write new">새로 쓰기</button>
+      </div>
       <div class="pledge-toggles">
         <label><input type="checkbox" id="pledgeToBar" checked><span data-i18n-en="Top bubble">상단 말풍선</span></label>
         <label><input type="checkbox" id="pledgeToDiary" checked><span data-i18n-en="Add to diary">일기에 추가</span></label>
@@ -15565,12 +15578,23 @@
   function buildWordRows(host,refresh,pick){
     host.innerHTML='';
     var S=DATA.settings||{};
-    function row(text,onX){
+    /* onEdit을 주면 ✕ **왼쪽에 연필**이 붙는다 (요청 2026-08-07, 앱 파리티).
+       예전엔 지우기뿐이라 오타 한 자 때문에 지우고 다시 써야 했다.
+       ⚠ 연필이 먼저, ✕가 오른쪽 끝 — 파괴적인 버튼이 늘 바깥이다(앱과 같은 순서). */
+    function row(text,onX,onEdit){
       var r=document.createElement('div');r.className='me-word-row';
       var s=document.createElement('span');s.textContent='“'+text+'”';
+      r.appendChild(s);
+      if(onEdit){
+        var p=document.createElement('button');p.className='mw-x mw-edit';p.type='button';
+        p.textContent='✎';p.title=L('고치기','Edit');p.setAttribute('aria-label',L('고치기','Edit'));
+        p.onclick=function(e){e.stopPropagation();onEdit();};
+        r.appendChild(p);
+      }
       var x=document.createElement('button');x.className='mw-x';x.type='button';x.textContent='✕';
+      x.title=L('지우기','Delete');x.setAttribute('aria-label',L('지우기','Delete'));
       x.onclick=function(e){e.stopPropagation();onX();};
-      r.appendChild(s);r.appendChild(x);host.appendChild(r);
+      r.appendChild(x);host.appendChild(r);
     }
     var motto=(S.motto||S.todayVow||'').trim();
     var words=(DATA.diary||[]).filter(function(e){
@@ -15581,7 +15605,9 @@
     // 설정 motto로만 남은 옛 글(유령) — DiaryEntry가 없어도 X로 걷는다.
     if(!pick&&motto&&!words.some(function(e){return (e.text||'').trim()===motto;})){
       n++;row(motto,function(){S.motto='';S.todayVow='';
-        refresh();renderDiary();paintBar(false);pushSnapshot();});
+        refresh();renderDiary();paintBar(false);pushSnapshot();},
+        // 옛 설정 motto도 같은 손놀림으로 (앱 mottoRow와 한 쌍) — motto는 말풍선 전용 자리다.
+        function(){pledgeStartEdit({motto:true,text:motto,toBar:true,toDiary:false});});
     }
     words.forEach(function(e){
       n++;
@@ -15589,7 +15615,8 @@
         if(((S.motto||'').trim())===(e.text||'').trim()){S.motto='';S.todayVow='';}
         DATA.diary=(DATA.diary||[]).filter(function(d){return d.id!==e.id;});
         refresh();renderDiary();paintBar(false);pushSnapshot();
-      });
+      },function(){pledgeStartEdit({id:e.id,text:e.text||'',
+        toBar:!!e.shownInBar,toDiary:e.kind==='word'});});
     });
     return n;
   }
@@ -15657,6 +15684,8 @@
     document.getElementById('pledgeInput').value='';
     document.getElementById('pledgeToBar').checked=true;
     document.getElementById('pledgeToDiary').checked=true;
+    // ⚠ 열 때마다 고치기 상태는 처음부터 — 남아 있으면 새 다짐이 남의 줄을 덮는다.
+    pledgeEdit=null;pledgeEditBanner();
     pledgeHistOpen=false;renderPledgeHist();
     /* ⚠ 탭을 **먼저** 되돌린다 (요청 2026-07-29): 지난번에 약속 탭에서 닫았으면
        #pledgePane이 display:none인 채로 남아 있다. 그 상태로 긁는 카드를
@@ -15923,13 +15952,54 @@
       else{pledgeDustRAF=0;g.clearRect(0,0,pledgeDustCv.width,pledgeDustCv.height);}
     });
   }
+  /* 예전 다짐 **고치기** (요청 2026-08-07, 앱 파리티) — 연필을 누르면 그 줄이
+     위 입력칸으로 올라오고, [완료]는 새로 만들지 않고 **그 줄을 고친다**.
+     ⚠ 저장하거나 '새로 쓰기'를 누르면 반드시 내려간다. 안 내리면 다음에 쓴
+        새 다짐이 **남의 줄을 덮어쓴다** — 이 화면에서 제일 위험한 상태다.
+     ⚠ 옛 설정 motto는 DiaryEntry가 아니라 id로 못 가리킨다 → motto:true 표식. */
+  var pledgeEdit=null;
+  function pledgeEditBanner(){
+    var b=document.getElementById('pledgeEditBar');if(!b)return;
+    b.style.display=pledgeEdit?'flex':'none';
+  }
+  function pledgeStartEdit(o){
+    pledgeEdit=o;
+    var i=document.getElementById('pledgeInput');
+    i.value=o.text||'';
+    document.getElementById('pledgeToBar').checked=!!o.toBar;
+    document.getElementById('pledgeToDiary').checked=!!o.toDiary;
+    pledgeEditBanner();
+    // 연필은 목록에, 입력칸은 그 **위**에 있다 — 안 데려가면 아무 일도 안 한 것처럼 보인다.
+    try{i.scrollIntoView({block:'center',behavior:'smooth'});}catch(_){i.scrollIntoView();}
+    i.focus();
+  }
+  function pledgeEndEdit(){
+    pledgeEdit=null;
+    document.getElementById('pledgeInput').value='';
+    pledgeEditBanner();
+    document.getElementById('pledgeInput').focus();
+  }
   function pledgeSaveFn(){
     var toBar=document.getElementById('pledgeToBar').checked,
         toDiary=document.getElementById('pledgeToDiary').checked;
     var v=(document.getElementById('pledgeInput').value||'').trim();
     if(!v||(!toBar&&!toDiary))return;
-    // prompt='pledge' 표식 — 설정 상단바에서 다짐/사실은을 따로 끈다 (앱 파리티).
-    newDiaryEntry(toDiary?'word':'wordbar',{text:v,shownInBar:toBar,prompt:'pledge'});
+    var S=DATA.settings||(DATA.settings={});
+    if(pledgeEdit&&pledgeEdit.motto){
+      S.motto=v;S.todayVow=v;
+    }else if(pledgeEdit&&pledgeEdit.id){
+      var w=(DATA.diary||[]).find(function(d){return d.id===pledgeEdit.id;});
+      if(w){
+        w.text=v;w.kind=toDiary?'word':'wordbar';w.shownInBar=toBar;
+        /* ⚠ updatedAt을 반드시 올린다 — 동기화는 이 값으로 최신을 가린다.
+           안 올리면 고친 글이 다른 기기의 옛 사본에 조용히 덮인다 (37절). */
+        w.updatedAt=new Date().toISOString();
+      }
+    }else{
+      // prompt='pledge' 표식 — 설정 상단바에서 다짐/사실은을 따로 끈다 (앱 파리티).
+      newDiaryEntry(toDiary?'word':'wordbar',{text:v,shownInBar:toBar,prompt:'pledge'});
+    }
+    pledgeEdit=null;pledgeEditBanner();
     renderDiary();barIdx=0;paintBar(false);pushSnapshot();
     document.getElementById('pledgeScrim').classList.remove('open');
   }
@@ -15938,6 +16008,7 @@
     sc.addEventListener('click',function(e){if(e.target===sc)sc.classList.remove('open');});
     document.getElementById('pledgeX').addEventListener('click',function(){sc.classList.remove('open');});
     document.getElementById('pledgeSave').addEventListener('click',pledgeSaveFn);
+    document.getElementById('pledgeEditNew').addEventListener('click',pledgeEndEdit);
     document.getElementById('pledgeCopy').addEventListener('click',function(){
       document.getElementById('pledgeInput').value=pledgePrompt;
       document.getElementById('pledgeInput').focus();});
