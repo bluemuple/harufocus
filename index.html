@@ -349,16 +349,22 @@
      일기 맨 위 배너 → 별하늘(집중 세션=별 하나·다시 시작=밝은 별) + 지표 타일 +
      엘리의 한 줄 + 공유. ⚠ 스트릭 없음 원칙 — '연속'은 어디에도 없다.
      ⚠ 공유 이미지엔 작업 이름이 한 글자도 없다 — 별·숫자·엘리만. */
+  /* ⚠ 이 배너만 **불투명 카드**였다 (요청 2026-08-07): 바로 아래 캡슐(.d-chip)과
+     글 목록은 하늘 위에 얹히는 **흰빛 반투명 + 흰 글씨**인데, 여기만 var(--card-2)
+     라 혼자 solid로 떠 다른 식구처럼 보였다. .d-chip과 **같은 값**으로 맞춘다.
+     ⚠ 글자는 흰색 + 이 파일의 '하늘 위 흰 글씨' 관례 그림자(.sec-h·.d-month와
+        같은 값) — 낮 하늘이 밝을 때 흰 글씨만으론 읽기 어렵다.
+     ⚠ body.night 오버라이드는 **걷어냈다**: .d-chip이 밤 규칙 없이도 맞는 것과
+        같은 이유다(밤 하늘은 어두워 흰빛 반투명이 그대로 성립한다). 남겨 두면
+        밤에만 다시 혼자 불투명해진다. */
   .wk-banner{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;
-    font-family:inherit;background:var(--card-2);border:0;border-radius:14px;
+    font-family:inherit;background:rgba(255,255,255,.22);border:0;border-radius:14px;
     padding:11px 14px;margin:0 0 10px;cursor:pointer;text-align:left}
   .wk-banner .wk-spark{font-size:13px;flex:0 0 auto}
-  .wk-banner .wk-txt{flex:1;min-width:0;font-size:13px;font-weight:700;color:var(--ink);
+  .wk-banner .wk-txt{flex:1;min-width:0;font-size:13px;font-weight:700;color:#fff;
+    text-shadow:0 1px 3px rgba(20,40,80,.4);
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .wk-banner .wk-chev{color:var(--ink-soft);font-size:12px;font-weight:800;flex:0 0 auto}
-  body.night .wk-banner{background:rgba(28,32,48,.92)}
-  body.night .wk-banner .wk-txt{color:#ECEEF6}
-  body.night .wk-banner .wk-chev{color:rgba(235,238,246,.62)}
+  .wk-banner .wk-chev{color:rgba(255,255,255,.75);font-size:12px;font-weight:800;flex:0 0 auto}
   .wk-modal h3{margin-bottom:12px}
   /* 별자리 하늘 (Phase 1, 2026-07-29 웹 파리티 — 앱 WeekSky.swift/
      WeeklyCardView.swift 미러): 250→340px로 키워 별자리 5개(남십자·
