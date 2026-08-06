@@ -1,77 +1,93 @@
-/* 타임라인 하늘이 **지금**을 그리는지 + 스크롤에 **연속**으로 반응하는지
-   (신고 2026-08-02 재발: "몇 포인트만 스크롤해도 달이 순식간에 사라진다").
+/* 타임라인 하늘의 **시각 앵커** — 스크롤에 얼마나 이어서 반응하는가.
+   실행: node tests/sky-now-anchor.js
 
-   1차 신고(2026-07-31)는 좌표(서울 폴백)였고, 2차는 화면 **중앙** 시각으로
-   해를 놓아 지금과 어긋나던 것 — "지금이 화면 안이면 지금"으로 고쳤다.
-   그런데 그 고침이 **갈아 끼우기**(중앙 시각 ↔ 지금, 경계에서 통째로 스위치)
-   였다: 경계를 살짝 넘는 순간 dt가 중앙 시각(최대 화면 절반 폭, 1~2시간)
-   으로 점프해 해·달 고도가 그만큼 튀어 지평선 아래로 사라졌다 — 이번 신고.
+   여기는 **네 번** 고쳤다. 매번 앞의 수정이 만든 부작용이었다:
+   ① (07-31) 좌표가 서울 폴백이라 해가 엉뚱한 높이 — 좌표 수정
+   ② (08-02) 화면 **중앙** 시각으로 해를 놓아, 지금을 보고 있어도 하늘이 어긋남
+      → "지금이 화면 안이면 지금, 밖이면 중앙"으로 **갈아 끼움**
+   ③ (08-02) 그 갈아 끼우기가 경계에서 dt를 화면 절반 폭(1~2시간)만큼 **점프**
+      시켜 해·달이 지평선 아래로 사라짐("몇 포인트만 스크롤해도 달이 사라진다")
+      → [화면 위쪽, 아래쪽] 구간으로 **클램프**
+   ④ (08-06) 클램프는 점프를 없앴지만, 지금이 화면 안인 동안 dt가 **상수**라
+      해가 **얼어붙었다**. 화면 밖으로 나가야 다시 움직여 "멈췄다가 갑자기
+      내려간다"로 보였다 — ③이 만든 평평한 구간이 이번 신고의 정체.
+      → dt = tlYToDate(scrollTop + PPH). 뷰포트의 한 점을 시계로 삼는다.
 
-   고친 규칙: dt = clamp(now, 화면 위쪽 시각, 화면 아래쪽 시각). 지금이 보이는
-   구간 안이면 지금, 밖이면 가장 가까운 경계 시각 — 그리고 그 경계 시각
-   자체가 스크롤에 따라 **연속으로** 움직이므로 어느 경계를 넘어도 dt가
-   튀지 않는다. 이 테스트는 그 연속성을 수치로 못 박는다. */
+   이 파일이 못 박는 것: **평평한 구간도 점프도 없을 것**(③④ 동시 회귀 방지),
+   그리고 '지금' 버튼을 누르면 하늘도 정확히 지금일 것(②가 깨뜨렸던 의도). */
 const fs = require('fs');
 const SRC = fs.readFileSync(__dirname + '/../index.html', 'utf8');
 
 let fail = 0, ran = 0;
 const t = (name, ok) => { ran++; console.log((ok ? 'PASS  ' : 'FAIL  ') + name); if (!ok) fail++; };
 
-// updateTlSky 본문을 그대로 떠서 규칙이 살아 있는지 본다.
 const i = SRC.indexOf('function updateTlSky(');
 const body = SRC.slice(i, SRC.indexOf('\n  function ', i + 10));
 t('updateTlSky를 찾았다', i > 0 && body.length > 200);
-// ⚠ y→시각 변환이 공용 함수로 뽑혀 있어야 위/아래 경계에서 같은 식을 쓴다
-// (각 지점이 서로 다른 식을 쓰면 다시 어긋난 채 재발할 수 있다).
+
+// ── 소스가 실제로 그 식을 쓰는가
+const flat = body.replace(/\s/g, '');
 t('y→시각 변환(tlYToDate)이 공용 함수로 있다', /function tlYToDate\(y\)/.test(body));
-t('화면 위쪽 시각을 잰다 (scrollTop)', /tlYToDate\(sc\.scrollTop\)/.test(body));
-t('화면 아래쪽 시각을 잰다 (scrollTop\+clientHeight)', /tlYToDate\(sc\.scrollTop\+sc\.clientHeight\)/.test(body));
-// ⚠ 회귀 가드: "갈아 끼우기"(중앙 시각 ↔ 지금 스위치) 식이 되살아나면 실패.
-t('⚠옛 점프 스위치(중앙 시각 갈아 끼우기)가 되살아나지 않았다',
-  !/Math\.abs\(dt-_now\)<=_spanMs\/2\)dt=_now/.test(body.replace(/\s/g, '')));
+t('하늘 시각 = tlYToDate(scrollTop + PPH)', /vardt=tlYToDate\(sc\.scrollTop\+PPH\)/.test(flat));
 
-// 규칙 자체를 수식으로 재현해 검증한다 (소스와 같은 클램프 식).
-function pickDateClamp(nowMs, topMs, botMs) {
-  let dt = nowMs;
-  if (nowMs < topMs) dt = topMs;
-  else if (nowMs > botMs) dt = botMs;
-  return dt;
-}
-const H = 3600000;
-const now = new Date('2026-08-02T06:54:00+12:00').getTime();
-const span = 3.5 * H;                      // 화면에 3.5시간이 보인다고 하자
+// ⚠ 회귀 가드 — 지나간 세 가지 식이 되살아나면 실패한다.
+t('⚠②옛 갈아 끼우기(중앙 시각 스위치)가 없다', !/Math\.abs\(dt-_now\)<=_spanMs\/2\)dt=_now/.test(flat));
+t('⚠③옛 클램프(지금이 화면 안이면 dt=지금)가 없다',
+  !/if\(_now\.getTime\(\)<topDt\.getTime\(\)\)/.test(flat));
+t('⚠하늘 시각을 new Date()로 직접 잡지 않는다 (그러면 또 얼어붙는다)',
+  !/vardt=_now/.test(flat) && !/vardt=newDate\(\)/.test(flat));
 
-// ① 기본 상태: 창이 [지금+0.5h, 지금+0.5h+span] → 지금은 창 밖(위) → 위쪽 경계
-t('지금이 창 위쪽 밖이면 위쪽 경계 시각', pickDateClamp(now, now + 0.5 * H, now + 0.5 * H + span) === now + 0.5 * H);
+// ── 규칙을 수식으로 재현해 성질을 검증한다.
+// tlYToDate는 밴드 안에서 y에 대해 선형이다: h = bandTS + (localY-14)/PPH.
+const PPH = 120, H = 3600000;
+const dtFor = (scrollTop) => (scrollTop + PPH) / PPH * H;   // 콘텐츠 y → 시각(ms)
 
-// ② 지금이 창 안에 있으면 지금 그대로
-t('지금이 창 안이면 지금을 그린다', pickDateClamp(now, now - 1 * H, now - 1 * H + span) === now);
-
-// ③ 지금이 창 아래쪽 밖(많이 스크롤해 과거 창만 보임) → 아래쪽 경계
-t('지금이 창 아래쪽 밖이면 아래쪽 경계 시각', pickDateClamp(now, now - 5 * H, now - 5 * H + span) === now - 5 * H + span);
-
-// ④ 어제·내일 창으로 스크롤하면 당연히 그 창의 경계 시각(지금과 멀리 떨어짐)
-t('다음 날 창이면 그 창의 경계 시각', pickDateClamp(now, now + 20 * H, now + 20 * H + span) === now + 20 * H);
-t('전날 창이면 그 창의 경계 시각', pickDateClamp(now, now - 30 * H, now - 30 * H + span) === now - 30 * H + span);
-
-// ⑤ ⚠⚠ 핵심 회귀 테스트 — **연속성**: 창(위/아래 경계)이 함께 미끄러지며
-// '지금'을 넘나드는 동안, dt는 한 스텝(step)만큼만 움직여야 한다. 옛 버그는
-// 여기서 dt가 화면 절반 폭(수십~수백 분)만큼 한 번에 뛰었다 — 브라우저 실측
-// (2026-08-02)으로 재현: 옛 식은 스크롤 5px에 해 top이 623→770px(147px)
-// 튀었는데, 새 식은 같은 5px에 1~3px씩만 움직였다.
+// ① 평평한 구간이 없어야 한다 — ④ 신고의 본체.
 (function () {
-  const step = 5 * 60000;              // 스크롤 한 칸 = 5분어치 시각 이동(5px 비유)
-  let prevDt = null, maxJump = 0;
-  for (let top = now - 20 * step; top <= now + 20 * step; top += step) {
-    const bot = top + span;
-    const dt = pickDateClamp(now, top, bot);
-    if (prevDt !== null) maxJump = Math.max(maxJump, Math.abs(dt - prevDt));
-    prevDt = dt;
+  let flatSteps = 0, prev = null;
+  for (let top = 0; top <= 4000; top += 5) {          // 5px씩 스크롤
+    const dt = dtFor(top);
+    if (prev !== null && dt === prev) flatSteps++;
+    prev = dt;
   }
-  // 한 스텝(5분) 넘게 튀면 안 된다 — 옛 버그는 여기서 수십~수백 분이 튀었다.
-  t('창이 지금을 넘나들어도 dt가 한 스텝(5분) 넘게 튀지 않는다 (연속성)', maxJump <= step);
-  t('실제로 튀는 지점이 있었다는 걸 스스로 증명한다 (테스트가 헛돌지 않음 확인용)', maxJump > 0);
+  t('스크롤해도 하늘 시각이 멈추는 구간이 없다 (해가 얼어붙지 않는다)', flatSteps === 0);
 })();
+
+// ② 점프가 없어야 한다 — ③ 신고의 본체. 5px 스크롤 = 정확히 5px어치 시각.
+(function () {
+  let maxJump = 0, minJump = Infinity, prev = null;
+  for (let top = 0; top <= 4000; top += 5) {
+    const dt = dtFor(top);
+    if (prev !== null) { const j = Math.abs(dt - prev); maxJump = Math.max(maxJump, j); minJump = Math.min(minJump, j); }
+    prev = dt;
+  }
+  const expected = 5 / PPH * H;                        // 5px = 2.5분
+  t('5px 스크롤이 항상 같은 시간만큼 움직인다 (점프도 정체도 없음)',
+    Math.abs(maxJump - expected) < 1 && Math.abs(minJump - expected) < 1);
+  t('실제로 움직이긴 한다 (테스트가 헛돌지 않음)', maxJump > 0);
+})();
+
+// ③ 단조 증가 — 아래로 스크롤하면 하늘도 반드시 미래로 간다.
+(function () {
+  let ok = true, prev = -Infinity;
+  for (let top = 0; top <= 4000; top += 37) { const dt = dtFor(top); if (dt <= prev) ok = false; prev = dt; }
+  t('아래로 스크롤하면 하늘 시각이 반드시 늘어난다 (단조)', ok);
+})();
+
+// ④ '지금' 버튼을 누르면 하늘도 정확히 지금 — 앵커를 PPH로 잡은 이유.
+//    scrollToNowLine: target = 지금줄y - PPH → 앵커(target+PPH) = 지금줄y.
+(function () {
+  const nowContentY = 1234.5;
+  const target = nowContentY - PPH;                    // scrollToNowLine의 목표
+  t("'지금' 버튼 위치에서 하늘 시각 = 지금", dtFor(target) === nowContentY / PPH * H);
+})();
+t("소스의 scrollToNowLine도 같은 PPH 오프셋을 쓴다",
+  /tlTodayTop\(\)\+yFor\(nf\)-PPH/.test(SRC));
+
+// ── 달: 지평선에서 fade로 증발하지 말고 해와 같이 **땅에 가려** 져야 한다.
+t('달은 fade 하지 않는다 (opacity 고정)', /moon\.style\.opacity='1'/.test(flat));
+t("⚠옛 달 fade 식((alt+1.5)/3)이 되살아나지 않았다", !/\(mp\.alt\+1\.5\)\/3/.test(flat));
+t('해도 같은 규칙이다 (둘이 갈라지지 않게)', /sun\.style\.opacity='1'/.test(flat));
 
 console.log(fail ? `\n${fail}개 실패 / ${ran}` : `\n${ran}/${ran} 통과`);
 process.exit(fail ? 1 : 0);
