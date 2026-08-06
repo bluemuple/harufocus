@@ -3931,16 +3931,23 @@
   var TS=6,TE=24,PPH=120,dayOffset=0;
   var tlEditTop=0,tlDayH=0;   // 3일 밴드: 오늘 밴드 오프셋(히트테스트 보정)·밴드 높이
   var tlHomePending=false;    // 화면 밖에서 렌더돼 '지금'으로 못 갔다 → 탭 열 때 간다
-  /* 이번 renderBig만 **보던 자리를 지킨다** (요청 2026-08-06 ②).
-     renderBig의 기본값은 '지금 줄로 데려가기'다(첫 렌더·탭 열기엔 그게 맞다).
-     그런데 화면에 보이는 마감선의 완료 동그라미를 누르면 그 기본값이 그대로
-     돌아 **화면이 통째로 튀었다** — 방금 누른 선이 눈앞에서 사라진다.
-     "내가 누른 것 때문에 내 시야가 움직이면 안 된다"가 규칙이라, 그런 조작
-     직전에 이 깃발을 세운다. renderBig이 한 번 쓰고 반드시 내린다(일회용).
-     ⚠ 화면 밖 렌더(clientHeight 0)·아직 '지금'으로 못 간 상태(tlHomePending)
-        에서는 무시한다 — 그때 자리를 지키면 scrollTop 0(어제 자정)에 박힌다. */
-  var tlKeepScroll=false;
-  function renderAllKeepTl(){tlKeepScroll=true;renderAll();}
+  /* ⭐ 타임라인 스크롤의 기본값 = **보던 자리 유지** (요청 2026-08-06 ②).
+     예전 기본값은 반대였다 — renderBig이 돌 때마다 '지금' 줄로 데려갔다.
+     그래서 renderBig을 부르는 스물몇 곳이 **전부** 시야를 흔들었다:
+       · 마감선 완료 동그라미(신고 ②)   · 마감선만 삭제(✕)
+       · 캡슐 드래그를 **놓는 순간**     · 마감집게를 놓는 순간
+       · 할 일을 타임라인에 떨어뜨린 순간 · 편집 bar의 ▲▽·↩·재정비·균일화
+       · ⚠ **원격 동기화 반영**(fetchSnapshot·pollSync) — 여기가 제일 나빴다.
+         마감선이 미끄러져 옮겨지는 걸 보여주려고 FLIP까지 만들어 놓고(⑤),
+         정작 화면 전체를 '지금'으로 끌어당겨 그 애니메이션을 못 보게 했다.
+     한 곳씩 '자리 지켜' 표를 붙이는 방법은 이미 실패한 방법이다 — 붙이는 걸
+     잊은 곳이 계속 남는다. 그래서 **기본값을 뒤집었다**: 아무 말 없으면
+     보던 자리, '지금으로 가라'고 말한 곳만 간다.
+     ⚠ 두 실패 모드의 무게가 다르다는 게 근거다. 자리를 지키다 낡으면 '지금'
+        캡슐이 떠서 한 번 누르면 되지만, 시야가 튀면 되돌릴 길이 없다.
+     '지금으로 가라'고 말하는 곳은 셋뿐이다 — 첫 렌더(빈 컨테이너)·날짜 ‹›·
+     타임라인 모드로 전환. 탭 열기는 따로 tlEnsureHome이 맡는다. */
+  var tlGoHome=false;
   var tlLaneToday=null,tlLanePrimary=null;   // 캡처 고스트가 렌더 밖에서 쓰는 레인 핸들
   /* yFor는 **현재 그리는 밴드의 시작 시각(tlBandTS)** 기준 — 어제 밴드는 12시부터
      시작하므로(요청) 밴드마다 다르다. 렌더 후엔 tlBandTS=TS(오늘)로 되돌려 두어
@@ -4977,7 +4984,7 @@
       t.scheduledStart=r.s;t.durationMin=r.d;t.planDueAt=r.p;t.isDone=r.done;});
     // 편집바엔 자체 ↩ 히스토리가 있다 — 되돌린 걸 두고 또 '실행 취소'를 권하지 않는다.
     undoSuppress=true;
-    renderAll();pushSnapshot();
+    renderAll();pushSnapshot();        // 스크롤은 기본이 '보던 자리 유지'다 (선언부 tlGoHome)
   }
   function duePushUndo(){dueUndo.push(dueSnapshot());if(dueUndo.length>30)dueUndo.shift();dueRedo=[];paintEditBar();}
   function openEditBar(tid){
@@ -5487,10 +5494,16 @@
     var wakeH=Math.max(0,Math.floor((sset.wakeMinutes!=null?sset.wakeMinutes:420)/60));
     TS=0;TE=24;
     var sc=document.getElementById('tlScroll');
-    // 배치/드래그 중 + '보던 자리 지키기' 요청(tlKeepScroll, 선언부 주석)이면 스크롤 유지
-    var keepReq=tlKeepScroll&&!tlHomePending&&sc.clientHeight>0;
-    tlKeepScroll=false;                                              // 일회용 — 반드시 내린다
-    var prevScroll=(batchIds!=null||tlDragging||keepReq)?sc.scrollTop:null;
+    /* 스크롤: **기본은 보던 자리 유지**, 아래 넷일 때만 '지금'으로 (선언부 주석).
+       ① tlGoHome — 날짜 ‹›·모드 전환이 명시적으로 세운다 (일회용)
+       ② tlHomePending — 아직 한 번도 '지금'에 못 가 봤다
+       ③ 빈 컨테이너 — 첫 렌더
+       ④ ⚠화면 밖(clientHeight 0) — 여기서 scrollTop을 읽으면 0이 나온다.
+          그 0을 '보던 자리'라고 지키면 **어제 자정에 박힌다**. 대신 아래
+          setTimeout 분기가 tlHomePending을 세워, 탭을 열 때 데려가게 한다. */
+    var goHome=tlGoHome||tlHomePending||!sc.firstChild||!sc.clientHeight;
+    tlGoHome=false;                                                  // 일회용 — 반드시 내린다
+    var prevScroll=goHome?null:sc.scrollTop;
     /* ⑤ 동기화 이동 애니메이션 (요청 2026-07-23): 다른 기기에서 마감을 옮겨
        이쪽 위치가 바뀌면 **0.3초 상하 이동**으로 따라간다 — 선이 순간이동하면
        "내가 안 한 변화"가 언제 일어났는지 못 본다. egress와는 무관하다(이미
@@ -5759,11 +5772,9 @@
         '<button class="dl-x" title="'+L('마감선만 삭제','Remove the deadline only')+'">✕</button>';
       var pb=dl.querySelector('.dl-play');if(pb)pb.addEventListener('click',function(e){e.stopPropagation();startFocus(t);});
       // D2-2 마감 동그라미: 완료 토글 (보상 지급 + 취소선)
-      /* ⚠ renderAll이 아니라 renderAllKeepTl — 누른 마감선이 눈앞에 남아야 한다
-         (요청 ②: 완료를 누르면 타임라인이 '지금'으로 튀었다). */
       dl.querySelector('.dl-radio').addEventListener('click',function(e){e.stopPropagation();
         t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;
-        if(t.isDone)grantReward(t);renderAllKeepTl();pushSnapshot();});
+        if(t.isDone)grantReward(t);renderAll();pushSnapshot();});
       // D2-3 삭제 의미 분리: 캡슐 X = 마감선만 삭제(기록 유지).
       dl.querySelector('.dl-x').addEventListener('click',function(e){e.stopPropagation();
         t.scheduledStart=null;t.planDueAt=null;
@@ -5910,10 +5921,11 @@
      이동 후 home 렌더 = 과거 주는 마지막 집중 행이 하단, 미래 주는 맨 위. */
   document.getElementById('dayPrev').addEventListener('click',function(){
     if(tlMode==='week'){wkOffset--;renderMosaicWeek(true);return;}
-    dayOffset--;renderBig();if(tlMode==='mosaic')renderMosaic();});
+    // 날짜를 옮기면 그 날의 '지금'으로 (기본은 자리 유지 — 선언부 tlGoHome)
+    dayOffset--;tlGoHome=true;renderBig();if(tlMode==='mosaic')renderMosaic();});
   document.getElementById('dayNext').addEventListener('click',function(){
     if(tlMode==='week'){wkOffset++;renderMosaicWeek(true);return;}
-    dayOffset++;renderBig();if(tlMode==='mosaic')renderMosaic();});
+    dayOffset++;tlGoHome=true;renderBig();if(tlMode==='mosaic')renderMosaic();});
   /* ⚠ 옛 '하루씩 페이징'(오버스크롤로 날 바뀜)은 걷어냈다 (요청 2026-07-23):
      스크롤바가 리셋되는 게 어색하다고 해서, 어제·오늘·내일 **3일을 한 스크롤에**
      이어 그린다(renderBig의 TLWIN 루프). 그 너머(그제·모레)는 날짜 버튼(‹›)이
@@ -8218,21 +8230,20 @@
        돌면 옆에 뜬 타임라인의 그 선은 미완료인 채라, 한 화면에 같은 일이
        두 상태로 보였다(PC·아이패드는 두 화면이 나란히 있다). 반대 방향
        (마감선 동그라미 → 목록)은 renderAll이라 이미 맞았다 — 이제 양쪽이
-       같은 renderAllKeepTl 하나를 부른다. KeepTl인 이유는 ②와 같다:
-       내가 만지지 않은 타임라인의 스크롤이 멋대로 움직이면 안 된다.
+       같은 renderAll 하나를 부른다.
        ⚠ 별표·하위작업 등 **완료가 아닌 것**은 그대로 renderTodo다 — 마감선
        그림이 안 바뀌는 조작까지 전 화면을 다시 그릴 이유는 없다. */
     if(inDone){
-      row.querySelector('.check').addEventListener('click',function(){t.isDone=false;t.completedAt=null;renderAllKeepTl();pushSnapshot();});
+      row.querySelector('.check').addEventListener('click',function(){t.isDone=false;t.completedAt=null;renderAll();pushSnapshot();});
     }else{
       row.querySelector('.play').addEventListener('click',function(){startFocus(t);});
-      row.querySelector('.check').addEventListener('click',function(){t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;if(t.isDone)grantReward(t);renderAllKeepTl();pushSnapshot();});
+      row.querySelector('.check').addEventListener('click',function(){t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;if(t.isDone)grantReward(t);renderAll();pushSnapshot();});
       row.querySelector('.star').addEventListener('click',function(){t.isStarred=!t.isStarred;renderTodo();pushSnapshot();});
       row.querySelector('.kebab').addEventListener('click',function(e){e.stopPropagation();openKebab(this,t,row);});
       var pb=row.querySelector('.t-plus');if(pb)pb.addEventListener('click',function(e){e.stopPropagation();
         t.countDone=(t.countDone||0)+1;
         // n회 채워 **완료가 된 순간**만 전 화면 — 그전 카운트는 목록 안 일이다.
-        if(t.countDone>=t.countTarget){t.isDone=true;t.completedAt=new Date().toISOString();grantReward(t);renderAllKeepTl();}
+        if(t.countDone>=t.countTarget){t.isDone=true;t.completedAt=new Date().toISOString();grantReward(t);renderAll();}
         else renderTodo();
         pushSnapshot();});
     }
@@ -10728,7 +10739,7 @@
     if(nn){nn.style.visibility='';
       nn.setAttribute('aria-label',m==='week'?L('다음 주','Next week'):L('다음 날','Next day'));
       nn.setAttribute('data-i18n-en-aria',m==='week'?'Next week':'Next day');}
-    if(m==='big')renderBig();
+    if(m==='big'){tlGoHome=true;renderBig();}   // 타임라인으로 돌아오면 '지금'부터
     // ⚠ 진입 시점에 직접 그린다 — renderAll 등 이벤트 렌더만 믿으면 낡은 판이 뜬다.
     if(m==='mosaic')renderMosaic();
     if(m==='week')renderMosaicWeek(true);   // true = 기본 스크롤(마지막 행 하단)로
