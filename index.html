@@ -4438,19 +4438,32 @@
     // ⚠ 별 box-shadow는 **생성 시 1회**만 좌표를 굳힌다 (땅은 매 호출 재배치).
     if(!stars && skH>10){
       stars=document.createElement('div');stars.id='tlStars';
+      /* 별밭을 **가로로 두 벌** 깐다 (x 와 x−sw). 아래 흐름이 0…sw 를 돌면서
+         감기는데, 왼쪽에 복사본이 없으면 오른쪽으로 흐를 때 왼쪽에 빈칸이
+         생긴다. 두 벌이면 이음매 없이 무한히 흐른다 (앱 StarsLayer의
+         fmodPositive 드리프트와 같은 발상). */
       var sh=[], sw=Math.max(360,skW);
       for(var si=0;si<64;si++){
         var sx=(sw*fakeRnd(si*2+1))|0, sy=(0.78*skH*fakeRnd(si*2+2))|0;
         var sr=fakeRnd(si*3+5)>0.82?1.5:0.8;
-        sh.push(sx+'px '+sy+'px 0 '+sr.toFixed(1)+'px rgba(255,255,255,'+(0.55+0.45*fakeRnd(si*3+7)).toFixed(2)+')');
+        var sc2=' 0 '+sr.toFixed(1)+'px rgba(255,255,255,'+(0.55+0.45*fakeRnd(si*3+7)).toFixed(2)+')';
+        sh.push(sx+'px '+sy+'px'+sc2);
+        sh.push((sx-sw)+'px '+sy+'px'+sc2);
       }
+      stars.dataset.sw=sw;
       stars.style.cssText='position:absolute;top:0;left:0;width:1px;height:1px;border-radius:50%;'+
         'z-index:0;pointer-events:none;box-shadow:'+sh.join(',');
       vb.insertBefore(stars,vb.firstChild);
     }
     if(stars){stars.style.opacity=p.star.toFixed(3);
-      // 스크롤에 따라 별이 좌우로 천천히 흐른다 (요청) — sin 왕복 ±14px.
-      stars.style.transform='translateX('+(14*Math.sin((sc.scrollTop||0)/520)).toFixed(1)+'px)';}
+      /* 별은 스크롤(=시간)에 따라 **한 방향으로만** 흐른다 (요청 2026-08-06).
+         예전엔 `14*sin(scrollTop/520)`이라 3267px마다 방향이 뒤집혀 — 계속
+         내리는 중인데 오른쪽으로 가던 별이 갑자기 왼쪽으로 돌아섰다(하늘이
+         되감기는 것처럼 보인다). 이제 감기는 단조 드리프트: 방향은 해·달과
+         같은 왼→오른쪽, 속도는 예전 최대 기울기(0.027px/px)를 그대로 써서
+         체감은 안 바뀐다. sw마다 감기지만 별밭이 두 벌이라 이음매가 없다. */
+      var _sw=parseFloat(stars.dataset.sw)||360;
+      stars.style.transform='translateX('+(((sc.scrollTop||0)*0.027)%_sw).toFixed(1)+'px)';}
     // 평원/눈 그림 — 지평선(0.82H) 아래를 받친다 (앱 GroundLayer). 그림의 가장
     // 높은 불투명 픽셀(언덕 꼭대기, 세로 38%)이 0.82H에 놓이게 앉힌다.
     var ground=document.getElementById('tlGround');

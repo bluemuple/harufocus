@@ -89,5 +89,26 @@ t('달은 fade 하지 않는다 (opacity 고정)', /moon\.style\.opacity='1'/.te
 t("⚠옛 달 fade 식((alt+1.5)/3)이 되살아나지 않았다", !/\(mp\.alt\+1\.5\)\/3/.test(flat));
 t('해도 같은 규칙이다 (둘이 갈라지지 않게)', /sun\.style\.opacity='1'/.test(flat));
 
+// ── 별: 스크롤 방향이 그대로면 흐르는 방향도 그대로여야 한다.
+//    (신고 2026-08-06: "내리는 중인데 별이 오른쪽으로 가다가 왼쪽으로 돌아선다")
+t("⚠옛 sin 왕복 드리프트가 되살아나지 않았다", !/14\*Math\.sin\(\(sc\.scrollTop\|\|0\)\/520\)/.test(flat));
+t('별 드리프트는 감기는 단조식이다 (%_sw)', /\(\(sc\.scrollTop\|\|0\)\*0\.027\)%_sw/.test(flat));
+t('별밭을 두 벌 깐다 (감길 때 이음매가 없게)', /\(sx-sw\)\+'px '/.test(body));
+(function () {
+  const sw = 600, k = 0.027;
+  const drift = (top) => (top * k) % sw;
+  let back = 0, prev = drift(0);
+  for (let top = 1; top <= 20000; top += 7) {          // 계속 내려간다
+    const d = drift(top);
+    if (d < prev && (prev - d) < sw * 0.9) back++;      // 감김(큰 낙차)은 제외
+    prev = d;
+  }
+  t('아래로 내리는 동안 별이 되돌아가지 않는다 (감김 제외)', back === 0);
+  // 옛 식은 같은 조건에서 반드시 되돌아갔다 — 테스트가 헛돌지 않음을 보인다.
+  let oldBack = 0; prev = 14 * Math.sin(0);
+  for (let top = 1; top <= 20000; top += 7) { const d = 14 * Math.sin(top / 520); if (d < prev) oldBack++; prev = d; }
+  t('옛 sin 식은 실제로 되돌아갔다 (대조군)', oldBack > 100);
+})();
+
 console.log(fail ? `\n${fail}개 실패 / ${ran}` : `\n${ran}/${ran} 통과`);
 process.exit(fail ? 1 : 0);
