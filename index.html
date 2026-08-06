@@ -3931,6 +3931,16 @@
   var TS=6,TE=24,PPH=120,dayOffset=0;
   var tlEditTop=0,tlDayH=0;   // 3일 밴드: 오늘 밴드 오프셋(히트테스트 보정)·밴드 높이
   var tlHomePending=false;    // 화면 밖에서 렌더돼 '지금'으로 못 갔다 → 탭 열 때 간다
+  /* 이번 renderBig만 **보던 자리를 지킨다** (요청 2026-08-06 ②).
+     renderBig의 기본값은 '지금 줄로 데려가기'다(첫 렌더·탭 열기엔 그게 맞다).
+     그런데 화면에 보이는 마감선의 완료 동그라미를 누르면 그 기본값이 그대로
+     돌아 **화면이 통째로 튀었다** — 방금 누른 선이 눈앞에서 사라진다.
+     "내가 누른 것 때문에 내 시야가 움직이면 안 된다"가 규칙이라, 그런 조작
+     직전에 이 깃발을 세운다. renderBig이 한 번 쓰고 반드시 내린다(일회용).
+     ⚠ 화면 밖 렌더(clientHeight 0)·아직 '지금'으로 못 간 상태(tlHomePending)
+        에서는 무시한다 — 그때 자리를 지키면 scrollTop 0(어제 자정)에 박힌다. */
+  var tlKeepScroll=false;
+  function renderAllKeepTl(){tlKeepScroll=true;renderAll();}
   var tlLaneToday=null,tlLanePrimary=null;   // 캡처 고스트가 렌더 밖에서 쓰는 레인 핸들
   /* yFor는 **현재 그리는 밴드의 시작 시각(tlBandTS)** 기준 — 어제 밴드는 12시부터
      시작하므로(요청) 밴드마다 다르다. 렌더 후엔 tlBandTS=TS(오늘)로 되돌려 두어
@@ -5477,7 +5487,10 @@
     var wakeH=Math.max(0,Math.floor((sset.wakeMinutes!=null?sset.wakeMinutes:420)/60));
     TS=0;TE=24;
     var sc=document.getElementById('tlScroll');
-    var prevScroll=(batchIds!=null||tlDragging)?sc.scrollTop:null;   // 배치/드래그 중 스크롤 유지
+    // 배치/드래그 중 + '보던 자리 지키기' 요청(tlKeepScroll, 선언부 주석)이면 스크롤 유지
+    var keepReq=tlKeepScroll&&!tlHomePending&&sc.clientHeight>0;
+    tlKeepScroll=false;                                              // 일회용 — 반드시 내린다
+    var prevScroll=(batchIds!=null||tlDragging||keepReq)?sc.scrollTop:null;
     /* ⑤ 동기화 이동 애니메이션 (요청 2026-07-23): 다른 기기에서 마감을 옮겨
        이쪽 위치가 바뀌면 **0.3초 상하 이동**으로 따라간다 — 선이 순간이동하면
        "내가 안 한 변화"가 언제 일어났는지 못 본다. egress와는 무관하다(이미
@@ -5746,9 +5759,11 @@
         '<button class="dl-x" title="'+L('마감선만 삭제','Remove the deadline only')+'">✕</button>';
       var pb=dl.querySelector('.dl-play');if(pb)pb.addEventListener('click',function(e){e.stopPropagation();startFocus(t);});
       // D2-2 마감 동그라미: 완료 토글 (보상 지급 + 취소선)
+      /* ⚠ renderAll이 아니라 renderAllKeepTl — 누른 마감선이 눈앞에 남아야 한다
+         (요청 ②: 완료를 누르면 타임라인이 '지금'으로 튀었다). */
       dl.querySelector('.dl-radio').addEventListener('click',function(e){e.stopPropagation();
         t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;
-        if(t.isDone)grantReward(t);renderAll();pushSnapshot();});
+        if(t.isDone)grantReward(t);renderAllKeepTl();pushSnapshot();});
       // D2-3 삭제 의미 분리: 캡슐 X = 마감선만 삭제(기록 유지).
       dl.querySelector('.dl-x').addEventListener('click',function(e){e.stopPropagation();
         t.scheduledStart=null;t.planDueAt=null;
@@ -8198,17 +8213,28 @@
       openCapture(t.scheduledStart?'timeline':'todo',{task:t});
     });
     var mi=row.querySelector('.t-memo');if(mi)mi.addEventListener('click',function(e){e.stopPropagation();openMemoPopup(t);});
+    /* ⚠ 완료 토글은 **renderTodo만으론 부족하다** (요청 ③): 같은 작업이
+       타임라인에선 마감선으로도 그려진다. 목록에서 완료했는데 renderTodo만
+       돌면 옆에 뜬 타임라인의 그 선은 미완료인 채라, 한 화면에 같은 일이
+       두 상태로 보였다(PC·아이패드는 두 화면이 나란히 있다). 반대 방향
+       (마감선 동그라미 → 목록)은 renderAll이라 이미 맞았다 — 이제 양쪽이
+       같은 renderAllKeepTl 하나를 부른다. KeepTl인 이유는 ②와 같다:
+       내가 만지지 않은 타임라인의 스크롤이 멋대로 움직이면 안 된다.
+       ⚠ 별표·하위작업 등 **완료가 아닌 것**은 그대로 renderTodo다 — 마감선
+       그림이 안 바뀌는 조작까지 전 화면을 다시 그릴 이유는 없다. */
     if(inDone){
-      row.querySelector('.check').addEventListener('click',function(){t.isDone=false;t.completedAt=null;renderTodo();pushSnapshot();});
+      row.querySelector('.check').addEventListener('click',function(){t.isDone=false;t.completedAt=null;renderAllKeepTl();pushSnapshot();});
     }else{
       row.querySelector('.play').addEventListener('click',function(){startFocus(t);});
-      row.querySelector('.check').addEventListener('click',function(){t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;if(t.isDone)grantReward(t);renderTodo();pushSnapshot();});
+      row.querySelector('.check').addEventListener('click',function(){t.isDone=!t.isDone;t.completedAt=t.isDone?new Date().toISOString():null;if(t.isDone)grantReward(t);renderAllKeepTl();pushSnapshot();});
       row.querySelector('.star').addEventListener('click',function(){t.isStarred=!t.isStarred;renderTodo();pushSnapshot();});
       row.querySelector('.kebab').addEventListener('click',function(e){e.stopPropagation();openKebab(this,t,row);});
       var pb=row.querySelector('.t-plus');if(pb)pb.addEventListener('click',function(e){e.stopPropagation();
         t.countDone=(t.countDone||0)+1;
-        if(t.countDone>=t.countTarget){t.isDone=true;t.completedAt=new Date().toISOString();grantReward(t);}
-        renderTodo();pushSnapshot();});
+        // n회 채워 **완료가 된 순간**만 전 화면 — 그전 카운트는 목록 안 일이다.
+        if(t.countDone>=t.countTarget){t.isDone=true;t.completedAt=new Date().toISOString();grantReward(t);renderAllKeepTl();}
+        else renderTodo();
+        pushSnapshot();});
     }
     attachSwipe(row,t,!!placed);
     attachTaskDrag(row,t);   // 꾹 눌러 타임라인 드롭 (요청)
