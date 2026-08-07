@@ -1543,6 +1543,25 @@
   .set-row-btn{width:100%;text-align:left;border:1px solid var(--line);background:var(--card-2);color:var(--ink);
     font-family:inherit;font-size:15px;font-weight:600;border-radius:12px;padding:14px 15px;margin-bottom:9px;cursor:pointer}
   .set-sec{font-size:12px;font-weight:800;color:var(--sky-blue);margin:18px 0 4px;letter-spacing:.02em}
+  /* 첫 묶음의 머리글은 위 여백을 줄인다 — 2단에서 두 칼럼의 첫 줄이 맞물린다. */
+  .set-group:first-child .set-sec{margin-top:6px}
+  /* ⭐ 넓은 화면(PC 웹 · 아이패드 가로)에서 **2단** (요청 2026-08-07).
+     세로로 한 줄씩 흐르던 설정이 큰 화면에선 오른쪽 절반을 통째로 비워 뒀다.
+     ⚠ CSS 다단(columns)을 쓴다 — 묶음을 JS로 두 통에 나눠 담지 않으므로
+       섹션을 추가·삭제해도 배치 코드가 따라올 필요가 없다.
+     ⚠ break-inside:avoid가 이 방식의 **핵심**이다: 없으면 '하루' 묶음이
+       기상/취침에서 잘려 다음 칼럼으로 넘어가 머리글과 내용이 갈라진다.
+     ⚠ 900px를 경계로 둔 이유: 아이패드 세로(834)는 한 단, 가로(1194)는 두 단.
+       폰은 어떤 방향이든 한 단이다. */
+  @media (min-width:900px){
+    .setpage-body{padding-left:32px;padding-right:32px}
+    .setpage-body>*{max-width:1180px;margin-left:auto;margin-right:auto}
+    .set-cols{columns:2;column-gap:44px;max-width:1180px;margin:0 auto}
+    .set-group{break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid;
+      display:inline-block;width:100%}
+    /* 칼럼이 둘이면 첫 줄은 두 묶음 모두 위 여백이 없어야 나란히 시작한다. */
+    .set-cols>.set-group>.set-sec{margin-top:10px}
+  }
   .ab-card{background:var(--card-2);border-radius:14px;padding:14px 15px;font-size:14px;line-height:1.65;margin-bottom:4px}
   .ab-ios{font-size:10px;font-weight:800;color:#fff;background:var(--sky-blue);border-radius:999px;padding:2px 8px;vertical-align:2px}
   .ab-bars{margin:10px 0 4px;display:flex;flex-direction:column;gap:7px}
@@ -1732,6 +1751,31 @@
   .pf-faces button.on{border-color:var(--sky-blue)}
   .pf-tones button{width:34px;height:34px;border-radius:50%;border:2px solid transparent;cursor:pointer;font-size:17px;background:var(--card-2)}
   .pf-tones button.on{border-color:var(--sky-blue)}
+  /* 큰 얼굴 (앱: 시트 맨 위 96pt 아바타) — 지금 고른 것이 한눈에. */
+  .pf-big{font-size:64px;line-height:1;text-align:center;padding:4px 0 12px}
+  /* ⭐ 친구 화면 미리보기 (요청 2026-08-07, 앱 파리티) — **그림이 아니라 진짜
+     뷰**다: 위 이름 칸을 치면 '나' 줄 이름이, 얼굴·색을 고르면 아바타가 같이
+     바뀐다. 문법은 앱 RoutineFriendsSheet.friendRow를 따라간다. */
+  .pf-prev-lbl{font-size:11.5px;font-weight:700;color:var(--ink-soft);margin:14px 0 6px;line-height:1.5}
+  .pf-prev{background:var(--card-2);border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    pointer-events:none;margin-bottom:12px}
+  .pf-prev .pp-head{display:flex;align-items:center;justify-content:center;position:relative;
+    font-size:13px;font-weight:800;padding:9px 12px;border-bottom:1px solid var(--line)}
+  .pf-prev .pp-head span{position:absolute;left:12px;font-weight:600;color:var(--sky-blue);opacity:.75}
+  .pf-prev .pp-row{display:flex;align-items:center;gap:10px;padding:9px 12px}
+  .pf-prev .pp-row+.pp-row{border-top:1px solid var(--line)}
+  .pf-prev .pp-av{font-size:28px;line-height:1;width:34px;text-align:center;flex:0 0 auto}
+  .pf-prev .pp-mid{flex:1;min-width:0}
+  .pf-prev .pp-name{font-size:13px;font-weight:800;display:flex;align-items:center;gap:5px}
+  .pf-prev .pp-name .pp-me{font-size:10px;font-weight:800;color:var(--sky-blue);
+    background:rgba(91,147,230,.16);border-radius:999px;padding:1px 6px}
+  .pf-prev .pp-name.dim{color:var(--ink-soft);font-weight:700}
+  .pf-prev .pp-chips{display:flex;gap:5px;margin-top:3px;flex-wrap:wrap}
+  .pf-prev .pp-chips i{font-style:normal;font-size:10.5px;font-weight:600;
+    background:rgba(127,127,127,.14);border-radius:999px;padding:2px 7px;white-space:nowrap}
+  .pf-prev .pp-btns{display:flex;gap:6px;flex:0 0 auto}
+  .pf-prev .pp-btns b{font-size:11.5px;font-weight:700;color:var(--sky-blue);
+    background:rgba(127,127,127,.14);border-radius:8px;padding:5px 9px}
   .inv-hero{font-size:15px;line-height:1.6;margin:4px 0 12px}
   /* ── 엘리 (앱 §2) ── */
   .ele-tip{position:absolute;left:-4px;bottom:6px;width:72px;height:44px;border:0;background:none;
@@ -3420,17 +3464,23 @@
     </div>
     <div class="setpage-body">
 
-    <div class="set-sec" data-i18n-en="Account">계정</div>
-    <div class="set-acct">
-      <div class="sa-status" id="setAcctStatus"></div>
-      <button class="go" id="setAccountBtn" style="margin-top:8px" data-i18n-en="Sign in">로그인</button>
-      <button class="set-row-btn" id="setProfileBtn" style="margin-top:8px;margin-bottom:0" data-i18n-en="Profile (name · avatar)">프로필 (이름·아바타)</button>
-    </div>
-
-    <div class="set-sec" data-i18n-en="Elly">엘리</div>
+    <!-- ⭐ 순서·이름은 **앱 SettingsView와 한 쌍** (요청 2026-08-07):
+           취향 → 상단 바 → 동기화 → 하루 → 기타.
+         ⚠ 각 묶음은 `.set-group` 하나다 — 넓은 화면에서 2단으로 흘릴 때
+           묶음이 칼럼 경계에서 **쪼개지지 않게** 하는 단위(CSS break-inside).
+           새 섹션을 추가하면 반드시 .set-cols 안에 .set-group으로 감쌀 것. -->
+    <div class="set-cols">
+    <section class="set-group">
+    <div class="set-sec" data-i18n-en="Preference">취향</div>
     <!-- 몸 색 고르기 폐지 (요청 2026-07-29): 엘리는 원래 색 하나로 지낸다 -->
-    <div class="elabel" data-i18n-en="Name">이름</div><input id="setEleName" placeholder="엘리" data-i18n-en-ph="Elly" maxlength="10">
+    <div class="elabel" data-i18n-en="Elly's name">엘리 이름</div><input id="setEleName" placeholder="엘리" data-i18n-en-ph="Elly" maxlength="10">
+    <!-- 아바타·이름 (앱: 취향 ▸ 아바타). 누르면 뜨는 패널 안에서 이름도 고친다. -->
+    <button class="set-row-btn" id="setProfileBtn" style="margin-bottom:0" data-i18n-en="Avatar · name">아바타 · 이름</button>
+    <div class="elabel" data-i18n-en="Timeline Scenery">타임라인 풍경</div>
+    <div class="seg hseg" id="setScenery"><button data-s="plain" class="on" data-i18n-en="Plain">평원</button><button data-s="sea" data-i18n-en="Sea">바다</button><button data-s="city" data-i18n-en="City">도시</button></div>
+    </section>
 
+    <section class="set-group">
     <div class="set-sec" data-i18n-en="Top Bar">상단 바</div>
     <div class="elabel" data-i18n-en="A word to myself">한마디</div><input id="setVow" placeholder="예: 지금 이 순간, 하나에만 집중" data-i18n-en-ph="e.g. Right now, one thing only" maxlength="40">
     <div class="elabel" data-i18n-en="D-day name">D-day 이름</div><input id="setDdayLabel" placeholder="예: 시험" data-i18n-en-ph="e.g. exam" maxlength="20">
@@ -3450,11 +3500,17 @@
       <label><input type="checkbox" data-k="chipDday"> D-day</label>
     </div>
     <div class="elabel" data-i18n-en="Rotation (min)">전환 주기 (분)</div><input type="number" id="setBarPeriod" min="1" max="60" step="1">
+    </section>
 
-    <div class="set-sec" data-i18n-en="Timeline">타임라인</div>
-    <div class="elabel" data-i18n-en="Scenery">장소</div>
-    <div class="seg hseg" id="setScenery"><button data-s="plain" class="on" data-i18n-en="Plain">평원</button><button data-s="sea" data-i18n-en="Sea">바다</button><button data-s="city" data-i18n-en="City">도시</button></div>
+    <section class="set-group">
+    <div class="set-sec" data-i18n-en="Sync">동기화</div>
+    <div class="set-acct">
+      <div class="sa-status" id="setAcctStatus"></div>
+      <button class="go" id="setAccountBtn" style="margin-top:8px;margin-bottom:0" data-i18n-en="Sign in">로그인</button>
+    </div>
+    </section>
 
+    <section class="set-group">
     <div class="set-sec" data-i18n-en="Day">하루</div>
     <div class="elabel" data-i18n-en="Wake time">기상 시각</div><input type="time" id="setWake">
     <div class="elabel" data-i18n-en="Bedtime">취침 시각</div><input type="time" id="setBed">
@@ -3465,14 +3521,16 @@
          주간 모자이크·요일 선택 칩)이 weekdayOrder 하나로 이 값을 따른다. -->
     <div class="elabel" data-i18n-en="Week starts on">주 시작 요일</div>
     <div class="seg hseg" id="setWeekStart"><button data-w="sun" class="on" data-i18n-en="Sunday">일요일</button><button data-w="mon" data-i18n-en="Monday">월요일</button></div>
+    <!-- '추가할 때 기본 길이'는 앱과 같이 **하루** 안에 (요청 2026-08-07). -->
+    <div class="elabel" data-i18n-en="Default length when adding (min)">추가할 때 기본 길이 (분)</div><input type="number" id="setDefDur" min="0" step="5">
+    </section>
 
-    <div class="set-sec" data-i18n-en="Adding Tasks">작업 추가</div>
-    <div class="elabel" data-i18n-en="Default length (min)">추가할 때 기본 길이 (분)</div><input type="number" id="setDefDur" min="0" step="5">
-    <div class="elabel" data-i18n-en="Icons to show (hidden ones still appear when set)">아이콘 표시 (숨겨도 값이 걸려 있으면 나타나요)</div>
+    <section class="set-group">
+    <div class="set-sec" data-i18n-en="Other">기타</div>
+    <div class="elabel" data-i18n-en="Add-task icons (hidden ones still appear when set)">작업 추가 아이콘 (숨겨도 값이 걸려 있으면 나타나요)</div>
     <div class="set-toggles" id="setCapIcons"></div>
     <div class="msub" data-i18n-en="Drag ≡ to reorder.">≡ 를 끌어 순서를 바꿀 수 있어요.</div>
-
-    <div class="set-sec" data-i18n-en="Focus Page">집중 페이지</div>
+    <div class="elabel" data-i18n-en="Distraction post-it">딴짓 포스트잇</div>
     <div class="set-toggles">
       <label data-i18n-en=" Show the distraction post-it"><input type="checkbox" id="setPostIt"> 딴짓 포스트잇 표시</label>
       <label data-i18n-en=" Save notes into matrix Q4"><input type="checkbox" id="setPostItQ4"> 적으면 Q4(나중에)에 담기</label>
@@ -3483,8 +3541,9 @@
             **그대로 뒀다**: 지금 값이 그 자리에 얼어붙을 뿐이라 제거일에 동작이
             안 바뀐다. 앱도 같은 방식으로 UI만 걷었다. -->
 
-    <div class="set-sec" data-i18n-en="Other">기타</div>
-    <button class="set-row-btn" id="setStatsBtn" data-i18n-en="See stats">통계 보기</button>
+    <button class="set-row-btn" id="setStatsBtn" style="margin-top:10px" data-i18n-en="See stats">통계 보기</button>
+    </section>
+    </div><!-- /.set-cols -->
 
     </div>
   </div>
@@ -3541,12 +3600,20 @@
 <div class="scrim" id="profileScrim">
   <div class="modal">
     <button class="mclose" id="profileClose">✕</button>
-    <h3 data-i18n-en="My profile">내 프로필</h3>
-    <input id="pfName" placeholder="이름 (친구에게 보여요)" data-i18n-en-ph="Name (friends see this)" maxlength="12">
-    <div class="elabel" data-i18n-en="Avatar">아바타</div>
+    <h3 data-i18n-en="Avatar">아바타</h3>
+    <!-- 앱 AvatarPickerSheet와 같은 순서 (요청 2026-08-07): 큰 얼굴 → 이름 →
+         얼굴 → 피부색 → **친구 화면 미리보기**(맨 아래). -->
+    <div class="pf-big" id="pfBig">🧑</div>
+    <input id="pfName" placeholder="이름 (선택)" data-i18n-en-ph="User name (optional)" maxlength="12">
+    <div class="elabel" data-i18n-en="Face">얼굴</div>
     <div class="pf-faces" id="pfFaces"></div>
-    <div class="elabel" data-i18n-en="Skin tone / Elly colour">피부색 / 엘리 색</div>
+    <div class="elabel" id="pfToneLabel" data-i18n-en="Skin tone">피부색</div>
     <div class="pf-tones" id="pfTones"></div>
+    <!-- ⭐ 친구 화면 미리보기 (앱 파리티): 이름 칸만 있으면 이 이름이 앱 안
+         별명인지 남에게 보이는 이름인지 알 길이 없다. 기호는 진짜 화면의 것과
+         같아야 한다 — ↻ 는 루틴 탭, 👥 는 그 페이지의 친구 버튼. -->
+    <div class="pf-prev-lbl" data-i18n-en="↻ Routine page → 👥 Friends: pick the avatar and name shown there.">↻ 루틴 페이지의 👥 친구 화면에 뜰 아바타와 이름을 골라 주세요.</div>
+    <div class="pf-prev" id="pfPreview"></div>
     <button class="go" id="pfSave" data-i18n-en="Save">저장</button>
   </div>
 </div>
@@ -10820,37 +10887,77 @@
     });
   }
   // ── 프로필 (이름 + 아바타: 사람 이모지+피부색 / 엘리+색) ──
-  var PF_FACES=['🐘','🧑','👩','👨','🧒','👧','👦','👵','👴'];
+  /* ⚠ 코끼리(🐘)는 **고를 수 없다** (요청 2026-08-07, 앱 파리티): 목록에서 뺐다.
+     읽을 줄은 알아야 한다 — 예전에 고른 사람과 친구 서버에 저장된 남의 값이
+     아직 이 글자를 들고 있다. 그래서 열 때 첫 얼굴로 갈아 준다(openProfile). */
+  var PF_FACES=['🧑','👩','👨','🧒','👧','👦','👵','👴'];
   var PF_SKIN=['','🏻','🏼','🏽','🏾','🏿'];
   var PF_ELE=['#D4C1D2','#F3C6D3','#BEE3CF','#BCD8F0','#F5E4B8','#CBCBD6'];
   var pfFace='🐘',pfTone='#D4C1D2';
   function openProfile(){
     if(!session){accountAction();return;}
     ensureProfile(function(p){
-      document.getElementById('pfName').value=(p&&p.name)||'';
-      pfFace=(p&&p.avatar_face)||'🐘';pfTone=(p&&p.avatar_tone)||'#D4C1D2';
+      var nm=document.getElementById('pfName');
+      nm.value=(p&&p.name)||'';
+      pfFace=(p&&p.avatar_face)||'';pfTone=(p&&p.avatar_tone)||'';
+      /* 옛 코끼리·미선택을 **열자마자** 첫 얼굴로 (앱과 같은 규칙): 안 갈면
+         아래 '피부색' 칸이 hex 톤을 든 채라 색을 고를 길이 없다. */
+      if(PF_FACES.indexOf(pfFace)<0){pfFace=PF_FACES[0];pfTone='';}
+      if(/^#/.test(pfTone))pfTone='';
       paintProfile();
+      // 이름을 치는 동안 미리보기의 '나' 줄이 같이 바뀐다 (그림이 아니라 진짜 뷰).
+      nm.oninput=paintProfilePreview;
       document.getElementById('profileScrim').classList.add('open');
     });
   }
   function paintProfile(){
+    document.getElementById('pfBig').textContent=pfFace+(pfTone||'');
     var fw=document.getElementById('pfFaces');
     fw.innerHTML=PF_FACES.map(function(f){
       return '<button data-f="'+f+'" class="'+(pfFace===f?'on':'')+'">'+f+'</button>';}).join('');
     fw.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){
       pfFace=b.dataset.f;
-      pfTone=pfFace==='🐘'?(/^#/.test(pfTone)?pfTone:'#D4C1D2'):(/^#/.test(pfTone)?'':pfTone);
+      if(/^#/.test(pfTone))pfTone='';
       paintProfile();});});
     var tw=document.getElementById('pfTones');
-    if(pfFace==='🐘'){
-      tw.innerHTML=PF_ELE.map(function(c){
-        return '<button data-t="'+c+'" class="'+(pfTone===c?'on':'')+'" style="background:'+c+'"></button>';}).join('');
-    }else{
-      tw.innerHTML=PF_SKIN.map(function(m){
-        return '<button data-t="'+m+'" class="'+(pfTone===m?'on':'')+'">🖐'+m+'</button>';}).join('');
-    }
+    tw.innerHTML=PF_SKIN.map(function(m){
+      return '<button data-t="'+m+'" class="'+(pfTone===m?'on':'')+'">'+pfFace+m+'</button>';}).join('');
     tw.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){
       pfTone=b.dataset.t;paintProfile();});});
+    paintProfilePreview();
+  }
+  /* 친구 화면 미리보기 (요청 2026-08-07): 두 줄 — 위가 **나**, 아래가 예시 친구.
+     ⚠ '나' 표가 꼭 있어야 한다: 두 줄이 똑같이 생겨서 표가 없으면 어느 쪽이
+       자기인지 못 고른다(이 판의 목적 자체).
+     ⚠ 오늘 체크한 내 루틴이 있으면 **그것**을 찍는다 — 없을 때만 예시 칩. */
+  function paintProfilePreview(){
+    var box=document.getElementById('pfPreview');if(!box)return;
+    var nm=(document.getElementById('pfName').value||'').trim();
+    var mine=myTodayRoutineChips();
+    if(!mine.length)mine=[['🌱',L('아침 산책','Morning walk')],['✂️',L('밤 군것질','Late snacks')]];
+    var chips=function(list){return list.slice(0,2).map(function(r){
+      return '<i>'+r[0]+' '+esc(r[1])+'</i>';}).join('');};
+    box.innerHTML=
+      '<div class="pp-head"><span>'+L('닫기','Close')+'</span>'+L('친구와 함께','With friends')+'</div>'
+      +'<div class="pp-row"><div class="pp-av">'+pfFace+(pfTone||'')+'</div><div class="pp-mid">'
+        +'<div class="pp-name'+(nm?'':' dim')+'">'+esc(nm||L('(이름 없음)','(no name)'))
+        +'<span class="pp-me">'+L('나','you')+'</span></div>'
+        +'<div class="pp-chips">'+chips(mine)+'</div></div>'
+        +'<div class="pp-btns"><b>✉️</b><b>'+L('자세히','Details')+'</b></div></div>'
+      +'<div class="pp-row"><div class="pp-av">👩🏻</div><div class="pp-mid">'
+        +'<div class="pp-name">'+L('미나','Mina')+'</div>'
+        +'<div class="pp-chips">'+chips([['🌱',L('물 8잔','8 glasses')],['🌱',L('책 20분','Read 20m')]])+'</div></div>'
+        +'<div class="pp-btns"><b>✉️</b><b>'+L('자세히','Details')+'</b></div></div>';
+  }
+  /// 오늘 체크한 내 루틴 → [기호, 이름] 목록 (친구가 실제로 보는 것과 같은 계산).
+  function myTodayRoutineChips(){
+    try{
+      // ⚠ 체크 여부는 habitLog/habitKey 한 쌍으로만 읽는다 — 루틴 페이지가
+      //   쓰는 것과 **같은 식**이라야 화면과 미리보기가 어긋나지 않는다.
+      var key=habitKey();
+      return (DATA.habits||[]).filter(function(h){return habitLog(h)[key]===1;})
+        .map(function(h){return [h.isAvoid?'✂️':'🌱',h.title||''];});
+    }catch(e){return [];}
   }
   function saveProfile(){
     var name=(document.getElementById('pfName').value||'').trim();
