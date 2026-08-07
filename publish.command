@@ -73,6 +73,15 @@ gh api -X POST "repos/$OWNER/$REPO/pages" -f "source[branch]=main" -f "source[pa
 PAGES="https://$OWNER.github.io/$REPO/"
 echo "────────────────────────────────"
 echo "🌐  주소:  $PAGES"
-echo "    (처음 공개는 1~2분 뒤에 열려요.)"
+
+# 5) **정말 올라갔는지 확인** (2026-08-07 추가)
+#    ⚠ push 성공 ≠ 배포 성공이다. Pages 빌드가 네 커밋을 조용히 흘려 유저가
+#      옛 화면을 보고 있던 적이 있다. 여기서 빌드를 기다리고, 실패하면 재요청하고,
+#      마지막엔 **라이브 파일과 이 폴더의 index.html을 해시로 대조**한다.
+if [ -f tools/verify-deploy.sh ]; then
+  echo ""
+  bash tools/verify-deploy.sh
+fi
+
 echo ""
 read -n 1 -s -r -p "완료! 아무 키나 누르면 닫혀요…"; echo
