@@ -94,7 +94,7 @@ DATA.sessions = [sess(0, 60, 1), sess(10, 60, 1)];
 is(dayRecordBlocks(key).length, 1, '1분+1분이 한 블록으로 합쳐지면 2분이라 그린다');
 const merged = dayRecordBlocks(key)[0];
 is(merged.foc, 120, '합쳐진 블록의 집중 초는 두 세션의 합');
-is(merged.rest.length, 1, '두 세션 사이 7분 공백은 쉼(빗금)으로 남는다');
+is(merged.rest.length, 1, '두 세션 사이 7분 공백은 블록 안 공백으로 남는다(옅은 몸통 — 빗금은 2026-09-11 폐지)');
 
 // ⑦ 갭이 15분을 넘으면 안 합쳐지고, 각각 1분이라 둘 다 사라진다
 DATA.sessions = [sess(0, 60, 1), sess(40, 60, 1)];
