@@ -4219,29 +4219,27 @@
 
   function todayAt(h,m){var d=new Date();d.setHours(h,m||0,0,0);return d.toISOString();}
   function dayAt(off,h,m){var d=new Date();d.setDate(d.getDate()+off);d.setHours(h,m||0,0,0);return d.toISOString();}
+  /* 로그아웃 예시 (요청 2026-09-16): 메뉴 언어를 따라 **영어 모드면 영어 제목**,
+     양은 예전(15개)의 **반인 8개** — 오늘 3 · 담아둔 일 2 · 지난날 3. 매트릭스
+     네 칸(Q1~Q4)과 다섯 범주(focus·study·mind·life·health)가 한 번씩은 보이게
+     골랐다. 영어 제목은 기호 사전(CAP_KEYWORDS)의 영어 낱말과 맞춰 기호가 붙는다.
+     ⚠ L()은 IS_KO(부팅 때 한 번 정해짐)를 보므로 여기서 불러도 된다. */
   var DEMO={
     diary:[],
     tasks:[
-      {title:'보고서 초안',categoryID:'focus',scheduledStart:todayAt(9,0),durationMin:90,isStarred:true,matrixQuadrant:1},
-      {title:'영어 공부',categoryID:'study',scheduledStart:todayAt(11,0),durationMin:45,isStarred:true,matrixQuadrant:2},
-      {title:'점심 · 산책',categoryID:'health',scheduledStart:todayAt(13,0),durationMin:60,matrixQuadrant:0},
-      {title:'집중 작업',categoryID:'focus',scheduledStart:todayAt(15,0),durationMin:120,matrixQuadrant:1},
-      {title:'명상',categoryID:'mind',scheduledStart:todayAt(22,0),durationMin:20,matrixQuadrant:2},
-      {title:'장보기',categoryID:'life',scheduledStart:null,durationMin:0,matrixQuadrant:3},
-      {title:'회의 일정 조율',categoryID:'focus',scheduledStart:null,durationMin:0,matrixQuadrant:3},
-      {title:'책 정리',categoryID:'study',scheduledStart:null,durationMin:0,matrixQuadrant:4},
-      {title:'회의',categoryID:'focus',scheduledStart:dayAt(-1,10,0),durationMin:60},
-      {title:'운동',categoryID:'health',scheduledStart:dayAt(-1,18,0),durationMin:50},
-      {title:'독서',categoryID:'study',scheduledStart:dayAt(-2,21,0),durationMin:40},
-      {title:'코딩',categoryID:'focus',scheduledStart:dayAt(-2,14,0),durationMin:120},
-      {title:'요가',categoryID:'health',scheduledStart:dayAt(-3,7,0),durationMin:40},
-      {title:'글쓰기',categoryID:'mind',scheduledStart:dayAt(-4,20,0),durationMin:60},
-      {title:'공부',categoryID:'study',scheduledStart:dayAt(-5,9,0),durationMin:150}
+      {title:L('보고서 초안','Report draft'),categoryID:'focus',scheduledStart:todayAt(9,0),durationMin:90,isStarred:true,matrixQuadrant:1},
+      {title:L('영어 공부','English study'),categoryID:'study',scheduledStart:todayAt(11,0),durationMin:45,isStarred:true,matrixQuadrant:2},
+      {title:L('명상','Meditation'),categoryID:'mind',scheduledStart:todayAt(22,0),durationMin:20,matrixQuadrant:2},
+      {title:L('장보기','Groceries'),categoryID:'life',scheduledStart:null,durationMin:0,matrixQuadrant:3},
+      {title:L('책 정리','Tidy the bookshelf'),categoryID:'study',scheduledStart:null,durationMin:0,matrixQuadrant:4},
+      {title:L('회의','Meeting'),categoryID:'focus',scheduledStart:dayAt(-1,10,0),durationMin:60},
+      {title:L('운동','Workout'),categoryID:'health',scheduledStart:dayAt(-1,18,0),durationMin:50},
+      {title:L('독서','Reading'),categoryID:'study',scheduledStart:dayAt(-2,21,0),durationMin:40}
     ],
     habits:[
-      {title:'아침 스트레칭',categoryID:'health',weekdaysMask:62,reminderMinutesJSON:'[420]'},
-      {title:'영어 단어',categoryID:'study',weekdaysMask:42,reminderMinutesJSON:'[1260]'},
-      {title:'저녁 명상',categoryID:'mind',weekdaysMask:127,reminderMinutesJSON:'[1350]'}
+      {title:L('아침 스트레칭','Morning stretch'),categoryID:'health',weekdaysMask:62,reminderMinutesJSON:'[420]'},
+      {title:L('영어 단어','English words'),categoryID:'study',weekdaysMask:42,reminderMinutesJSON:'[1260]'},
+      {title:L('저녁 명상','Evening meditation'),categoryID:'mind',weekdaysMask:127,reminderMinutesJSON:'[1350]'}
     ],
     settings:{focusGoalMinutes:240,captureDefaultMin:30,chipIntervalMin:10,
       chipMotto:true,chipFocusTotal:false,chipDaylight:false,chipDday:false,chipDeadline:true,
